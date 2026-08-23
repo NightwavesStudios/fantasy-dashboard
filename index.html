@@ -29,6 +29,30 @@
       --radius: 8px;
       --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     }
+
+    [data-theme="light"] {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-2: #eef1f6;
+      --border: #d0d7e2;
+      --border-subtle: #e2e8f0;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --definitely: #16a34a;
+      --definitely-bg: rgba(22, 163, 74, 0.1);
+      --definitely-border: rgba(22, 163, 74, 0.35);
+      --not-likely: #dc2626;
+      --not-likely-bg: rgba(220, 38, 38, 0.08);
+      --not-likely-border: rgba(220, 38, 38, 0.3);
+      --maybe: #ca8a04;
+      --maybe-bg: rgba(202, 138, 4, 0.1);
+      --maybe-border: rgba(202, 138, 4, 0.3);
+      --rank-1: #d97706;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: var(--font);
@@ -542,6 +566,22 @@
       color: var(--text-muted);
     }
 
+
+    .theme-toggle {
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .btn-share.copied {
+      border-color: var(--definitely);
+      color: var(--definitely);
+    }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -586,6 +626,7 @@
       </div>
       <div class="header-actions">
         <span class="status-pill" id="status">Loading…</span>
+        <button class="btn theme-toggle" id="themeBtn" type="button" title="Toggle light/dark" aria-label="Toggle theme">◐</button>
         <button class="btn btn-primary" id="refreshBtn" type="button">Refresh</button>
       </div>
     </div>
@@ -648,6 +689,7 @@
         </div>
         <div class="calc-mid">
           <div class="calc-diff" id="calc-diff">Even</div>
+          <button type="button" class="btn btn-share" id="calc-share">Copy link</button>
           <button type="button" class="btn" id="calc-clear">Clear</button>
         </div>
         <div class="calc-side" id="calc-side-b">
@@ -668,6 +710,26 @@
 
 
   <script>
+
+    (function initTheme() {
+      try {
+        const saved = localStorage.getItem("leagueToolsTheme");
+        const theme = saved === "light" || saved === "dark" ? saved : "dark";
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+
+    function toggleTheme() {
+      try {
+        const cur = document.documentElement.getAttribute("data-theme") || "dark";
+        const next = cur === "light" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem("leagueToolsTheme", next); } catch (e) {}
+      } catch (e) {}
+    }
+
     const LEAGUE_ID = "2039212076";
     const SEASON = 2026;
     const API_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
@@ -719,44 +781,71 @@
     let searchQuery = "";
     let leagueData = null;
 
+    async function fetchWithTimeout(url, options, ms) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        return await fetch(url, Object.assign({}, options || {}, { signal: ctrl.signal }));
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
     async function fetchLeague() {
       const statusEl = document.getElementById("status");
       statusEl.textContent = "Loading…";
       statusEl.classList.remove("error");
       try {
-        const [espnRes, fcRes] = await Promise.all([
-          fetch(API_URL, { credentials: "omit", headers: { Accept: "application/json" } }),
-          fetch(FC_URL, { headers: { Accept: "application/json" } })
-        ]);
+        const espnRes = await fetchWithTimeout(
+          API_URL,
+          { credentials: "omit", headers: { Accept: "application/json" } },
+          20000
+        );
         if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
-        if (!fcRes.ok) throw new Error("FantasyCalc HTTP " + fcRes.status);
-
         leagueData = await espnRes.json();
-        const fcList = await fcRes.json();
 
         fcByEspnId = {};
         fcByName = {};
-        for (const row of fcList || []) {
-          const p = row.player || {};
-          const meta = {
-            value: row.value || 0,
-            overallRank: row.overallRank,
-            positionRank: row.positionRank,
-            name: p.name
-          };
-          if (p.espnId != null) fcByEspnId[String(p.espnId)] = meta;
-          if (p.name) fcByName[normalizeName(p.name)] = meta;
+        try {
+          const fcRes = await fetchWithTimeout(
+            FC_URL,
+            { headers: { Accept: "application/json" } },
+            15000
+          );
+          if (fcRes.ok) {
+            const fcList = await fcRes.json();
+            for (const row of fcList || []) {
+              const p = row.player || {};
+              const meta = {
+                value: row.value || 0,
+                overallRank: row.overallRank,
+                positionRank: row.positionRank,
+                name: p.name
+              };
+              if (p.espnId != null) fcByEspnId[String(p.espnId)] = meta;
+              if (p.name) fcByName[normalizeName(p.name)] = meta;
+            }
+          }
+        } catch (fcErr) {
+          console.warn("FantasyCalc values unavailable", fcErr);
         }
 
-        renderAll(leagueData);
         const counts = countStatuses(leagueData);
         statusEl.textContent =
           leagueData.teams.length + " teams · " +
           counts.definitely + " on block · Week " +
           (leagueData.scoringPeriodId || "—");
+
+        try {
+          renderAll(leagueData);
+        } catch (renderErr) {
+          console.error(renderErr);
+          statusEl.textContent = "Data loaded but display failed (see console)";
+          statusEl.classList.add("error");
+        }
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Failed to load — try a local server if blocked";
+        statusEl.textContent = "Failed to load. Open via a local server if the request is blocked.";
         statusEl.classList.add("error");
       }
     }
@@ -893,6 +982,37 @@
       const models = finalizePowerScores(buildTeamModels(data));
       renderPowerRankings(models);
       setupTradeCalculator(data);
+    }
+
+
+    function buildTradeShareUrl(teamA, teamB, setA, setB) {
+      const params = new URLSearchParams(window.location.search);
+      // keep non-trade params if any
+      const aIds = [...setA].join(",");
+      const bIds = [...setB].join(",");
+      params.set("trade", teamA + ":" + aIds + "|" + teamB + ":" + bIds);
+      const q = params.toString();
+      return window.location.pathname + (q ? "?" + q : "") + window.location.hash;
+    }
+
+    function parseTradeShareParam() {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get("trade");
+      if (!raw) return null;
+      // format: teamA:id,id|teamB:id,id
+      const parts = raw.split("|");
+      if (parts.length !== 2) return null;
+      function parseSide(s) {
+        const i = s.indexOf(":");
+        if (i < 0) return null;
+        const team = s.slice(0, i);
+        const ids = s.slice(i + 1).split(",").filter(Boolean);
+        return { team, ids };
+      }
+      const a = parseSide(parts[0]);
+      const b = parseSide(parts[1]);
+      if (!a || !b) return null;
+      return { a, b };
     }
 
     let calcSelected = { a: new Set(), b: new Set() };
@@ -1200,10 +1320,63 @@
         calcSelected.b.clear();
         renderSide("a");
         renderSide("b");
+        // strip trade from URL without reload
+        const u = new URL(window.location.href);
+        u.searchParams.delete("trade");
+        history.replaceState(null, "", u.pathname + u.search + u.hash);
       };
 
-      renderSide("a");
+      document.getElementById("calc-share").onclick = async () => {
+        const teamA = selA.value;
+        const teamB = selB.value;
+        if (!calcSelected.a.size && !calcSelected.b.size) {
+          alert("Select at least one player to share a trade.");
+          return;
+        }
+        const u = new URL(window.location.href);
+        const p = new URLSearchParams(u.search);
+        p.set(
+          "trade",
+          teamA + ":" + [...calcSelected.a].join(",") + "|" + teamB + ":" + [...calcSelected.b].join(",")
+        );
+        u.search = p.toString();
+        const finalUrl = u.toString();
+        try {
+          await navigator.clipboard.writeText(finalUrl);
+          const btn = document.getElementById("calc-share");
+          const prev = btn.textContent;
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+          history.replaceState(null, "", finalUrl);
+          setTimeout(() => {
+            btn.textContent = prev;
+            btn.classList.remove("copied");
+          }, 1500);
+        } catch (err) {
+          prompt("Copy this trade link:", finalUrl);
+        }
+      };
+
+            renderSide("a");
       renderSide("b");
+
+      // Restore shared trade from URL
+      const shared = parseTradeShareParam();
+      if (shared) {
+        if ([...selA.options].some((o) => o.value === shared.a.team)) selA.value = shared.a.team;
+        if ([...selB.options].some((o) => o.value === shared.b.team)) selB.value = shared.b.team;
+        calcSelected.a = new Set(shared.a.ids);
+        calcSelected.b = new Set(shared.b.ids);
+        renderSide("a");
+        renderSide("b");
+        // jump to calculator tab
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        const tab = document.querySelector('.tab[data-panel="calc"]');
+        if (tab) tab.classList.add("active");
+        const panel = document.getElementById("panel-calc");
+        if (panel) panel.classList.add("active");
+      }
     }
 
 
@@ -1379,30 +1552,40 @@
     }
 
     // Tabs
-    document.getElementById("tabs").addEventListener("click", (e) => {
-      const btn = e.target.closest(".tab");
-      if (!btn) return;
-      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById("panel-" + btn.dataset.panel).classList.add("active");
-    });
+    try {
+      document.getElementById("tabs").addEventListener("click", (e) => {
+        const btn = e.target.closest(".tab");
+        if (!btn) return;
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        const panel = document.getElementById("panel-" + btn.dataset.panel);
+        if (panel) panel.classList.add("active");
+      });
 
-    document.getElementById("refreshBtn").addEventListener("click", fetchLeague);
+      const refreshBtn = document.getElementById("refreshBtn");
+      if (refreshBtn) refreshBtn.addEventListener("click", fetchLeague);
+      const themeBtn = document.getElementById("themeBtn");
+      if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
 
-    document.getElementById("filters").addEventListener("click", (e) => {
-      const btn = e.target.closest(".filter-btn");
-      if (!btn) return;
-      document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFilter = btn.dataset.filter;
-      applyTradeFilters();
-    });
+      const filters = document.getElementById("filters");
+      if (filters) filters.addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn) return;
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter;
+        applyTradeFilters();
+      });
 
-    document.getElementById("search").addEventListener("input", (e) => {
-      searchQuery = e.target.value;
-      applyTradeFilters();
-    });
+      const search = document.getElementById("search");
+      if (search) search.addEventListener("input", (e) => {
+        searchQuery = e.target.value;
+        applyTradeFilters();
+      });
+    } catch (bootErr) {
+      console.error(bootErr);
+    }
 
     fetchLeague();
   </script>
