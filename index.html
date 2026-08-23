@@ -570,6 +570,9 @@
     .calc-impact-change.up { color: #4ade80; }
     .calc-impact-change.down { color: #f87171; }
     .calc-impact-change.same { color: var(--text-muted); }
+    .calc-impact-result { font-size: 0.7rem; font-weight: 600; margin-left: 0.35rem; }
+    .calc-impact-result.benefit { color: #4ade80; }
+    .calc-impact-result.neutral { color: var(--text-muted); }
     .calc-impact-empty {
       font-size: 0.8125rem;
       color: var(--text-muted);
@@ -2257,11 +2260,9 @@
         let label;
         if (total === 0) label = "Pick players";
         else if (pct <= 0.08 || absD < 80) {
-          label = pct < 0.02 ? "Even" : "Close";
-          if (absD >= 80 && pct > 0.02) label = (d > 0 ? "A +" : "B +") + absD.toLocaleString() + " · close";
+          label = pct < 0.02 ? "Even value" : "Close value";
         } else {
-          const who = d > 0 ? "A" : "B";
-          label = who + " +" + absD.toLocaleString() + " · " + Math.round(pct * 100) + "%";
+          label = "Value gap " + absD.toLocaleString() + " · " + Math.round(pct * 100) + "%";
         }
         diffEl.classList.remove("favors-a", "favors-b", "even");
         diffEl.textContent = label;
@@ -2346,6 +2347,9 @@
           const power = formatRankDelta(pr(originalRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
           const beforeTeam = originalRanks.byId[teamId] || originalRanks.byId[Number(teamId)] || {};
           const afterTeam = afterRanks.byId[teamId] || afterRanks.byId[Number(teamId)] || {};
+          const positionImproved = POSITIONS.some((pos) => pos !== "BN" && (afterTeam.posValues?.[pos] || 0) > (beforeTeam.posValues?.[pos] || 0));
+          const resultText = positionImproved ? "Benefits this team" : "No position gain";
+          const resultClass = positionImproved ? "benefit" : "neutral";
           let rows =
             '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
             '<span class="calc-impact-change ' + power.cls + '">' + power.text + " · " +
@@ -2362,7 +2366,7 @@
               '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
               '<span class="impact-value" style="color:' + formatValueDelta(beforePositionValue, afterPositionValue).color + '">' + formatValueDelta(beforePositionValue, afterPositionValue).text + "</span></span></div>";
           }
-          return '<div class="calc-impact-card" tabindex="0" role="button" aria-expanded="true"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
+          return '<div class="calc-impact-card" tabindex="0" role="button" aria-expanded="true"><h4>' + escapeHtml(name) + '<span class="calc-impact-result ' + resultClass + '">' + resultText + "</span></h4>" + rows + "</div>";
         }
 
         grid.innerHTML = [...involved].map(card).join("");
