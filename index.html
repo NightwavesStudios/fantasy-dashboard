@@ -171,11 +171,7 @@
     .team-header {
       padding: 0.875rem 1rem; border-bottom: 1px solid var(--border-subtle);
       display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;
-      cursor: pointer;
     }
-    .team-header::after { content: "+"; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
-    .team-card:not(.collapsed) .team-header::after { content: "−"; }
-    .team-card.collapsed .roster-body { display: none; }
     .team-info h2 { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
     .team-info .owner { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
     .team-stats { text-align: right; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
@@ -578,6 +574,17 @@
       font-size: 0.8125rem;
       color: var(--text-muted);
     }
+
+    .odds-table-wrap { overflow-x: auto; }
+    .odds-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .odds-table th, .odds-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+    .odds-table th { background: var(--surface-2); color: var(--text-muted); font-size: 0.65rem; text-align: right; text-transform: uppercase; letter-spacing: 0.04em; }
+    .odds-table th:first-child, .odds-table td:first-child { text-align: left; }
+    .odds-table td { text-align: right; font-variant-numeric: tabular-nums; }
+    .odds-table tr:last-child td { border-bottom: none; }
+    .odds-team { font-weight: 600; }
+    .odds-muted { color: var(--text-muted); font-size: 0.75rem; }
+    .odds-status { margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.8125rem; }
 
 
     .theme-toggle {
@@ -1024,14 +1031,15 @@
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-panel="trade" type="button" title="View every roster and ESPN trade-block status">Trade Board</button>
-    <button class="tab" data-panel="power" type="button" title="Rank teams by FantasyCalc roster value and PPG once games are scored">Power Rankings</button>
+    <button class="tab active" data-panel="power" type="button" title="Rank teams by FantasyCalc roster value and PPG once games are scored">Power Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare FantasyCalc values and chain multi-step trades">Trade Calculator</button>
+    <button class="tab" data-panel="trade" type="button" title="View every roster and ESPN trade-block status">Trade Board</button>
+    <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
     <button class="tab" data-panel="waivers" type="button" title="Free agents and waiver wire ranked by FantasyCalc value">Waiver Wire</button>
   </nav>
 
   <!-- TRADE BOARD -->
-  <div class="panel active" id="panel-trade">
+  <div class="panel" id="panel-trade">
     <div class="toolbar">
       <div class="filters-row">
         <div class="filters" id="filters">
@@ -1070,8 +1078,21 @@
     <div class="board" id="board"></div>
   </div>
 
+  <div class="panel" id="panel-odds">
+    <div class="rankings-wrap">
+      <p class="rankings-note">ESPN schedule and league settings drive these estimates. Each simulation scores remaining matchups, awards an extra win or loss against the weekly league median, then plays out the postseason.</p>
+      <div class="odds-status" id="odds-status">Select Playoff Odds to load ESPN settings and run simulations.</div>
+      <div class="odds-table-wrap">
+        <table class="odds-table">
+          <thead><tr><th>Team</th><th>Playoffs</th><th>1st-round bye</th><th>Championship</th><th>Median wins</th></tr></thead>
+          <tbody id="odds-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- POWER RANKINGS (includes positional breakdown) -->
-  <div class="panel" id="panel-power">
+  <div class="panel active" id="panel-power">
     <div class="rankings-wrap">
       <p class="rankings-note">
         <strong>How these rankings work</strong><br>
@@ -1230,6 +1251,7 @@
     const LEAGUE_ID = "2039212076";
     const SEASON = 2026;
     const API_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
+    const PLAYOFF_API_URL = API_URL + "&view=mSettings&view=mMatchup";
     // FantasyCalc: 10-team Superflex (numQbs=2) full PPR redraft values
     const FC_URL = "https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1";
     // ESPN pro team schedule/bye data: settings.proTeams[].byeWeek, keyed by proTeamId
@@ -1289,6 +1311,7 @@
     let waiverSearch = "";
     let waiverSort = "value";
     let waiverLoaded = false;
+    let playoffOddsLoaded = false;
 
     async function fetchWaiverPool() {
       const status = document.getElementById("waiver-status");
@@ -1524,6 +1547,7 @@
         );
         if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
         leagueData = await espnRes.json();
+        playoffOddsLoaded = false;
 
         fcByEspnId = {};
         fcByName = {};
@@ -2574,7 +2598,7 @@
         }
 
         const card = document.createElement("article");
-        card.className = "team-card collapsed";
+        card.className = "team-card";
         card.innerHTML =
           '<div class="team-header">' +
             '<div class="team-info"><h2>' + escapeHtml(name) + '</h2>' +
@@ -2587,21 +2611,6 @@
             "<tbody></tbody></table></div>";
 
         const tbody = card.querySelector("tbody");
-        const teamHeader = card.querySelector(".team-header");
-        teamHeader.setAttribute("role", "button");
-        teamHeader.setAttribute("tabindex", "0");
-        teamHeader.setAttribute("aria-expanded", "false");
-        const toggleTeam = () => {
-          card.classList.toggle("collapsed");
-          teamHeader.setAttribute("aria-expanded", String(!card.classList.contains("collapsed")));
-        };
-        teamHeader.onclick = toggleTeam;
-        teamHeader.onkeydown = (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggleTeam();
-          }
-        };
         for (const entry of entries) {
           const player = entry.playerPoolEntry?.player;
           if (!player) continue;
@@ -2747,6 +2756,137 @@
       });
     }
 
+    function playoffPercent(value, total) {
+      return ((value / total) * 100).toFixed(1) + "%";
+    }
+
+    function runPlayoffSimulations(data, scheduleData) {
+      const teams = data.teams || [];
+      const models = buildTeamModels(data);
+      const byId = {};
+      models.forEach((m) => { byId[String(m.id)] = m; });
+      const settings = (scheduleData.settings || data.settings || {}).scheduleSettings || {};
+      const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || 6);
+      const currentPeriod = Number(data.scoringPeriodId || 0);
+      const playoffStart = Number(settings.playoffMatchupPeriod || settings.playoffStartWeek || 15);
+      const schedule = (scheduleData.schedule || data.schedule || []).filter((game) => {
+        const period = Number(game.matchupPeriodId || game.week || 0);
+        return period > currentPeriod && period < playoffStart && game.home && game.away;
+      });
+      const gamesByPeriod = {};
+      schedule.forEach((game) => {
+        const period = Number(game.matchupPeriodId || game.week || 0);
+        if (!gamesByPeriod[period]) gamesByPeriod[period] = [];
+        gamesByPeriod[period].push(game);
+      });
+      const periods = Object.keys(gamesByPeriod).sort((a, b) => Number(a) - Number(b));
+      const strength = (team) => Math.max(1, team.ppg || team.rosterValue / 100);
+      const results = {};
+      models.forEach((team) => {
+        results[String(team.id)] = { playoff: 0, bye: 0, champion: 0, medianWins: [] };
+      });
+      const simulations = 5000;
+      const byeSlots = playoffCount >= 6 ? 2 : 0;
+      const pickWinner = (a, b) => {
+        const sa = strength(a);
+        const sb = strength(b);
+        return Math.random() < sa / (sa + sb) ? a : b;
+      };
+      const normal = () => {
+        let u = 0;
+        let v = 0;
+        while (!u) u = Math.random();
+        while (!v) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+      };
+
+      for (let sim = 0; sim < simulations; sim++) {
+        const standings = {};
+        models.forEach((team) => {
+          standings[String(team.id)] = { team, wins: team.wins || 0, medianWins: 0, points: 0 };
+        });
+        periods.forEach((period) => {
+          const scores = {};
+          models.forEach((team) => {
+            const base = strength(team);
+            scores[String(team.id)] = Math.max(0, base + normal() * base * 0.18);
+          });
+          gamesByPeriod[period].forEach((game) => {
+            const home = standings[String(game.home.teamId)];
+            const away = standings[String(game.away.teamId)];
+            if (!home || !away) return;
+            home.points += scores[String(home.team.id)] || 0;
+            away.points += scores[String(away.team.id)] || 0;
+            if ((scores[String(home.team.id)] || 0) >= (scores[String(away.team.id)] || 0)) home.wins++;
+            else away.wins++;
+          });
+          const orderedScores = models.map((team) => scores[String(team.id)] || 0).sort((a, b) => a - b);
+          const median = orderedScores[Math.floor(orderedScores.length / 2) - 1] + orderedScores[Math.floor(orderedScores.length / 2)];
+          const medianScore = median / 2;
+          models.forEach((team) => {
+            const row = standings[String(team.id)];
+            row.points += scores[String(team.id)] || 0;
+            if ((scores[String(team.id)] || 0) >= medianScore) {
+              row.wins++;
+              row.medianWins++;
+            }
+          });
+        });
+        const seeded = Object.values(standings).sort((a, b) => b.wins - a.wins || b.points - a.points);
+        const playoffTeams = seeded.slice(0, Math.min(playoffCount, seeded.length));
+        playoffTeams.forEach((row, index) => {
+          const result = results[String(row.team.id)];
+          result.playoff++;
+          if (index < byeSlots) result.bye++;
+          result.medianWins.push(row.medianWins);
+        });
+        const byeTeams = playoffTeams.slice(0, byeSlots);
+        let round = playoffTeams.slice(byeSlots);
+        const nextRound = [];
+        while (round.length > 1) {
+          for (let i = 0; i < round.length; i += 2) {
+            if (round[i + 1]) nextRound.push(pickWinner(round[i].team, round[i + 1].team));
+            else nextRound.push(round[i].team);
+          }
+          round = nextRound.splice(0);
+        }
+        const finalists = byeTeams.map((row) => row.team).concat(round);
+        let champion = finalists[0];
+        for (let i = 1; i < finalists.length; i++) champion = pickWinner(champion, finalists[i]);
+        if (champion) results[String(champion.id)].champion++;
+      }
+      return { results, teams: models, playoffCount, byeSlots, periods: periods.length, simulations };
+    }
+
+    async function setupPlayoffOdds() {
+      const status = document.getElementById("odds-status");
+      const body = document.getElementById("odds-body");
+      if (playoffOddsLoaded) return;
+      status.textContent = "Fetching ESPN schedule and league settings…";
+      try {
+        const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+        if (!response.ok) throw new Error("ESPN HTTP " + response.status);
+        const scheduleData = await response.json();
+        const simulation = runPlayoffSimulations(leagueData, scheduleData);
+        const total = simulation.simulations;
+        const rows = simulation.teams.slice().sort((a, b) => simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff);
+        body.innerHTML = rows.map((team) => {
+          const result = simulation.results[String(team.id)];
+          const median = result.medianWins.length ? result.medianWins.slice().sort((a, b) => a - b)[Math.floor(result.medianWins.length / 2)] : 0;
+          return "<tr><td class=\"odds-team\">" + escapeHtml(team.name) + "</td>" +
+            "<td>" + playoffPercent(result.playoff, total) + "</td>" +
+            "<td>" + playoffPercent(result.bye, total) + "</td>" +
+            "<td>" + playoffPercent(result.champion, total) + "</td>" +
+            "<td>" + median + "</td></tr>";
+        }).join("");
+        status.textContent = simulation.playoffCount + " playoff spots · " + simulation.byeSlots + " first-round byes · " + simulation.periods + " future matchup periods · " + total.toLocaleString() + " simulations · league median included";
+        playoffOddsLoaded = true;
+      } catch (error) {
+        console.error(error);
+        status.textContent = "Could not load ESPN schedule/settings. Try Refresh.";
+      }
+    }
+
     function applyTradeFilters() {
       const q = searchQuery.trim().toLowerCase();
       document.querySelectorAll("#board .roster-table tbody tr").forEach((tr) => {
@@ -2777,6 +2917,7 @@
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "waivers") setupWaiverWire();
+        if (btn.dataset.panel === "odds") setupPlayoffOdds();
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
