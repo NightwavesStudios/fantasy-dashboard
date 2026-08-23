@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trade Board — League 2039212076</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --surface: #12181f;
+      --surface-2: #1a222d;
+      --border: #2a3544;
+      --border-subtle: #1e2836;
+      --text: #e8eef5;
+      --text-secondary: #9aa8bc;
+      --text-muted: #6b7a90;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --definitely: #16a34a;
+      --definitely-bg: rgba(22, 163, 74, 0.12);
+      --definitely-border: rgba(22, 163, 74, 0.35);
+      --not-likely: #dc2626;
+      --not-likely-bg: rgba(220, 38, 38, 0.12);
+      --not-likely-border: rgba(220, 38, 38, 0.35);
+      --maybe: #ca8a04;
+      --maybe-bg: rgba(202, 138, 4, 0.1);
+      --maybe-border: rgba(202, 138, 4, 0.3);
+      --rank-1: #fbbf24;
+      --radius: 8px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(11, 15, 20, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.875rem 1.5rem;
+    }
+    .header-inner {
+      max-width: 1440px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; align-items: center;
+      justify-content: space-between; gap: 1rem;
+    }
+    .brand h1 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; }
+    .brand .meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-flex; align-items: center;
+      padding: 0.45rem 0.9rem; font-size: 0.8125rem; font-weight: 500;
+      font-family: inherit; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn:hover { background: #243040; border-color: #3a4a5c; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+    .status-pill {
+      font-size: 0.75rem; color: var(--text-secondary);
+      padding: 0.35rem 0.65rem; background: var(--surface);
+      border: 1px solid var(--border-subtle); border-radius: 999px;
+    }
+    .status-pill.error { color: #f87171; border-color: rgba(248,113,113,0.3); }
+
+    /* Tabs */
+    .tabs {
+      max-width: 1440px; margin: 0 auto;
+      padding: 0.75rem 1.5rem 0;
+      display: flex; gap: 0.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      padding: 0.6rem 1rem; font-size: 0.8125rem; font-weight: 500;
+      font-family: inherit; background: transparent; border: none;
+      color: var(--text-muted); cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .toolbar {
+      max-width: 1440px; margin: 0 auto;
+      padding: 1.25rem 1.5rem 0.75rem;
+      display: flex; flex-wrap: wrap; align-items: center;
+      justify-content: space-between; gap: 1rem;
+    }
+    .filters { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 0.4rem 0.85rem; font-size: 0.8125rem; font-weight: 500;
+      font-family: inherit; border-radius: 6px; border: 1px solid transparent;
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+    }
+    .filter-btn:hover { color: var(--text); background: var(--surface-2); }
+    .filter-btn.active { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+    .filter-btn .count { margin-left: 0.35rem; font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+
+    .search-wrap { position: relative; }
+    .search-wrap input {
+      width: 220px; padding: 0.45rem 0.75rem 0.45rem 2rem;
+      font-size: 0.8125rem; font-family: inherit;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); outline: none;
+    }
+    .search-wrap input::placeholder { color: var(--text-muted); }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap .icon {
+      position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; opacity: 0.45; pointer-events: none;
+    }
+
+    .legend {
+      max-width: 1440px; margin: 0 auto; padding: 0 1.5rem 1rem;
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+      font-size: 0.75rem; color: var(--text-secondary);
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .legend-swatch { width: 8px; height: 8px; border-radius: 2px; }
+    .legend-swatch.definitely { background: var(--definitely); }
+    .legend-swatch.not-likely { background: var(--not-likely); }
+    .legend-swatch.maybe { background: var(--maybe); }
+
+    .board {
+      max-width: 1440px; margin: 0 auto; padding: 0 1.5rem 2.5rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;
+    }
+
+    .team-card {
+      background: var(--surface); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); display: flex; flex-direction: column;
+    }
+    .team-header {
+      padding: 0.875rem 1rem; border-bottom: 1px solid var(--border-subtle);
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;
+    }
+    .team-info h2 { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
+    .team-info .owner { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .team-stats { text-align: right; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+    .team-stats .on-block { color: var(--definitely); font-weight: 500; }
+
+    .roster-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .roster-table thead { position: sticky; top: 0; background: var(--surface-2); z-index: 1; }
+    .roster-table th {
+      text-align: left; padding: 0.4rem 0.75rem; font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .roster-table th.col-status { text-align: right; padding-right: 1rem; }
+    .roster-body { max-height: 380px; overflow-y: auto; }
+    .roster-table td {
+      padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle;
+    }
+    .roster-table tr:last-child td { border-bottom: none; }
+    .roster-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .col-pos { width: 36px; color: var(--text-muted); font-weight: 600; font-size: 0.7rem; }
+    .col-name { font-weight: 500; }
+    .col-status { text-align: right; width: 88px; padding-right: 0.75rem !important; white-space: nowrap; }
+    .col-owned {
+      text-align: right; width: 52px; padding-right: 0.75rem !important;
+      font-size: 0.75rem; color: var(--text-muted); font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 600;
+      padding: 0.2rem 0.45rem; border-radius: 4px; letter-spacing: 0.02em;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .badge.definitely { background: var(--definitely-bg); color: #4ade80; border: 1px solid var(--definitely-border); }
+    .badge.not-likely { background: var(--not-likely-bg); color: #f87171; border: 1px solid var(--not-likely-border); }
+    .badge.maybe { background: var(--maybe-bg); color: #eab308; border: 1px solid var(--maybe-border); }
+    tr.status-definitely td { background: rgba(22,163,74,0.04); }
+    tr.status-not-likely td { background: rgba(220,38,38,0.03); }
+    tr.hidden { display: none; }
+
+    /* Power rankings */
+    .rankings-wrap {
+      max-width: 960px; margin: 0 auto; padding: 1.25rem 1.5rem 2.5rem;
+    }
+    .rankings-note {
+      font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;
+    }
+    .rank-table {
+      width: 100%; border-collapse: collapse; font-size: 0.875rem;
+      background: var(--surface); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .rank-table th {
+      text-align: left; padding: 0.65rem 1rem; font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);
+      background: var(--surface-2); border-bottom: 1px solid var(--border-subtle);
+    }
+    .rank-table th.num, .rank-table td.num { text-align: right; }
+    .rank-table td {
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle;
+    }
+    .rank-table tr:last-child td { border-bottom: none; }
+    .rank-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .rank-num {
+      font-weight: 700; font-size: 0.9375rem; width: 40px;
+      color: var(--text-secondary);
+    }
+    .rank-num.top { color: var(--rank-1); }
+    .rank-team { font-weight: 600; }
+    .rank-owner { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+    .score-bar-wrap {
+      display: flex; align-items: center; gap: 0.5rem; min-width: 120px;
+    }
+    .score-bar {
+      height: 6px; border-radius: 3px; background: var(--accent);
+      min-width: 4px;
+    }
+    .score-val { font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--text-secondary); width: 48px; text-align: right; }
+
+    /* Positional rankings */
+    .pos-grid {
+      max-width: 1440px; margin: 0 auto; padding: 1.25rem 1.5rem 2.5rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
+    }
+    .pos-card {
+      background: var(--surface); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .pos-card h3 {
+      font-size: 0.8125rem; font-weight: 600; padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-subtle); background: var(--surface-2);
+      letter-spacing: 0.02em;
+    }
+    .pos-list { list-style: none; }
+    .pos-list li {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.55rem 1rem; border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.8125rem;
+    }
+    .pos-list li:last-child { border-bottom: none; }
+    .pos-rank {
+      font-weight: 700; width: 22px; color: var(--text-muted); font-size: 0.75rem;
+    }
+    .pos-rank.top { color: var(--rank-1); }
+    .pos-team-name { flex: 1; font-weight: 500; min-width: 0; }
+    .pos-team-name .top-player {
+      display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 400;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pos-score { font-variant-numeric: tabular-nums; color: var(--text-secondary); font-size: 0.75rem; }
+
+    .app-footer {
+      max-width: 1440px; margin: 0 auto; padding: 1rem 1.5rem 2rem;
+      font-size: 0.7rem; color: var(--text-muted); text-align: center;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .roster-body::-webkit-scrollbar { width: 6px; }
+    .roster-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+
+    /* Combined power rankings list */
+    .power-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .power-row {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 0.85rem 1rem;
+    }
+    .power-row-top {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .power-rank {
+      font-weight: 700;
+      font-size: 1.125rem;
+      width: 2rem;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    .power-rank.top { color: var(--rank-1); }
+    .power-team {
+      flex: 1;
+      min-width: 0;
+    }
+    .power-team-name {
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+    .power-team-owner {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .power-team-meta {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 0.15rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .power-score-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+      min-width: 100px;
+    }
+    .power-score {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+    .power-bar {
+      width: 100px;
+      height: 5px;
+      background: var(--border-subtle);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .power-bar > span {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+    }
+    .pos-breakdown {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.35rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .pos-chip {
+      text-align: center;
+      padding: 0.35rem 0.25rem;
+      background: var(--surface-2);
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+    .pos-chip-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .pos-chip-rank {
+      font-size: 0.875rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin-top: 0.1rem;
+    }
+    .pos-chip-rank.best { color: var(--rank-1); }
+    .pos-chip-val {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 640px) {
+      .app-header { padding: 0.75rem 1rem; }
+      .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
+        padding-left: 1rem; padding-right: 1rem;
+      }
+      .header-inner { gap: 0.65rem; }
+      .brand h1 { font-size: 1rem; }
+      .search-wrap { width: 100%; }
+      .search-wrap input { width: 100%; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .filters { width: 100%; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+      .filter-btn { flex-shrink: 0; }
+      .board { grid-template-columns: 1fr; }
+      .team-header { flex-direction: column; gap: 0.35rem; }
+      .team-stats { text-align: left; }
+      .roster-body { max-height: none; }
+      .col-owned { width: 44px; font-size: 0.7rem; }
+      .pos-breakdown {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .power-score-wrap { min-width: 80px; }
+      .power-bar { width: 80px; }
+      .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .tab { flex-shrink: 0; }
+    }
+    @media (max-width: 380px) {
+      .pos-breakdown { grid-template-columns: repeat(2, 1fr); }
+      .power-row { padding: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <h1>League Tools</h1>
+        <div class="meta">League 2039212076 · 2026 Season</div>
+      </div>
+      <div class="header-actions">
+        <span class="status-pill" id="status">Loading…</span>
+        <button class="btn btn-primary" id="refreshBtn" type="button">Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-panel="trade" type="button">Trade Board</button>
+    <button class="tab" data-panel="power" type="button">Power Rankings</button>
+  </nav>
+
+  <!-- TRADE BOARD -->
+  <div class="panel active" id="panel-trade">
+    <div class="toolbar">
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="all" type="button">All <span class="count" id="count-all"></span></button>
+        <button class="filter-btn" data-filter="definitely" type="button">On the block <span class="count" id="count-definitely"></span></button>
+        <button class="filter-btn" data-filter="not-likely" type="button">Locked <span class="count" id="count-not-likely"></span></button>
+        <button class="filter-btn" data-filter="maybe" type="button">Unmarked <span class="count" id="count-maybe"></span></button>
+      </div>
+      <div class="search-wrap">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="search" id="search" placeholder="Search players…" autocomplete="off" />
+      </div>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch definitely"></span> On the block</span>
+      <span class="legend-item"><span class="legend-swatch not-likely"></span> Untouchable</span>
+      <span class="legend-item"><span class="legend-swatch maybe"></span> Unmarked</span>
+    </div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- POWER RANKINGS (includes positional breakdown) -->
+  <div class="panel" id="panel-power">
+    <div class="rankings-wrap">
+      <p class="rankings-note">
+        <strong>How these rankings work</strong><br>
+        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show how they rank at QB, RB, WR, and TE only.
+      </p>
+      <div id="power-list" class="power-list"></div>
+    </div>
+  </div>
+
+
+  <script>
+    const LEAGUE_ID = "2039212076";
+    const SEASON = 2026;
+    const API_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
+    // FantasyCalc: 10-team Superflex (numQbs=2) full PPR redraft values
+    const FC_URL = "https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1";
+
+    const POS_MAP = {
+      1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST"
+    };
+    const POSITIONS = ["QB", "RB", "WR", "TE"];  // skill only — no K/D/ST values from FantasyCalc
+
+    function mapTradeStatus(espnStatus) {
+      if (espnStatus === "ON_THE_BLOCK") return "definitely";
+      if (espnStatus === "UNTOUCHABLE") return "not-likely";
+      return "maybe";
+    }
+    function statusLabel(mark) {
+      if (mark === "definitely") return "On block";
+      if (mark === "not-likely") return "Locked";
+      return "—";
+    }
+
+    /** FantasyCalc value map: espnId string -> { value, overallRank, positionRank, name } */
+    let fcByEspnId = {};
+    let fcByName = {};
+
+    function normalizeName(n) {
+      return String(n || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+    }
+
+    function playerFcValue(player) {
+      const espnId = String(player.id);
+      if (fcByEspnId[espnId]) return fcByEspnId[espnId].value || 0;
+      const key = normalizeName(player.fullName);
+      if (fcByName[key]) return fcByName[key].value || 0;
+      return 0;
+    }
+
+    function playerFcMeta(player) {
+      const espnId = String(player.id);
+      if (fcByEspnId[espnId]) return fcByEspnId[espnId];
+      const key = normalizeName(player.fullName);
+      return fcByName[key] || null;
+    }
+
+    let currentFilter = "all";
+    let searchQuery = "";
+    let leagueData = null;
+
+    async function fetchLeague() {
+      const statusEl = document.getElementById("status");
+      statusEl.textContent = "Loading…";
+      statusEl.classList.remove("error");
+      try {
+        const [espnRes, fcRes] = await Promise.all([
+          fetch(API_URL, { credentials: "omit", headers: { Accept: "application/json" } }),
+          fetch(FC_URL, { headers: { Accept: "application/json" } })
+        ]);
+        if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
+        if (!fcRes.ok) throw new Error("FantasyCalc HTTP " + fcRes.status);
+
+        leagueData = await espnRes.json();
+        const fcList = await fcRes.json();
+
+        fcByEspnId = {};
+        fcByName = {};
+        for (const row of fcList || []) {
+          const p = row.player || {};
+          const meta = {
+            value: row.value || 0,
+            overallRank: row.overallRank,
+            positionRank: row.positionRank,
+            name: p.name
+          };
+          if (p.espnId != null) fcByEspnId[String(p.espnId)] = meta;
+          if (p.name) fcByName[normalizeName(p.name)] = meta;
+        }
+
+        renderAll(leagueData);
+        const counts = countStatuses(leagueData);
+        statusEl.textContent =
+          leagueData.teams.length + " teams · " +
+          counts.definitely + " on block · Week " +
+          (leagueData.scoringPeriodId || "—");
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Failed to load — try a local server if blocked";
+        statusEl.classList.add("error");
+      }
+    }
+
+    function countStatuses(data) {
+      const c = { all: 0, definitely: 0, "not-likely": 0, maybe: 0 };
+      for (const t of data.teams || []) {
+        const block = (t.tradeBlock && t.tradeBlock.players) || {};
+        for (const e of t.roster?.entries || []) {
+          const id = String(e.playerPoolEntry?.player?.id || "");
+          if (!id) continue;
+          c.all++;
+          c[mapTradeStatus(block[id] || null)]++;
+        }
+      }
+      return c;
+    }
+
+    function memberName(members, ownerId) {
+      if (!ownerId || !members) return "Unknown";
+      const m = members.find((x) => x.id === ownerId);
+      if (!m) return "Unknown";
+      return [m.firstName, m.lastName].filter(Boolean).join(" ") || m.displayName || "Unknown";
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function buildTeamModels(data) {
+      const members = data.members || [];
+      const scoringPeriod = data.scoringPeriodId || 1;
+
+      // Games completed = weeks fully scored. Before week 1 finishes, PPG weight is 0.
+      // ESPN pointsFor accumulates after games; use overall record.
+      return (data.teams || []).map((team) => {
+        const name = team.name || team.abbrev || "Team " + team.id;
+        const owner = memberName(members, team.primaryOwner);
+        const tradePlayers = (team.tradeBlock && team.tradeBlock.players) || {};
+        const byPos = {};
+        POSITIONS.forEach((p) => (byPos[p] = []));
+        let rosterValue = 0;
+        const entries = [];
+
+        for (const e of team.roster?.entries || []) {
+          const player = e.playerPoolEntry?.player;
+          if (!player) continue;
+          const pos = POS_MAP[player.defaultPositionId] || "?";
+          const val = playerFcValue(player);
+          const meta = playerFcMeta(player);
+          rosterValue += val;
+          const row = {
+            id: String(player.id),
+            name: player.fullName || "Unknown",
+            pos,
+            val,
+            rank: meta ? meta.overallRank : null,
+            trade: mapTradeStatus(tradePlayers[String(player.id)] || null)
+          };
+          entries.push(row);
+          if (byPos[pos]) byPos[pos].push(row);
+        }
+
+        POSITIONS.forEach((p) => byPos[p].sort((a, b) => b.val - a.val));
+
+        const posScores = {};
+        POSITIONS.forEach((p) => {
+          const take = p === "QB" ? 2 : 3;
+          posScores[p] = byPos[p].slice(0, take).reduce((s, x) => s + x.val, 0);
+        });
+
+        const overall = (team.record && team.record.overall) || {};
+        const wins = overall.wins || 0;
+        const losses = overall.losses || 0;
+        const ties = overall.ties || 0;
+        const gamesPlayed = wins + losses + ties;
+        const pointsFor = overall.pointsFor != null ? overall.pointsFor : (team.points || 0);
+        const ppg = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
+
+        return {
+          id: team.id,
+          name,
+          owner,
+          rosterValue,
+          ppg,
+          gamesPlayed,
+          pointsFor,
+          wins,
+          losses,
+          ties,
+          byPos,
+          posScores,
+          entries,
+          tradePlayers
+        };
+      });
+    }
+
+    /** Blend FantasyCalc roster value with on-field PPG once games have been played. */
+    function finalizePowerScores(models) {
+      const maxRoster = Math.max(...models.map((m) => m.rosterValue), 1);
+      const maxPpg = Math.max(...models.map((m) => m.ppg), 0);
+      const anyGames = models.some((m) => m.gamesPlayed > 0);
+
+      // Weight shifts toward PPG as the season progresses (more games = more trust in results)
+      // After 1 game ~15% PPG, after ~6 games ~50%, after 12+ ~70%
+      const avgGames = models.reduce((s, m) => s + m.gamesPlayed, 0) / Math.max(models.length, 1);
+      let ppgWeight = 0;
+      if (anyGames && maxPpg > 0) {
+        ppgWeight = Math.min(0.7, 0.12 + avgGames * 0.06);
+      }
+      const rosterWeight = 1 - ppgWeight;
+
+      return models.map((m) => {
+        const rosterNorm = (m.rosterValue / maxRoster) * 10000;
+        const ppgNorm = maxPpg > 0 ? (m.ppg / maxPpg) * 10000 : 0;
+        const totalScore = Math.round(rosterNorm * rosterWeight + ppgNorm * ppgWeight);
+        return Object.assign({}, m, {
+          totalScore,
+          rosterNorm: Math.round(rosterNorm),
+          ppgNorm: Math.round(ppgNorm),
+          ppgWeight,
+          rosterWeight
+        });
+      });
+    }
+
+    function renderAll(data) {
+      renderTradeBoard(data);
+      const models = finalizePowerScores(buildTeamModels(data));
+      renderPowerRankings(models);
+    }
+
+    function renderTradeBoard(data) {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+      const members = data.members || [];
+      const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+      const counts = countStatuses(data);
+      document.getElementById("count-all").textContent = counts.all;
+      document.getElementById("count-definitely").textContent = counts.definitely;
+      document.getElementById("count-not-likely").textContent = counts["not-likely"];
+      document.getElementById("count-maybe").textContent = counts.maybe;
+
+      for (const team of teams) {
+        const name = team.name || team.abbrev || "Team " + team.id;
+        const owner = memberName(members, team.primaryOwner);
+        const tradePlayers = (team.tradeBlock && team.tradeBlock.players) || {};
+        const entries = (team.roster?.entries || []).slice().sort((a, b) => {
+          const pa = a.playerPoolEntry?.player?.defaultPositionId || 99;
+          const pb = b.playerPoolEntry?.player?.defaultPositionId || 99;
+          return pa - pb;
+        });
+        let onBlockCount = 0;
+        for (const e of entries) {
+          const id = String(e.playerPoolEntry?.player?.id || "");
+          if (tradePlayers[id] === "ON_THE_BLOCK") onBlockCount++;
+        }
+
+        const card = document.createElement("article");
+        card.className = "team-card";
+        card.innerHTML =
+          '<div class="team-header">' +
+            '<div class="team-info"><h2>' + escapeHtml(name) + '</h2>' +
+            '<div class="owner">' + escapeHtml(owner) + '</div></div>' +
+            '<div class="team-stats">' + entries.length + " players" +
+            (onBlockCount ? '<div class="on-block">' + onBlockCount + " on block</div>" : "") +
+            "</div></div>" +
+          '<div class="roster-body"><table class="roster-table">' +
+            "<thead><tr><th class=\"col-pos\">Pos</th><th class=\"col-name\">Player</th><th class=\"col-owned\" title=\"ESPN % owned\">Own</th><th class=\"col-status\">Status</th></tr></thead>" +
+            "<tbody></tbody></table></div>";
+
+        const tbody = card.querySelector("tbody");
+        for (const entry of entries) {
+          const player = entry.playerPoolEntry?.player;
+          if (!player) continue;
+          const id = String(player.id);
+          const fullName = player.fullName || "Unknown";
+          const pos = POS_MAP[player.defaultPositionId] || "—";
+          const mark = mapTradeStatus(tradePlayers[id] || null);
+          const tr = document.createElement("tr");
+          tr.className = "status-" + mark;
+          tr.dataset.mark = mark;
+          tr.dataset.name = fullName.toLowerCase();
+          const owned = player.ownership && player.ownership.percentOwned != null
+            ? player.ownership.percentOwned
+            : null;
+          const ownedStr = owned != null ? (owned >= 10 ? Math.round(owned) + "%" : owned.toFixed(1) + "%") : "—";
+          tr.innerHTML =
+            '<td class="col-pos">' + pos + '</td>' +
+            '<td class="col-name">' + escapeHtml(fullName) + '</td>' +
+            '<td class="col-owned" title="' + (owned != null ? ("Rostered in " + owned.toFixed(1) + "% of ESPN leagues") : "") + '">' + ownedStr + '</td>' +
+            '<td class="col-status"><span class="badge ' + mark + '">' + statusLabel(mark) + '</span></td>';
+          tbody.appendChild(tr);
+        }
+        board.appendChild(card);
+      }
+      applyTradeFilters();
+    }
+
+    function renderPowerRankings(models) {
+      const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
+      const maxScore = sorted[0]?.totalScore || 1;
+
+      // Position rank for each team: lower is better
+      const posRankByTeam = {};
+      for (const pos of POSITIONS) {
+        const order = models
+          .slice()
+          .sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
+        order.forEach((t, i) => {
+          if (!posRankByTeam[t.id]) posRankByTeam[t.id] = {};
+          posRankByTeam[t.id][pos] = i + 1;
+        });
+      }
+
+      const list = document.getElementById("power-list");
+      list.innerHTML = "";
+      sorted.forEach((t, i) => {
+        const rank = i + 1;
+        const pct = Math.max(4, Math.round((t.totalScore / maxScore) * 100));
+        const ranks = posRankByTeam[t.id] || {};
+
+        const row = document.createElement("div");
+        row.className = "power-row";
+        let chips = "";
+        for (const pos of POSITIONS) {
+          const pr = ranks[pos] || "—";
+          const best = pr === 1 ? " best" : "";
+          const pscore = t.posScores[pos] || 0;
+          chips +=
+            '<div class="pos-chip">' +
+            '<div class="pos-chip-label">' + pos + "</div>" +
+            '<div class="pos-chip-rank' + best + '">#' + pr + "</div>" +
+            '<div class="pos-chip-val">' + pscore.toLocaleString() + "</div>" +
+            "</div>";
+        }
+        const recordStr = t.gamesPlayed > 0
+          ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
+          : "No games yet · roster value only";
+        const weightNote = t.gamesPlayed > 0
+          ? Math.round(t.ppgWeight * 100) + "% PPG / " + Math.round(t.rosterWeight * 100) + "% roster"
+          : "";
+
+        row.innerHTML =
+          '<div class="power-row-top">' +
+            '<div class="power-rank' + (rank <= 3 ? " top" : "") + '">' + rank + "</div>" +
+            '<div class="power-team">' +
+              '<div class="power-team-name">' + escapeHtml(t.name) + "</div>" +
+              '<div class="power-team-owner">' + escapeHtml(t.owner) +
+              (weightNote ? " · " + weightNote : "") + "</div>" +
+              '<div class="power-team-meta">' + recordStr + "</div>" +
+            "</div>" +
+            '<div class="power-score-wrap">' +
+              '<div class="power-score">' + t.totalScore.toLocaleString() + "</div>" +
+              '<div class="power-bar"><span style="width:' + pct + '%"></span></div>' +
+            "</div>" +
+          "</div>" +
+          '<div class="pos-breakdown">' + chips + "</div>";
+        list.appendChild(row);
+      });
+    }
+
+    function applyTradeFilters() {
+      const q = searchQuery.trim().toLowerCase();
+      document.querySelectorAll("#board .roster-table tbody tr").forEach((tr) => {
+        const mark = tr.dataset.mark || "maybe";
+        const name = tr.dataset.name || "";
+        const matchFilter = currentFilter === "all" || mark === currentFilter;
+        const matchSearch = !q || name.includes(q);
+        tr.classList.toggle("hidden", !(matchFilter && matchSearch));
+      });
+      document.querySelectorAll("#board .team-card").forEach((card) => {
+        const visible = card.querySelectorAll("tbody tr:not(.hidden)").length;
+        card.style.display = visible ? "" : "none";
+      });
+    }
+
+    // Tabs
+    document.getElementById("tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab");
+      if (!btn) return;
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.panel).classList.add("active");
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", fetchLeague);
+
+    document.getElementById("filters").addEventListener("click", (e) => {
+      const btn = e.target.closest(".filter-btn");
+      if (!btn) return;
+      document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+      applyTradeFilters();
+    });
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      applyTradeFilters();
+    });
+
+    fetchLeague();
+  </script>
+</body>
+</html>
