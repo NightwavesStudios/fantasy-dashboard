@@ -429,7 +429,7 @@
       <div class="filters" id="filters">
         <button class="filter-btn active" data-filter="all" type="button">All <span class="count" id="count-all"></span></button>
         <button class="filter-btn" data-filter="definitely" type="button">On the block <span class="count" id="count-definitely"></span></button>
-        <button class="filter-btn" data-filter="not-likely" type="button">Locked <span class="count" id="count-not-likely"></span></button>
+        <button class="filter-btn" data-filter="not-likely" type="button">Not likely <span class="count" id="count-not-likely"></span></button>
         <button class="filter-btn" data-filter="maybe" type="button">Unmarked <span class="count" id="count-maybe"></span></button>
       </div>
       <div class="search-wrap">
@@ -441,7 +441,7 @@
     </div>
     <div class="legend">
       <span class="legend-item"><span class="legend-swatch definitely"></span> On the block</span>
-      <span class="legend-item"><span class="legend-swatch not-likely"></span> Untouchable</span>
+      <span class="legend-item"><span class="legend-swatch not-likely"></span> Not likely</span>
       <span class="legend-item"><span class="legend-swatch maybe"></span> Unmarked</span>
     </div>
     <div class="board" id="board"></div>
@@ -478,7 +478,7 @@
     }
     function statusLabel(mark) {
       if (mark === "definitely") return "On block";
-      if (mark === "not-likely") return "Locked";
+      if (mark === "not-likely") return "Not likely";
       return "—";
     }
 
