@@ -488,6 +488,60 @@
     .calc-diff.favors-b { color: #f87171; border-color: rgba(248, 113, 113, 0.35); }
     .calc-diff.even { color: var(--text-secondary); }
 
+
+    .calc-impact {
+      margin-top: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .calc-impact-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+    .calc-impact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .calc-impact-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 0.75rem 0.85rem;
+    }
+    .calc-impact-card h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .calc-impact-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8125rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .calc-impact-row:last-child { border-bottom: none; }
+    .calc-impact-label { color: var(--text-secondary); }
+    .calc-impact-change {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .calc-impact-change.up { color: #4ade80; }
+    .calc-impact-change.down { color: #f87171; }
+    .calc-impact-change.same { color: var(--text-muted); }
+    .calc-impact-empty {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -515,6 +569,7 @@
       .calc-wrap { padding-left: 1rem; padding-right: 1rem; }
       .calc-grid { grid-template-columns: 1fr; }
       .calc-mid { padding-top: 0; flex-direction: row; justify-content: space-between; }
+      .calc-impact-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 380px) {
       .pos-breakdown { grid-template-columns: repeat(2, 1fr); }
@@ -603,6 +658,10 @@
           <div class="calc-players" id="calc-players-b"></div>
           <div class="calc-total" id="calc-total-b">0</div>
         </div>
+      </div>
+      <div class="calc-impact" id="calc-impact">
+        <div class="calc-impact-title">Ranking impact</div>
+        <div class="calc-impact-grid" id="calc-impact-grid"></div>
       </div>
     </div>
   </div>
@@ -838,9 +897,76 @@
 
     let calcSelected = { a: new Set(), b: new Set() };
 
+
+    function computeRankMaps(models) {
+      const scored = finalizePowerScores(models);
+      const byPower = scored.slice().sort((a, b) => b.totalScore - a.totalScore);
+      const powerRank = {};
+      byPower.forEach((t, i) => { powerRank[t.id] = i + 1; });
+      const posRank = {};
+      for (const pos of POSITIONS) {
+        const order = scored.slice().sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
+        order.forEach((t, i) => {
+          if (!posRank[t.id]) posRank[t.id] = {};
+          posRank[t.id][pos] = i + 1;
+        });
+      }
+      const byId = {};
+      scored.forEach((t) => { byId[t.id] = t; });
+      return { powerRank, posRank, byId, scored };
+    }
+
+    function modelsAfterTrade(baseModels, teamAId, teamBId, giveA, giveB, playerMeta) {
+      // Clone lightweight models and swap selected players between A and B
+      const clones = baseModels.map((m) => {
+        const entries = m.entries.map((e) => Object.assign({}, e));
+        return Object.assign({}, m, { entries: entries });
+      });
+      const a = clones.find((m) => String(m.id) === String(teamAId));
+      const b = clones.find((m) => String(m.id) === String(teamBId));
+      if (!a || !b) return clones;
+
+      const fromA = a.entries.filter((e) => giveA.has(e.id));
+      const fromB = b.entries.filter((e) => giveB.has(e.id));
+      a.entries = a.entries.filter((e) => !giveA.has(e.id)).concat(fromB.map((e) => Object.assign({}, e)));
+      b.entries = b.entries.filter((e) => !giveB.has(e.id)).concat(fromA.map((e) => Object.assign({}, e)));
+
+      function recompute(m) {
+        const byPos = {};
+        POSITIONS.forEach((p) => (byPos[p] = []));
+        let rosterValue = 0;
+        for (const e of m.entries) {
+          rosterValue += e.val || 0;
+          if (byPos[e.pos]) byPos[e.pos].push(e);
+        }
+        POSITIONS.forEach((p) => byPos[p].sort((x, y) => y.val - x.val));
+        const posScores = {};
+        POSITIONS.forEach((p) => {
+          const take = p === "QB" ? 2 : 3;
+          posScores[p] = byPos[p].slice(0, take).reduce((s, x) => s + x.val, 0);
+        });
+        m.rosterValue = rosterValue;
+        m.byPos = byPos;
+        m.posScores = posScores;
+      }
+      recompute(a);
+      recompute(b);
+      return clones;
+    }
+
+    function formatRankDelta(before, after) {
+      if (before == null || after == null) return { text: "—", cls: "same" };
+      const d = before - after; // positive = improved (lower rank number)
+      if (d === 0) return { text: "#" + after + " (same)", cls: "same" };
+      if (d > 0) return { text: "#" + before + " → #" + after + " (↑" + d + ")", cls: "up" };
+      return { text: "#" + before + " → #" + after + " (↓" + Math.abs(d) + ")", cls: "down" };
+    }
+
     function setupTradeCalculator(data) {
       const members = data.members || [];
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+      const baseModels = buildTeamModels(data);
+      const beforeRanks = computeRankMaps(baseModels);
 
       function fillSelect(sel, preferredId) {
         const prev = sel.value;
@@ -975,6 +1101,72 @@
         diffEl.textContent = label;
         diffEl.style.color = fairnessColor(total === 0 ? 0 : (absD < 80 && pct <= 0.08 ? 0 : pct));
         diffEl.style.borderColor = "transparent";
+
+        renderRankingImpact();
+      }
+
+      function renderRankingImpact() {
+        const grid = document.getElementById("calc-impact-grid");
+        const teamAId = selA.value;
+        const teamBId = selB.value;
+        const hasPicks = calcSelected.a.size > 0 || calcSelected.b.size > 0;
+
+        if (!hasPicks) {
+          grid.innerHTML = '<div class="calc-impact-empty">Select players on both sides to see how power and position ranks would shift.</div>';
+          return;
+        }
+        if (String(teamAId) === String(teamBId)) {
+          grid.innerHTML = '<div class="calc-impact-empty">Pick two different teams to simulate rank changes.</div>';
+          return;
+        }
+
+        const afterModels = modelsAfterTrade(
+          baseModels,
+          teamAId,
+          teamBId,
+          calcSelected.a,
+          calcSelected.b
+        );
+        const afterRanks = computeRankMaps(afterModels);
+
+        function card(teamId) {
+          const team = baseModels.find((m) => String(m.id) === String(teamId));
+          const name = team ? team.name : "Team";
+          const bp = beforeRanks.powerRank[teamId];
+          const ap = afterRanks.powerRank[Number(teamId)] != null
+            ? afterRanks.powerRank[Number(teamId)]
+            : afterRanks.powerRank[teamId];
+          // ids may be number vs string
+          function pr(map, id) {
+            if (map[id] != null) return map[id];
+            if (map[Number(id)] != null) return map[Number(id)];
+            if (map[String(id)] != null) return map[String(id)];
+            return null;
+          }
+          function posr(map, id, pos) {
+            const row = map[id] || map[Number(id)] || map[String(id)] || {};
+            return row[pos] != null ? row[pos] : null;
+          }
+
+          const power = formatRankDelta(pr(beforeRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
+          let rows =
+            '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
+            '<span class="calc-impact-change ' + power.cls + '">' + power.text + "</span></div>";
+          for (const pos of POSITIONS) {
+            const delta = formatRankDelta(
+              posr(beforeRanks.posRank, teamId, pos),
+              posr(afterRanks.posRank, teamId, pos)
+            );
+            rows +=
+              '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
+              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + "</span></div>";
+          }
+          return (
+            '<div class="calc-impact-card"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>"
+          );
+        }
+
+        grid.innerHTML = card(teamAId) + card(teamBId);
       }
 
       selA.onchange = () => {
