@@ -1808,8 +1808,8 @@
       if (before == null || after == null) return { text: "—", cls: "same" };
       const d = before - after; // positive = improved (lower rank number)
       if (d === 0) return { text: "#" + after + " (same)", cls: "same" };
-      if (d > 0) return { text: "#" + before + " → #" + after + " (↑" + d + ")", cls: "up" };
-      return { text: "#" + before + " → #" + after + " (↓" + Math.abs(d) + ")", cls: "down" };
+      if (d > 0) return { text: "#" + before + " → #" + after + " (↑" + d + ", +" + d + ")", cls: "up" };
+      return { text: "#" + before + " → #" + after + " (↓" + Math.abs(d) + ", " + d + ")", cls: "down" };
     }
 
     function setupTradeCalculator(data) {
