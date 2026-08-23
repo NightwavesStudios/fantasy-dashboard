@@ -595,6 +595,7 @@
     .suggestion strong { font-weight: 600; }
     .suggestion-meta { color: var(--text-muted); font-size: 0.7rem; margin-top: 0.2rem; }
     .suggestion-gain { color: #4ade80; font-weight: 600; }
+    .suggestion-load { margin-top: 0.5rem; font-size: 0.7rem; padding: 0.3rem 0.55rem; }
 
 
     .theme-toggle {
@@ -2724,25 +2725,51 @@
       const mine = models.find((model) => String(model.id) === String(team.id));
       const others = models.filter((model) => String(model.id) !== String(team.id));
       const ideas = [];
+      const packageOptions = (entries) => {
+        const options = entries.filter((entry) => entry.val > 0).sort((a, b) => b.val - a.val).slice(0, 12).map((entry) => [entry]);
+        for (let i = 0; i < Math.min(entries.length, 12); i++) {
+          for (let j = i + 1; j < Math.min(entries.length, 12); j++) options.push([entries[i], entries[j]]);
+        }
+        return options;
+      };
       for (const incomingTeam of others) {
         const mineNeeds = needsSurplusForTeam(ranks.posRank, mine.id, models.length).needs;
         const partnerNeeds = needsSurplusForTeam(ranks.posRank, incomingTeam.id, models.length).needs;
-        for (const incoming of incomingTeam.entries) {
-          for (const outgoing of mine.entries) {
-            if (!incoming.val || !outgoing.val || incoming.val <= outgoing.val) continue;
-            if (mineNeeds.indexOf(incoming.pos) < 0 || partnerNeeds.indexOf(outgoing.pos) < 0) continue;
-            const ratio = Math.max(incoming.val, outgoing.val) / Math.min(incoming.val, outgoing.val);
+        for (const incoming of packageOptions(incomingTeam.entries)) {
+          for (const outgoing of packageOptions(mine.entries)) {
+            const incomingValue = incoming.reduce((sum, entry) => sum + entry.val, 0);
+            const outgoingValue = outgoing.reduce((sum, entry) => sum + entry.val, 0);
+            if (!incomingValue || !outgoingValue) continue;
+            if (!incoming.some((entry) => mineNeeds.indexOf(entry.pos) >= 0) || !outgoing.some((entry) => partnerNeeds.indexOf(entry.pos) >= 0)) continue;
+            const ratio = Math.max(incomingValue, outgoingValue) / Math.min(incomingValue, outgoingValue);
             if (ratio > 1.15) continue;
-            ideas.push({ incoming, outgoing, team: incomingTeam, gain: incoming.val - outgoing.val });
+            ideas.push({ incoming, outgoing, team: incomingTeam, gain: incomingValue - outgoingValue });
           }
         }
       }
-      ideas.sort((a, b) => b.gain - a.gain);
-      const visible = ideas.slice(0, 8);
+      const uniqueIdeas = [...new Map(ideas.map((idea) => [idea.team.id + ":" + idea.incoming.map((entry) => entry.id).join(",") + ":" + idea.outgoing.map((entry) => entry.id).join(","), idea])).values()];
+      uniqueIdeas.sort((a, b) => Math.abs(a.gain) - Math.abs(b.gain));
+      const visible = uniqueIdeas.slice(0, 12);
       list.innerHTML = visible.length ? visible.map((idea) =>
-        '<div class="suggestion"><strong>Get ' + escapeHtml(idea.incoming.name) + '</strong> (' + idea.incoming.pos + ', ' + idea.incoming.val.toLocaleString() + ') for ' +
-        escapeHtml(idea.outgoing.name) + ' (' + idea.outgoing.pos + ', ' + idea.outgoing.val.toLocaleString() + ')<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) + ' · <span class="suggestion-gain">+' + idea.gain.toLocaleString() + ' value</span></div></div>'
+        '<div class="suggestion"><strong>Get ' + escapeHtml(idea.incoming.map((entry) => entry.name).join(" + ")) + '</strong> for ' +
+        escapeHtml(idea.outgoing.map((entry) => entry.name).join(" + ")) + '<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) + ' · <span class="suggestion-gain">' + (idea.gain >= 0 ? "+" : "") + idea.gain.toLocaleString() + ' value</span></div><button type="button" class="btn suggestion-load" data-suggestion="' + visible.indexOf(idea) + '">Load in calculator</button></div>'
       ).join("") : '<div class="suggestion-meta">No close-value upgrades found for this team.</div>';
+      list.onclick = (event) => {
+        const button = event.target.closest("[data-suggestion]");
+        if (!button) return;
+        const idea = visible[Number(button.dataset.suggestion)];
+        const calcTab = document.querySelector('.tab[data-panel="calc"]');
+        if (!idea || !calcTab) return;
+        calcTab.click();
+        const calcA = document.getElementById("calc-team-a");
+        const calcB = document.getElementById("calc-team-b");
+        calcA.value = String(team.id);
+        calcB.value = String(idea.team.id);
+        calcA.dispatchEvent(new Event("change"));
+        calcB.dispatchEvent(new Event("change"));
+        idea.outgoing.forEach((entry) => document.querySelector('#calc-players-a input[data-id="' + entry.id + '"]')?.click());
+        idea.incoming.forEach((entry) => document.querySelector('#calc-players-b input[data-id="' + entry.id + '"]')?.click());
+      };
       select.onchange = () => renderTradeSuggestions(data);
     }
 
@@ -2943,8 +2970,8 @@
         const nextRound = [];
         while (round.length > 1) {
           for (let i = 0; i < round.length; i += 2) {
-            if (round[i + 1]) nextRound.push(pickWinner(round[i].team, round[i + 1].team));
-            else nextRound.push(round[i].team);
+            if (round[i + 1]) nextRound.push(pickWinner(round[i].team || round[i], round[i + 1].team || round[i + 1]));
+            else nextRound.push(round[i].team || round[i]);
           }
           round = nextRound.splice(0);
         }
