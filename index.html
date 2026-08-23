@@ -585,6 +585,16 @@
     .odds-team { font-weight: 600; }
     .odds-muted { color: var(--text-muted); font-size: 0.75rem; }
     .odds-status { margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.8125rem; }
+    .suggestions-wrap { max-width: 1440px; margin: 0 auto 1rem; padding: 1rem 1.5rem; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); }
+    .suggestions-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+    .suggestions-header h2 { font-size: 0.9375rem; }
+    .suggestions-header p { color: var(--text-muted); font-size: 0.75rem; }
+    .suggestions-header select { width: min(260px, 100%); }
+    .suggestions-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.6rem; }
+    .suggestion { padding: 0.65rem 0.75rem; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-2); font-size: 0.8125rem; }
+    .suggestion strong { font-weight: 600; }
+    .suggestion-meta { color: var(--text-muted); font-size: 0.7rem; margin-top: 0.2rem; }
+    .suggestion-gain { color: #4ade80; font-weight: 600; }
 
 
     .theme-toggle {
@@ -1003,6 +1013,8 @@
       .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       .tab { flex-shrink: 0; }
       .calc-wrap { padding-left: 1rem; padding-right: 1rem; }
+      .suggestions-wrap { margin-left: 1rem; margin-right: 1rem; padding-left: 1rem; padding-right: 1rem; }
+      .suggestions-header { align-items: stretch; flex-direction: column; }
       .calc-grid { grid-template-columns: 1fr; }
       .calc-mid { padding-top: 0; flex-direction: row; justify-content: space-between; }
       .calc-impact-grid { grid-template-columns: 1fr; }
@@ -1074,6 +1086,16 @@
       <span class="legend-item"><span class="legend-swatch maybe"></span> Unmarked</span>
       <span class="legend-item"><span class="need-tag need">Need</span> Weak position rank</span>
       <span class="legend-item"><span class="need-tag surplus">Surplus</span> Strong position rank</span>
+    </div>
+    <div class="suggestions-wrap">
+      <div class="suggestions-header">
+        <div>
+          <h2>Suggested trades</h2>
+          <p>Fair swaps that improve your selected team.</p>
+        </div>
+        <select id="suggest-team" class="calc-team-select" title="Choose a team to generate trade suggestions"></select>
+      </div>
+      <div id="suggestions-list" class="suggestions-list"></div>
     </div>
     <div class="board" id="board"></div>
   </div>
@@ -2572,6 +2594,7 @@
       const models = finalizePowerScores(buildTeamModels(data));
       const rankMaps = computeRankMaps(models);
       const teamCount = teams.length || 10;
+      renderTradeSuggestions(data);
 
       for (const team of teams) {
         const name = team.name || team.abbrev || "Team " + team.id;
@@ -2650,6 +2673,44 @@
       applyTradeFilters();
     }
 
+    function renderTradeSuggestions(data) {
+      const select = document.getElementById("suggest-team");
+      const list = document.getElementById("suggestions-list");
+      if (!select || !list) return;
+      const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+      const previous = select.value;
+      select.innerHTML = '<option value="">Select team…</option>' + teams.map((team) =>
+        '<option value="' + team.id + '">' + escapeHtml(team.name || team.abbrev || "Team " + team.id) + "</option>"
+      ).join("");
+      select.value = teams.some((team) => String(team.id) === previous) ? previous : String(teams[0]?.id || "");
+      const team = teams.find((item) => String(item.id) === select.value);
+      if (!team) {
+        list.innerHTML = '<div class="suggestion-meta">Choose a team to see trade ideas.</div>';
+        return;
+      }
+      const models = buildTeamModels(data);
+      const mine = models.find((model) => String(model.id) === String(team.id));
+      const others = models.filter((model) => String(model.id) !== String(team.id));
+      const ideas = [];
+      for (const incomingTeam of others) {
+        for (const incoming of incomingTeam.entries) {
+          for (const outgoing of mine.entries) {
+            if (!incoming.val || !outgoing.val || incoming.val <= outgoing.val) continue;
+            const ratio = incoming.val / outgoing.val;
+            if (ratio > 1.35) continue;
+            ideas.push({ incoming, outgoing, team: incomingTeam, gain: incoming.val - outgoing.val });
+          }
+        }
+      }
+      ideas.sort((a, b) => b.gain - a.gain);
+      const visible = ideas.slice(0, 8);
+      list.innerHTML = visible.length ? visible.map((idea) =>
+        '<div class="suggestion"><strong>Get ' + escapeHtml(idea.incoming.name) + '</strong> (' + idea.incoming.pos + ', ' + idea.incoming.val.toLocaleString() + ') for ' +
+        escapeHtml(idea.outgoing.name) + ' (' + idea.outgoing.pos + ', ' + idea.outgoing.val.toLocaleString() + ')<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) + ' · <span class="suggestion-gain">+' + idea.gain.toLocaleString() + ' value</span></div></div>'
+      ).join("") : '<div class="suggestion-meta">No close-value upgrades found for this team.</div>';
+      select.onchange = () => renderTradeSuggestions(data);
+    }
+
     
     /** Color for position rank: #1 gold, then green → neutral → red for worst. */
     function rankColor(rank, teamCount) {
@@ -2699,10 +2760,10 @@
         const ranks = posRankByTeam[t.id] || {};
 
         const row = document.createElement("div");
-        row.className = "power-row collapsed";
+        row.className = "power-row";
         row.setAttribute("role", "button");
         row.setAttribute("tabindex", "0");
-        row.setAttribute("aria-expanded", "false");
+        row.setAttribute("aria-expanded", "true");
         const togglePower = () => {
           row.classList.toggle("collapsed");
           row.setAttribute("aria-expanded", String(!row.classList.contains("collapsed")));
@@ -2864,9 +2925,10 @@
       if (playoffOddsLoaded) return;
       status.textContent = "Fetching ESPN schedule and league settings…";
       try {
+        let scheduleData = leagueData;
         const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
-        if (!response.ok) throw new Error("ESPN HTTP " + response.status);
-        const scheduleData = await response.json();
+        if (response.ok) scheduleData = await response.json();
+        else console.warn("Optional ESPN schedule view unavailable", response.status);
         const simulation = runPlayoffSimulations(leagueData, scheduleData);
         const total = simulation.simulations;
         const rows = simulation.teams.slice().sort((a, b) => simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff);
@@ -2879,7 +2941,7 @@
             "<td>" + playoffPercent(result.champion, total) + "</td>" +
             "<td>" + median + "</td></tr>";
         }).join("");
-        status.textContent = simulation.playoffCount + " playoff spots · " + simulation.byeSlots + " first-round byes · " + simulation.periods + " future matchup periods · " + total.toLocaleString() + " simulations · league median included";
+        status.textContent = simulation.playoffCount + " playoff spots · " + simulation.byeSlots + " first-round byes · " + simulation.periods + " future matchup periods · " + total.toLocaleString() + " simulations · league median included" + (simulation.periods ? "" : " · ESPN has no future schedule yet");
         playoffOddsLoaded = true;
       } catch (error) {
         console.error(error);
