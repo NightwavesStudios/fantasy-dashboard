@@ -752,6 +752,47 @@
       color: #60a5fa;
       border: 1px solid rgba(59, 130, 246, 0.3);
     }
+    .bye-badge {
+      display: inline-block;
+      margin-left: 0.35rem;
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      vertical-align: middle;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .bye-badge.bye-this-week {
+      background: rgba(202, 138, 4, 0.15);
+      color: #eab308;
+      border: 1px solid rgba(202, 138, 4, 0.35);
+    }
+    .col-bye, .w-bye {
+      text-align: right;
+      width: 52px;
+      padding-right: 0.75rem !important;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .waiver-table th.w-bye { text-align: right; }
+    .col-bye.bye-this-week, .w-bye.bye-this-week {
+      color: #eab308;
+      font-weight: 700;
+    }
+    .calc-player-bye {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      width: 34px;
+      text-align: right;
+      flex-shrink: 0;
+    }
     .team-needs {
       margin-top: 0.35rem;
       font-size: 0.7rem;
@@ -933,6 +974,7 @@
       .team-stats { text-align: left; }
       .roster-body { max-height: none; }
       .col-owned { width: 44px; font-size: 0.7rem; }
+      .col-bye { width: 38px; font-size: 0.7rem; }
       .pos-breakdown {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -986,13 +1028,13 @@
           <button class="filter-btn" data-filter="maybe" type="button" title="Players with no trade-block status set on ESPN">Unmarked <span class="count" id="count-maybe"></span></button>
         </div>
         <div class="pos-filters" id="pos-filters">
-          <button class="filter-btn active" data-pos="all" type="button" title="All positions">Pos</button>
-          <button class="filter-btn" data-pos="QB" type="button">QB</button>
-          <button class="filter-btn" data-pos="RB" type="button">RB</button>
-          <button class="filter-btn" data-pos="WR" type="button">WR</button>
-          <button class="filter-btn" data-pos="TE" type="button">TE</button>
-          <button class="filter-btn" data-pos="K" type="button">K</button>
-          <button class="filter-btn" data-pos="D/ST" type="button">D/ST</button>
+          <button class="filter-btn active" data-pos="all" type="button" title="Show every position">Pos</button>
+          <button class="filter-btn" data-pos="QB" type="button" title="Quarterbacks only">QB</button>
+          <button class="filter-btn" data-pos="RB" type="button" title="Running backs only">RB</button>
+          <button class="filter-btn" data-pos="WR" type="button" title="Wide receivers only">WR</button>
+          <button class="filter-btn" data-pos="TE" type="button" title="Tight ends only">TE</button>
+          <button class="filter-btn" data-pos="K" type="button" title="Kickers only">K</button>
+          <button class="filter-btn" data-pos="D/ST" type="button" title="Defense/special teams only">D/ST</button>
         </div>
         <label class="inj-filter" title="Only show players with an ESPN injury designation">
           <input type="checkbox" id="injured-only" /> Injured
@@ -1052,7 +1094,7 @@
             <div class="calc-drops-title" id="calc-drops-title-a">Drops required</div>
             <div class="calc-drops-list" id="calc-drops-list-a"></div>
           </div>
-          <div class="calc-total" id="calc-total-a">0</div>
+          <div class="calc-total" id="calc-total-a" title="Total FantasyCalc value of the players checked on this side">0</div>
         </div>
         <div class="calc-mid">
           <div class="calc-diff" id="calc-diff">Even</div>
@@ -1073,7 +1115,7 @@
             <div class="calc-drops-title" id="calc-drops-title-b">Drops required</div>
             <div class="calc-drops-list" id="calc-drops-list-b"></div>
           </div>
-          <div class="calc-total" id="calc-total-b">0</div>
+          <div class="calc-total" id="calc-total-b" title="Total FantasyCalc value of the players checked on this side">0</div>
         </div>
       </div>
       <div class="calc-impact" id="calc-impact">
@@ -1097,13 +1139,13 @@
             <select id="waiver-team" class="calc-team-select" title="Highlights free agents at positions you need"></select>
           </label>
           <div class="pos-filters" id="waiver-pos-filters">
-            <button class="filter-btn active" data-wpos="all" type="button">All</button>
-            <button class="filter-btn" data-wpos="QB" type="button">QB</button>
-            <button class="filter-btn" data-wpos="RB" type="button">RB</button>
-            <button class="filter-btn" data-wpos="WR" type="button">WR</button>
-            <button class="filter-btn" data-wpos="TE" type="button">TE</button>
-            <button class="filter-btn" data-wpos="K" type="button">K</button>
-            <button class="filter-btn" data-wpos="D/ST" type="button">D/ST</button>
+            <button class="filter-btn active" data-wpos="all" type="button" title="Show free agents at every position">All</button>
+            <button class="filter-btn" data-wpos="QB" type="button" title="Quarterbacks only">QB</button>
+            <button class="filter-btn" data-wpos="RB" type="button" title="Running backs only">RB</button>
+            <button class="filter-btn" data-wpos="WR" type="button" title="Wide receivers only">WR</button>
+            <button class="filter-btn" data-wpos="TE" type="button" title="Tight ends only">TE</button>
+            <button class="filter-btn" data-wpos="K" type="button" title="Kickers only">K</button>
+            <button class="filter-btn" data-wpos="D/ST" type="button" title="Defense/special teams only">D/ST</button>
           </div>
           <label class="inj-filter" title="Only injured free agents">
             <input type="checkbox" id="waiver-injured" /> Injured
@@ -1117,10 +1159,10 @@
         </div>
         <div class="waiver-toolbar-row">
           <div class="search-wrap">
-            <input type="search" id="waiver-search" placeholder="Search free agents…" autocomplete="off" />
+            <input type="search" id="waiver-search" title="Filter the free agent list by player name" placeholder="Search free agents…" autocomplete="off" />
           </div>
           <label class="waiver-label">Sort
-            <select id="waiver-sort" class="calc-team-select">
+            <select id="waiver-sort" class="calc-team-select" title="Choose how the free agent list below is ordered">
               <option value="value">FantasyCalc value</option>
               <option value="owned">% owned</option>
               <option value="trending">% owned change</option>
@@ -1135,14 +1177,15 @@
         <table class="waiver-table" id="waiver-table">
           <thead>
             <tr>
-              <th class="w-rank">#</th>
-              <th class="w-pos">Pos</th>
-              <th class="w-name">Player</th>
-              <th class="w-val">Value</th>
-              <th class="w-own">Own%</th>
-              <th class="w-chg">Δ%</th>
-              <th class="w-status">Avail</th>
-              <th class="w-fit">Fit</th>
+              <th class="w-rank" title="Rank within the current filtered/sorted list">#</th>
+              <th class="w-pos" title="Roster position">Pos</th>
+              <th class="w-name" title="Player name. A colored badge means an ESPN injury designation">Player</th>
+              <th class="w-bye" title="NFL bye week for this player's team. Highlighted if it's the current week">Bye</th>
+              <th class="w-val" title="FantasyCalc trade value (10-team Superflex PPR). Higher is more valuable">Value</th>
+              <th class="w-own" title="Percent of ESPN leagues rostering this player right now">Own%</th>
+              <th class="w-chg" title="Change in percent-owned recently — a rough measure of add/drop trends">Δ%</th>
+              <th class="w-status" title="Free Agent = pick up any time. Waivers = subject to your league's waiver process/priority">Avail</th>
+              <th class="w-fit" title="Marked when this player's position matches a Need for the team selected above">Fit</th>
             </tr>
           </thead>
           <tbody id="waiver-body"></tbody>
@@ -1177,10 +1220,51 @@
     const API_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
     // FantasyCalc: 10-team Superflex (numQbs=2) full PPR redraft values
     const FC_URL = "https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1";
+    // ESPN pro team schedule/bye data: settings.proTeams[].byeWeek, keyed by proTeamId
+    const PRO_TEAM_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
 
     const POS_MAP = {
       1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST"
     };
+
+    /** proTeamId -> bye week number (from ESPN). */
+    let byeByProTeam = {};
+
+    async function fetchByeWeeks() {
+      try {
+        const res = await fetchWithTimeout(
+          PRO_TEAM_URL,
+          { credentials: "omit", headers: { Accept: "application/json" } },
+          15000
+        );
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const proTeams = (data.settings && data.settings.proTeams) || [];
+        const map = {};
+        for (const pt of proTeams) {
+          if (pt && pt.id != null && pt.byeWeek) map[pt.id] = pt.byeWeek;
+        }
+        byeByProTeam = map;
+      } catch (err) {
+        console.warn("Bye weeks unavailable", err);
+        byeByProTeam = {};
+      }
+    }
+
+    /** Bye week number for a raw ESPN player object, or null if unknown. */
+    function getByeWeek(player) {
+      if (!player || player.proTeamId == null) return null;
+      const w = byeByProTeam[player.proTeamId];
+      return w || null;
+    }
+
+    /** Small HTML badge for a bye week; highlights if it matches the current scoring period. */
+    function byeBadgeHtml(bye, currentWeek) {
+      if (!bye) return "";
+      const isNow = currentWeek && Number(bye) === Number(currentWeek);
+      return '<span class="bye-badge' + (isNow ? " bye-this-week" : "") + '" title="Bye week ' + bye +
+        (isNow ? " · on bye this week, won\u2019t score" : "") + '">Bye ' + bye + "</span>";
+    }
     const POSITIONS = ["QB", "RB", "WR", "TE", "BN"];  // BN = bench/IR depth; no K/D/ST
     const MAX_ROSTER = 16; // 8 starters + 6 bench + 2 IR
 
@@ -1230,7 +1314,8 @@
             percentOwned: own.percentOwned != null ? own.percentOwned : 0,
             percentChange: own.percentChange != null ? own.percentChange : 0,
             status: row.status || "FREEAGENT",
-            injury: injuryLabel(p)
+            injury: injuryLabel(p),
+            bye: getByeWeek(p)
           };
         });
         waiverLoaded = true;
@@ -1295,7 +1380,7 @@
       });
 
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="waiver-empty">No players match these filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="waiver-empty">No players match these filters.</td></tr>';
         return;
       }
 
@@ -1310,17 +1395,28 @@
         const avail = r.status === "WAIVERS" ? "Waivers" : "FA";
         const availCls = r.status === "WAIVERS" ? "waivers" : "fa";
         const inj = r.injury
-          ? '<span class="inj-badge ' + r.injury.cls + '">' + r.injury.text + "</span>"
+          ? '<span class="inj-badge ' + r.injury.cls + '" title="ESPN injury designation">' + r.injury.text + "</span>"
           : "";
+        const currentWeek = leagueData && leagueData.scoringPeriodId;
+        const onByeNow = r.bye && Number(r.bye) === Number(currentWeek);
+        const byeTitle = r.bye
+          ? "Bye week " + r.bye + (onByeNow ? " · on bye this week, won\u2019t score" : "")
+          : "Bye week unavailable";
+        const chgTitle = chg > 0
+          ? "Ownership up " + chgStr + " recently — trending toward being added"
+          : chg < 0
+          ? "Ownership down " + chgStr + " recently — trending toward being dropped"
+          : "Ownership roughly flat recently";
         tr.innerHTML =
           '<td class="w-rank">' + (i + 1) + "</td>" +
-          '<td class="w-pos">' + r.pos + "</td>" +
+          '<td class="w-pos" title="Position">' + r.pos + "</td>" +
           '<td class="w-name">' + escapeHtml(r.name) + inj + "</td>" +
-          '<td class="w-val">' + (r.val ? r.val.toLocaleString() : "—") + "</td>" +
-          '<td class="w-own">' + r.percentOwned.toFixed(1) + "%</td>" +
-          '<td class="w-chg ' + chgCls + '">' + chgStr + "</td>" +
-          '<td class="w-status ' + availCls + '">' + avail + "</td>" +
-          '<td class="w-fit">' + (fits ? '<span class="fit-tag">Need ' + r.pos + "</span>" : "—") + "</td>";
+          '<td class="w-bye' + (onByeNow ? " bye-this-week" : "") + '" title="' + byeTitle + '">' + (r.bye || "—") + "</td>" +
+          '<td class="w-val" title="FantasyCalc trade value">' + (r.val ? r.val.toLocaleString() : "—") + "</td>" +
+          '<td class="w-own" title="Percent of ESPN leagues rostering this player">' + r.percentOwned.toFixed(1) + "%</td>" +
+          '<td class="w-chg ' + chgCls + '" title="' + chgTitle + '">' + chgStr + "</td>" +
+          '<td class="w-status ' + availCls + '" title="' + (r.status === "WAIVERS" ? "On waivers — subject to your league's claim process" : "Free agent — add any time") + '">' + avail + "</td>" +
+          '<td class="w-fit">' + (fits ? '<span class="fit-tag" title="Matches a roster need for the selected team">Need ' + r.pos + "</span>" : "—") + "</td>";
         tbody.appendChild(tr);
       });
     }
@@ -1424,6 +1520,8 @@
           console.warn("FantasyCalc values unavailable", fcErr);
         }
 
+        await fetchByeWeeks();
+
         const counts = countStatuses(leagueData);
         statusEl.textContent =
           leagueData.teams.length + " teams · " +
@@ -1526,7 +1624,8 @@
             val,
             rank: meta ? meta.overallRank : null,
             trade: mapTradeStatus(tradePlayers[String(player.id)] || null),
-            slot: e.lineupSlotId
+            slot: e.lineupSlotId,
+            bye: getByeWeek(player)
           };
           entries.push(row);
           if (byPos[pos]) byPos[pos].push(row);
@@ -1743,7 +1842,8 @@
               val: playerFcValue(player),
               onBlock: block[id] === "ON_THE_BLOCK",
               notLikely: block[id] === "UNTOUCHABLE",
-              injury: inj
+              injury: inj,
+              bye: getByeWeek(player)
             });
           }
           map[tid] = rows;
@@ -1962,6 +2062,8 @@
           metaEl.textContent =
             fullRoster.length + " players" +
             (onBlock ? " · " + onBlock + " on block" : "");
+          metaEl.title = "Roster max is " + MAX_ROSTER + " players" +
+            (onBlock ? "; " + onBlock + " marked available for trade on ESPN" : "");
         }
         if (needsEl) {
           const rankMaps = computeRankMaps(modelsFromRosters(workingRosters));
@@ -1985,11 +2087,12 @@
             (r.notLikely ? " not-likely-player" : "");
           div.innerHTML =
             '<input type="checkbox" ' + (checked ? "checked " : "") + 'data-id="' + r.id + '" data-side="' + side + '"/>' +
-            '<span class="calc-player-pos">' + r.pos + "</span>" +
+            '<span class="calc-player-pos" title="Position">' + r.pos + "</span>" +
             '<span class="calc-player-name">' + escapeHtml(r.name) +
             (r.injury ? '<span class="inj-badge ' + r.injury.cls + '">' + r.injury.text + "</span>" : "") +
+            byeBadgeHtml(r.bye, leagueData && leagueData.scoringPeriodId) +
             "</span>" +
-            '<span class="calc-player-val">' + (r.val ? r.val.toLocaleString() : "—") + "</span>";
+            '<span class="calc-player-val" title="FantasyCalc trade value">' + (r.val ? r.val.toLocaleString() : "—") + "</span>";
           list.appendChild(div);
         }
         updateCalcTotals();
@@ -2050,6 +2153,10 @@
         diffEl.textContent = label;
         diffEl.style.color = fairnessColor(total === 0 ? 0 : (absD < 80 && pct <= 0.08 ? 0 : pct));
         diffEl.style.borderColor = "transparent";
+        diffEl.title = total === 0
+          ? "Check boxes on each side to compare FantasyCalc value"
+          : "Side A total minus Side B total is " + (d >= 0 ? "+" : "") + d.toLocaleString() +
+            " (" + Math.round(pct * 100) + "% of the average side value)";
 
         const needA = renderDrops("a");
         const needB = renderDrops("b");
@@ -2406,11 +2513,11 @@
           '<div class="team-header">' +
             '<div class="team-info"><h2>' + escapeHtml(name) + '</h2>' +
             '<div class="owner">' + escapeHtml(owner) + '</div>' + nsHtml + '</div>' +
-            '<div class="team-stats">' + entries.length + " players" +
+            '<div class="team-stats" title="' + entries.length + ' of ' + MAX_ROSTER + ' roster spots filled' + (onBlockCount ? "; " + onBlockCount + " player" + (onBlockCount === 1 ? "" : "s") + " marked available for trade" : "") + '">' + entries.length + " players" +
             (onBlockCount ? '<div class="on-block">' + onBlockCount + " on block</div>" : "") +
             "</div></div>" +
           '<div class="roster-body"><table class="roster-table">' +
-            "<thead><tr><th class=\"col-pos\">Pos</th><th class=\"col-name\">Player</th><th class=\"col-owned\" title=\"ESPN % owned\">Own</th><th class=\"col-status\">Status</th></tr></thead>" +
+            "<thead><tr><th class=\"col-pos\" title=\"Roster position\">Pos</th><th class=\"col-name\" title=\"Player name. A colored badge means an ESPN injury designation; a Bye badge shows the player's bye week\">Player</th><th class=\"col-bye\" title=\"NFL bye week for this player's team. Highlighted if it's the current week\">Bye</th><th class=\"col-owned\" title=\"Percent of ESPN leagues rostering this player\">Own</th><th class=\"col-status\" title=\"This owner's ESPN trade-block status for this player\">Status</th></tr></thead>" +
             "<tbody></tbody></table></div>";
 
         const tbody = card.querySelector("tbody");
@@ -2422,6 +2529,8 @@
           const pos = POS_MAP[player.defaultPositionId] || "—";
           const mark = mapTradeStatus(tradePlayers[id] || null);
           const inj = injuryLabel(player);
+          const bye = getByeWeek(player);
+          const currentWeek = data.scoringPeriodId;
           const tr = document.createElement("tr");
           tr.className = "status-" + mark;
           tr.dataset.mark = mark;
@@ -2435,11 +2544,15 @@
           const injHtml = inj
             ? '<span class="inj-badge ' + inj.cls + '" title="' + escapeHtml(player.injuryStatus || inj.text) + '">' + inj.text + "</span>"
             : "";
+          const byeCellTitle = bye
+            ? "Bye week " + bye + (Number(bye) === Number(currentWeek) ? " · on bye this week" : "")
+            : "Bye week unavailable";
           tr.innerHTML =
             '<td class="col-pos">' + pos + '</td>' +
             '<td class="col-name">' + escapeHtml(fullName) + injHtml + '</td>' +
+            '<td class="col-bye' + (bye && Number(bye) === Number(currentWeek) ? ' bye-this-week' : '') + '" title="' + byeCellTitle + '">' + (bye || "—") + '</td>' +
             '<td class="col-owned" title="' + (owned != null ? ("Rostered in " + owned.toFixed(1) + "% of ESPN leagues") : "") + '">' + ownedStr + '</td>' +
-            '<td class="col-status"><span class="badge ' + mark + '">' + statusLabel(mark) + '</span></td>';
+            '<td class="col-status" title="' + escapeHtml(statusLabel(mark)) + '"><span class="badge ' + mark + '">' + statusLabel(mark) + '</span></td>';
           tbody.appendChild(tr);
         }
         board.appendChild(card);
@@ -2503,8 +2616,11 @@
           const pr = ranks[pos] || null;
           const pscore = t.posScores[pos] || 0;
           const color = rankColor(pr, teamCount);
+          const chipTip = pos === "BN"
+            ? "Bench depth rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of the bench: " + pscore.toLocaleString()
+            : pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of top " + (pos === "QB" ? "2" : "3") + " " + pos + "s: " + pscore.toLocaleString();
           chips +=
-            '<div class="pos-chip">' +
+            '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
             '<div class="pos-chip-label">' + pos + "</div>" +
             '<div class="pos-chip-rank" style="color:' + color + '">#' + (pr != null ? pr : "—") + "</div>" +
             '<div class="pos-chip-val">' + pscore.toLocaleString() + "</div>" +
@@ -2524,9 +2640,9 @@
               '<div class="power-team-name">' + escapeHtml(t.name) + "</div>" +
               '<div class="power-team-owner">' + escapeHtml(t.owner) +
               (weightNote ? " · " + weightNote : "") + "</div>" +
-              '<div class="power-team-meta">' + recordStr + "</div>" +
+              '<div class="power-team-meta" title="' + (t.gamesPlayed > 0 ? "Season record and points-per-game from ESPN" : "No games scored yet, so ranking is roster value only") + '">' + recordStr + "</div>" +
             "</div>" +
-            '<div class="power-score-wrap">' +
+            '<div class="power-score-wrap" title="Composite score out of 10,000, blending FantasyCalc roster value and PPG once games are played">' +
               '<div class="power-score">' + t.totalScore.toLocaleString() + "</div>" +
               '<div class="power-bar"><span style="width:' + pct + '%"></span></div>' +
             "</div>" +
