@@ -1635,7 +1635,11 @@
         POSITIONS.forEach((p) => byPos[p].sort((a, b) => b.val - a.val));
 
         const posScores = {};
+        const posValues = {};
         POSITIONS.forEach((p) => {
+          posValues[p] = p === "BN"
+            ? benchValue(entries)
+            : entries.filter((e) => e.pos === p).reduce((s, x) => s + (x.val || 0), 0);
           if (p === "BN") {
             posScores[p] = benchValue(entries);
           } else if (p === "QB") {
@@ -1666,6 +1670,7 @@
           ties,
           byPos,
           posScores,
+          posValues,
           entries,
           tradePlayers
         };
@@ -1879,7 +1884,11 @@
           byPos.BN = getBenchPlayers(entries);
           POSITIONS.forEach((p) => byPos[p].sort((a, b) => b.val - a.val));
           const posScores = {};
+          const posValues = {};
           POSITIONS.forEach((p) => {
+            posValues[p] = p === "BN"
+              ? benchValue(entries)
+              : entries.filter((e) => e.pos === p).reduce((s, x) => s + (x.val || 0), 0);
             if (p === "BN") posScores[p] = benchValue(entries);
             else if (p === "QB") posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
             else posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
@@ -1888,7 +1897,8 @@
             entries,
             rosterValue,
             byPos,
-            posScores
+            posScores,
+            posValues
             // keep ppg / record from original m
           });
         });
@@ -2247,12 +2257,12 @@
               posr(originalRanks.posRank, teamId, pos),
               posr(afterRanks.posRank, teamId, pos)
             );
-            const beforeValue = beforeTeam.posScores && beforeTeam.posScores[pos];
-            const afterValue = afterTeam.posScores && afterTeam.posScores[pos];
+            const beforePositionValue = beforeTeam.posValues && beforeTeam.posValues[pos];
+            const afterPositionValue = afterTeam.posValues && afterTeam.posValues[pos];
             rows +=
               '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
               '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
-              formatValueDelta(beforeValue, afterValue) + "</span></div>";
+              formatValueDelta(beforePositionValue, afterPositionValue) + "</span></div>";
           }
           return '<div class="calc-impact-card"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
         }
