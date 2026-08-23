@@ -364,7 +364,7 @@
     }
     .pos-breakdown {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 0.35rem;
       margin-top: 0.75rem;
       padding-top: 0.75rem;
@@ -582,6 +582,88 @@
       color: var(--definitely);
     }
 
+
+    .calc-mid .btn {
+      width: 7.75rem;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .calc-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .calc-filter-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .calc-filter-row input {
+      accent-color: var(--accent);
+    }
+    .calc-player.on-block-player .calc-player-name::after {
+      content: " · on block";
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--definitely);
+      text-transform: uppercase;
+    }
+    .calc-player.on-block-player {
+      border-left: 2px solid var(--definitely);
+    }
+    .calc-player.not-likely-player .calc-player-name::after {
+      content: " · not likely";
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--not-likely);
+      text-transform: uppercase;
+    }
+    .calc-player.not-likely-player {
+      border-left: 2px solid var(--not-likely);
+    }
+
+
+    .calc-chain {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+    }
+    .calc-chain-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .calc-chain-list {
+      margin: 0;
+      padding-left: 1.25rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .calc-chain-list li {
+      margin: 0.25rem 0;
+    }
+    .calc-chain-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .calc-mid .btn {
+      width: 7.75rem;
+    }
+    #calc-apply {
+      width: 7.75rem;
+    }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -667,7 +749,7 @@
     <div class="rankings-wrap">
       <p class="rankings-note">
         <strong>How these rankings work</strong><br>
-        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show how they rank at QB, RB, WR, and TE only.
+        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show rank at QB, RB, WR, TE, and BN. BN is the 6 lowest FantasyCalc values on the roster (after dropping 1 or 2 lowest if the team has IR extras over 14 players).
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -676,8 +758,16 @@
   <div class="panel" id="panel-calc">
     <div class="calc-wrap">
       <p class="rankings-note">
-        Values from FantasyCalc (10 team Superflex PPR). Fairness is based on the value gap relative to the size of the trade, not just the raw difference.
+        Values from FantasyCalc (10 team Superflex PPR). Build a multi-step chain: set up a trade, click Apply to chain, then trade again with the updated rosters.
       </p>
+      <div class="calc-filter-row">
+        <label><input type="checkbox" id="calc-onblock-only" /> On block only</label>
+        <span class="calc-chain-hint" id="calc-chain-hint"></span>
+      </div>
+      <div class="calc-chain" id="calc-chain" hidden>
+        <div class="calc-chain-title">Trade chain</div>
+        <ol class="calc-chain-list" id="calc-chain-list"></ol>
+      </div>
       <div class="calc-grid">
         <div class="calc-side" id="calc-side-a">
           <div class="calc-side-header">
@@ -689,6 +779,7 @@
         </div>
         <div class="calc-mid">
           <div class="calc-diff" id="calc-diff">Even</div>
+          <button type="button" class="btn btn-primary" id="calc-apply" title="Lock this trade and keep going with updated rosters">Apply to chain</button>
           <button type="button" class="btn btn-share" id="calc-share">Copy link</button>
           <button type="button" class="btn" id="calc-clear">Clear</button>
         </div>
@@ -739,7 +830,7 @@
     const POS_MAP = {
       1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST"
     };
-    const POSITIONS = ["QB", "RB", "WR", "TE"];  // skill only — no K/D/ST values from FantasyCalc
+    const POSITIONS = ["QB", "RB", "WR", "TE", "BN"];  // BN = bench/IR depth; no K/D/ST
 
     function mapTradeStatus(espnStatus) {
       if (espnStatus === "ON_THE_BLOCK") return "definitely";
@@ -879,6 +970,29 @@
         .replace(/"/g, "&quot;");
     }
 
+
+    /**
+     * Bench = 6 lowest FantasyCalc values on the roster.
+     * Roster is 8 starters + 6 bench (+ up to 2 IR).
+     * If roster has 15 or 16 players, drop the 1 or 2 lowest as IR first, then take the next 6 as bench.
+     */
+    function getBenchPlayers(entryList) {
+      const pool = (entryList || [])
+        .filter((e) => e && e.id != null)
+        .slice()
+        .sort((a, b) => (a.val || 0) - (b.val || 0)); // worst first
+
+      const n = pool.length;
+      // 8 starters + 6 bench = 14 active spots; extras are IR
+      const irExtras = Math.max(0, Math.min(2, n - 14));
+      const afterIR = pool.slice(irExtras);
+      return afterIR.slice(0, 6);
+    }
+
+    function benchValue(entryList) {
+      return getBenchPlayers(entryList).reduce((s, p) => s + (p.val || 0), 0);
+    }
+
     function buildTeamModels(data) {
       const members = data.members || [];
       const scoringPeriod = data.scoringPeriodId || 1;
@@ -907,18 +1021,25 @@
             pos,
             val,
             rank: meta ? meta.overallRank : null,
-            trade: mapTradeStatus(tradePlayers[String(player.id)] || null)
+            trade: mapTradeStatus(tradePlayers[String(player.id)] || null),
+            slot: e.lineupSlotId
           };
           entries.push(row);
           if (byPos[pos]) byPos[pos].push(row);
         }
 
+        byPos.BN = getBenchPlayers(entries);
         POSITIONS.forEach((p) => byPos[p].sort((a, b) => b.val - a.val));
 
         const posScores = {};
         POSITIONS.forEach((p) => {
-          const take = p === "QB" ? 2 : 3;
-          posScores[p] = byPos[p].slice(0, take).reduce((s, x) => s + x.val, 0);
+          if (p === "BN") {
+            posScores[p] = benchValue(entries);
+          } else if (p === "QB") {
+            posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
+          } else {
+            posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
+          }
         });
 
         const overall = (team.record && team.record.overall) || {};
@@ -1059,11 +1180,17 @@
           rosterValue += e.val || 0;
           if (byPos[e.pos]) byPos[e.pos].push(e);
         }
+        byPos.BN = getBenchPlayers(m.entries);
         POSITIONS.forEach((p) => byPos[p].sort((x, y) => y.val - x.val));
         const posScores = {};
         POSITIONS.forEach((p) => {
-          const take = p === "QB" ? 2 : 3;
-          posScores[p] = byPos[p].slice(0, take).reduce((s, x) => s + x.val, 0);
+          if (p === "BN") {
+            posScores[p] = benchValue(m.entries);
+          } else if (p === "QB") {
+            posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
+          } else {
+            posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
+          }
         });
         m.rosterValue = rosterValue;
         m.byPos = byPos;
@@ -1086,7 +1213,88 @@
       const members = data.members || [];
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
       const baseModels = buildTeamModels(data);
-      const beforeRanks = computeRankMaps(baseModels);
+      const originalRanks = computeRankMaps(baseModels);
+
+      // Working rosters for chain trades: teamId -> [{id,name,pos,val,onBlock,notLikely}]
+      const tradeBlockByTeam = {};
+      for (const team of teams) {
+        tradeBlockByTeam[String(team.id)] = (team.tradeBlock && team.tradeBlock.players) || {};
+      }
+
+      function snapshotFromEspn() {
+        const map = {};
+        for (const team of teams) {
+          const tid = String(team.id);
+          const block = tradeBlockByTeam[tid] || {};
+          const rows = [];
+          for (const e of team.roster?.entries || []) {
+            const player = e.playerPoolEntry?.player;
+            if (!player) continue;
+            const id = String(player.id);
+            rows.push({
+              id,
+              name: player.fullName || "Unknown",
+              pos: POS_MAP[player.defaultPositionId] || "?",
+              val: playerFcValue(player),
+              onBlock: block[id] === "ON_THE_BLOCK",
+              notLikely: block[id] === "UNTOUCHABLE"
+            });
+          }
+          map[tid] = rows;
+        }
+        return map;
+      }
+
+      let workingRosters = snapshotFromEspn();
+      let chainSteps = [];
+
+      function teamName(id) {
+        const t = teams.find((x) => String(x.id) === String(id));
+        return t ? (t.name || t.abbrev || "Team " + id) : "Team " + id;
+      }
+
+      function modelsFromRosters(rosterMap) {
+        return baseModels.map((m) => {
+          const tid = String(m.id);
+          const entries = (rosterMap[tid] || []).map((e) => Object.assign({}, e));
+          const byPos = {};
+          POSITIONS.forEach((p) => (byPos[p] = []));
+          let rosterValue = 0;
+          for (const e of entries) {
+            rosterValue += e.val || 0;
+            if (byPos[e.pos]) byPos[e.pos].push(e);
+          }
+          byPos.BN = getBenchPlayers(entries);
+          POSITIONS.forEach((p) => byPos[p].sort((a, b) => b.val - a.val));
+          const posScores = {};
+          POSITIONS.forEach((p) => {
+            if (p === "BN") posScores[p] = benchValue(entries);
+            else if (p === "QB") posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
+            else posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
+          });
+          return Object.assign({}, m, {
+            entries,
+            rosterValue,
+            byPos,
+            posScores
+            // keep ppg / record from original m
+          });
+        });
+      }
+
+      function applySwap(rosterMap, teamAId, teamBId, giveA, giveB) {
+        const next = {};
+        for (const k of Object.keys(rosterMap)) {
+          next[k] = rosterMap[k].map((e) => Object.assign({}, e));
+        }
+        const aId = String(teamAId);
+        const bId = String(teamBId);
+        const fromA = next[aId].filter((e) => giveA.has(e.id));
+        const fromB = next[bId].filter((e) => giveB.has(e.id));
+        next[aId] = next[aId].filter((e) => !giveA.has(e.id)).concat(fromB);
+        next[bId] = next[bId].filter((e) => !giveB.has(e.id)).concat(fromA);
+        return next;
+      }
 
       function fillSelect(sel, preferredId) {
         const prev = sel.value;
@@ -1108,24 +1316,38 @@
       fillSelect(selB, teams[1] && teams[1].id);
 
       function rosterRows(teamId) {
-        const team = teams.find((t) => String(t.id) === String(teamId));
-        if (!team) return [];
-        const rows = [];
-        for (const e of team.roster?.entries || []) {
-          const player = e.playerPoolEntry?.player;
-          if (!player) continue;
-          const pos = POS_MAP[player.defaultPositionId] || "?";
-          // Skip pure K/DST if no FC value and not skill? still show all with value
-          const val = playerFcValue(player);
-          rows.push({
-            id: String(player.id),
-            name: player.fullName || "Unknown",
-            pos,
-            val
-          });
+        const rows = (workingRosters[String(teamId)] || []).slice();
+        const onBlockOnly = document.getElementById("calc-onblock-only")?.checked;
+        let list = rows;
+        if (onBlockOnly) list = rows.filter((r) => r.onBlock);
+        list.sort((a, b) => {
+          const rank = (r) => (r.onBlock ? 0 : r.notLikely ? 2 : 1);
+          const d = rank(a) - rank(b);
+          if (d !== 0) return d;
+          return b.val - a.val || a.name.localeCompare(b.name);
+        });
+        return list;
+      }
+
+      function renderChain() {
+        const box = document.getElementById("calc-chain");
+        const list = document.getElementById("calc-chain-list");
+        const hint = document.getElementById("calc-chain-hint");
+        if (!chainSteps.length) {
+          box.hidden = true;
+          list.innerHTML = "";
+          if (hint) hint.textContent = "";
+          return;
         }
-        rows.sort((a, b) => b.val - a.val || a.name.localeCompare(b.name));
-        return rows;
+        box.hidden = false;
+        list.innerHTML = chainSteps.map((s, i) => {
+          const aNames = s.giveANames.join(", ") || "—";
+          const bNames = s.giveBNames.join(", ") || "—";
+          return "<li><strong>" + (i + 1) + ".</strong> " +
+            escapeHtml(s.teamAName) + " sends " + escapeHtml(aNames) +
+            " ↔ " + escapeHtml(s.teamBName) + " sends " + escapeHtml(bNames) + "</li>";
+        }).join("");
+        if (hint) hint.textContent = chainSteps.length + " trade" + (chainSteps.length === 1 ? "" : "s") + " in chain";
       }
 
       function renderSide(side) {
@@ -1133,16 +1355,17 @@
         const list = document.getElementById("calc-players-" + side);
         const teamId = sel.value;
         const rows = rosterRows(teamId);
-        // drop selections no longer on this roster
-        const ids = new Set(rows.map((r) => r.id));
+        const allIds = new Set((workingRosters[String(teamId)] || []).map((r) => r.id));
         for (const id of [...calcSelected[side]]) {
-          if (!ids.has(id)) calcSelected[side].delete(id);
+          if (!allIds.has(id)) calcSelected[side].delete(id);
         }
         list.innerHTML = "";
         for (const r of rows) {
           const checked = calcSelected[side].has(r.id);
           const div = document.createElement("label");
-          div.className = "calc-player" + (checked ? " selected" : "");
+          div.className = "calc-player" + (checked ? " selected" : "") +
+            (r.onBlock ? " on-block-player" : "") +
+            (r.notLikely ? " not-likely-player" : "");
           div.innerHTML =
             '<input type="checkbox" ' + (checked ? "checked " : "") + 'data-id="' + r.id + '" data-side="' + side + '"/>' +
             '<span class="calc-player-pos">' + r.pos + "</span>" +
@@ -1153,11 +1376,19 @@
         updateCalcTotals();
       }
 
+      const onBlockFilter = document.getElementById("calc-onblock-only");
+      if (onBlockFilter) {
+        onBlockFilter.onchange = () => {
+          renderSide("a");
+          renderSide("b");
+        };
+      }
+
       function updateCalcTotals() {
         function sideTotal(side) {
           const sel = document.getElementById("calc-team-" + side);
-          const rows = rosterRows(sel.value);
-          const map = Object.fromEntries(rows.map((r) => [r.id, r.val]));
+          const map = {};
+          for (const r of workingRosters[String(sel.value)] || []) map[r.id] = r.val;
           let sum = 0;
           for (const id of calcSelected[side]) sum += map[id] || 0;
           return sum;
@@ -1169,59 +1400,37 @@
         const diffEl = document.getElementById("calc-diff");
         const d = a - b;
         const total = a + b;
-
-        // Relative fairness: gap as % of average side value.
-        // Small absolute gaps on huge trades look fairer than the same gap on tiny trades.
         const avg = total / 2;
         const absD = Math.abs(d);
         let pct = avg > 0 ? absD / avg : 0;
 
-        // Also require a minimum absolute gap so tiny residual noise does not light up.
-        // Scale color: fair (green) -> mild (neutral) -> lopsided (red)
-        // ~0-8% fair, 8-25% mild, 25%+ increasingly red
         function fairnessColor(p) {
           if (total === 0) return "var(--text-secondary)";
           if (p <= 0.08) {
-            // green to soft green
             const u = p / 0.08;
-            const r = Math.round(34 + (120 - 34) * u);
-            const g = Math.round(197 + (180 - 197) * u);
-            const b = Math.round(94 + (140 - 94) * u);
-            return "rgb(" + r + "," + g + "," + b + ")";
+            return "rgb(" + Math.round(34 + (120 - 34) * u) + "," + Math.round(197 + (180 - 197) * u) + "," + Math.round(94 + (140 - 94) * u) + ")";
           }
           if (p <= 0.25) {
             const u = (p - 0.08) / 0.17;
-            const r = Math.round(120 + (154 - 120) * u);
-            const g = Math.round(180 + (168 - 180) * u);
-            const b = Math.round(140 + (188 - 140) * u);
-            return "rgb(" + r + "," + g + "," + b + ")";
+            return "rgb(" + Math.round(120 + (154 - 120) * u) + "," + Math.round(180 + (168 - 180) * u) + "," + Math.round(140 + (188 - 140) * u) + ")";
           }
           const u = Math.min(1, (p - 0.25) / 0.35);
-          const r = Math.round(154 + (239 - 154) * u);
-          const g = Math.round(168 + (68 - 168) * u);
-          const b = Math.round(188 + (68 - 188) * u);
-          return "rgb(" + r + "," + g + "," + b + ")";
+          return "rgb(" + Math.round(154 + (239 - 154) * u) + "," + Math.round(168 + (68 - 168) * u) + "," + Math.round(188 + (68 - 188) * u) + ")";
         }
 
         let label;
-        if (total === 0) {
-          label = "Pick players";
-        } else if (pct <= 0.08 || absD < 80) {
+        if (total === 0) label = "Pick players";
+        else if (pct <= 0.08 || absD < 80) {
           label = pct < 0.02 ? "Even" : "Close";
-          if (absD >= 80 && pct > 0.02) {
-            label = (d > 0 ? "A +" : "B +") + absD.toLocaleString() + " · close";
-          }
+          if (absD >= 80 && pct > 0.02) label = (d > 0 ? "A +" : "B +") + absD.toLocaleString() + " · close";
         } else {
           const who = d > 0 ? "A" : "B";
-          const pctLabel = Math.round(pct * 100) + "%";
-          label = who + " +" + absD.toLocaleString() + " · " + pctLabel;
+          label = who + " +" + absD.toLocaleString() + " · " + Math.round(pct * 100) + "%";
         }
-
         diffEl.classList.remove("favors-a", "favors-b", "even");
         diffEl.textContent = label;
         diffEl.style.color = fairnessColor(total === 0 ? 0 : (absD < 80 && pct <= 0.08 ? 0 : pct));
         diffEl.style.borderColor = "transparent";
-
         renderRankingImpact();
       }
 
@@ -1230,63 +1439,100 @@
         const teamAId = selA.value;
         const teamBId = selB.value;
         const hasPicks = calcSelected.a.size > 0 || calcSelected.b.size > 0;
+        const hasChain = chainSteps.length > 0;
 
-        if (!hasPicks) {
-          grid.innerHTML = '<div class="calc-impact-empty">Select players on both sides to see how power and position ranks would shift.</div>';
-          return;
-        }
-        if (String(teamAId) === String(teamBId)) {
-          grid.innerHTML = '<div class="calc-impact-empty">Pick two different teams to simulate rank changes.</div>';
+        if (!hasPicks && !hasChain) {
+          grid.innerHTML = '<div class="calc-impact-empty">Select players to preview rank changes, or apply trades to build a chain.</div>';
           return;
         }
 
-        const afterModels = modelsAfterTrade(
-          baseModels,
-          teamAId,
-          teamBId,
-          calcSelected.a,
-          calcSelected.b
-        );
-        const afterRanks = computeRankMaps(afterModels);
+        // Baseline = original league ranks
+        // After = working rosters + optional pending trade
+        let pendingMap = workingRosters;
+        if (hasPicks && String(teamAId) !== String(teamBId)) {
+          pendingMap = applySwap(workingRosters, teamAId, teamBId, calcSelected.a, calcSelected.b);
+        }
+        const afterRanks = computeRankMaps(modelsFromRosters(pendingMap));
+
+        // Show cards for teams involved in chain + pending
+        const involved = new Set();
+        for (const s of chainSteps) {
+          involved.add(String(s.teamAId));
+          involved.add(String(s.teamBId));
+        }
+        if (hasPicks) {
+          involved.add(String(teamAId));
+          involved.add(String(teamBId));
+        }
+
+        function pr(map, id) {
+          if (map[id] != null) return map[id];
+          if (map[Number(id)] != null) return map[Number(id)];
+          if (map[String(id)] != null) return map[String(id)];
+          return null;
+        }
+        function posr(map, id, pos) {
+          const row = map[id] || map[Number(id)] || map[String(id)] || {};
+          return row[pos] != null ? row[pos] : null;
+        }
 
         function card(teamId) {
-          const team = baseModels.find((m) => String(m.id) === String(teamId));
-          const name = team ? team.name : "Team";
-          const bp = beforeRanks.powerRank[teamId];
-          const ap = afterRanks.powerRank[Number(teamId)] != null
-            ? afterRanks.powerRank[Number(teamId)]
-            : afterRanks.powerRank[teamId];
-          // ids may be number vs string
-          function pr(map, id) {
-            if (map[id] != null) return map[id];
-            if (map[Number(id)] != null) return map[Number(id)];
-            if (map[String(id)] != null) return map[String(id)];
-            return null;
-          }
-          function posr(map, id, pos) {
-            const row = map[id] || map[Number(id)] || map[String(id)] || {};
-            return row[pos] != null ? row[pos] : null;
-          }
-
-          const power = formatRankDelta(pr(beforeRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
+          const name = teamName(teamId);
+          const power = formatRankDelta(pr(originalRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
           let rows =
             '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
             '<span class="calc-impact-change ' + power.cls + '">' + power.text + "</span></div>";
           for (const pos of POSITIONS) {
             const delta = formatRankDelta(
-              posr(beforeRanks.posRank, teamId, pos),
+              posr(originalRanks.posRank, teamId, pos),
               posr(afterRanks.posRank, teamId, pos)
             );
             rows +=
               '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
               '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + "</span></div>";
           }
-          return (
-            '<div class="calc-impact-card"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>"
-          );
+          return '<div class="calc-impact-card"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
         }
 
-        grid.innerHTML = card(teamAId) + card(teamBId);
+        grid.innerHTML = [...involved].map(card).join("");
+      }
+
+      function applyCurrentToChain() {
+        const teamAId = selA.value;
+        const teamBId = selB.value;
+        if (String(teamAId) === String(teamBId)) {
+          alert("Pick two different teams.");
+          return;
+        }
+        if (!calcSelected.a.size && !calcSelected.b.size) {
+          alert("Select players to include in this trade step.");
+          return;
+        }
+        const rosterA = workingRosters[String(teamAId)] || [];
+        const rosterB = workingRosters[String(teamBId)] || [];
+        const nameOf = (rows, id) => {
+          const r = rows.find((x) => x.id === id);
+          return r ? r.name : id;
+        };
+        const giveANames = [...calcSelected.a].map((id) => nameOf(rosterA, id));
+        const giveBNames = [...calcSelected.b].map((id) => nameOf(rosterB, id));
+
+        workingRosters = applySwap(workingRosters, teamAId, teamBId, calcSelected.a, calcSelected.b);
+        chainSteps.push({
+          teamAId,
+          teamBId,
+          teamAName: teamName(teamAId),
+          teamBName: teamName(teamBId),
+          giveA: [...calcSelected.a],
+          giveB: [...calcSelected.b],
+          giveANames,
+          giveBNames
+        });
+        calcSelected.a.clear();
+        calcSelected.b.clear();
+        renderChain();
+        renderSide("a");
+        renderSide("b");
       }
 
       selA.onchange = () => {
@@ -1315,12 +1561,16 @@
         updateCalcTotals();
       };
 
+      document.getElementById("calc-apply").onclick = applyCurrentToChain;
+
       document.getElementById("calc-clear").onclick = () => {
         calcSelected.a.clear();
         calcSelected.b.clear();
+        workingRosters = snapshotFromEspn();
+        chainSteps = [];
+        renderChain();
         renderSide("a");
         renderSide("b");
-        // strip trade from URL without reload
         const u = new URL(window.location.href);
         u.searchParams.delete("trade");
         history.replaceState(null, "", u.pathname + u.search + u.hash);
@@ -1329,12 +1579,13 @@
       document.getElementById("calc-share").onclick = async () => {
         const teamA = selA.value;
         const teamB = selB.value;
-        if (!calcSelected.a.size && !calcSelected.b.size) {
-          alert("Select at least one player to share a trade.");
+        if (!calcSelected.a.size && !calcSelected.b.size && !chainSteps.length) {
+          alert("Select players or build a chain to share.");
           return;
         }
         const u = new URL(window.location.href);
         const p = new URLSearchParams(u.search);
+        // Share pending leg only (chain state is session-local)
         p.set(
           "trade",
           teamA + ":" + [...calcSelected.a].join(",") + "|" + teamB + ":" + [...calcSelected.b].join(",")
@@ -1357,10 +1608,10 @@
         }
       };
 
-            renderSide("a");
+      renderChain();
+      renderSide("a");
       renderSide("b");
 
-      // Restore shared trade from URL
       const shared = parseTradeShareParam();
       if (shared) {
         if ([...selA.options].some((o) => o.value === shared.a.team)) selA.value = shared.a.team;
@@ -1369,7 +1620,6 @@
         calcSelected.b = new Set(shared.b.ids);
         renderSide("a");
         renderSide("b");
-        // jump to calculator tab
         document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
         document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
         const tab = document.querySelector('.tab[data-panel="calc"]');
