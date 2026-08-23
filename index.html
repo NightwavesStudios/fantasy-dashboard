@@ -1812,6 +1812,12 @@
       return { text: "#" + before + " → #" + after + " (↓" + Math.abs(d) + ", " + d + ")", cls: "down" };
     }
 
+    function formatValueDelta(before, after) {
+      if (before == null || after == null) return "Value —";
+      const d = after - before;
+      return "Value " + (d >= 0 ? "+" : "") + d.toLocaleString();
+    }
+
     function setupTradeCalculator(data) {
       const members = data.members || [];
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
@@ -2230,17 +2236,23 @@
         function card(teamId) {
           const name = teamName(teamId);
           const power = formatRankDelta(pr(originalRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
+          const beforeTeam = originalRanks.byId[teamId] || originalRanks.byId[Number(teamId)] || {};
+          const afterTeam = afterRanks.byId[teamId] || afterRanks.byId[Number(teamId)] || {};
           let rows =
             '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
-            '<span class="calc-impact-change ' + power.cls + '">' + power.text + "</span></div>";
+            '<span class="calc-impact-change ' + power.cls + '">' + power.text + " · " +
+            formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue) + "</span></div>";
           for (const pos of POSITIONS) {
             const delta = formatRankDelta(
               posr(originalRanks.posRank, teamId, pos),
               posr(afterRanks.posRank, teamId, pos)
             );
+            const beforeValue = beforeTeam.posScores && beforeTeam.posScores[pos];
+            const afterValue = afterTeam.posScores && afterTeam.posScores[pos];
             rows +=
               '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
-              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + "</span></div>";
+              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
+              formatValueDelta(beforeValue, afterValue) + "</span></div>";
           }
           return '<div class="calc-impact-card"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
         }
