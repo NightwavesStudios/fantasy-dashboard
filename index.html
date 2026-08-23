@@ -1900,6 +1900,21 @@
       return "Value " + (d >= 0 ? "+" : "") + d.toLocaleString();
     }
 
+    function tradeFairnessMessage(beforeModels, afterModels, teamAId, teamBId) {
+      const beforeA = beforeModels.find((m) => String(m.id) === String(teamAId));
+      const beforeB = beforeModels.find((m) => String(m.id) === String(teamBId));
+      const afterA = afterModels.find((m) => String(m.id) === String(teamAId));
+      const afterB = afterModels.find((m) => String(m.id) === String(teamBId));
+      if (!beforeA || !beforeB || !afterA || !afterB) return "";
+      const givenA = calcSelected.a.size ? [...calcSelected.a].reduce((sum, id) => sum + (beforeA.entries.find((e) => e.id === id)?.val || 0), 0) : 0;
+      const givenB = calcSelected.b.size ? [...calcSelected.b].reduce((sum, id) => sum + (beforeB.entries.find((e) => e.id === id)?.val || 0), 0) : 0;
+      const balance = Math.max(givenA, givenB) ? Math.abs(givenA - givenB) / Math.max(givenA, givenB) : 0;
+      if (balance > 0.15) return "Trade values must be within 15% of each other.";
+      const rankImproves = (before, after) => Object.keys(before.posScores || {}).some((pos) => (after.posScores[pos] || 0) > (before.posScores[pos] || 0));
+      if (!rankImproves(beforeA, afterA) || !rankImproves(beforeB, afterB)) return "Both teams must improve at least one position.";
+      return "";
+    }
+
     function setupTradeCalculator(data) {
       const members = data.members || [];
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
@@ -2376,6 +2391,22 @@
           alert("Select the required roster drops so both teams stay at " + MAX_ROSTER + " players or fewer.");
           return;
         }
+        const beforeModels = modelsFromRosters(workingRosters);
+        const previewMap = applySwap(
+          workingRosters, teamAId, teamBId,
+          calcSelected.a, calcSelected.b,
+          calcSelected.dropA, calcSelected.dropB
+        );
+        const fairnessMessage = tradeFairnessMessage(
+          beforeModels,
+          modelsFromRosters(previewMap),
+          teamAId,
+          teamBId
+        );
+        if (fairnessMessage) {
+          alert(fairnessMessage);
+          return;
+        }
         const rosterA = workingRosters[String(teamAId)] || [];
         const rosterB = workingRosters[String(teamBId)] || [];
         const nameOf = (rows, id) => {
@@ -2689,15 +2720,19 @@
         return;
       }
       const models = buildTeamModels(data);
+      const ranks = computeRankMaps(models);
       const mine = models.find((model) => String(model.id) === String(team.id));
       const others = models.filter((model) => String(model.id) !== String(team.id));
       const ideas = [];
       for (const incomingTeam of others) {
+        const mineNeeds = needsSurplusForTeam(ranks.posRank, mine.id, models.length).needs;
+        const partnerNeeds = needsSurplusForTeam(ranks.posRank, incomingTeam.id, models.length).needs;
         for (const incoming of incomingTeam.entries) {
           for (const outgoing of mine.entries) {
             if (!incoming.val || !outgoing.val || incoming.val <= outgoing.val) continue;
-            const ratio = incoming.val / outgoing.val;
-            if (ratio > 1.35) continue;
+            if (mineNeeds.indexOf(incoming.pos) < 0 || partnerNeeds.indexOf(outgoing.pos) < 0) continue;
+            const ratio = Math.max(incoming.val, outgoing.val) / Math.min(incoming.val, outgoing.val);
+            if (ratio > 1.15) continue;
             ideas.push({ incoming, outgoing, team: incomingTeam, gain: incoming.val - outgoing.val });
           }
         }
@@ -2822,17 +2857,19 @@
     }
 
     function runPlayoffSimulations(data, scheduleData) {
-      const teams = data.teams || [];
       const models = buildTeamModels(data);
-      const byId = {};
-      models.forEach((m) => { byId[String(m.id)] = m; });
-      const settings = (scheduleData.settings || data.settings || {}).scheduleSettings || {};
-      const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || 6);
+      const settingsRoot = scheduleData.settings || data.settings || {};
+      const settings = settingsRoot.scheduleSettings || settingsRoot;
+      const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || settings.numPlayoffTeams || 6);
       const currentPeriod = Number(data.scoringPeriodId || 0);
-      const playoffStart = Number(settings.playoffMatchupPeriod || settings.playoffStartWeek || 15);
-      const schedule = (scheduleData.schedule || data.schedule || []).filter((game) => {
+      const playoffStart = Number(settings.playoffMatchupPeriod || settings.playoffStartWeek || settings.playoffStart || 15);
+      const rawSchedule = scheduleData.schedule || data.schedule || [];
+      const schedule = rawSchedule.map((game) => Object.assign({}, game, {
+        homeTeamId: game.home && typeof game.home === "object" ? game.home.teamId : game.home,
+        awayTeamId: game.away && typeof game.away === "object" ? game.away.teamId : game.away
+      })).filter((game) => {
         const period = Number(game.matchupPeriodId || game.week || 0);
-        return period > currentPeriod && period < playoffStart && game.home && game.away;
+        return period > currentPeriod && period < playoffStart && game.homeTeamId != null && game.awayTeamId != null;
       });
       const gamesByPeriod = {};
       schedule.forEach((game) => {
@@ -2873,8 +2910,8 @@
             scores[String(team.id)] = Math.max(0, base + normal() * base * 0.18);
           });
           gamesByPeriod[period].forEach((game) => {
-            const home = standings[String(game.home.teamId)];
-            const away = standings[String(game.away.teamId)];
+            const home = standings[String(game.homeTeamId)];
+            const away = standings[String(game.awayTeamId)];
             if (!home || !away) return;
             home.points += scores[String(home.team.id)] || 0;
             away.points += scores[String(away.team.id)] || 0;
@@ -2926,9 +2963,13 @@
       status.textContent = "Fetching ESPN schedule and league settings…";
       try {
         let scheduleData = leagueData;
-        const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
-        if (response.ok) scheduleData = await response.json();
-        else console.warn("Optional ESPN schedule view unavailable", response.status);
+        try {
+          const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+          if (response.ok) scheduleData = await response.json();
+          else console.warn("Optional ESPN schedule view unavailable", response.status);
+        } catch (scheduleError) {
+          console.warn("Optional ESPN schedule view unavailable", scheduleError);
+        }
         const simulation = runPlayoffSimulations(leagueData, scheduleData);
         const total = simulation.simulations;
         const rows = simulation.teams.slice().sort((a, b) => simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff);
@@ -2945,7 +2986,7 @@
         playoffOddsLoaded = true;
       } catch (error) {
         console.error(error);
-        status.textContent = "Could not load ESPN schedule/settings. Try Refresh.";
+        status.textContent = "ESPN odds unavailable: " + (error.message || "unknown error");
       }
     }
 
