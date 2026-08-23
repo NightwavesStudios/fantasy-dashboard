@@ -2923,7 +2923,14 @@
         gamesByPeriod[period].push(game);
       });
       const periods = Object.keys(gamesByPeriod).sort((a, b) => Number(a) - Number(b));
-      const strength = (team) => Math.max(1, team.ppg || team.rosterValue / 100);
+      const maxRosterValue = Math.max(...models.map((team) => team.rosterValue), 1);
+      const averagePpg = models.reduce((sum, team) => sum + team.ppg, 0) / Math.max(models.length, 1);
+      const maxPpg = Math.max(...models.map((team) => team.ppg), 1);
+      const projectedScore = (team) => {
+        const rosterFactor = 0.9 + 0.2 * ((team.rosterValue || 0) / maxRosterValue);
+        const ppgFactor = averagePpg > 0 ? 0.9 + 0.2 * ((team.ppg || averagePpg) / maxPpg) : 1;
+        return 100 * (rosterFactor * 0.75 + ppgFactor * 0.25);
+      };
       const results = {};
       models.forEach((team) => {
         results[String(team.id)] = { playoff: 0, bye: 0, champion: 0, medianWins: [] };
@@ -2931,9 +2938,8 @@
       const simulations = 5000;
       const byeSlots = playoffCount >= 6 ? 2 : 0;
       const pickWinner = (a, b) => {
-        const sa = strength(a);
-        const sb = strength(b);
-        return Math.random() < sa / (sa + sb) ? a : b;
+        const probability = 1 / (1 + Math.exp(-(projectedScore(a) - projectedScore(b)) / 18));
+        return Math.random() < probability ? a : b;
       };
       const normal = () => {
         let u = 0;
@@ -2951,8 +2957,7 @@
         periods.forEach((period) => {
           const scores = {};
           models.forEach((team) => {
-            const base = strength(team);
-            scores[String(team.id)] = Math.max(0, base + normal() * base * 0.18);
+            scores[String(team.id)] = Math.max(0, projectedScore(team) + normal() * 18);
           });
           gamesByPeriod[period].forEach((game) => {
             const home = standings[String(game.homeTeamId)];
