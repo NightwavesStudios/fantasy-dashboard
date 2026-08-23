@@ -171,7 +171,11 @@
     .team-header {
       padding: 0.875rem 1rem; border-bottom: 1px solid var(--border-subtle);
       display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;
+      cursor: pointer;
     }
+    .team-header::after { content: "+"; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
+    .team-card:not(.collapsed) .team-header::after { content: "−"; }
+    .team-card.collapsed .roster-body { display: none; }
     .team-info h2 { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
     .team-info .owner { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
     .team-stats { text-align: right; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
@@ -303,7 +307,9 @@
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius);
       padding: 0.85rem 1rem;
+      cursor: pointer;
     }
+    .power-row.collapsed .pos-breakdown { display: none; }
     .power-row-top {
       display: flex;
       align-items: center;
@@ -544,6 +550,8 @@
       font-weight: 600;
       margin-bottom: 0.5rem;
     }
+    .calc-impact-card { cursor: pointer; }
+    .calc-impact-card.collapsed .calc-impact-row:not(:first-of-type) { display: none; }
     .calc-impact-row {
       display: flex;
       justify-content: space-between;
@@ -2264,10 +2272,23 @@
               '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
               formatValueDelta(beforePositionValue, afterPositionValue) + "</span></div>";
           }
-          return '<div class="calc-impact-card"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
+          return '<div class="calc-impact-card collapsed" tabindex="0" role="button" aria-expanded="false"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
         }
 
         grid.innerHTML = [...involved].map(card).join("");
+        grid.onclick = (e) => {
+          const card = e.target.closest(".calc-impact-card");
+          if (!card) return;
+          card.classList.toggle("collapsed");
+          card.setAttribute("aria-expanded", String(!card.classList.contains("collapsed")));
+        };
+        grid.onkeydown = (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          const card = e.target.closest(".calc-impact-card");
+          if (!card) return;
+          e.preventDefault();
+          card.click();
+        };
       }
 
       function applyCurrentToChain() {
@@ -2530,7 +2551,7 @@
         }
 
         const card = document.createElement("article");
-        card.className = "team-card";
+        card.className = "team-card collapsed";
         card.innerHTML =
           '<div class="team-header">' +
             '<div class="team-info"><h2>' + escapeHtml(name) + '</h2>' +
@@ -2543,6 +2564,21 @@
             "<tbody></tbody></table></div>";
 
         const tbody = card.querySelector("tbody");
+        const teamHeader = card.querySelector(".team-header");
+        teamHeader.setAttribute("role", "button");
+        teamHeader.setAttribute("tabindex", "0");
+        teamHeader.setAttribute("aria-expanded", "false");
+        const toggleTeam = () => {
+          card.classList.toggle("collapsed");
+          teamHeader.setAttribute("aria-expanded", String(!card.classList.contains("collapsed")));
+        };
+        teamHeader.onclick = toggleTeam;
+        teamHeader.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleTeam();
+          }
+        };
         for (const entry of entries) {
           const player = entry.playerPoolEntry?.player;
           if (!player) continue;
@@ -2631,7 +2667,21 @@
         const ranks = posRankByTeam[t.id] || {};
 
         const row = document.createElement("div");
-        row.className = "power-row";
+        row.className = "power-row collapsed";
+        row.setAttribute("role", "button");
+        row.setAttribute("tabindex", "0");
+        row.setAttribute("aria-expanded", "false");
+        const togglePower = () => {
+          row.classList.toggle("collapsed");
+          row.setAttribute("aria-expanded", String(!row.classList.contains("collapsed")));
+        };
+        row.onclick = togglePower;
+        row.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            togglePower();
+          }
+        };
         const teamCount = sorted.length || 10;
         let chips = "";
         for (const pos of POSITIONS) {
