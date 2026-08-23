@@ -789,6 +789,133 @@
       font-size: 0.65rem;
     }
 
+
+    .waiver-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
+    }
+    .waiver-toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+    .waiver-label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .waiver-label select {
+      min-width: 140px;
+      text-transform: none;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+    .waiver-status {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .waiver-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .waiver-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    .waiver-table th {
+      text-align: left;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+    .waiver-table td {
+      padding: 0.5rem 0.65rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+    .waiver-table tr:hover td {
+      background: rgba(255,255,255,0.03);
+    }
+    .waiver-table .w-rank { width: 36px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .waiver-table .w-pos { width: 44px; font-weight: 600; color: var(--text-secondary); }
+    .waiver-table .w-val, .waiver-table .w-own, .waiver-table .w-chg {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .waiver-table th.w-val, .waiver-table th.w-own, .waiver-table th.w-chg { text-align: right; }
+    .waiver-table .w-chg.up { color: #4ade80; }
+    .waiver-table .w-chg.down { color: #f87171; }
+    .waiver-table .w-status { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .waiver-table .w-status.waivers { color: #eab308; }
+    .waiver-table .w-status.fa { color: #4ade80; }
+    .fit-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      background: rgba(22, 163, 74, 0.12);
+      color: #4ade80;
+      border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+    .waiver-row.fits-need td {
+      background: rgba(22, 163, 74, 0.04);
+    }
+    .waiver-empty {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+
+    .calc-drops {
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(220, 38, 38, 0.06);
+      padding: 0.5rem 0 0.35rem;
+    }
+    .calc-drops-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #f87171;
+      padding: 0 0.85rem 0.35rem;
+    }
+    .calc-drops-list {
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .calc-player.drop-pick {
+      background: rgba(220, 38, 38, 0.08);
+    }
+    .calc-player.drop-pick.selected {
+      background: rgba(220, 38, 38, 0.18);
+    }
+    .calc-illegal {
+      font-size: 0.7rem;
+      color: #f87171;
+      text-align: center;
+      margin-top: 0.35rem;
+      max-width: 7.75rem;
+    }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -817,6 +944,8 @@
       .calc-grid { grid-template-columns: 1fr; }
       .calc-mid { padding-top: 0; flex-direction: row; justify-content: space-between; }
       .calc-impact-grid { grid-template-columns: 1fr; }
+      .waiver-toolbar-row { flex-direction: column; align-items: stretch; }
+      .waiver-label select { width: 100%; }
     }
     @media (max-width: 380px) {
       .pos-breakdown { grid-template-columns: repeat(2, 1fr); }
@@ -843,6 +972,7 @@
     <button class="tab active" data-panel="trade" type="button" title="View every roster and ESPN trade-block status">Trade Board</button>
     <button class="tab" data-panel="power" type="button" title="Rank teams by FantasyCalc roster value and PPG once games are scored">Power Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare FantasyCalc values and chain multi-step trades">Trade Calculator</button>
+    <button class="tab" data-panel="waivers" type="button" title="Free agents and waiver wire ranked by FantasyCalc value">Waiver Wire</button>
   </nav>
 
   <!-- TRADE BOARD -->
@@ -918,6 +1048,10 @@
             <div class="calc-side-needs" id="calc-needs-a"></div>
           </div>
           <div class="calc-players" id="calc-players-a"></div>
+          <div class="calc-drops" id="calc-drops-a" hidden>
+            <div class="calc-drops-title" id="calc-drops-title-a">Drops required</div>
+            <div class="calc-drops-list" id="calc-drops-list-a"></div>
+          </div>
           <div class="calc-total" id="calc-total-a">0</div>
         </div>
         <div class="calc-mid">
@@ -925,6 +1059,7 @@
           <button type="button" class="btn btn-primary has-tip" id="calc-apply" data-tip="Locks this trade into the chain and updates both rosters. You can then pick a new partner and trade again. Rankings always compare back to the original league." title="Locks this trade into the chain and updates both rosters. You can then pick a new partner and trade again. Rankings always compare back to the original league.">Apply to chain</button>
           <button type="button" class="btn btn-share has-tip" id="calc-share" data-tip="Copies a link that opens the calculator with this pending trade pre-selected. Chain history is not included in the link." title="Copies a link that opens the calculator with this pending trade pre-selected. Chain history is not included in the link.">Copy link</button>
           <button type="button" class="btn has-tip" id="calc-clear" data-tip="Clears selected players, removes every step in the trade chain, and restores live ESPN rosters." title="Clears selected players, removes every step in the trade chain, and restores live ESPN rosters.">Clear</button>
+          <div class="calc-illegal" id="calc-illegal" hidden></div>
         </div>
         <div class="calc-side" id="calc-side-b">
           <div class="calc-side-header">
@@ -934,6 +1069,10 @@
             <div class="calc-side-needs" id="calc-needs-b"></div>
           </div>
           <div class="calc-players" id="calc-players-b"></div>
+          <div class="calc-drops" id="calc-drops-b" hidden>
+            <div class="calc-drops-title" id="calc-drops-title-b">Drops required</div>
+            <div class="calc-drops-list" id="calc-drops-list-b"></div>
+          </div>
           <div class="calc-total" id="calc-total-b">0</div>
         </div>
       </div>
@@ -944,6 +1083,73 @@
     </div>
   </div>
 
+
+
+  <div class="panel" id="panel-waivers">
+    <div class="calc-wrap">
+      <p class="rankings-note">
+        Free agents and players on waivers from ESPN, scored with the same FantasyCalc values.
+        Pick your team to highlight targets that fill a need.
+      </p>
+      <div class="waiver-toolbar">
+        <div class="waiver-toolbar-row">
+          <label class="waiver-label">My team
+            <select id="waiver-team" class="calc-team-select" title="Highlights free agents at positions you need"></select>
+          </label>
+          <div class="pos-filters" id="waiver-pos-filters">
+            <button class="filter-btn active" data-wpos="all" type="button">All</button>
+            <button class="filter-btn" data-wpos="QB" type="button">QB</button>
+            <button class="filter-btn" data-wpos="RB" type="button">RB</button>
+            <button class="filter-btn" data-wpos="WR" type="button">WR</button>
+            <button class="filter-btn" data-wpos="TE" type="button">TE</button>
+            <button class="filter-btn" data-wpos="K" type="button">K</button>
+            <button class="filter-btn" data-wpos="D/ST" type="button">D/ST</button>
+          </div>
+          <label class="inj-filter" title="Only injured free agents">
+            <input type="checkbox" id="waiver-injured" /> Injured
+          </label>
+          <label class="inj-filter" title="Only players on waivers (not pure free agents)">
+            <input type="checkbox" id="waiver-waivers-only" /> Waivers only
+          </label>
+          <label class="inj-filter" title="Only players that match a Need for your selected team">
+            <input type="checkbox" id="waiver-needs-only" /> Fits my needs
+          </label>
+        </div>
+        <div class="waiver-toolbar-row">
+          <div class="search-wrap">
+            <input type="search" id="waiver-search" placeholder="Search free agents…" autocomplete="off" />
+          </div>
+          <label class="waiver-label">Sort
+            <select id="waiver-sort" class="calc-team-select">
+              <option value="value">FantasyCalc value</option>
+              <option value="owned">% owned</option>
+              <option value="trending">% owned change</option>
+              <option value="name">Name</option>
+            </select>
+          </label>
+          <button type="button" class="btn" id="waiver-refresh" title="Reload free agent pool from ESPN">Refresh list</button>
+        </div>
+      </div>
+      <div class="waiver-status" id="waiver-status">Loading free agents…</div>
+      <div class="waiver-table-wrap">
+        <table class="waiver-table" id="waiver-table">
+          <thead>
+            <tr>
+              <th class="w-rank">#</th>
+              <th class="w-pos">Pos</th>
+              <th class="w-name">Player</th>
+              <th class="w-val">Value</th>
+              <th class="w-own">Own%</th>
+              <th class="w-chg">Δ%</th>
+              <th class="w-status">Avail</th>
+              <th class="w-fit">Fit</th>
+            </tr>
+          </thead>
+          <tbody id="waiver-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <script>
 
@@ -976,6 +1182,156 @@
       1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST"
     };
     const POSITIONS = ["QB", "RB", "WR", "TE", "BN"];  // BN = bench/IR depth; no K/D/ST
+    const MAX_ROSTER = 16; // 8 starters + 6 bench + 2 IR
+
+    const WAIVER_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=kona_player_info`;
+    let waiverPlayers = [];
+    let waiverPosFilter = "all";
+    let waiverInjuredOnly = false;
+    let waiverWaiversOnly = false;
+    let waiverNeedsOnly = false;
+    let waiverSearch = "";
+    let waiverSort = "value";
+    let waiverLoaded = false;
+
+    async function fetchWaiverPool() {
+      const status = document.getElementById("waiver-status");
+      if (status) status.textContent = "Loading free agents…";
+      const filter = {
+        players: {
+          filterStatus: { value: ["FREEAGENT", "WAIVERS"] },
+          filterSlotIds: { value: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,23,24] },
+          limit: 250,
+          sortPercOwned: { sortAsc: false, sortPriority: 1 }
+        }
+      };
+      try {
+        const res = await fetchWithTimeout(WAIVER_URL, {
+          credentials: "omit",
+          headers: {
+            Accept: "application/json",
+            "X-Fantasy-Filter": JSON.stringify(filter)
+          }
+        }, 20000);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const list = data.players || [];
+        waiverPlayers = list.map((row) => {
+          const p = row.player || {};
+          const own = p.ownership || {};
+          const pos = POS_MAP[p.defaultPositionId] || "?";
+          const meta = p.id != null ? (fcByEspnId[String(p.id)] || fcByName[normalizeName(p.fullName)] || null) : null;
+          return {
+            id: String(p.id || row.id || ""),
+            name: p.fullName || "Unknown",
+            pos,
+            val: meta ? (meta.value || 0) : 0,
+            rank: meta ? meta.overallRank : null,
+            percentOwned: own.percentOwned != null ? own.percentOwned : 0,
+            percentChange: own.percentChange != null ? own.percentChange : 0,
+            status: row.status || "FREEAGENT",
+            injury: injuryLabel(p)
+          };
+        });
+        waiverLoaded = true;
+        if (status) {
+          status.textContent = waiverPlayers.length + " available players · sorted live on the client";
+        }
+        renderWaiverTable();
+      } catch (err) {
+        console.error(err);
+        if (status) status.textContent = "Failed to load free agents. Try Refresh list or a local server.";
+      }
+    }
+
+    function fillWaiverTeamSelect() {
+      const sel = document.getElementById("waiver-team");
+      if (!sel || !leagueData) return;
+      const prev = sel.value;
+      const members = leagueData.members || [];
+      sel.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = "Select team…";
+      sel.appendChild(opt0);
+      for (const team of (leagueData.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0))) {
+        const opt = document.createElement("option");
+        opt.value = String(team.id);
+        opt.textContent = team.name || team.abbrev || "Team " + team.id;
+        sel.appendChild(opt);
+      }
+      if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+    }
+
+    function selectedTeamNeeds() {
+      const sel = document.getElementById("waiver-team");
+      if (!sel || !sel.value || !leagueData) return [];
+      const models = finalizePowerScores(buildTeamModels(leagueData));
+      const ranks = computeRankMaps(models);
+      const ns = needsSurplusForTeam(ranks.posRank, sel.value, (leagueData.teams || []).length || 10);
+      return ns.needs || [];
+    }
+
+    function renderWaiverTable() {
+      const tbody = document.getElementById("waiver-body");
+      if (!tbody) return;
+      const needs = selectedTeamNeeds();
+      let rows = waiverPlayers.slice();
+
+      if (waiverPosFilter !== "all") rows = rows.filter((r) => r.pos === waiverPosFilter);
+      if (waiverInjuredOnly) rows = rows.filter((r) => !!r.injury);
+      if (waiverWaiversOnly) rows = rows.filter((r) => r.status === "WAIVERS");
+      if (waiverNeedsOnly && needs.length) rows = rows.filter((r) => needs.indexOf(r.pos) >= 0);
+      const q = waiverSearch.trim().toLowerCase();
+      if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q));
+
+      rows.sort((a, b) => {
+        if (waiverSort === "owned") return b.percentOwned - a.percentOwned;
+        if (waiverSort === "trending") return b.percentChange - a.percentChange;
+        if (waiverSort === "name") return a.name.localeCompare(b.name);
+        // value default: value desc, then owned
+        if (b.val !== a.val) return b.val - a.val;
+        return b.percentOwned - a.percentOwned;
+      });
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="waiver-empty">No players match these filters.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = "";
+      rows.forEach((r, i) => {
+        const fits = needs.indexOf(r.pos) >= 0;
+        const tr = document.createElement("tr");
+        tr.className = "waiver-row" + (fits ? " fits-need" : "");
+        const chg = r.percentChange;
+        const chgCls = chg > 0.05 ? "up" : chg < -0.05 ? "down" : "";
+        const chgStr = (chg > 0 ? "+" : "") + chg.toFixed(1);
+        const avail = r.status === "WAIVERS" ? "Waivers" : "FA";
+        const availCls = r.status === "WAIVERS" ? "waivers" : "fa";
+        const inj = r.injury
+          ? '<span class="inj-badge ' + r.injury.cls + '">' + r.injury.text + "</span>"
+          : "";
+        tr.innerHTML =
+          '<td class="w-rank">' + (i + 1) + "</td>" +
+          '<td class="w-pos">' + r.pos + "</td>" +
+          '<td class="w-name">' + escapeHtml(r.name) + inj + "</td>" +
+          '<td class="w-val">' + (r.val ? r.val.toLocaleString() : "—") + "</td>" +
+          '<td class="w-own">' + r.percentOwned.toFixed(1) + "%</td>" +
+          '<td class="w-chg ' + chgCls + '">' + chgStr + "</td>" +
+          '<td class="w-status ' + availCls + '">' + avail + "</td>" +
+          '<td class="w-fit">' + (fits ? '<span class="fit-tag">Need ' + r.pos + "</span>" : "—") + "</td>";
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setupWaiverWire() {
+      fillWaiverTeamSelect();
+      if (!waiverLoaded) fetchWaiverPool();
+      else renderWaiverTable();
+    }
+
+
 
     function mapTradeStatus(espnStatus) {
       if (espnStatus === "ON_THE_BLOCK") return "definitely";
@@ -1076,6 +1432,7 @@
 
         try {
           renderAll(leagueData);
+          fillWaiverTeamSelect();
         } catch (renderErr) {
           console.error(renderErr);
           statusEl.textContent = "Data loaded but display failed (see console)";
@@ -1283,7 +1640,7 @@
       return { a, b };
     }
 
-    let calcSelected = { a: new Set(), b: new Set() };
+    let calcSelected = { a: new Set(), b: new Set(), dropA: new Set(), dropB: new Set() };
 
 
     function computeRankMaps(models) {
@@ -1431,7 +1788,7 @@
         });
       }
 
-      function applySwap(rosterMap, teamAId, teamBId, giveA, giveB) {
+      function applySwap(rosterMap, teamAId, teamBId, giveA, giveB, dropA, dropB) {
         const next = {};
         for (const k of Object.keys(rosterMap)) {
           next[k] = rosterMap[k].map((e) => Object.assign({}, e));
@@ -1442,7 +1799,90 @@
         const fromB = next[bId].filter((e) => giveB.has(e.id));
         next[aId] = next[aId].filter((e) => !giveA.has(e.id)).concat(fromB);
         next[bId] = next[bId].filter((e) => !giveB.has(e.id)).concat(fromA);
+        // Roster drops after the swap (to stay at max roster size)
+        if (dropA && dropA.size) next[aId] = next[aId].filter((e) => !dropA.has(e.id));
+        if (dropB && dropB.size) next[bId] = next[bId].filter((e) => !dropB.has(e.id));
         return next;
+      }
+
+      function postTradeSize(teamId, giveMine, giveTheirs) {
+        const cur = (workingRosters[String(teamId)] || []).length;
+        return cur - giveMine.size + giveTheirs.size;
+      }
+
+      function dropsNeeded(teamId, giveMine, giveTheirs) {
+        return Math.max(0, postTradeSize(teamId, giveMine, giveTheirs) - MAX_ROSTER);
+      }
+
+      /** Players that can be dropped: stay on team after trade (not sent away), plus incoming. */
+      function dropCandidates(teamId, giveMine, giveTheirs, otherTeamId) {
+        const mine = workingRosters[String(teamId)] || [];
+        const theirs = workingRosters[String(otherTeamId)] || [];
+        const staying = mine.filter((e) => !giveMine.has(e.id));
+        const incoming = theirs.filter((e) => giveTheirs.has(e.id));
+        return staying.concat(incoming).slice().sort((a, b) => (a.val || 0) - (b.val || 0));
+      }
+
+      function renderDrops(side) {
+        const teamId = document.getElementById("calc-team-" + side).value;
+        const other = side === "a" ? "b" : "a";
+        const otherId = document.getElementById("calc-team-" + other).value;
+        const giveMine = calcSelected[side];
+        const giveTheirs = calcSelected[other];
+        const dropKey = side === "a" ? "dropA" : "dropB";
+        const need = dropsNeeded(teamId, giveMine, giveTheirs);
+        const box = document.getElementById("calc-drops-" + side);
+        const title = document.getElementById("calc-drops-title-" + side);
+        const list = document.getElementById("calc-drops-list-" + side);
+
+        // Prune invalid drop picks
+        const candidates = dropCandidates(teamId, giveMine, giveTheirs, otherId);
+        const candIds = new Set(candidates.map((c) => c.id));
+        for (const id of [...calcSelected[dropKey]]) {
+          if (!candIds.has(id)) calcSelected[dropKey].delete(id);
+        }
+
+        if (need <= 0) {
+          calcSelected[dropKey].clear();
+          box.hidden = true;
+          list.innerHTML = "";
+          return need;
+        }
+
+        box.hidden = false;
+        const picked = calcSelected[dropKey].size;
+        title.textContent =
+          "Drop " + need + " player" + (need === 1 ? "" : "s") +
+          " to stay at " + MAX_ROSTER + " (" + picked + "/" + need + " selected)";
+
+        list.innerHTML = "";
+        for (const r of candidates) {
+          // Don't allow dropping someone you're also "selecting" as a trade asset from the other side weirdness - candidates already exclude giveMine
+          if (giveMine.has(r.id)) continue;
+          const checked = calcSelected[dropKey].has(r.id);
+          const div = document.createElement("label");
+          div.className = "calc-player drop-pick" + (checked ? " selected" : "");
+          div.innerHTML =
+            '<input type="checkbox" data-drop-side="' + side + '" data-id="' + r.id + '" ' + (checked ? "checked " : "") + "/>" +
+            '<span class="calc-player-pos">' + r.pos + "</span>" +
+            '<span class="calc-player-name">' + escapeHtml(r.name) + "</span>" +
+            '<span class="calc-player-val">' + (r.val ? r.val.toLocaleString() : "—") + "</span>";
+          list.appendChild(div);
+        }
+        return need;
+      }
+
+      function rosterLegal() {
+        const teamAId = selA.value;
+        const teamBId = selB.value;
+        const needA = dropsNeeded(teamAId, calcSelected.a, calcSelected.b);
+        const needB = dropsNeeded(teamBId, calcSelected.b, calcSelected.a);
+        const okA = calcSelected.dropA.size >= needA;
+        const okB = calcSelected.dropB.size >= needB;
+        // too many drops also weird but allow >=
+        const overA = calcSelected.dropA.size > needA && needA > 0;
+        const overB = calcSelected.dropB.size > needB && needB > 0;
+        return { needA, needB, okA, okB, legal: okA && okB && !overA && !overB };
       }
 
       function fillSelect(sel, preferredId) {
@@ -1492,9 +1932,13 @@
         list.innerHTML = chainSteps.map((s, i) => {
           const aNames = s.giveANames.join(", ") || "—";
           const bNames = s.giveBNames.join(", ") || "—";
+          let extra = "";
+          if (s.dropANames && s.dropANames.length) extra += " · " + escapeHtml(s.teamAName) + " drops " + escapeHtml(s.dropANames.join(", "));
+          if (s.dropBNames && s.dropBNames.length) extra += " · " + escapeHtml(s.teamBName) + " drops " + escapeHtml(s.dropBNames.join(", "));
           return "<li><strong>" + (i + 1) + ".</strong> " +
             escapeHtml(s.teamAName) + " sends " + escapeHtml(aNames) +
-            " ↔ " + escapeHtml(s.teamBName) + " sends " + escapeHtml(bNames) + "</li>";
+            " ↔ " + escapeHtml(s.teamBName) + " sends " + escapeHtml(bNames) +
+            extra + "</li>";
         }).join("");
         if (hint) hint.textContent = chainSteps.length + " trade" + (chainSteps.length === 1 ? "" : "s") + " in chain";
       }
@@ -1606,6 +2050,27 @@
         diffEl.textContent = label;
         diffEl.style.color = fairnessColor(total === 0 ? 0 : (absD < 80 && pct <= 0.08 ? 0 : pct));
         diffEl.style.borderColor = "transparent";
+
+        const needA = renderDrops("a");
+        const needB = renderDrops("b");
+        const legal = rosterLegal();
+        const illegalEl = document.getElementById("calc-illegal");
+        const applyBtn = document.getElementById("calc-apply");
+        if (!legal.legal && (needA > 0 || needB > 0 || calcSelected.a.size || calcSelected.b.size)) {
+          let msg = [];
+          if (!legal.okA) msg.push("A must drop " + legal.needA);
+          if (!legal.okB) msg.push("B must drop " + legal.needB);
+          if (calcSelected.dropA.size > legal.needA && legal.needA > 0) msg.push("A selected too many drops");
+          if (calcSelected.dropB.size > legal.needB && legal.needB > 0) msg.push("B selected too many drops");
+          illegalEl.hidden = false;
+          illegalEl.textContent = msg.join(" · ") || "Roster over limit";
+          if (applyBtn) applyBtn.disabled = true;
+        } else {
+          illegalEl.hidden = true;
+          illegalEl.textContent = "";
+          if (applyBtn) applyBtn.disabled = false;
+        }
+
         renderRankingImpact();
       }
 
@@ -1625,7 +2090,11 @@
         // After = working rosters + optional pending trade
         let pendingMap = workingRosters;
         if (hasPicks && String(teamAId) !== String(teamBId)) {
-          pendingMap = applySwap(workingRosters, teamAId, teamBId, calcSelected.a, calcSelected.b);
+          pendingMap = applySwap(
+            workingRosters, teamAId, teamBId,
+            calcSelected.a, calcSelected.b,
+            calcSelected.dropA, calcSelected.dropB
+          );
         }
         const afterRanks = computeRankMaps(modelsFromRosters(pendingMap));
 
@@ -1683,16 +2152,29 @@
           alert("Select players to include in this trade step.");
           return;
         }
+        const legal = rosterLegal();
+        if (!legal.legal) {
+          alert("Select the required roster drops so both teams stay at " + MAX_ROSTER + " players or fewer.");
+          return;
+        }
         const rosterA = workingRosters[String(teamAId)] || [];
         const rosterB = workingRosters[String(teamBId)] || [];
         const nameOf = (rows, id) => {
           const r = rows.find((x) => x.id === id);
           return r ? r.name : id;
         };
+        // Names for drops may be on either roster after conceptual swap - look both
+        const allRows = rosterA.concat(rosterB);
         const giveANames = [...calcSelected.a].map((id) => nameOf(rosterA, id));
         const giveBNames = [...calcSelected.b].map((id) => nameOf(rosterB, id));
+        const dropANames = [...calcSelected.dropA].map((id) => nameOf(allRows, id));
+        const dropBNames = [...calcSelected.dropB].map((id) => nameOf(allRows, id));
 
-        workingRosters = applySwap(workingRosters, teamAId, teamBId, calcSelected.a, calcSelected.b);
+        workingRosters = applySwap(
+          workingRosters, teamAId, teamBId,
+          calcSelected.a, calcSelected.b,
+          calcSelected.dropA, calcSelected.dropB
+        );
         chainSteps.push({
           teamAId,
           teamBId,
@@ -1701,10 +2183,14 @@
           giveA: [...calcSelected.a],
           giveB: [...calcSelected.b],
           giveANames,
-          giveBNames
+          giveBNames,
+          dropANames,
+          dropBNames
         });
         calcSelected.a.clear();
         calcSelected.b.clear();
+        calcSelected.dropA.clear();
+        calcSelected.dropB.clear();
         renderChain();
         renderSide("a");
         renderSide("b");
@@ -1712,11 +2198,15 @@
 
       selA.onchange = () => {
         calcSelected.a.clear();
+        calcSelected.dropA.clear();
         renderSide("a");
+        updateCalcTotals();
       };
       selB.onchange = () => {
         calcSelected.b.clear();
+        calcSelected.dropB.clear();
         renderSide("b");
+        updateCalcTotals();
       };
 
       document.getElementById("calc-players-a").onclick = (e) => {
@@ -1725,6 +2215,8 @@
         if (input.checked) calcSelected.a.add(input.dataset.id);
         else calcSelected.a.delete(input.dataset.id);
         input.closest(".calc-player").classList.toggle("selected", input.checked);
+        calcSelected.dropA.delete(input.dataset.id);
+        calcSelected.dropB.delete(input.dataset.id);
         updateCalcTotals();
       };
       document.getElementById("calc-players-b").onclick = (e) => {
@@ -1733,14 +2225,43 @@
         if (input.checked) calcSelected.b.add(input.dataset.id);
         else calcSelected.b.delete(input.dataset.id);
         input.closest(".calc-player").classList.toggle("selected", input.checked);
+        // traded-away players can't also be drops
+        calcSelected.dropA.delete(input.dataset.id);
+        calcSelected.dropB.delete(input.dataset.id);
         updateCalcTotals();
       };
+
+      function onDropClick(e) {
+        const input = e.target.closest("input[type=checkbox][data-drop-side]");
+        if (!input) return;
+        const side = input.dataset.dropSide;
+        const key = side === "a" ? "dropA" : "dropB";
+        const need = dropsNeeded(
+          document.getElementById("calc-team-" + side).value,
+          calcSelected[side],
+          calcSelected[side === "a" ? "b" : "a"]
+        );
+        if (input.checked) {
+          if (calcSelected[key].size >= need) {
+            input.checked = false;
+            return;
+          }
+          calcSelected[key].add(input.dataset.id);
+        } else {
+          calcSelected[key].delete(input.dataset.id);
+        }
+        updateCalcTotals();
+      }
+      document.getElementById("calc-drops-list-a").onclick = onDropClick;
+      document.getElementById("calc-drops-list-b").onclick = onDropClick;
 
       document.getElementById("calc-apply").onclick = applyCurrentToChain;
 
       document.getElementById("calc-clear").onclick = () => {
         calcSelected.a.clear();
         calcSelected.b.clear();
+        calcSelected.dropA.clear();
+        calcSelected.dropB.clear();
         workingRosters = snapshotFromEspn();
         chainSteps = [];
         renderChain();
@@ -2044,6 +2565,7 @@
         btn.classList.add("active");
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
+        if (btn.dataset.panel === "waivers") setupWaiverWire();
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
@@ -2081,6 +2603,48 @@
       if (search) search.addEventListener("input", (e) => {
         searchQuery = e.target.value;
         applyTradeFilters();
+      });
+
+      const wPos = document.getElementById("waiver-pos-filters");
+      if (wPos) wPos.addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn || !btn.dataset.wpos) return;
+        wPos.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        waiverPosFilter = btn.dataset.wpos;
+        renderWaiverTable();
+      });
+      const wInj = document.getElementById("waiver-injured");
+      if (wInj) wInj.addEventListener("change", (e) => {
+        waiverInjuredOnly = !!e.target.checked;
+        renderWaiverTable();
+      });
+      const wOnly = document.getElementById("waiver-waivers-only");
+      if (wOnly) wOnly.addEventListener("change", (e) => {
+        waiverWaiversOnly = !!e.target.checked;
+        renderWaiverTable();
+      });
+      const wNeeds = document.getElementById("waiver-needs-only");
+      if (wNeeds) wNeeds.addEventListener("change", (e) => {
+        waiverNeedsOnly = !!e.target.checked;
+        renderWaiverTable();
+      });
+      const wSearch = document.getElementById("waiver-search");
+      if (wSearch) wSearch.addEventListener("input", (e) => {
+        waiverSearch = e.target.value;
+        renderWaiverTable();
+      });
+      const wSort = document.getElementById("waiver-sort");
+      if (wSort) wSort.addEventListener("change", (e) => {
+        waiverSort = e.target.value;
+        renderWaiverTable();
+      });
+      const wTeam = document.getElementById("waiver-team");
+      if (wTeam) wTeam.addEventListener("change", () => renderWaiverTable());
+      const wRef = document.getElementById("waiver-refresh");
+      if (wRef) wRef.addEventListener("click", () => {
+        waiverLoaded = false;
+        fetchWaiverPool();
       });
     } catch (bootErr) {
       console.error(bootErr);
