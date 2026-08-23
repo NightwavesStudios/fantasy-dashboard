@@ -1896,9 +1896,13 @@
     }
 
     function formatValueDelta(before, after) {
-      if (before == null || after == null) return "Value —";
+      if (before == null || after == null) return { text: "Value —", color: "var(--text-muted)" };
       const d = after - before;
-      return "Value " + (d >= 0 ? "+" : "") + d.toLocaleString();
+      const relative = before ? Math.min(1, Math.abs(d / before) * 2) : 0;
+      const neutral = [154, 168, 188];
+      const target = d > 0 ? [74, 222, 128] : d < 0 ? [248, 113, 113] : neutral;
+      const color = "rgb(" + target.map((channel, index) => Math.round(neutral[index] + (channel - neutral[index]) * relative)).join(",") + ")";
+      return { text: "Value " + (d >= 0 ? "+" : "") + d.toLocaleString(), color };
     }
 
     function tradeFairnessMessage(beforeModels, afterModels, teamAId, teamBId) {
@@ -2344,7 +2348,7 @@
           let rows =
             '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
             '<span class="calc-impact-change ' + power.cls + '">' + power.text + " · " +
-            formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue) + "</span></div>";
+            '<span class="impact-value" style="color:' + formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue).color + '">' + formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue).text + "</span></span></div>";
           for (const pos of POSITIONS) {
             const delta = formatRankDelta(
               posr(originalRanks.posRank, teamId, pos),
@@ -2355,9 +2359,9 @@
             rows +=
               '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
               '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
-              formatValueDelta(beforePositionValue, afterPositionValue) + "</span></div>";
+              '<span class="impact-value" style="color:' + formatValueDelta(beforePositionValue, afterPositionValue).color + '">' + formatValueDelta(beforePositionValue, afterPositionValue).text + "</span></span></div>";
           }
-          return '<div class="calc-impact-card collapsed" tabindex="0" role="button" aria-expanded="false"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
+          return '<div class="calc-impact-card" tabindex="0" role="button" aria-expanded="true"><h4>' + escapeHtml(name) + "</h4>" + rows + "</div>";
         }
 
         grid.innerHTML = [...involved].map(card).join("");
@@ -2888,7 +2892,8 @@
       const settingsRoot = scheduleData.settings || data.settings || {};
       const settings = settingsRoot.scheduleSettings || settingsRoot;
       const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || settings.numPlayoffTeams || 6);
-      const currentPeriod = Number(data.scoringPeriodId || 0);
+      const hasPlayedGames = models.some((team) => team.gamesPlayed > 0);
+      const currentPeriod = hasPlayedGames ? Number(data.scoringPeriodId || 0) : 0;
       const playoffStart = Number(settings.playoffMatchupPeriod || settings.playoffStartWeek || settings.playoffStart || 15);
       const rawSchedule = scheduleData.schedule || data.schedule || [];
       const schedule = rawSchedule.map((game) => Object.assign({}, game, {
@@ -2898,6 +2903,19 @@
         const period = Number(game.matchupPeriodId || game.week || 0);
         return period > currentPeriod && period < playoffStart && game.homeTeamId != null && game.awayTeamId != null;
       });
+      let projectedSchedule = false;
+      if (!schedule.length && models.length > 1) {
+        projectedSchedule = true;
+        for (let period = currentPeriod + 1; period < playoffStart; period++) {
+          const offset = (period - 1) % (models.length - 1);
+          for (let i = 0; i < models.length / 2; i++) {
+            const homeIndex = i === 0 ? models.length - 1 : (i + offset) % (models.length - 1);
+            const awayIndex = i === 0 ? offset : (models.length - 1 - i + offset) % (models.length - 1);
+            if (homeIndex === awayIndex) continue;
+            schedule.push({ matchupPeriodId: period, homeTeamId: models[homeIndex].id, awayTeamId: models[awayIndex].id });
+          }
+        }
+      }
       const gamesByPeriod = {};
       schedule.forEach((game) => {
         const period = Number(game.matchupPeriodId || game.week || 0);
@@ -2980,7 +2998,7 @@
         for (let i = 1; i < finalists.length; i++) champion = pickWinner(champion, finalists[i]);
         if (champion) results[String(champion.id)].champion++;
       }
-      return { results, teams: models, playoffCount, byeSlots, periods: periods.length, simulations };
+      return { results, teams: models, playoffCount, byeSlots, periods: periods.length, simulations, projectedSchedule };
     }
 
     async function setupPlayoffOdds() {
@@ -3009,7 +3027,7 @@
             "<td>" + playoffPercent(result.champion, total) + "</td>" +
             "<td>" + median + "</td></tr>";
         }).join("");
-        status.textContent = simulation.playoffCount + " playoff spots · " + simulation.byeSlots + " first-round byes · " + simulation.periods + " future matchup periods · " + total.toLocaleString() + " simulations · league median included" + (simulation.periods ? "" : " · ESPN has no future schedule yet");
+        status.textContent = simulation.playoffCount + " playoff spots · " + simulation.byeSlots + " first-round byes · " + simulation.periods + " future matchup periods · " + total.toLocaleString() + " simulations · league median included" + (simulation.projectedSchedule ? " · projected schedule used" : "");
         playoffOddsLoaded = true;
       } catch (error) {
         console.error(error);
