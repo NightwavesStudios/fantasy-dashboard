@@ -753,6 +753,31 @@
       applyTradeFilters();
     }
 
+    
+    /** Color for position rank: #1 gold, then green → neutral → red for worst. */
+    function rankColor(rank, teamCount) {
+      if (rank == null || rank === "—") return "var(--text-muted)";
+      const n = Math.max(teamCount || 10, 2);
+      if (rank === 1) return "#fbbf24"; // gold
+      // Map rank 2..n to t in [0, 1] (best remaining → worst)
+      const t = (rank - 2) / Math.max(n - 2, 1);
+      // green (34,197,94) → neutral gray-blue (154,168,188) → red (239,68,68)
+      function lerp(a, b, u) { return Math.round(a + (b - a) * u); }
+      let r, g, b;
+      if (t <= 0.5) {
+        const u = t / 0.5;
+        r = lerp(34, 154, u);
+        g = lerp(197, 168, u);
+        b = lerp(94, 188, u);
+      } else {
+        const u = (t - 0.5) / 0.5;
+        r = lerp(154, 239, u);
+        g = lerp(168, 68, u);
+        b = lerp(188, 68, u);
+      }
+      return "rgb(" + r + "," + g + "," + b + ")";
+    }
+
     function renderPowerRankings(models) {
       const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
       const maxScore = sorted[0]?.totalScore || 1;
@@ -778,15 +803,16 @@
 
         const row = document.createElement("div");
         row.className = "power-row";
+        const teamCount = sorted.length || 10;
         let chips = "";
         for (const pos of POSITIONS) {
-          const pr = ranks[pos] || "—";
-          const best = pr === 1 ? " best" : "";
+          const pr = ranks[pos] || null;
           const pscore = t.posScores[pos] || 0;
+          const color = rankColor(pr, teamCount);
           chips +=
             '<div class="pos-chip">' +
             '<div class="pos-chip-label">' + pos + "</div>" +
-            '<div class="pos-chip-rank' + best + '">#' + pr + "</div>" +
+            '<div class="pos-chip-rank" style="color:' + color + '">#' + (pr != null ? pr : "—") + "</div>" +
             '<div class="pos-chip-val">' + pscore.toLocaleString() + "</div>" +
             "</div>";
         }
@@ -799,7 +825,7 @@
 
         row.innerHTML =
           '<div class="power-row-top">' +
-            '<div class="power-rank' + (rank <= 3 ? " top" : "") + '">' + rank + "</div>" +
+            '<div class="power-rank" style="color:' + rankColor(rank, teamCount) + '">' + rank + "</div>" +
             '<div class="power-team">' +
               '<div class="power-team-name">' + escapeHtml(t.name) + "</div>" +
               '<div class="power-team-owner">' + escapeHtml(t.owner) +
