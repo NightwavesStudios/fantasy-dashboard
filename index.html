@@ -309,6 +309,8 @@
       padding: 0.85rem 1rem;
       cursor: pointer;
     }
+    .power-row::after { content: "+"; float: right; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
+    .power-row:not(.collapsed)::after { content: "−"; }
     .power-row.collapsed .pos-breakdown { display: none; }
     .power-row-top {
       display: flex;
@@ -551,6 +553,9 @@
       margin-bottom: 0.5rem;
     }
     .calc-impact-card { cursor: pointer; }
+    .calc-impact-card::after { content: "+"; position: absolute; top: 0.75rem; right: 0.85rem; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
+    .calc-impact-card:not(.collapsed)::after { content: "−"; }
+    .calc-impact-card { position: relative; }
     .calc-impact-card.collapsed .calc-impact-row:not(:first-of-type) { display: none; }
     .calc-impact-row {
       display: flex;
@@ -926,7 +931,7 @@
       color: #4ade80;
       border: 1px solid rgba(22, 163, 74, 0.3);
     }
-    .waiver-row.fits-need td {
+    .waiver-row.upgrade td {
       background: rgba(22, 163, 74, 0.04);
     }
     .waiver-empty {
@@ -1138,8 +1143,7 @@
   <div class="panel" id="panel-waivers">
     <div class="calc-wrap">
       <p class="rankings-note">
-        Free agents and players on waivers from ESPN, scored with the same FantasyCalc values.
-        Pick your team to highlight targets that fill a need.
+        Pick your team to see only waiver players who improve on someone currently rostered at the same position.
       </p>
       <div class="waiver-toolbar">
         <div class="waiver-toolbar-row">
@@ -1161,8 +1165,8 @@
           <label class="inj-filter" title="Only players on waivers (not pure free agents)">
             <input type="checkbox" id="waiver-waivers-only" /> Waivers only
           </label>
-          <label class="inj-filter" title="Only players that match a Need for your selected team">
-            <input type="checkbox" id="waiver-needs-only" /> Fits my needs
+          <label class="inj-filter" title="Only show waiver players worth swapping onto your selected team">
+            <input type="checkbox" id="waiver-upgrades-only" checked /> Upgrades only
           </label>
         </div>
         <div class="waiver-toolbar-row">
@@ -1193,7 +1197,7 @@
               <th class="w-own" title="Percent of ESPN leagues rostering this player right now">Own%</th>
               <th class="w-chg" title="Change in percent-owned recently — a rough measure of add/drop trends">Δ%</th>
               <th class="w-status" title="Free Agent = pick up any time. Waivers = subject to your league's waiver process/priority">Avail</th>
-              <th class="w-fit" title="Marked when this player's position matches a Need for the team selected above">Fit</th>
+              <th class="w-fit" title="The rostered player this wire player would replace">Swap</th>
             </tr>
           </thead>
           <tbody id="waiver-body"></tbody>
@@ -1273,7 +1277,7 @@
       return '<span class="bye-badge' + (isNow ? " bye-this-week" : "") + '" title="Bye week ' + bye +
         (isNow ? " · on bye this week, won\u2019t score" : "") + '">Bye ' + bye + "</span>";
     }
-    const POSITIONS = ["QB", "RB", "WR", "TE", "BN"];  // BN = bench/IR depth; no K/D/ST
+    const POSITIONS = ["QB", "RB", "WR", "TE", "BN"];  // BN = bench/IR; no K/D/ST
     const MAX_ROSTER = 16; // 8 starters + 6 bench + 2 IR
 
     const WAIVER_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=kona_player_info`;
@@ -1281,7 +1285,7 @@
     let waiverPosFilter = "all";
     let waiverInjuredOnly = false;
     let waiverWaiversOnly = false;
-    let waiverNeedsOnly = false;
+    let waiverUpgradesOnly = true;
     let waiverSearch = "";
     let waiverSort = "value";
     let waiverLoaded = false;
@@ -1356,25 +1360,35 @@
       if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
     }
 
-    function selectedTeamNeeds() {
+    function rosterUpgradeForPlayer(player) {
       const sel = document.getElementById("waiver-team");
-      if (!sel || !sel.value || !leagueData) return [];
-      const models = finalizePowerScores(buildTeamModels(leagueData));
-      const ranks = computeRankMaps(models);
-      const ns = needsSurplusForTeam(ranks.posRank, sel.value, (leagueData.teams || []).length || 10);
-      return ns.needs || [];
+      if (!sel || !sel.value || !leagueData || !player) return null;
+      const team = (leagueData.teams || []).find((t) => String(t.id) === String(sel.value));
+      const roster = (team && team.roster && team.roster.entries) || [];
+      const players = roster.map((entry) => {
+        const p = entry.playerPoolEntry && entry.playerPoolEntry.player;
+        if (!p) return null;
+        const meta = playerFcMeta(p);
+        return {
+          name: p.fullName || "Unknown",
+          pos: POS_MAP[p.defaultPositionId] || "?",
+          val: meta ? (meta.value || 0) : 0
+        };
+      }).filter((p) => p && p.pos === player.pos);
+      const replace = players.sort((a, b) => a.val - b.val)[0];
+      return replace && player.val > replace.val ? replace : null;
     }
 
     function renderWaiverTable() {
       const tbody = document.getElementById("waiver-body");
       if (!tbody) return;
-      const needs = selectedTeamNeeds();
       let rows = waiverPlayers.slice();
 
       if (waiverPosFilter !== "all") rows = rows.filter((r) => r.pos === waiverPosFilter);
       if (waiverInjuredOnly) rows = rows.filter((r) => !!r.injury);
       if (waiverWaiversOnly) rows = rows.filter((r) => r.status === "WAIVERS");
-      if (waiverNeedsOnly && needs.length) rows = rows.filter((r) => needs.indexOf(r.pos) >= 0);
+      rows = rows.map((r) => Object.assign(r, { upgrade: rosterUpgradeForPlayer(r) }));
+      if (waiverUpgradesOnly) rows = rows.filter((r) => r.upgrade);
       const q = waiverSearch.trim().toLowerCase();
       if (q) rows = rows.filter((r) => r.name.toLowerCase().includes(q));
 
@@ -1382,21 +1396,28 @@
         if (waiverSort === "owned") return b.percentOwned - a.percentOwned;
         if (waiverSort === "trending") return b.percentChange - a.percentChange;
         if (waiverSort === "name") return a.name.localeCompare(b.name);
+        if (a.upgrade && !b.upgrade) return -1;
+        if (!a.upgrade && b.upgrade) return 1;
         // value default: value desc, then owned
         if (b.val !== a.val) return b.val - a.val;
         return b.percentOwned - a.percentOwned;
       });
 
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="waiver-empty">No players match these filters.</td></tr>';
+        const message = !document.getElementById("waiver-team").value
+          ? "Select your team to find better wire replacements."
+          : waiverUpgradesOnly
+          ? "No better same-position players are available on the wire."
+          : "No players match these filters.";
+        tbody.innerHTML = '<tr><td colspan="9" class="waiver-empty">' + message + "</td></tr>";
         return;
       }
 
       tbody.innerHTML = "";
       rows.forEach((r, i) => {
-        const fits = needs.indexOf(r.pos) >= 0;
+        const swap = r.upgrade;
         const tr = document.createElement("tr");
-        tr.className = "waiver-row" + (fits ? " fits-need" : "");
+        tr.className = "waiver-row" + (swap ? " upgrade" : "");
         const chg = r.percentChange;
         const chgCls = chg > 0.05 ? "up" : chg < -0.05 ? "down" : "";
         const chgStr = (chg > 0 ? "+" : "") + chg.toFixed(1);
@@ -1424,7 +1445,9 @@
           '<td class="w-own" title="Percent of ESPN leagues rostering this player">' + r.percentOwned.toFixed(1) + "%</td>" +
           '<td class="w-chg ' + chgCls + '" title="' + chgTitle + '">' + chgStr + "</td>" +
           '<td class="w-status ' + availCls + '" title="' + (r.status === "WAIVERS" ? "On waivers — subject to your league's claim process" : "Free agent — add any time") + '">' + avail + "</td>" +
-          '<td class="w-fit">' + (fits ? '<span class="fit-tag" title="Matches a roster need for the selected team">Need ' + r.pos + "</span>" : "—") + "</td>";
+          '<td class="w-fit">' + (swap
+            ? '<span class="fit-tag" title="Replace ' + escapeHtml(swap.name) + ' (' + swap.val.toLocaleString() + ')">' + escapeHtml(swap.name) + ' +' + (r.val - swap.val).toLocaleString() + '</span>'
+            : "—") + "</td>";
         tbody.appendChild(tr);
       });
     }
@@ -2094,12 +2117,12 @@
           const ns = needsSurplusForTeam(rankMaps.posRank, teamId, teams.length || 10);
           let htmlNs = "";
           for (const p of ns.needs) {
-            htmlNs += '<span class="need-tag need" title="Bottom-tier ' + p + ' depth">Need ' + p + "</span>";
+            htmlNs += '<span class="need-tag need" title="Lower-ranked ' + p + '">Need ' + p + "</span>";
           }
           for (const p of ns.surplus) {
-            htmlNs += '<span class="need-tag surplus" title="Top-tier ' + p + ' depth">Surplus ' + p + "</span>";
+            htmlNs += '<span class="need-tag surplus" title="Higher-ranked ' + p + '">Surplus ' + p + "</span>";
           }
-          needsEl.innerHTML = htmlNs || '<span style="color:var(--text-muted);font-size:0.7rem">Balanced depth</span>';
+          needsEl.innerHTML = htmlNs || '<span style="color:var(--text-muted);font-size:0.7rem">Balanced</span>';
         }
 
         list.innerHTML = "";
@@ -2545,8 +2568,8 @@
         let nsHtml = "";
         if (ns.needs.length || ns.surplus.length) {
           nsHtml = '<div class="team-needs">';
-          for (const p of ns.needs) nsHtml += '<span class="need-tag need" title="Bottom-tier ' + p + ' depth">Need ' + p + "</span>";
-          for (const p of ns.surplus) nsHtml += '<span class="need-tag surplus" title="Top-tier ' + p + ' depth">Surplus ' + p + "</span>";
+          for (const p of ns.needs) nsHtml += '<span class="need-tag need" title="Lower-ranked ' + p + '">Need ' + p + "</span>";
+          for (const p of ns.surplus) nsHtml += '<span class="need-tag surplus" title="Higher-ranked ' + p + '">Surplus ' + p + "</span>";
           nsHtml += "</div>";
         }
 
@@ -2689,7 +2712,7 @@
           const pscore = t.posScores[pos] || 0;
           const color = rankColor(pr, teamCount);
           const chipTip = pos === "BN"
-            ? "Bench depth rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of the bench: " + pscore.toLocaleString()
+            ? "Bench rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of the bench: " + pscore.toLocaleString()
             : pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of top " + (pos === "QB" ? "2" : "3") + " " + pos + "s: " + pscore.toLocaleString();
           chips +=
             '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
@@ -2812,9 +2835,9 @@
         waiverWaiversOnly = !!e.target.checked;
         renderWaiverTable();
       });
-      const wNeeds = document.getElementById("waiver-needs-only");
-      if (wNeeds) wNeeds.addEventListener("change", (e) => {
-        waiverNeedsOnly = !!e.target.checked;
+      const wUpgrades = document.getElementById("waiver-upgrades-only");
+      if (wUpgrades) wUpgrades.addEventListener("change", (e) => {
+        waiverUpgradesOnly = !!e.target.checked;
         renderWaiverTable();
       });
       const wSearch = document.getElementById("waiver-search");
