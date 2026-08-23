@@ -373,6 +373,121 @@
       font-variant-numeric: tabular-nums;
     }
 
+
+    .calc-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 2.5rem;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .calc-side {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+    }
+    .calc-side-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .calc-side-header label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .calc-team-select {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      font-size: 0.8125rem;
+      font-family: inherit;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+    }
+    .calc-players {
+      flex: 1;
+      max-height: 420px;
+      overflow-y: auto;
+      padding: 0.35rem 0;
+    }
+    .calc-player {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.8125rem;
+      user-select: none;
+    }
+    .calc-player:last-child { border-bottom: none; }
+    .calc-player:hover { background: rgba(255,255,255,0.03); }
+    .calc-player.selected {
+      background: rgba(59, 130, 246, 0.12);
+    }
+    .calc-player input {
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+    .calc-player-name { flex: 1; min-width: 0; font-weight: 500; }
+    .calc-player-pos {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      width: 28px;
+    }
+    .calc-player-val {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+    }
+    .calc-total {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border-subtle);
+      font-weight: 700;
+      font-size: 1.125rem;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      background: var(--surface-2);
+    }
+    .calc-mid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding-top: 3rem;
+      min-width: 100px;
+    }
+    .calc-diff {
+      font-weight: 700;
+      font-size: 0.9375rem;
+      text-align: center;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      min-width: 90px;
+    }
+    .calc-diff.favors-a { color: #4ade80; border-color: rgba(74, 222, 128, 0.35); }
+    .calc-diff.favors-b { color: #f87171; border-color: rgba(248, 113, 113, 0.35); }
+    .calc-diff.even { color: var(--text-secondary); }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -397,6 +512,9 @@
       .power-bar { width: 80px; }
       .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       .tab { flex-shrink: 0; }
+      .calc-wrap { padding-left: 1rem; padding-right: 1rem; }
+      .calc-grid { grid-template-columns: 1fr; }
+      .calc-mid { padding-top: 0; flex-direction: row; justify-content: space-between; }
     }
     @media (max-width: 380px) {
       .pos-breakdown { grid-template-columns: repeat(2, 1fr); }
@@ -421,6 +539,7 @@
   <nav class="tabs" id="tabs">
     <button class="tab active" data-panel="trade" type="button">Trade Board</button>
     <button class="tab" data-panel="power" type="button">Power Rankings</button>
+    <button class="tab" data-panel="calc" type="button">Trade Calculator</button>
   </nav>
 
   <!-- TRADE BOARD -->
@@ -455,6 +574,36 @@
         Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show how they rank at QB, RB, WR, and TE only.
       </p>
       <div id="power-list" class="power-list"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-calc">
+    <div class="calc-wrap">
+      <p class="rankings-note">
+        Values from FantasyCalc (10 team Superflex PPR). Fairness is based on the value gap relative to the size of the trade, not just the raw difference.
+      </p>
+      <div class="calc-grid">
+        <div class="calc-side" id="calc-side-a">
+          <div class="calc-side-header">
+            <label>Side A</label>
+            <select id="calc-team-a" class="calc-team-select"></select>
+          </div>
+          <div class="calc-players" id="calc-players-a"></div>
+          <div class="calc-total" id="calc-total-a">0</div>
+        </div>
+        <div class="calc-mid">
+          <div class="calc-diff" id="calc-diff">Even</div>
+          <button type="button" class="btn" id="calc-clear">Clear</button>
+        </div>
+        <div class="calc-side" id="calc-side-b">
+          <div class="calc-side-header">
+            <label>Side B</label>
+            <select id="calc-team-b" class="calc-team-select"></select>
+          </div>
+          <div class="calc-players" id="calc-players-b"></div>
+          <div class="calc-total" id="calc-total-b">0</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -684,7 +833,187 @@
       renderTradeBoard(data);
       const models = finalizePowerScores(buildTeamModels(data));
       renderPowerRankings(models);
+      setupTradeCalculator(data);
     }
+
+    let calcSelected = { a: new Set(), b: new Set() };
+
+    function setupTradeCalculator(data) {
+      const members = data.members || [];
+      const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+
+      function fillSelect(sel, preferredId) {
+        const prev = sel.value;
+        sel.innerHTML = "";
+        for (const team of teams) {
+          const name = team.name || team.abbrev || "Team " + team.id;
+          const opt = document.createElement("option");
+          opt.value = String(team.id);
+          opt.textContent = name;
+          sel.appendChild(opt);
+        }
+        if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+        else if (preferredId != null) sel.value = String(preferredId);
+      }
+
+      const selA = document.getElementById("calc-team-a");
+      const selB = document.getElementById("calc-team-b");
+      fillSelect(selA, teams[0] && teams[0].id);
+      fillSelect(selB, teams[1] && teams[1].id);
+
+      function rosterRows(teamId) {
+        const team = teams.find((t) => String(t.id) === String(teamId));
+        if (!team) return [];
+        const rows = [];
+        for (const e of team.roster?.entries || []) {
+          const player = e.playerPoolEntry?.player;
+          if (!player) continue;
+          const pos = POS_MAP[player.defaultPositionId] || "?";
+          // Skip pure K/DST if no FC value and not skill? still show all with value
+          const val = playerFcValue(player);
+          rows.push({
+            id: String(player.id),
+            name: player.fullName || "Unknown",
+            pos,
+            val
+          });
+        }
+        rows.sort((a, b) => b.val - a.val || a.name.localeCompare(b.name));
+        return rows;
+      }
+
+      function renderSide(side) {
+        const sel = document.getElementById("calc-team-" + side);
+        const list = document.getElementById("calc-players-" + side);
+        const teamId = sel.value;
+        const rows = rosterRows(teamId);
+        // drop selections no longer on this roster
+        const ids = new Set(rows.map((r) => r.id));
+        for (const id of [...calcSelected[side]]) {
+          if (!ids.has(id)) calcSelected[side].delete(id);
+        }
+        list.innerHTML = "";
+        for (const r of rows) {
+          const checked = calcSelected[side].has(r.id);
+          const div = document.createElement("label");
+          div.className = "calc-player" + (checked ? " selected" : "");
+          div.innerHTML =
+            '<input type="checkbox" ' + (checked ? "checked " : "") + 'data-id="' + r.id + '" data-side="' + side + '"/>' +
+            '<span class="calc-player-pos">' + r.pos + "</span>" +
+            '<span class="calc-player-name">' + escapeHtml(r.name) + "</span>" +
+            '<span class="calc-player-val">' + (r.val ? r.val.toLocaleString() : "—") + "</span>";
+          list.appendChild(div);
+        }
+        updateCalcTotals();
+      }
+
+      function updateCalcTotals() {
+        function sideTotal(side) {
+          const sel = document.getElementById("calc-team-" + side);
+          const rows = rosterRows(sel.value);
+          const map = Object.fromEntries(rows.map((r) => [r.id, r.val]));
+          let sum = 0;
+          for (const id of calcSelected[side]) sum += map[id] || 0;
+          return sum;
+        }
+        const a = sideTotal("a");
+        const b = sideTotal("b");
+        document.getElementById("calc-total-a").textContent = a.toLocaleString();
+        document.getElementById("calc-total-b").textContent = b.toLocaleString();
+        const diffEl = document.getElementById("calc-diff");
+        const d = a - b;
+        const total = a + b;
+
+        // Relative fairness: gap as % of average side value.
+        // Small absolute gaps on huge trades look fairer than the same gap on tiny trades.
+        const avg = total / 2;
+        const absD = Math.abs(d);
+        let pct = avg > 0 ? absD / avg : 0;
+
+        // Also require a minimum absolute gap so tiny residual noise does not light up.
+        // Scale color: fair (green) -> mild (neutral) -> lopsided (red)
+        // ~0-8% fair, 8-25% mild, 25%+ increasingly red
+        function fairnessColor(p) {
+          if (total === 0) return "var(--text-secondary)";
+          if (p <= 0.08) {
+            // green to soft green
+            const u = p / 0.08;
+            const r = Math.round(34 + (120 - 34) * u);
+            const g = Math.round(197 + (180 - 197) * u);
+            const b = Math.round(94 + (140 - 94) * u);
+            return "rgb(" + r + "," + g + "," + b + ")";
+          }
+          if (p <= 0.25) {
+            const u = (p - 0.08) / 0.17;
+            const r = Math.round(120 + (154 - 120) * u);
+            const g = Math.round(180 + (168 - 180) * u);
+            const b = Math.round(140 + (188 - 140) * u);
+            return "rgb(" + r + "," + g + "," + b + ")";
+          }
+          const u = Math.min(1, (p - 0.25) / 0.35);
+          const r = Math.round(154 + (239 - 154) * u);
+          const g = Math.round(168 + (68 - 168) * u);
+          const b = Math.round(188 + (68 - 188) * u);
+          return "rgb(" + r + "," + g + "," + b + ")";
+        }
+
+        let label;
+        if (total === 0) {
+          label = "Pick players";
+        } else if (pct <= 0.08 || absD < 80) {
+          label = pct < 0.02 ? "Even" : "Close";
+          if (absD >= 80 && pct > 0.02) {
+            label = (d > 0 ? "A +" : "B +") + absD.toLocaleString() + " · close";
+          }
+        } else {
+          const who = d > 0 ? "A" : "B";
+          const pctLabel = Math.round(pct * 100) + "%";
+          label = who + " +" + absD.toLocaleString() + " · " + pctLabel;
+        }
+
+        diffEl.classList.remove("favors-a", "favors-b", "even");
+        diffEl.textContent = label;
+        diffEl.style.color = fairnessColor(total === 0 ? 0 : (absD < 80 && pct <= 0.08 ? 0 : pct));
+        diffEl.style.borderColor = "transparent";
+      }
+
+      selA.onchange = () => {
+        calcSelected.a.clear();
+        renderSide("a");
+      };
+      selB.onchange = () => {
+        calcSelected.b.clear();
+        renderSide("b");
+      };
+
+      document.getElementById("calc-players-a").onclick = (e) => {
+        const input = e.target.closest("input[type=checkbox]");
+        if (!input) return;
+        if (input.checked) calcSelected.a.add(input.dataset.id);
+        else calcSelected.a.delete(input.dataset.id);
+        input.closest(".calc-player").classList.toggle("selected", input.checked);
+        updateCalcTotals();
+      };
+      document.getElementById("calc-players-b").onclick = (e) => {
+        const input = e.target.closest("input[type=checkbox]");
+        if (!input) return;
+        if (input.checked) calcSelected.b.add(input.dataset.id);
+        else calcSelected.b.delete(input.dataset.id);
+        input.closest(".calc-player").classList.toggle("selected", input.checked);
+        updateCalcTotals();
+      };
+
+      document.getElementById("calc-clear").onclick = () => {
+        calcSelected.a.clear();
+        calcSelected.b.clear();
+        renderSide("a");
+        renderSide("b");
+      };
+
+      renderSide("a");
+      renderSide("b");
+    }
+
 
     function renderTradeBoard(data) {
       const board = document.getElementById("board");
