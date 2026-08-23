@@ -1156,6 +1156,7 @@
         <div class="calc-mid">
           <div class="calc-diff" id="calc-diff">Even</div>
           <button type="button" class="btn btn-primary has-tip" id="calc-apply" data-tip="Locks this trade into the chain and updates both rosters. You can then pick a new partner and trade again. Rankings always compare back to the original league." title="Locks this trade into the chain and updates both rosters. You can then pick a new partner and trade again. Rankings always compare back to the original league.">Apply to chain</button>
+          <button type="button" class="btn has-tip" id="calc-complete" data-tip="Fills the empty side with a fair package that targets both teams' needs." title="Fills the empty side with a fair package that targets both teams' needs.">Complete fair trade</button>
           <button type="button" class="btn btn-share has-tip" id="calc-share" data-tip="Copies a link that opens the calculator with this pending trade pre-selected. Chain history is not included in the link." title="Copies a link that opens the calculator with this pending trade pre-selected. Chain history is not included in the link.">Copy link</button>
           <button type="button" class="btn has-tip" id="calc-clear" data-tip="Clears selected players, removes every step in the trade chain, and restores live ESPN rosters." title="Clears selected players, removes every step in the trade chain, and restores live ESPN rosters.">Clear</button>
           <div class="calc-illegal" id="calc-illegal" hidden></div>
@@ -1914,7 +1915,7 @@
       const givenA = calcSelected.a.size ? [...calcSelected.a].reduce((sum, id) => sum + (beforeA.entries.find((e) => e.id === id)?.val || 0), 0) : 0;
       const givenB = calcSelected.b.size ? [...calcSelected.b].reduce((sum, id) => sum + (beforeB.entries.find((e) => e.id === id)?.val || 0), 0) : 0;
       const balance = Math.max(givenA, givenB) ? Math.abs(givenA - givenB) / Math.max(givenA, givenB) : 0;
-      if (balance > 0.15) return "Trade values must be within 15% of each other.";
+      if (Math.abs(givenA - givenB) > 100 && balance > 0.15) return "Trade values should be within 100 points or 15% of each other.";
       const rankImproves = (before, after) => Object.keys(before.posScores || {}).some((pos) => (after.posScores[pos] || 0) > (before.posScores[pos] || 0));
       if (!rankImproves(beforeA, afterA) || !rankImproves(beforeB, afterB)) return "Both teams must improve at least one position.";
       return "";
@@ -2380,6 +2381,59 @@
         };
       }
 
+      function completeFairTrade() {
+        const aHasPlayers = calcSelected.a.size > 0;
+        const bHasPlayers = calcSelected.b.size > 0;
+        if (aHasPlayers === bHasPlayers) {
+          alert("Select players on one side only, then choose the other team.");
+          return;
+        }
+        const sourceSide = aHasPlayers ? "a" : "b";
+        const targetSide = sourceSide === "a" ? "b" : "a";
+        const sourceTeamId = document.getElementById("calc-team-" + sourceSide).value;
+        const targetTeamId = document.getElementById("calc-team-" + targetSide).value;
+        if (String(sourceTeamId) === String(targetTeamId)) {
+          alert("Choose a different team for the trade.");
+          return;
+        }
+        const models = modelsFromRosters(workingRosters);
+        const ranks = computeRankMaps(models);
+        const source = models.find((model) => String(model.id) === String(sourceTeamId));
+        const target = models.find((model) => String(model.id) === String(targetTeamId));
+        const sourceNeeds = needsSurplusForTeam(ranks.posRank, sourceTeamId, teams.length || 10).needs;
+        const targetNeeds = needsSurplusForTeam(ranks.posRank, targetTeamId, teams.length || 10).needs;
+        const sourceValue = [...calcSelected[sourceSide]].reduce((sum, id) => sum + (source.entries.find((entry) => entry.id === id)?.val || 0), 0);
+        const options = target.entries.filter((entry) => entry.val > 0);
+        const packages = options.map((entry) => [entry]);
+        for (let i = 0; i < options.length; i++) {
+          for (let j = i + 1; j < options.length; j++) packages.push([options[i], options[j]]);
+        }
+        const candidates = packages.filter((pack) => {
+          const value = pack.reduce((sum, entry) => sum + entry.val, 0);
+          const ratio = Math.max(sourceValue, value) / Math.max(1, Math.min(sourceValue, value));
+          return value > 0 && Math.abs(sourceValue - value) <= 100 || value > 0 && ratio <= 1.15;
+        }).filter((pack) => {
+          const positions = pack.map((entry) => entry.pos);
+          return positions.some((pos) => sourceNeeds.indexOf(pos) >= 0) && [...calcSelected[sourceSide]].some((id) => {
+            const entry = source.entries.find((item) => item.id === id);
+            return entry && targetNeeds.indexOf(entry.pos) >= 0;
+          });
+        });
+        candidates.sort((left, right) => {
+          const leftValue = left.reduce((sum, entry) => sum + entry.val, 0);
+          const rightValue = right.reduce((sum, entry) => sum + entry.val, 0);
+          return Math.abs(sourceValue - leftValue) - Math.abs(sourceValue - rightValue);
+        });
+        const chosen = candidates[0];
+        if (!chosen) {
+          alert("No fair return was found that fills both teams' needs.");
+          return;
+        }
+        calcSelected[targetSide] = new Set(chosen.map((entry) => entry.id));
+        renderSide("a");
+        renderSide("b");
+      }
+
       function applyCurrentToChain() {
         const teamAId = selA.value;
         const teamBId = selB.value;
@@ -2511,6 +2565,7 @@
       document.getElementById("calc-drops-list-b").onclick = onDropClick;
 
       document.getElementById("calc-apply").onclick = applyCurrentToChain;
+      document.getElementById("calc-complete").onclick = completeFairTrade;
 
       document.getElementById("calc-clear").onclick = () => {
         calcSelected.a.clear();
@@ -2746,7 +2801,7 @@
             if (!incomingValue || !outgoingValue) continue;
             if (!incoming.some((entry) => mineNeeds.indexOf(entry.pos) >= 0) || !outgoing.some((entry) => partnerNeeds.indexOf(entry.pos) >= 0)) continue;
             const ratio = Math.max(incomingValue, outgoingValue) / Math.min(incomingValue, outgoingValue);
-            if (ratio > 1.15) continue;
+            if (Math.abs(incomingValue - outgoingValue) > 100 && ratio > 1.15) continue;
             ideas.push({ incoming, outgoing, team: incomingTeam, gain: incomingValue - outgoingValue });
           }
         }
