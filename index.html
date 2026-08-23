@@ -1119,7 +1119,7 @@
     <div class="rankings-wrap">
       <p class="rankings-note">
         <strong>How these rankings work</strong><br>
-        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show rank at QB, RB, WR, TE, and BN. BN is the 6 lowest FantasyCalc values on the roster (after dropping 1 or 2 lowest if the team has IR extras over 14 players).
+        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show rank at QB, RB, WR, and TE.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -2350,7 +2350,7 @@
             '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
             '<span class="calc-impact-change ' + power.cls + '">' + power.text + " · " +
             '<span class="impact-value" style="color:' + formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue).color + '">' + formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue).text + "</span></span></div>";
-          for (const pos of POSITIONS) {
+          for (const pos of POSITIONS.filter((position) => position !== "BN")) {
             const delta = formatRankDelta(
               posr(originalRanks.posRank, teamId, pos),
               posr(afterRanks.posRank, teamId, pos)
@@ -2898,13 +2898,11 @@
         };
         const teamCount = sorted.length || 10;
         let chips = "";
-        for (const pos of POSITIONS) {
+        for (const pos of POSITIONS.filter((position) => position !== "BN")) {
           const pr = ranks[pos] || null;
           const pscore = t.posScores[pos] || 0;
           const color = rankColor(pr, teamCount);
-          const chipTip = pos === "BN"
-            ? "Bench rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of the bench: " + pscore.toLocaleString()
-            : pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of top " + (pos === "QB" ? "2" : "3") + " " + pos + "s: " + pscore.toLocaleString();
+          const chipTip = pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of top " + (pos === "QB" ? "2" : "3") + " " + pos + "s: " + pscore.toLocaleString();
           chips +=
             '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
             '<div class="pos-chip-label">' + pos + "</div>" +
