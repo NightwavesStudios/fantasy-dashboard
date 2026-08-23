@@ -664,6 +664,131 @@
       width: 7.75rem;
     }
 
+
+    .has-tip {
+      position: relative;
+    }
+    .has-tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 220px;
+      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 0.7rem;
+      font-weight: 500;
+      line-height: 1.35;
+      text-align: left;
+      white-space: normal;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s ease;
+      z-index: 40;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .has-tip:hover::after,
+    .has-tip:focus::after {
+      opacity: 1;
+    }
+    [data-theme="light"] .has-tip::after {
+      background: #1e293b;
+      color: #f8fafc;
+    }
+
+
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      align-items: center;
+      width: 100%;
+    }
+    .pos-filters { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .pos-filters .filter-btn { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
+    .inj-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+    .inj-filter input { accent-color: var(--accent); }
+    .inj-badge {
+      display: inline-block;
+      margin-left: 0.35rem;
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      vertical-align: middle;
+    }
+    .inj-badge.out, .inj-badge.ir {
+      background: rgba(220, 38, 38, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(220, 38, 38, 0.35);
+    }
+    .inj-badge.doubtful {
+      background: rgba(234, 88, 12, 0.15);
+      color: #fb923c;
+      border: 1px solid rgba(234, 88, 12, 0.35);
+    }
+    .inj-badge.questionable {
+      background: rgba(202, 138, 4, 0.15);
+      color: #eab308;
+      border: 1px solid rgba(202, 138, 4, 0.35);
+    }
+    .inj-badge.probable {
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .team-needs {
+      margin-top: 0.35rem;
+      font-size: 0.7rem;
+      line-height: 1.35;
+    }
+    .need-tag {
+      display: inline-block;
+      margin: 0.1rem 0.25rem 0.1rem 0;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .need-tag.need {
+      background: rgba(220, 38, 38, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+    .need-tag.surplus {
+      background: rgba(22, 163, 74, 0.12);
+      color: #4ade80;
+      border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+
+    .calc-side-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .calc-side-needs {
+      margin-top: 0.3rem;
+      line-height: 1.4;
+    }
+    .calc-side-needs .need-tag {
+      font-size: 0.65rem;
+    }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -707,39 +832,55 @@
         <div class="meta">League 2039212076 · 2026 Season</div>
       </div>
       <div class="header-actions">
-        <span class="status-pill" id="status">Loading…</span>
-        <button class="btn theme-toggle" id="themeBtn" type="button" title="Toggle light/dark" aria-label="Toggle theme">◐</button>
-        <button class="btn btn-primary" id="refreshBtn" type="button">Refresh</button>
+        <span class="status-pill" id="status" title="Live load status: team count, players on the block, and current ESPN week">Loading…</span>
+        <button class="btn theme-toggle" id="themeBtn" type="button" title="Switch between dark and light theme" aria-label="Toggle theme">◐</button>
+        <button class="btn btn-primary has-tip" id="refreshBtn" type="button" data-tip="Reload rosters, trade blocks, and FantasyCalc values from the live APIs." title="Reload rosters, trade blocks, and FantasyCalc values from the live APIs.">Refresh</button>
       </div>
     </div>
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-panel="trade" type="button">Trade Board</button>
-    <button class="tab" data-panel="power" type="button">Power Rankings</button>
-    <button class="tab" data-panel="calc" type="button">Trade Calculator</button>
+    <button class="tab active" data-panel="trade" type="button" title="View every roster and ESPN trade-block status">Trade Board</button>
+    <button class="tab" data-panel="power" type="button" title="Rank teams by FantasyCalc roster value and PPG once games are scored">Power Rankings</button>
+    <button class="tab" data-panel="calc" type="button" title="Compare FantasyCalc values and chain multi-step trades">Trade Calculator</button>
   </nav>
 
   <!-- TRADE BOARD -->
   <div class="panel active" id="panel-trade">
     <div class="toolbar">
-      <div class="filters" id="filters">
-        <button class="filter-btn active" data-filter="all" type="button">All <span class="count" id="count-all"></span></button>
-        <button class="filter-btn" data-filter="definitely" type="button">On the block <span class="count" id="count-definitely"></span></button>
-        <button class="filter-btn" data-filter="not-likely" type="button">Not likely <span class="count" id="count-not-likely"></span></button>
-        <button class="filter-btn" data-filter="maybe" type="button">Unmarked <span class="count" id="count-maybe"></span></button>
-      </div>
-      <div class="search-wrap">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="search" id="search" placeholder="Search players…" autocomplete="off" />
+      <div class="filters-row">
+        <div class="filters" id="filters">
+          <button class="filter-btn active" data-filter="all" type="button" title="Show every rostered player">All <span class="count" id="count-all"></span></button>
+          <button class="filter-btn" data-filter="definitely" type="button" title="Players owners marked available for trade offers on ESPN">On the block <span class="count" id="count-definitely"></span></button>
+          <button class="filter-btn" data-filter="not-likely" type="button" title="Players marked untouchable / not open to trade on ESPN">Not likely <span class="count" id="count-not-likely"></span></button>
+          <button class="filter-btn" data-filter="maybe" type="button" title="Players with no trade-block status set on ESPN">Unmarked <span class="count" id="count-maybe"></span></button>
+        </div>
+        <div class="pos-filters" id="pos-filters">
+          <button class="filter-btn active" data-pos="all" type="button" title="All positions">Pos</button>
+          <button class="filter-btn" data-pos="QB" type="button">QB</button>
+          <button class="filter-btn" data-pos="RB" type="button">RB</button>
+          <button class="filter-btn" data-pos="WR" type="button">WR</button>
+          <button class="filter-btn" data-pos="TE" type="button">TE</button>
+          <button class="filter-btn" data-pos="K" type="button">K</button>
+          <button class="filter-btn" data-pos="D/ST" type="button">D/ST</button>
+        </div>
+        <label class="inj-filter" title="Only show players with an ESPN injury designation">
+          <input type="checkbox" id="injured-only" /> Injured
+        </label>
+        <div class="search-wrap">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="search" id="search" title="Filter players by name on the trade board" placeholder="Search players…" autocomplete="off" />
+        </div>
       </div>
     </div>
     <div class="legend">
       <span class="legend-item"><span class="legend-swatch definitely"></span> On the block</span>
       <span class="legend-item"><span class="legend-swatch not-likely"></span> Not likely</span>
       <span class="legend-item"><span class="legend-swatch maybe"></span> Unmarked</span>
+      <span class="legend-item"><span class="need-tag need">Need</span> Weak position rank</span>
+      <span class="legend-item"><span class="need-tag surplus">Surplus</span> Strong position rank</span>
     </div>
     <div class="board" id="board"></div>
   </div>
@@ -761,7 +902,7 @@
         Values from FantasyCalc (10 team Superflex PPR). Build a multi-step chain: set up a trade, click Apply to chain, then trade again with the updated rosters.
       </p>
       <div class="calc-filter-row">
-        <label><input type="checkbox" id="calc-onblock-only" /> On block only</label>
+        <label title="Only list players each team has marked available for trade on ESPN"><input type="checkbox" id="calc-onblock-only" /> On block only</label>
         <span class="calc-chain-hint" id="calc-chain-hint"></span>
       </div>
       <div class="calc-chain" id="calc-chain" hidden>
@@ -772,21 +913,25 @@
         <div class="calc-side" id="calc-side-a">
           <div class="calc-side-header">
             <label>Side A</label>
-            <select id="calc-team-a" class="calc-team-select"></select>
+            <select id="calc-team-a" title="Team giving players on Side A. After Apply to chain, this roster reflects prior steps." class="calc-team-select"></select>
+            <div class="calc-side-meta" id="calc-meta-a"></div>
+            <div class="calc-side-needs" id="calc-needs-a"></div>
           </div>
           <div class="calc-players" id="calc-players-a"></div>
           <div class="calc-total" id="calc-total-a">0</div>
         </div>
         <div class="calc-mid">
           <div class="calc-diff" id="calc-diff">Even</div>
-          <button type="button" class="btn btn-primary" id="calc-apply" title="Lock this trade and keep going with updated rosters">Apply to chain</button>
-          <button type="button" class="btn btn-share" id="calc-share">Copy link</button>
-          <button type="button" class="btn" id="calc-clear">Clear</button>
+          <button type="button" class="btn btn-primary has-tip" id="calc-apply" data-tip="Locks this trade into the chain and updates both rosters. You can then pick a new partner and trade again. Rankings always compare back to the original league." title="Locks this trade into the chain and updates both rosters. You can then pick a new partner and trade again. Rankings always compare back to the original league.">Apply to chain</button>
+          <button type="button" class="btn btn-share has-tip" id="calc-share" data-tip="Copies a link that opens the calculator with this pending trade pre-selected. Chain history is not included in the link." title="Copies a link that opens the calculator with this pending trade pre-selected. Chain history is not included in the link.">Copy link</button>
+          <button type="button" class="btn has-tip" id="calc-clear" data-tip="Clears selected players, removes every step in the trade chain, and restores live ESPN rosters." title="Clears selected players, removes every step in the trade chain, and restores live ESPN rosters.">Clear</button>
         </div>
         <div class="calc-side" id="calc-side-b">
           <div class="calc-side-header">
             <label>Side B</label>
-            <select id="calc-team-b" class="calc-team-select"></select>
+            <select id="calc-team-b" title="Team giving players on Side B. After Apply to chain, this roster reflects prior steps." class="calc-team-select"></select>
+            <div class="calc-side-meta" id="calc-meta-b"></div>
+            <div class="calc-side-needs" id="calc-needs-b"></div>
           </div>
           <div class="calc-players" id="calc-players-b"></div>
           <div class="calc-total" id="calc-total-b">0</div>
@@ -869,6 +1014,8 @@
     }
 
     let currentFilter = "all";
+    let currentPosFilter = "all";
+    let injuredOnly = false;
     let searchQuery = "";
     let leagueData = null;
 
@@ -1231,13 +1378,15 @@
             const player = e.playerPoolEntry?.player;
             if (!player) continue;
             const id = String(player.id);
+            const inj = injuryLabel(player);
             rows.push({
               id,
               name: player.fullName || "Unknown",
               pos: POS_MAP[player.defaultPositionId] || "?",
               val: playerFcValue(player),
               onBlock: block[id] === "ON_THE_BLOCK",
-              notLikely: block[id] === "UNTOUCHABLE"
+              notLikely: block[id] === "UNTOUCHABLE",
+              injury: inj
             });
           }
           map[tid] = rows;
@@ -1354,11 +1503,35 @@
         const sel = document.getElementById("calc-team-" + side);
         const list = document.getElementById("calc-players-" + side);
         const teamId = sel.value;
+        const fullRoster = workingRosters[String(teamId)] || [];
         const rows = rosterRows(teamId);
-        const allIds = new Set((workingRosters[String(teamId)] || []).map((r) => r.id));
+        const allIds = new Set(fullRoster.map((r) => r.id));
         for (const id of [...calcSelected[side]]) {
           if (!allIds.has(id)) calcSelected[side].delete(id);
         }
+
+        // Player count + needs/surplus from current working rosters (includes chain)
+        const metaEl = document.getElementById("calc-meta-" + side);
+        const needsEl = document.getElementById("calc-needs-" + side);
+        if (metaEl) {
+          const onBlock = fullRoster.filter((r) => r.onBlock).length;
+          metaEl.textContent =
+            fullRoster.length + " players" +
+            (onBlock ? " · " + onBlock + " on block" : "");
+        }
+        if (needsEl) {
+          const rankMaps = computeRankMaps(modelsFromRosters(workingRosters));
+          const ns = needsSurplusForTeam(rankMaps.posRank, teamId, teams.length || 10);
+          let htmlNs = "";
+          for (const p of ns.needs) {
+            htmlNs += '<span class="need-tag need" title="Bottom-tier ' + p + ' depth">Need ' + p + "</span>";
+          }
+          for (const p of ns.surplus) {
+            htmlNs += '<span class="need-tag surplus" title="Top-tier ' + p + ' depth">Surplus ' + p + "</span>";
+          }
+          needsEl.innerHTML = htmlNs || '<span style="color:var(--text-muted);font-size:0.7rem">Balanced depth</span>';
+        }
+
         list.innerHTML = "";
         for (const r of rows) {
           const checked = calcSelected[side].has(r.id);
@@ -1369,7 +1542,9 @@
           div.innerHTML =
             '<input type="checkbox" ' + (checked ? "checked " : "") + 'data-id="' + r.id + '" data-side="' + side + '"/>' +
             '<span class="calc-player-pos">' + r.pos + "</span>" +
-            '<span class="calc-player-name">' + escapeHtml(r.name) + "</span>" +
+            '<span class="calc-player-name">' + escapeHtml(r.name) +
+            (r.injury ? '<span class="inj-badge ' + r.injury.cls + '">' + r.injury.text + "</span>" : "") +
+            "</span>" +
             '<span class="calc-player-val">' + (r.val ? r.val.toLocaleString() : "—") + "</span>";
           list.appendChild(div);
         }
@@ -1630,6 +1805,41 @@
     }
 
 
+
+    function injuryLabel(player) {
+      const raw = (player && (player.injuryStatus || player.injuryStatus)) || "";
+      if (!raw || raw === "ACTIVE") return null;
+      const u = String(raw).toUpperCase();
+      if (u === "NORMAL" || u === "ACTIVE") return null;
+      // ESPN: OUT, DOUBTFUL, QUESTIONABLE, PROBABLE, IR, SUSPENSION, etc.
+      if (u.indexOf("OUT") >= 0) return { text: "Out", cls: "out" };
+      if (u.indexOf("IR") >= 0 || u.indexOf("INJURY_RESERVE") >= 0) return { text: "IR", cls: "ir" };
+      if (u.indexOf("DOUBTFUL") >= 0) return { text: "Doubtful", cls: "doubtful" };
+      if (u.indexOf("QUESTIONABLE") >= 0) return { text: "Q", cls: "questionable" };
+      if (u.indexOf("PROBABLE") >= 0) return { text: "Probable", cls: "probable" };
+      if (u.indexOf("SUSP") >= 0) return { text: "Susp", cls: "out" };
+      return { text: raw.slice(0, 8), cls: "questionable" };
+    }
+
+    function needsSurplusForTeam(posRank, teamId, teamCount) {
+      const needs = [];
+      const surplus = [];
+      const skill = ["QB", "RB", "WR", "TE"];
+      function pr(pos) {
+        const row = posRank[teamId] || posRank[Number(teamId)] || posRank[String(teamId)] || {};
+        return row[pos];
+      }
+      const topCut = Math.max(2, Math.ceil(teamCount * 0.3));
+      const bottomCut = Math.max(teamCount - 2, teamCount - Math.ceil(teamCount * 0.3) + 1);
+      for (const pos of skill) {
+        const r = pr(pos);
+        if (r == null) continue;
+        if (r <= topCut) surplus.push(pos);
+        else if (r >= bottomCut) needs.push(pos);
+      }
+      return { needs, surplus };
+    }
+
     function renderTradeBoard(data) {
       const board = document.getElementById("board");
       board.innerHTML = "";
@@ -1640,6 +1850,10 @@
       document.getElementById("count-definitely").textContent = counts.definitely;
       document.getElementById("count-not-likely").textContent = counts["not-likely"];
       document.getElementById("count-maybe").textContent = counts.maybe;
+
+      const models = finalizePowerScores(buildTeamModels(data));
+      const rankMaps = computeRankMaps(models);
+      const teamCount = teams.length || 10;
 
       for (const team of teams) {
         const name = team.name || team.abbrev || "Team " + team.id;
@@ -1656,12 +1870,21 @@
           if (tradePlayers[id] === "ON_THE_BLOCK") onBlockCount++;
         }
 
+        const ns = needsSurplusForTeam(rankMaps.posRank, team.id, teamCount);
+        let nsHtml = "";
+        if (ns.needs.length || ns.surplus.length) {
+          nsHtml = '<div class="team-needs">';
+          for (const p of ns.needs) nsHtml += '<span class="need-tag need" title="Bottom-tier ' + p + ' depth">Need ' + p + "</span>";
+          for (const p of ns.surplus) nsHtml += '<span class="need-tag surplus" title="Top-tier ' + p + ' depth">Surplus ' + p + "</span>";
+          nsHtml += "</div>";
+        }
+
         const card = document.createElement("article");
         card.className = "team-card";
         card.innerHTML =
           '<div class="team-header">' +
             '<div class="team-info"><h2>' + escapeHtml(name) + '</h2>' +
-            '<div class="owner">' + escapeHtml(owner) + '</div></div>' +
+            '<div class="owner">' + escapeHtml(owner) + '</div>' + nsHtml + '</div>' +
             '<div class="team-stats">' + entries.length + " players" +
             (onBlockCount ? '<div class="on-block">' + onBlockCount + " on block</div>" : "") +
             "</div></div>" +
@@ -1677,17 +1900,23 @@
           const fullName = player.fullName || "Unknown";
           const pos = POS_MAP[player.defaultPositionId] || "—";
           const mark = mapTradeStatus(tradePlayers[id] || null);
+          const inj = injuryLabel(player);
           const tr = document.createElement("tr");
           tr.className = "status-" + mark;
           tr.dataset.mark = mark;
           tr.dataset.name = fullName.toLowerCase();
+          tr.dataset.pos = pos;
+          tr.dataset.injured = inj ? "1" : "0";
           const owned = player.ownership && player.ownership.percentOwned != null
             ? player.ownership.percentOwned
             : null;
           const ownedStr = owned != null ? (owned >= 10 ? Math.round(owned) + "%" : owned.toFixed(1) + "%") : "—";
+          const injHtml = inj
+            ? '<span class="inj-badge ' + inj.cls + '" title="' + escapeHtml(player.injuryStatus || inj.text) + '">' + inj.text + "</span>"
+            : "";
           tr.innerHTML =
             '<td class="col-pos">' + pos + '</td>' +
-            '<td class="col-name">' + escapeHtml(fullName) + '</td>' +
+            '<td class="col-name">' + escapeHtml(fullName) + injHtml + '</td>' +
             '<td class="col-owned" title="' + (owned != null ? ("Rostered in " + owned.toFixed(1) + "% of ESPN leagues") : "") + '">' + ownedStr + '</td>' +
             '<td class="col-status"><span class="badge ' + mark + '">' + statusLabel(mark) + '</span></td>';
           tbody.appendChild(tr);
@@ -1791,9 +2020,13 @@
       document.querySelectorAll("#board .roster-table tbody tr").forEach((tr) => {
         const mark = tr.dataset.mark || "maybe";
         const name = tr.dataset.name || "";
+        const pos = tr.dataset.pos || "";
+        const injured = tr.dataset.injured === "1";
         const matchFilter = currentFilter === "all" || mark === currentFilter;
+        const matchPos = currentPosFilter === "all" || pos === currentPosFilter;
+        const matchInj = !injuredOnly || injured;
         const matchSearch = !q || name.includes(q);
-        tr.classList.toggle("hidden", !(matchFilter && matchSearch));
+        tr.classList.toggle("hidden", !(matchFilter && matchPos && matchInj && matchSearch));
       });
       document.querySelectorAll("#board .team-card").forEach((card) => {
         const visible = card.querySelectorAll("tbody tr:not(.hidden)").length;
@@ -1821,10 +2054,26 @@
       const filters = document.getElementById("filters");
       if (filters) filters.addEventListener("click", (e) => {
         const btn = e.target.closest(".filter-btn");
-        if (!btn) return;
-        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        if (!btn || !btn.dataset.filter) return;
+        filters.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         currentFilter = btn.dataset.filter;
+        applyTradeFilters();
+      });
+
+      const posFilters = document.getElementById("pos-filters");
+      if (posFilters) posFilters.addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-btn");
+        if (!btn || !btn.dataset.pos) return;
+        posFilters.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentPosFilter = btn.dataset.pos;
+        applyTradeFilters();
+      });
+
+      const injOnly = document.getElementById("injured-only");
+      if (injOnly) injOnly.addEventListener("change", (e) => {
+        injuredOnly = !!e.target.checked;
         applyTradeFilters();
       });
 
