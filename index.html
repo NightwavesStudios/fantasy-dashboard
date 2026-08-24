@@ -2243,20 +2243,6 @@
         const absD = Math.abs(d);
         let pct = avg > 0 ? absD / avg : 0;
 
-        function fairnessColor(p) {
-          if (total === 0) return "var(--text-secondary)";
-          if (p <= 0.08) {
-            const u = p / 0.08;
-            return "rgb(" + Math.round(34 + (120 - 34) * u) + "," + Math.round(197 + (180 - 197) * u) + "," + Math.round(94 + (140 - 94) * u) + ")";
-          }
-          if (p <= 0.25) {
-            const u = (p - 0.08) / 0.17;
-            return "rgb(" + Math.round(120 + (154 - 120) * u) + "," + Math.round(180 + (168 - 180) * u) + "," + Math.round(140 + (188 - 140) * u) + ")";
-          }
-          const u = Math.min(1, (p - 0.25) / 0.35);
-          return "rgb(" + Math.round(154 + (239 - 154) * u) + "," + Math.round(168 + (68 - 168) * u) + "," + Math.round(188 + (68 - 188) * u) + ")";
-        }
-
         let label;
         if (total === 0) label = "Pick players";
         else if (pct <= 0.08 || absD < 80) {
@@ -2266,7 +2252,7 @@
         }
         diffEl.classList.remove("favors-a", "favors-b", "even");
         diffEl.textContent = label;
-        diffEl.style.color = fairnessColor(total === 0 ? 0 : (absD < 80 && pct <= 0.08 ? 0 : pct));
+        diffEl.classList.add(total === 0 || absD <= 100 ? "even" : d > 0 ? "favors-a" : "favors-b");
         diffEl.style.borderColor = "transparent";
         diffEl.title = total === 0
           ? "Check boxes on each side to compare FantasyCalc value"
