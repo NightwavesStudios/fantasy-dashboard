@@ -376,7 +376,7 @@
     }
     .starter-breakdown {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 0.35rem;
       margin-top: 0.75rem;
       padding-top: 0.75rem;
@@ -1143,7 +1143,7 @@
     <div class="rankings-wrap">
       <p class="rankings-note">
         <strong>How these rankings work</strong><br>
-        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The positional chips rank the full QB, RB, WR, and TE values. Starter rankings use 1 QB, 2 RB, 2 WR, 2 flex, and 1 superflex slot.
+        Teams are ranked by a blend of three things. Starter value is weighted most, using 1 QB, 2 RB, 2 WR, 1 TE, 2 flex, and 1 superflex slot. Superflex is the best remaining player after the other starter slots are filled, so it will usually be a second QB. Full-roster FantasyCalc value measures depth, while PPG gets a smaller weight as the season progresses.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -1711,9 +1711,11 @@
       const starters = {
         QB: takePosition("QB", 1),
         RB: takePosition("RB", 2),
-        WR: takePosition("WR", 2)
+        WR: takePosition("WR", 2),
+        TE: takePosition("TE", 1)
       };
       starters.FLEX = remaining.splice(0, 2);
+      // Superflex is the best remaining eligible player, usually the second QB.
       starters.SF = remaining.splice(0, 1);
       return starters;
     }
@@ -1724,6 +1726,10 @@
         slot,
         entries.reduce((sum, entry) => sum + (entry.val || 0), 0)
       ]));
+    }
+
+    function starterValue(entryList) {
+      return Object.values(starterScores(entryList)).reduce((sum, value) => sum + value, 0);
     }
 
     function buildTeamModels(data) {
@@ -1797,6 +1803,7 @@
           posScores,
           posValues,
           starterScores: starterScores(entries),
+          starterValue: starterValue(entries),
           entries,
           tradePlayers
         };
@@ -1806,27 +1813,34 @@
     /** Blend FantasyCalc roster value with on-field PPG once games have been played. */
     function finalizePowerScores(models) {
       const maxRoster = Math.max(...models.map((m) => m.rosterValue), 1);
+      const maxStarter = Math.max(...models.map((m) => m.starterValue || 0), 1);
       const maxPpg = Math.max(...models.map((m) => m.ppg), 0);
       const anyGames = models.some((m) => m.gamesPlayed > 0);
 
       // Weight shifts toward PPG as the season progresses (more games = more trust in results)
-      // After 1 game ~15% PPG, after ~6 games ~50%, after 12+ ~70%
+      // Keep starter strength dominant, then add depth and a smaller in-season PPG adjustment.
       const avgGames = models.reduce((s, m) => s + m.gamesPlayed, 0) / Math.max(models.length, 1);
       let ppgWeight = 0;
       if (anyGames && maxPpg > 0) {
-        ppgWeight = Math.min(0.7, 0.12 + avgGames * 0.06);
+        ppgWeight = Math.min(0.25, 0.04 + avgGames * 0.025);
       }
-      const rosterWeight = 1 - ppgWeight;
+      const starterWeight = 0.55;
+      const rosterWeight = 1 - starterWeight - ppgWeight;
 
       return models.map((m) => {
         const rosterNorm = (m.rosterValue / maxRoster) * 10000;
         const ppgNorm = maxPpg > 0 ? (m.ppg / maxPpg) * 10000 : 0;
-        const totalScore = Math.round(rosterNorm * rosterWeight + ppgNorm * ppgWeight);
+        const starterNorm = ((m.starterValue || 0) / maxStarter) * 10000;
+        const totalScore = Math.round(
+          starterNorm * starterWeight + rosterNorm * rosterWeight + ppgNorm * ppgWeight
+        );
         return Object.assign({}, m, {
           totalScore,
           rosterNorm: Math.round(rosterNorm),
+          starterNorm: Math.round(starterNorm),
           ppgNorm: Math.round(ppgNorm),
           ppgWeight,
+          starterWeight,
           rosterWeight
         });
       });
@@ -1886,9 +1900,19 @@
           posRank[t.id][pos] = i + 1;
         });
       }
+      const starterRank = {};
+      for (const slot of ["QB", "RB", "WR", "TE", "FLEX", "SF"]) {
+        const order = scored.slice().sort((a, b) =>
+          (b.starterScores?.[slot] || 0) - (a.starterScores?.[slot] || 0)
+        );
+        order.forEach((t, i) => {
+          if (!starterRank[t.id]) starterRank[t.id] = {};
+          starterRank[t.id][slot] = i + 1;
+        });
+      }
       const byId = {};
       scored.forEach((t) => { byId[t.id] = t; });
-      return { powerRank, posRank, byId, scored };
+      return { powerRank, posRank, starterRank, byId, scored };
     }
 
     function modelsAfterTrade(baseModels, teamAId, teamBId, giveA, giveB, playerMeta) {
@@ -1927,6 +1951,7 @@
         m.byPos = byPos;
         m.posScores = posScores;
         m.starterScores = starterScoreMap;
+        m.starterValue = Object.values(starterScoreMap).reduce((sum, value) => sum + value, 0);
       }
       recompute(a);
       recompute(b);
@@ -2032,9 +2057,7 @@
             posValues[p] = p === "BN"
               ? benchValue(entries)
               : entries.filter((e) => e.pos === p).reduce((s, x) => s + (x.val || 0), 0);
-            if (p === "BN") posScores[p] = benchValue(entries);
-            else if (p === "QB") posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
-            else posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
+            posScores[p] = posValues[p];
           });
           return Object.assign({}, m, {
             entries,
@@ -2042,7 +2065,8 @@
             byPos,
             posScores,
             posValues,
-            starterScores: starterScores(entries)
+            starterScores: starterScores(entries),
+            starterValue: starterValue(entries)
             // keep ppg / record from original m
           });
         });
@@ -2394,6 +2418,18 @@
               '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
               '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
               '<span class="impact-value" style="color:' + formatValueDelta(beforePositionValue, afterPositionValue).color + '">' + formatValueDelta(beforePositionValue, afterPositionValue).text + "</span></span></div>";
+          }
+          for (const slot of ["QB", "RB", "WR", "TE", "FLEX", "SF"]) {
+            const delta = formatRankDelta(
+              originalRanks.starterRank?.[teamId]?.[slot],
+              afterRanks.starterRank?.[teamId]?.[slot]
+            );
+            const beforeStarterValue = beforeTeam.starterScores && beforeTeam.starterScores[slot];
+            const afterStarterValue = afterTeam.starterScores && afterTeam.starterScores[slot];
+            rows +=
+              '<div class="calc-impact-row"><span class="calc-impact-label">Starter ' + slot + "</span>" +
+              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
+              '<span class="impact-value" style="color:' + formatValueDelta(beforeStarterValue, afterStarterValue).color + '">' + formatValueDelta(beforeStarterValue, afterStarterValue).text + "</span></span></div>";
           }
           return '<div class="calc-impact-card" tabindex="0" role="button" aria-expanded="true"><h4>' + escapeHtml(name) + '<span class="calc-impact-result ' + resultClass + '">' + resultText + "</span></h4>" + rows + "</div>";
         }
@@ -2893,7 +2929,7 @@
     function renderPowerRankings(models) {
       const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
       const maxScore = sorted[0]?.totalScore || 1;
-      const starterSlots = ["QB", "RB", "WR", "FLEX", "SF"];
+      const starterSlots = ["QB", "RB", "WR", "TE", "FLEX", "SF"];
 
       // Position rank for each team: lower is better
       const posRankByTeam = {};
