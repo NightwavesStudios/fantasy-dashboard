@@ -374,6 +374,23 @@
       padding-top: 0.75rem;
       border-top: 1px solid var(--border-subtle);
     }
+    .starter-breakdown {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.35rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .starter-breakdown::before {
+      content: "Starter rankings";
+      grid-column: 1 / -1;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
     .pos-chip {
       text-align: center;
       padding: 0.35rem 0.25rem;
@@ -1012,6 +1029,9 @@
       .pos-breakdown {
         grid-template-columns: repeat(2, 1fr);
       }
+      .starter-breakdown {
+        grid-template-columns: repeat(2, 1fr);
+      }
       .power-score-wrap { min-width: 80px; }
       .power-bar { width: 80px; }
       .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1027,6 +1047,7 @@
     }
     @media (max-width: 380px) {
       .pos-breakdown { grid-template-columns: repeat(2, 1fr); }
+      .starter-breakdown { grid-template-columns: repeat(2, 1fr); }
       .power-row { padding: 0.75rem; }
     }
   </style>
@@ -1122,7 +1143,7 @@
     <div class="rankings-wrap">
       <p class="rankings-note">
         <strong>How these rankings work</strong><br>
-        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The chips under each team show rank at QB, RB, WR, and TE.
+        Teams are ranked by a blend of two things. Roster value comes from FantasyCalc trade values for a 10 team Superflex PPR league, added up for everyone on the roster. PPG is that team’s average points per game from ESPN after real games are played. Before scores start, rankings are pure roster value. Once games are in, PPG gets more weight as the season goes on (a little after week 1, a lot more by midseason). The positional chips rank the full QB, RB, WR, and TE values. Starter rankings use 1 QB, 2 RB, 2 WR, 2 flex, and 1 superflex slot.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -1677,6 +1698,34 @@
       return getBenchPlayers(entryList).reduce((s, p) => s + (p.val || 0), 0);
     }
 
+    function getStarterPlayers(entryList) {
+      const remaining = (entryList || [])
+        .filter((entry) => ["QB", "RB", "WR", "TE"].indexOf(entry.pos) >= 0)
+        .slice()
+        .sort((a, b) => b.val - a.val);
+      const takePosition = (pos, count) => {
+        const picked = remaining.filter((entry) => entry.pos === pos).slice(0, count);
+        picked.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
+        return picked;
+      };
+      const starters = {
+        QB: takePosition("QB", 1),
+        RB: takePosition("RB", 2),
+        WR: takePosition("WR", 2)
+      };
+      starters.FLEX = remaining.splice(0, 2);
+      starters.SF = remaining.splice(0, 1);
+      return starters;
+    }
+
+    function starterScores(entryList) {
+      const starters = getStarterPlayers(entryList);
+      return Object.fromEntries(Object.entries(starters).map(([slot, entries]) => [
+        slot,
+        entries.reduce((sum, entry) => sum + (entry.val || 0), 0)
+      ]));
+    }
+
     function buildTeamModels(data) {
       const members = data.members || [];
       const scoringPeriod = data.scoringPeriodId || 1;
@@ -1722,13 +1771,7 @@
           posValues[p] = p === "BN"
             ? benchValue(entries)
             : entries.filter((e) => e.pos === p).reduce((s, x) => s + (x.val || 0), 0);
-          if (p === "BN") {
-            posScores[p] = benchValue(entries);
-          } else if (p === "QB") {
-            posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
-          } else {
-            posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
-          }
+          posScores[p] = posValues[p];
         });
 
         const overall = (team.record && team.record.overall) || {};
@@ -1753,6 +1796,7 @@
           byPos,
           posScores,
           posValues,
+          starterScores: starterScores(entries),
           entries,
           tradePlayers
         };
@@ -1873,18 +1917,16 @@
         byPos.BN = getBenchPlayers(m.entries);
         POSITIONS.forEach((p) => byPos[p].sort((x, y) => y.val - x.val));
         const posScores = {};
+        const starterScoreMap = starterScores(m.entries);
         POSITIONS.forEach((p) => {
-          if (p === "BN") {
-            posScores[p] = benchValue(m.entries);
-          } else if (p === "QB") {
-            posScores[p] = byPos[p].slice(0, 2).reduce((s, x) => s + x.val, 0);
-          } else {
-            posScores[p] = byPos[p].slice(0, 3).reduce((s, x) => s + x.val, 0);
-          }
+          posScores[p] = p === "BN"
+            ? benchValue(m.entries)
+            : m.entries.filter((entry) => entry.pos === p).reduce((s, x) => s + (x.val || 0), 0);
         });
         m.rosterValue = rosterValue;
         m.byPos = byPos;
         m.posScores = posScores;
+        m.starterScores = starterScoreMap;
       }
       recompute(a);
       recompute(b);
@@ -1999,7 +2041,8 @@
             rosterValue,
             byPos,
             posScores,
-            posValues
+            posValues,
+            starterScores: starterScores(entries)
             // keep ppg / record from original m
           });
         });
@@ -2850,6 +2893,7 @@
     function renderPowerRankings(models) {
       const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
       const maxScore = sorted[0]?.totalScore || 1;
+      const starterSlots = ["QB", "RB", "WR", "FLEX", "SF"];
 
       // Position rank for each team: lower is better
       const posRankByTeam = {};
@@ -2892,12 +2936,35 @@
           const pr = ranks[pos] || null;
           const pscore = t.posScores[pos] || 0;
           const color = rankColor(pr, teamCount);
-          const chipTip = pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of top " + (pos === "QB" ? "2" : "3") + " " + pos + "s: " + pscore.toLocaleString();
+          const chipTip = pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of all " + pos + "s: " + pscore.toLocaleString();
           chips +=
             '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
             '<div class="pos-chip-label">' + pos + "</div>" +
             '<div class="pos-chip-rank" style="color:' + color + '">#' + (pr != null ? pr : "—") + "</div>" +
             '<div class="pos-chip-val">' + pscore.toLocaleString() + "</div>" +
+            "</div>";
+        }
+        const starterRankByTeam = {};
+        for (const slot of starterSlots) {
+          const order = models.slice().sort((a, b) =>
+            (b.starterScores?.[slot] || 0) - (a.starterScores?.[slot] || 0)
+          );
+          order.forEach((team, index) => {
+            if (!starterRankByTeam[team.id]) starterRankByTeam[team.id] = {};
+            starterRankByTeam[team.id][slot] = index + 1;
+          });
+        }
+        let starterChips = "";
+        for (const slot of starterSlots) {
+          const sr = starterRankByTeam[t.id]?.[slot] || null;
+          const starterValue = t.starterScores?.[slot] || 0;
+          const chipTip = slot + " starter rank #" + (sr != null ? sr : "—") +
+            " of " + teamCount + " · starter value: " + starterValue.toLocaleString();
+          starterChips +=
+            '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
+            '<div class="pos-chip-label">' + slot + "</div>" +
+            '<div class="pos-chip-rank" style="color:' + rankColor(sr, teamCount) + '">#' + (sr != null ? sr : "—") + "</div>" +
+            '<div class="pos-chip-val">' + starterValue.toLocaleString() + "</div>" +
             "</div>";
         }
         const recordStr = t.gamesPlayed > 0
@@ -2921,7 +2988,8 @@
               '<div class="power-bar"><span style="width:' + pct + '%"></span></div>' +
             "</div>" +
           "</div>" +
-          '<div class="pos-breakdown">' + chips + "</div>";
+          '<div class="pos-breakdown">' + chips + "</div>" +
+          '<div class="starter-breakdown">' + starterChips + "</div>";
         list.appendChild(row);
       });
     }
