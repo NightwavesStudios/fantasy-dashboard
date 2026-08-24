@@ -1714,7 +1714,9 @@
         WR: takePosition("WR", 2),
         TE: takePosition("TE", 1)
       };
-      starters.FLEX = remaining.splice(0, 2);
+      const flexEligible = remaining.filter((entry) => ["RB", "WR", "TE"].indexOf(entry.pos) >= 0);
+      starters.FLEX = flexEligible.slice(0, 2);
+      starters.FLEX.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
       // Superflex is the best remaining eligible player, usually the second QB.
       starters.SF = remaining.splice(0, 1);
       return starters;
