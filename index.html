@@ -1183,11 +1183,25 @@
 
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
-      <p class="rankings-note">ESPN schedule and league settings drive these estimates. Each simulation scores remaining matchups, awards an extra win or loss against the weekly league median, then plays out the postseason.</p>
+      <p class="rankings-note">
+        Uses the real ESPN remaining schedule when available. Each week is simulated with a projected score
+        (from PPG and roster strength), a head-to-head result, and a vs-median result. Projected record is
+        the median final W–L across simulations (H2H + median combined). Playoffs are seeded by total wins,
+        then points.
+      </p>
       <div class="odds-status" id="odds-status">Select Playoff Odds to load ESPN settings and run simulations.</div>
       <div class="odds-table-wrap">
         <table class="odds-table">
-          <thead><tr><th>Team</th><th>Playoffs</th><th>1st-round bye</th><th>Championship</th><th>Median wins</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th title="Current ESPN record">Now</th>
+              <th title="Median projected final record across simulations (H2H + vs median)">Projected</th>
+              <th>Playoffs</th>
+              <th>1st-round bye</th>
+              <th>Championship</th>
+            </tr>
+          </thead>
           <tbody id="odds-body"></tbody>
         </table>
       </div>
@@ -3338,11 +3352,13 @@
     }
 
     function runPlayoffSimulations(data, scheduleData) {
-      const models = buildTeamModels(data);
+      const scoredModels = finalizePowerScores(buildTeamModels(data));
+      const models = scoredModels;
       const settingsRoot = scheduleData.settings || data.settings || {};
       const settings = settingsRoot.scheduleSettings || settingsRoot;
       const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || settings.numPlayoffTeams || 6);
       const hasPlayedGames = models.some((team) => team.gamesPlayed > 0);
+      // If week N is in progress / not final, only simulate periods strictly after completed weeks
       const currentPeriod = hasPlayedGames ? Number(data.scoringPeriodId || 0) : 0;
       const playoffStart = Number(settings.playoffMatchupPeriod || settings.playoffStartWeek || settings.playoffStart || 15);
       const rawSchedule = scheduleData.schedule || data.schedule || [];
@@ -3356,11 +3372,12 @@
       let projectedSchedule = false;
       if (!schedule.length && models.length > 1) {
         projectedSchedule = true;
-        for (let period = currentPeriod + 1; period < playoffStart; period++) {
-          const offset = (period - 1) % (models.length - 1);
-          for (let i = 0; i < models.length / 2; i++) {
-            const homeIndex = i === 0 ? models.length - 1 : (i + offset) % (models.length - 1);
-            const awayIndex = i === 0 ? offset : (models.length - 1 - i + offset) % (models.length - 1);
+        const n = models.length;
+        for (let period = Math.max(1, currentPeriod + 1); period < playoffStart; period++) {
+          const offset = (period - 1) % (n - 1);
+          for (let i = 0; i < Math.floor(n / 2); i++) {
+            const homeIndex = i === 0 ? n - 1 : (i + offset) % (n - 1);
+            const awayIndex = i === 0 ? offset : (n - 1 - i + offset) % (n - 1);
             if (homeIndex === awayIndex) continue;
             schedule.push({ matchupPeriodId: period, homeTeamId: models[homeIndex].id, awayTeamId: models[awayIndex].id });
           }
@@ -3373,94 +3390,224 @@
         gamesByPeriod[period].push(game);
       });
       const periods = Object.keys(gamesByPeriod).sort((a, b) => Number(a) - Number(b));
-      const maxRosterValue = Math.max(...models.map((team) => team.rosterValue), 1);
-      const averagePpg = models.reduce((sum, team) => sum + team.ppg, 0) / Math.max(models.length, 1);
-      const maxPpg = Math.max(...models.map((team) => team.ppg), 1);
-      const projectedScore = (team) => {
-        const rosterFactor = 0.9 + 0.2 * ((team.rosterValue || 0) / maxRosterValue);
-        const ppgFactor = averagePpg > 0 ? 0.9 + 0.2 * ((team.ppg || averagePpg) / maxPpg) : 1;
-        return 100 * (rosterFactor * 0.75 + ppgFactor * 0.25);
-      };
-      const results = {};
-      models.forEach((team) => {
-        results[String(team.id)] = { playoff: 0, bye: 0, champion: 0, medianWins: [] };
+
+      // Strength from composite power score + actual PPG when available
+      const maxTotal = Math.max(...models.map((t) => t.totalScore || 0), 1);
+      const maxRoster = Math.max(...models.map((t) => t.rosterValue || 0), 1);
+      const teamsWithPpg = models.filter((t) => t.gamesPlayed > 0 && t.ppg > 0);
+      const leagueAvgPpg = teamsWithPpg.length
+        ? teamsWithPpg.reduce((s, t) => s + t.ppg, 0) / teamsWithPpg.length
+        : 115; // typical SF PPR weekly total
+      const leagueSd = 22; // typical week-to-week fantasy SD
+
+      function teamMeanScore(team) {
+        if (team.gamesPlayed > 0 && team.ppg > 0) {
+          // Blend observed PPG with roster quality so small samples don't dominate
+          const sampleWeight = Math.min(1, team.gamesPlayed / 6);
+          const strengthPpg = leagueAvgPpg * (0.82 + 0.36 * ((team.totalScore || 0) / maxTotal));
+          return team.ppg * sampleWeight + strengthPpg * (1 - sampleWeight);
+        }
+        return leagueAvgPpg * (0.82 + 0.36 * ((team.totalScore || team.rosterValue || 0) / maxTotal));
+      }
+
+      function teamSd(team) {
+        // Slightly tighter for strong / consistent-looking teams; wider preseason
+        if (team.gamesPlayed >= 4) return Math.max(14, leagueSd * 0.9);
+        if (team.gamesPlayed > 0) return leagueSd;
+        return leagueSd * 1.05;
+      }
+
+      const meanById = {};
+      const sdById = {};
+      models.forEach((t) => {
+        meanById[String(t.id)] = teamMeanScore(t);
+        sdById[String(t.id)] = teamSd(t);
       });
-      const simulations = 5000;
-      const byeSlots = playoffCount >= 6 ? 2 : 0;
-      const pickWinner = (a, b) => {
-        const probability = 1 / (1 + Math.exp(-(projectedScore(a) - projectedScore(b)) / 18));
-        return Math.random() < probability ? a : b;
-      };
+
       const normal = () => {
-        let u = 0;
-        let v = 0;
+        let u = 0, v = 0;
         while (!u) u = Math.random();
         while (!v) v = Math.random();
         return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
       };
 
+      function drawScore(teamId) {
+        const mean = meanById[String(teamId)] || leagueAvgPpg;
+        const sd = sdById[String(teamId)] || leagueSd;
+        return Math.max(0, mean + normal() * sd);
+      }
+
+      // Playoff win probability from score distributions (not a separate arbitrary scale)
+      function playoffWinProb(a, b) {
+        const ma = meanById[String(a.id)] || leagueAvgPpg;
+        const mb = meanById[String(b.id)] || leagueAvgPpg;
+        const sa = sdById[String(a.id)] || leagueSd;
+        const sb = sdById[String(b.id)] || leagueSd;
+        const diff = ma - mb;
+        const sdDiff = Math.sqrt(sa * sa + sb * sb);
+        // P(A > B) ≈ Φ(diff / sdDiff)
+        const z = diff / Math.max(sdDiff, 1);
+        // logistic approx to normal CDF
+        return 1 / (1 + Math.exp(-1.7 * z));
+      }
+
+      const pickWinner = (a, b) => (Math.random() < playoffWinProb(a, b) ? a : b);
+
+      const results = {};
+      models.forEach((team) => {
+        results[String(team.id)] = {
+          playoff: 0,
+          bye: 0,
+          champion: 0,
+          finalWins: [],
+          finalLosses: [],
+          h2hWins: [],
+          medianWins: []
+        };
+      });
+
+      const simulations = 8000;
+      const byeSlots = playoffCount >= 6 ? 2 : (playoffCount >= 4 ? 0 : 0);
+
       for (let sim = 0; sim < simulations; sim++) {
         const standings = {};
         models.forEach((team) => {
-          standings[String(team.id)] = { team, wins: team.wins || 0, medianWins: 0, points: 0 };
+          standings[String(team.id)] = {
+            team,
+            wins: team.wins || 0,
+            losses: team.losses || 0,
+            h2hWins: 0,
+            medianWins: 0,
+            points: team.pointsFor || 0
+          };
         });
+
         periods.forEach((period) => {
           const scores = {};
           models.forEach((team) => {
-            scores[String(team.id)] = Math.max(0, projectedScore(team) + normal() * 18);
+            scores[String(team.id)] = drawScore(team.id);
           });
+
+          // Head-to-head
           gamesByPeriod[period].forEach((game) => {
             const home = standings[String(game.homeTeamId)];
             const away = standings[String(game.awayTeamId)];
             if (!home || !away) return;
-            home.points += scores[String(home.team.id)] || 0;
-            away.points += scores[String(away.team.id)] || 0;
-            if ((scores[String(home.team.id)] || 0) >= (scores[String(away.team.id)] || 0)) home.wins++;
-            else away.wins++;
+            const hs = scores[String(home.team.id)] || 0;
+            const as = scores[String(away.team.id)] || 0;
+            home.points += hs;
+            away.points += as;
+            if (hs >= as) {
+              home.wins++;
+              home.h2hWins++;
+              away.losses++;
+            } else {
+              away.wins++;
+              away.h2hWins++;
+              home.losses++;
+            }
           });
-          const orderedScores = models.map((team) => scores[String(team.id)] || 0).sort((a, b) => a - b);
-          const median = orderedScores[Math.floor(orderedScores.length / 2) - 1] + orderedScores[Math.floor(orderedScores.length / 2)];
-          const medianScore = median / 2;
+
+          // Vs league median (one extra win/loss per team per week)
+          const ordered = models.map((t) => scores[String(t.id)] || 0).slice().sort((a, b) => a - b);
+          const n = ordered.length;
+          const medianScore = n % 2 === 1
+            ? ordered[(n - 1) / 2]
+            : (ordered[n / 2 - 1] + ordered[n / 2]) / 2;
           models.forEach((team) => {
             const row = standings[String(team.id)];
-            row.points += scores[String(team.id)] || 0;
-            if ((scores[String(team.id)] || 0) >= medianScore) {
+            const s = scores[String(team.id)] || 0;
+            // Points already counted once via H2H; teams on bye still need points from median week
+            const playedH2h = gamesByPeriod[period].some(
+              (g) => String(g.homeTeamId) === String(team.id) || String(g.awayTeamId) === String(team.id)
+            );
+            if (!playedH2h) row.points += s;
+            if (s >= medianScore) {
               row.wins++;
               row.medianWins++;
+            } else {
+              row.losses++;
             }
           });
         });
-        const seeded = Object.values(standings).sort((a, b) => b.wins - a.wins || b.points - a.points);
+
+        const seeded = Object.values(standings).sort((a, b) =>
+          b.wins - a.wins || b.points - a.points || b.h2hWins - a.h2hWins
+        );
         const playoffTeams = seeded.slice(0, Math.min(playoffCount, seeded.length));
         playoffTeams.forEach((row, index) => {
           const result = results[String(row.team.id)];
           result.playoff++;
           if (index < byeSlots) result.bye++;
+        });
+        // Track projected final records for every team
+        Object.values(standings).forEach((row) => {
+          const result = results[String(row.team.id)];
+          result.finalWins.push(row.wins);
+          result.finalLosses.push(row.losses);
+          result.h2hWins.push(row.h2hWins);
           result.medianWins.push(row.medianWins);
         });
-        const byeTeams = playoffTeams.slice(0, byeSlots);
-        let round = playoffTeams.slice(byeSlots);
-        const nextRound = [];
+
+        // Playoff bracket: byes + single elimination among the rest
+        const byeTeams = playoffTeams.slice(0, byeSlots).map((r) => r.team);
+        let round = playoffTeams.slice(byeSlots).map((r) => r.team);
         while (round.length > 1) {
+          const nextRound = [];
           for (let i = 0; i < round.length; i += 2) {
-            if (round[i + 1]) nextRound.push(pickWinner(round[i].team || round[i], round[i + 1].team || round[i + 1]));
-            else nextRound.push(round[i].team || round[i]);
+            if (round[i + 1]) nextRound.push(pickWinner(round[i], round[i + 1]));
+            else nextRound.push(round[i]);
           }
-          round = nextRound.splice(0);
+          round = nextRound;
         }
-        const finalists = byeTeams.map((row) => row.team).concat(round);
-        let champion = finalists[0];
-        for (let i = 1; i < finalists.length; i++) champion = pickWinner(champion, finalists[i]);
-        if (champion) results[String(champion.id)].champion++;
+        // Remaining survivor(s) meet bye teams
+        let contenders = byeTeams.concat(round);
+        while (contenders.length > 1) {
+          const nextRound = [];
+          // Seed-style: best remaining vs worst
+          contenders = contenders.slice().sort((a, b) =>
+            playoffWinProb(b, a) - playoffWinProb(a, b)
+          );
+          for (let i = 0; i < Math.floor(contenders.length / 2); i++) {
+            const top = contenders[i];
+            const bot = contenders[contenders.length - 1 - i];
+            if (top === bot) nextRound.push(top);
+            else nextRound.push(pickWinner(top, bot));
+          }
+          if (contenders.length % 2 === 1) nextRound.push(contenders[Math.floor(contenders.length / 2)]);
+          contenders = nextRound;
+        }
+        if (contenders[0]) results[String(contenders[0].id)].champion++;
       }
-      return { results, teams: models, playoffCount, byeSlots, periods: periods.length, simulations, projectedSchedule };
+
+      return {
+        results,
+        teams: models,
+        playoffCount,
+        byeSlots,
+        periods: periods.length,
+        simulations,
+        projectedSchedule,
+        usesMedian: true
+      };
+    }
+
+    function medianOf(arr) {
+      if (!arr || !arr.length) return 0;
+      const s = arr.slice().sort((a, b) => a - b);
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+    }
+
+    function formatRecord(wins, losses) {
+      return wins + "-" + losses;
     }
 
     async function setupPlayoffOdds() {
       const status = document.getElementById("odds-status");
       const body = document.getElementById("odds-body");
       if (playoffOddsLoaded) return;
-      status.textContent = "Fetching ESPN schedule and league settings…";
+      status.textContent = "Fetching ESPN schedule and running simulations…";
       try {
         let scheduleData = leagueData;
         try {
@@ -3472,17 +3619,33 @@
         }
         const simulation = runPlayoffSimulations(leagueData, scheduleData);
         const total = simulation.simulations;
-        const rows = simulation.teams.slice().sort((a, b) => simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff);
+        const rows = simulation.teams.slice().sort((a, b) =>
+          simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff
+        );
         body.innerHTML = rows.map((team) => {
           const result = simulation.results[String(team.id)];
-          const median = result.medianWins.length ? result.medianWins.slice().sort((a, b) => a - b)[Math.floor(result.medianWins.length / 2)] : 0;
+          const projW = medianOf(result.finalWins);
+          const projL = medianOf(result.finalLosses);
+          const medW = medianOf(result.medianWins);
+          const h2hW = medianOf(result.h2hWins);
+          const nowRec = formatRecord(team.wins || 0, team.losses || 0);
+          const projRec = formatRecord(projW, projL);
+          const tip = "Median across sims: " + projRec +
+            " (about " + h2hW + " H2H wins + " + medW + " median wins)";
           return "<tr><td class=\"odds-team\">" + escapeHtml(team.name) + "</td>" +
+            "<td>" + nowRec + "</td>" +
+            "<td title=\"" + tip + "\">" + projRec +
+            "<div style=\"font-size:0.65rem;color:var(--text-muted)\">~" + h2hW + " H2H · ~" + medW + " med</div></td>" +
             "<td>" + playoffPercent(result.playoff, total) + "</td>" +
             "<td>" + playoffPercent(result.bye, total) + "</td>" +
-            "<td>" + playoffPercent(result.champion, total) + "</td>" +
-            "<td>" + median + "</td></tr>";
+            "<td>" + playoffPercent(result.champion, total) + "</td></tr>";
         }).join("");
-        status.textContent = simulation.playoffCount + " playoff spots · " + simulation.byeSlots + " first-round byes · " + simulation.periods + " future matchup periods · " + total.toLocaleString() + " simulations · league median included" + (simulation.projectedSchedule ? " · projected schedule used" : "");
+        status.textContent =
+          simulation.playoffCount + " playoff spots · " +
+          simulation.byeSlots + " byes · " +
+          simulation.periods + " weeks left · " +
+          total.toLocaleString() + " sims · H2H + vs median · scores from PPG/roster strength" +
+          (simulation.projectedSchedule ? " · synthetic schedule (ESPN schedule empty)" : "");
         playoffOddsLoaded = true;
       } catch (error) {
         console.error(error);
