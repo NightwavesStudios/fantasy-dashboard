@@ -1008,6 +1008,61 @@
       max-width: 7.75rem;
     }
 
+
+    .settings-card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .settings-h {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .settings-desc {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 0.85rem;
+    }
+    .settings-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+    .settings-option {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      cursor: pointer;
+      background: var(--surface-2);
+    }
+    .settings-option:hover { border-color: var(--border); }
+    .settings-option input { margin-top: 0.2rem; accent-color: var(--accent); }
+    .settings-option strong { display: block; font-size: 0.875rem; }
+    .settings-option small {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+    .settings-status {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+    .settings-list {
+      margin: 0.35rem 0 0 1.1rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+    .settings-list li { margin: 0.35rem 0; }
+
     @media (max-width: 640px) {
       .app-header { padding: 0.75rem 1rem; }
       .tabs, .toolbar, .legend, .board, .rankings-wrap, .app-footer {
@@ -1068,11 +1123,12 @@
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-panel="power" type="button" title="Rank teams by FantasyCalc roster value and PPG once games are scored">Power Rankings</button>
-    <button class="tab" data-panel="calc" type="button" title="Compare FantasyCalc values and chain multi-step trades">Trade Calculator</button>
+    <button class="tab active" data-panel="power" type="button" title="Rank teams by trade-value roster strength and PPG once games are scored">Power Rankings</button>
+    <button class="tab" data-panel="calc" type="button" title="Compare trade values and chain multi-step trades">Trade Calculator</button>
     <button class="tab" data-panel="trade" type="button" title="View every roster and ESPN trade-block status">Trade Board</button>
     <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
-    <button class="tab" data-panel="waivers" type="button" title="Free agents and waiver wire ranked by FantasyCalc value">Waiver Wire</button>
+    <button class="tab" data-panel="waivers" type="button" title="Free agents and waiver wire ranked by your selected trade-value source">Waiver Wire</button>
+    <button class="tab" data-panel="settings" type="button" title="Choose trade value data sources and app preferences">Settings</button>
   </nav>
 
   <!-- TRADE BOARD -->
@@ -1271,6 +1327,61 @@
           </thead>
           <tbody id="waiver-body"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-settings">
+    <div class="calc-wrap">
+      <p class="rankings-note">
+        <strong>Value sources</strong><br>
+        Power rankings, the trade calculator, and the waiver wire all use the source you pick here.
+        Hybrid averages every source that loads successfully after normalizing each scale.
+      </p>
+      <div class="settings-card">
+        <h3 class="settings-h">Trade value provider</h3>
+        <p class="settings-desc">Public APIs only. No keys required. Every source is <strong>redraft Superflex</strong> (full PPR where the API allows). Dynasty feeds are not used.</p>
+        <div class="settings-options" id="value-provider-options">
+          <label class="settings-option">
+            <input type="radio" name="valueProvider" value="fantasycalc" />
+            <span>
+              <strong>FantasyCalc</strong>
+              <small>Redraft Superflex · 10-team full PPR · real trades · ESPN player IDs</small>
+            </span>
+          </label>
+          <label class="settings-option">
+            <input type="radio" name="valueProvider" value="statsguy" />
+            <span>
+              <strong>Stats Guy Fantasy</strong>
+              <small>Redraft Superflex (sf_redraft) · trade-derived · matched by name</small>
+            </span>
+          </label>
+          <label class="settings-option">
+            <input type="radio" name="valueProvider" value="dynastydealer" />
+            <span>
+              <strong>Dynasty Dealer Redraft</strong>
+              <small>Redraft Superflex full PPR · not dynasty values · matched by name</small>
+            </span>
+          </label>
+          <label class="settings-option">
+            <input type="radio" name="valueProvider" value="hybrid" />
+            <span>
+              <strong>Hybrid average</strong>
+              <small>Average of all redraft SF sources that load (normalized to one scale)</small>
+            </span>
+          </label>
+        </div>
+        <div class="settings-status" id="settings-source-status">Current source loads with the league data.</div>
+        <button type="button" class="btn btn-primary" id="settings-apply" title="Save provider and reload values">Save and reload values</button>
+      </div>
+      <div class="settings-card">
+        <h3 class="settings-h">About the sources</h3>
+        <ul class="settings-list">
+          <li><strong>FantasyCalc</strong> — api.fantasycalc.com · isDynasty=false · numQbs=2 · ppr=1</li>
+          <li><strong>Stats Guy</strong> — api.statsguyfantasy.com · value.sf_redraft only</li>
+          <li><strong>Dynasty Dealer</strong> — dynastydealer.com · format=redraft&amp;scoring=ppr&amp;sf=true</li>
+          <li>KeepTradeCut, Roster Audit, and pure dynasty endpoints are excluded</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -1542,29 +1653,235 @@
       return "—";
     }
 
-    /** FantasyCalc value map: espnId string -> { value, overallRank, positionRank, name } */
+    /** Active trade-value maps (provider-agnostic). */
     let fcByEspnId = {};
     let fcByName = {};
+    let valueProvider = "fantasycalc";
+    let valueSourceLabel = "FantasyCalc";
+    let valueLoadNote = "";
+
+    // Redraft Superflex only (no dynasty sources)
+    const VALUE_PROVIDERS = {
+      fantasycalc: {
+        id: "fantasycalc",
+        label: "FantasyCalc",
+        url: "https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1"
+      },
+      statsguy: {
+        id: "statsguy",
+        label: "Stats Guy",
+        url: "https://api.statsguyfantasy.com/api/v1/players"
+      },
+      dynastydealer: {
+        id: "dynastydealer",
+        label: "Dynasty Dealer Redraft",
+        url: "https://www.dynastydealer.com/api/player-values?format=redraft&scoring=ppr&sf=true"
+      },
+      hybrid: {
+        id: "hybrid",
+        label: "Hybrid average"
+      }
+    };
+
+    function loadValueProviderSetting() {
+      try {
+        const saved = localStorage.getItem("leagueToolsValueProvider");
+        if (saved && VALUE_PROVIDERS[saved]) valueProvider = saved;
+      } catch (e) {}
+      valueSourceLabel = VALUE_PROVIDERS[valueProvider].label;
+    }
+    loadValueProviderSetting();
 
     function normalizeName(n) {
       return String(n || "")
         .toLowerCase()
+        .replace(/\./g, "")
+        .replace(/'/g, "")
         .replace(/[^a-z0-9]/g, "");
+    }
+
+    /** Strip Jr/Sr/II/III/IV and trailing roster numbers so "Pittman Jr" matches "Pittman". */
+    function normalizeNameLoose(n) {
+      let s = String(n || "").toLowerCase();
+      s = s.replace(/\./g, " ").replace(/'/g, "");
+      s = s.replace(/\b(jr|sr|ii|iii|iv|v)\b/g, " ");
+      s = s.replace(/\b\d{1,2}\b/g, " "); // jersey-style trailing numbers
+      s = s.replace(/[^a-z]/g, "");
+      return s;
+    }
+
+    function nameKeys(n) {
+      const keys = [];
+      const a = normalizeName(n);
+      const b = normalizeNameLoose(n);
+      if (a) keys.push(a);
+      if (b && b !== a) keys.push(b);
+      return keys;
+    }
+
+    function lookupByName(name) {
+      for (const k of nameKeys(name)) {
+        if (fcByName[k]) return fcByName[k];
+      }
+      return null;
     }
 
     function playerFcValue(player) {
       const espnId = String(player.id);
       if (fcByEspnId[espnId]) return fcByEspnId[espnId].value || 0;
-      const key = normalizeName(player.fullName);
-      if (fcByName[key]) return fcByName[key].value || 0;
-      return 0;
+      const meta = lookupByName(player.fullName);
+      return meta ? (meta.value || 0) : 0;
     }
 
     function playerFcMeta(player) {
       const espnId = String(player.id);
       if (fcByEspnId[espnId]) return fcByEspnId[espnId];
-      const key = normalizeName(player.fullName);
-      return fcByName[key] || null;
+      return lookupByName(player.fullName);
+    }
+
+    function setValueMaps(byEspn, byName, label, note) {
+      fcByEspnId = byEspn || {};
+      fcByName = byName || {};
+      valueSourceLabel = label || valueSourceLabel;
+      valueLoadNote = note || "";
+    }
+
+    function normalizeValueMap(entries) {
+      // entries: [{espnId?, name, value, overallRank?}]
+      const max = Math.max(...entries.map((e) => e.value || 0), 1);
+      return entries.map((e) => Object.assign({}, e, {
+        value: Math.round(((e.value || 0) / max) * 10000)
+      }));
+    }
+
+    function ingestEntries(entries) {
+      const byEspn = {};
+      const byName = {};
+      for (const e of entries) {
+        const meta = {
+          value: e.value || 0,
+          overallRank: e.overallRank != null ? e.overallRank : null,
+          positionRank: e.positionRank != null ? e.positionRank : null,
+          name: e.name
+        };
+        if (e.espnId != null && e.espnId !== "") byEspn[String(e.espnId)] = meta;
+        if (e.name) {
+          for (const k of nameKeys(e.name)) {
+            // Prefer first write; don't overwrite a higher-value collision unless empty
+            if (!byName[k] || (meta.value || 0) > (byName[k].value || 0)) byName[k] = meta;
+          }
+        }
+      }
+      return { byEspn, byName };
+    }
+
+    async function fetchFantasyCalcEntries() {
+      const res = await fetchWithTimeout(VALUE_PROVIDERS.fantasycalc.url, { headers: { Accept: "application/json" } }, 15000);
+      if (!res.ok) throw new Error("FantasyCalc HTTP " + res.status);
+      const list = await res.json();
+      return (list || []).map((row) => {
+        const p = row.player || {};
+        return {
+          espnId: p.espnId != null ? String(p.espnId) : null,
+          name: p.name,
+          value: row.value || 0,
+          overallRank: row.overallRank,
+          positionRank: row.positionRank
+        };
+      });
+    }
+
+    async function fetchStatsGuyEntries() {
+      const res = await fetchWithTimeout(VALUE_PROVIDERS.statsguy.url, { headers: { Accept: "application/json" } }, 15000);
+      if (!res.ok) throw new Error("Stats Guy HTTP " + res.status);
+      const data = await res.json();
+      const players = data.players || [];
+      return players.map((row) => {
+        const val = row.value && typeof row.value === "object" ? (row.value.sf_redraft || 0) : (row.value || 0);
+        const rank = row.rank && typeof row.rank === "object" ? row.rank.sf_redraft : row.rank;
+        const posRank = row.positionRank && typeof row.positionRank === "object" ? row.positionRank.sf_redraft : row.positionRank;
+        return {
+          espnId: null,
+          name: row.name,
+          value: val || 0,
+          overallRank: rank != null ? rank : null,
+          positionRank: posRank != null ? posRank : null
+        };
+      }).filter((e) => e.value > 0);
+    }
+
+    async function fetchDynastyDealerEntries() {
+      // Redraft Superflex full PPR only
+      const res = await fetchWithTimeout(VALUE_PROVIDERS.dynastydealer.url, { headers: { Accept: "application/json" } }, 15000);
+      if (!res.ok) throw new Error("Dynasty Dealer HTTP " + res.status);
+      const data = await res.json();
+      const players = data.players || [];
+      return players.map((row) => ({
+        espnId: null,
+        name: row.name,
+        value: row.current_value != null ? row.current_value : (row.base_value || 0),
+        overallRank: null,
+        positionRank: null
+      })).filter((e) => e.name && e.value > 0);
+    }
+
+    async function loadTradeValues(providerId) {
+      const id = providerId || valueProvider;
+      if (id === "hybrid") {
+        const results = await Promise.allSettled([
+          fetchFantasyCalcEntries(),
+          fetchStatsGuyEntries(),
+          fetchDynastyDealerEntries()
+        ]);
+        const labels = ["FantasyCalc", "Stats Guy SF redraft", "Dynasty Dealer redraft SF"];
+        const loaded = [];
+        const notes = [];
+        results.forEach((r, i) => {
+          if (r.status === "fulfilled" && r.value && r.value.length) {
+            loaded.push(normalizeValueMap(r.value));
+            notes.push(labels[i]);
+          } else {
+            notes.push(labels[i] + " failed");
+          }
+        });
+        if (!loaded.length) throw new Error("No value sources loaded");
+        // Average by normalized name; keep espnId from FantasyCalc when present
+        const bucket = {};
+        for (const entries of loaded) {
+          for (const e of entries) {
+            const key = normalizeNameLoose(e.name) || normalizeName(e.name);
+            if (!key) continue;
+            if (!bucket[key]) bucket[key] = { name: e.name, espnId: e.espnId, values: [], ranks: [] };
+            if (e.espnId && !bucket[key].espnId) bucket[key].espnId = e.espnId;
+            bucket[key].values.push(e.value || 0);
+            if (e.overallRank != null) bucket[key].ranks.push(e.overallRank);
+          }
+        }
+        const merged = Object.keys(bucket).map((key) => {
+          const b = bucket[key];
+          const avg = b.values.reduce((s, v) => s + v, 0) / b.values.length;
+          const rankAvg = b.ranks.length ? Math.round(b.ranks.reduce((s, v) => s + v, 0) / b.ranks.length) : null;
+          return {
+            espnId: b.espnId,
+            name: b.name,
+            value: Math.round(avg),
+            overallRank: rankAvg,
+            positionRank: null
+          };
+        });
+        const maps = ingestEntries(merged);
+        setValueMaps(maps.byEspn, maps.byName, "Hybrid average", notes.join(" · "));
+        return;
+      }
+
+      let entries;
+      if (id === "fantasycalc") entries = await fetchFantasyCalcEntries();
+      else if (id === "statsguy") entries = await fetchStatsGuyEntries();
+      else if (id === "dynastydealer") entries = await fetchDynastyDealerEntries();
+      else entries = await fetchFantasyCalcEntries();
+
+      const maps = ingestEntries(entries);
+      setValueMaps(maps.byEspn, maps.byName, VALUE_PROVIDERS[id].label, entries.length + " players");
     }
 
     let currentFilter = "all";
@@ -1600,27 +1917,10 @@
         fcByEspnId = {};
         fcByName = {};
         try {
-          const fcRes = await fetchWithTimeout(
-            FC_URL,
-            { headers: { Accept: "application/json" } },
-            15000
-          );
-          if (fcRes.ok) {
-            const fcList = await fcRes.json();
-            for (const row of fcList || []) {
-              const p = row.player || {};
-              const meta = {
-                value: row.value || 0,
-                overallRank: row.overallRank,
-                positionRank: row.positionRank,
-                name: p.name
-              };
-              if (p.espnId != null) fcByEspnId[String(p.espnId)] = meta;
-              if (p.name) fcByName[normalizeName(p.name)] = meta;
-            }
-          }
+          await loadTradeValues(valueProvider);
         } catch (fcErr) {
-          console.warn("FantasyCalc values unavailable", fcErr);
+          console.warn("Trade values unavailable", fcErr);
+          valueLoadNote = "Value source failed to load";
         }
 
         await fetchByeWeeks();
@@ -1629,7 +1929,8 @@
         statusEl.textContent =
           leagueData.teams.length + " teams · " +
           counts.definitely + " on block · Week " +
-          (leagueData.scoringPeriodId || "—");
+          (leagueData.scoringPeriodId || "—") +
+          " · " + valueSourceLabel;
 
         try {
           renderAll(leagueData);
@@ -3220,6 +3521,15 @@
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "waivers") setupWaiverWire();
         if (btn.dataset.panel === "odds") setupPlayoffOdds();
+        if (btn.dataset.panel === "settings") {
+          try {
+            document.querySelectorAll('input[name="valueProvider"]').forEach((el) => {
+              el.checked = el.value === valueProvider;
+            });
+            const st = document.getElementById("settings-source-status");
+            if (st) st.textContent = "Active: " + valueSourceLabel + (valueLoadNote ? " · " + valueLoadNote : "");
+          } catch (e) {}
+        }
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
@@ -3299,6 +3609,46 @@
       if (wRef) wRef.addEventListener("click", () => {
         waiverLoaded = false;
         fetchWaiverPool();
+      });
+
+      function syncSettingsUI() {
+        document.querySelectorAll('input[name="valueProvider"]').forEach((el) => {
+          el.checked = el.value === valueProvider;
+        });
+        const st = document.getElementById("settings-source-status");
+        if (st) {
+          st.textContent = "Active: " + valueSourceLabel + (valueLoadNote ? " · " + valueLoadNote : "");
+        }
+      }
+      syncSettingsUI();
+
+      const applySettings = document.getElementById("settings-apply");
+      if (applySettings) applySettings.addEventListener("click", async () => {
+        const selected = document.querySelector('input[name="valueProvider"]:checked');
+        if (!selected) return;
+        valueProvider = selected.value;
+        try { localStorage.setItem("leagueToolsValueProvider", valueProvider); } catch (e) {}
+        valueSourceLabel = VALUE_PROVIDERS[valueProvider].label;
+        const st = document.getElementById("settings-source-status");
+        if (st) st.textContent = "Loading " + valueSourceLabel + "…";
+        applySettings.disabled = true;
+        try {
+          await loadTradeValues(valueProvider);
+          waiverLoaded = false;
+          playoffOddsLoaded = false;
+          if (leagueData) {
+            renderAll(leagueData);
+            fillWaiverTeamSelect();
+          } else {
+            await fetchLeague();
+          }
+          syncSettingsUI();
+        } catch (err) {
+          console.error(err);
+          if (st) st.textContent = "Failed to load " + valueSourceLabel + ": " + (err.message || "error");
+        } finally {
+          applySettings.disabled = false;
+        }
       });
     } catch (bootErr) {
       console.error(bootErr);
