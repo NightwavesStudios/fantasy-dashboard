@@ -933,6 +933,43 @@
       color: #f87171;
       border: 1px solid rgba(220, 38, 38, 0.3);
     }
+
+    .need-tag.need-high {
+      border-color: rgba(248, 113, 113, 0.55);
+      background: rgba(248, 113, 113, 0.18);
+      font-weight: 600;
+    }
+    .calc-impact-score {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      margin-left: 0.25rem;
+    }
+    .calc-impact-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+    .calc-fit-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      margin-left: 0.35rem;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+    .calc-fit-tag.fills { color: #4ade80; border-color: rgba(74,222,128,0.4); }
+    .calc-fit-tag.deals { color: #60a5fa; border-color: rgba(96,165,250,0.4); }
+    .calc-player.fills-need {
+      border-left: 2px solid #4ade80;
+    }
+    .calc-impact-summary {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+
     .need-tag.surplus {
       background: rgba(22, 163, 74, 0.12);
       color: #4ade80;
@@ -1298,7 +1335,8 @@
   <div class="panel" id="panel-calc">
     <div class="calc-wrap">
       <p class="rankings-note">
-        Values from FantasyCalc (10 team Superflex PPR). Build a multi-step chain: set up a trade, click Apply to chain, then trade again with the updated rosters.
+        FantasyCalc values for fairness. Ranking impact uses the same power model as Power Rankings (projected starters, depth, needs).
+        Green edge on a player means they fill the other team’s need. Apply to chain to stack multi-team deals.
       </p>
       <div class="calc-filter-row">
         <label title="Only list players each team has marked available for trade on ESPN"><input type="checkbox" id="calc-onblock-only" /> On block only</label>
@@ -1347,7 +1385,7 @@
         </div>
       </div>
       <div class="calc-impact" id="calc-impact">
-        <div class="calc-impact-title">Ranking impact</div>
+        <div class="calc-impact-title">Trade impact</div>
         <div class="calc-impact-grid" id="calc-impact-grid"></div>
       </div>
     </div>
@@ -3074,28 +3112,37 @@
         }
         if (needsEl) {
           const rankMaps = computeRankMaps(modelsFromRosters(workingRosters));
-          const ns = needsSurplusForTeam(rankMaps.posRank, teamId, teams.length || 10);
-          let htmlNs = "";
-          for (const p of ns.needs) {
-            htmlNs += '<span class="need-tag need" title="Lower-ranked ' + p + '">Need ' + p + "</span>";
-          }
-          for (const p of ns.surplus) {
-            htmlNs += '<span class="need-tag surplus" title="Higher-ranked ' + p + '">Surplus ' + p + "</span>";
-          }
-          needsEl.innerHTML = htmlNs || '<span style="color:var(--text-muted);font-size:0.7rem">Balanced</span>';
+          const scored = rankMaps.byId[teamId] || rankMaps.byId[Number(teamId)] || rankMaps.byId[String(teamId)];
+          const ns = needsSurplusForTeam(rankMaps.posRank, teamId, teams.length || 10, scored);
+          needsEl.innerHTML = formatNeedsHtml(ns);
+        }
+
+        // Other side's needs — highlight players here that would fill them
+        const otherSide = side === "a" ? "b" : "a";
+        const otherSel = document.getElementById("calc-team-" + otherSide);
+        const otherId = otherSel ? otherSel.value : null;
+        let otherNeeds = [];
+        if (otherId) {
+          const rm = computeRankMaps(modelsFromRosters(workingRosters));
+          const scoredO = rm.byId[otherId] || rm.byId[Number(otherId)] || rm.byId[String(otherId)];
+          otherNeeds = needsSurplusForTeam(rm.posRank, otherId, teams.length || 10, scoredO).needs || [];
         }
 
         list.innerHTML = "";
         for (const r of rows) {
           const checked = calcSelected[side].has(r.id);
+          const fillsNeed = otherNeeds.indexOf(r.pos) >= 0;
           const div = document.createElement("label");
           div.className = "calc-player" + (checked ? " selected" : "") +
             (r.onBlock ? " on-block-player" : "") +
-            (r.notLikely ? " not-likely-player" : "");
+            (r.notLikely ? " not-likely-player" : "") +
+            (fillsNeed ? " fills-need" : "");
+          div.title = fillsNeed ? "Fills a need for the other team" : "";
           div.innerHTML =
             '<input type="checkbox" ' + (checked ? "checked " : "") + 'data-id="' + r.id + '" data-side="' + side + '"/>' +
             '<span class="calc-player-pos" title="Position">' + r.pos + "</span>" +
             '<span class="calc-player-name">' + escapeHtml(r.name) +
+            (fillsNeed ? '<span class="calc-fit-tag fills">fills need</span>' : "") +
             (r.injury ? '<span class="inj-badge ' + r.injury.cls + '">' + r.injury.text + "</span>" : "") +
             byeBadgeHtml(r.bye, leagueData && leagueData.scoringPeriodId) +
             "</span>" +
@@ -3180,12 +3227,10 @@
         const hasChain = chainSteps.length > 0;
 
         if (!hasPicks && !hasChain) {
-          grid.innerHTML = '<div class="calc-impact-empty">Select players to preview rank changes, or apply trades to build a chain.</div>';
+          grid.innerHTML = '<div class="calc-impact-empty">Select players to preview power score, projected starters, and need fit.</div>';
           return;
         }
 
-        // Baseline = original league ranks
-        // After = working rosters + optional pending trade
         let pendingMap = workingRosters;
         if (hasPicks && String(teamAId) !== String(teamBId)) {
           pendingMap = applySwap(
@@ -3196,7 +3241,6 @@
         }
         const afterRanks = computeRankMaps(modelsFromRosters(pendingMap));
 
-        // Show cards for teams involved in chain + pending
         const involved = new Set();
         for (const s of chainSteps) {
           involved.add(String(s.teamAId));
@@ -3217,44 +3261,75 @@
           const row = map[id] || map[Number(id)] || map[String(id)] || {};
           return row[pos] != null ? row[pos] : null;
         }
+        function teamObj(maps, id) {
+          return maps.byId[id] || maps.byId[Number(id)] || maps.byId[String(id)] || {};
+        }
+
+        function scoreDelta(before, after) {
+          if (before == null || after == null) return { text: "—", cls: "same" };
+          const d = Math.round((after - before) * 10) / 10;
+          if (Math.abs(d) < 0.15) return { text: before.toFixed(1) + " → " + after.toFixed(1), cls: "same" };
+          if (d > 0) return { text: before.toFixed(1) + " → " + after.toFixed(1) + " (+" + d.toFixed(1) + ")", cls: "up" };
+          return { text: before.toFixed(1) + " → " + after.toFixed(1) + " (" + d.toFixed(1) + ")", cls: "down" };
+        }
 
         function card(teamId) {
           const name = teamName(teamId);
+          const beforeTeam = teamObj(originalRanks, teamId);
+          const afterTeam = teamObj(afterRanks, teamId);
           const power = formatRankDelta(pr(originalRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
-          const beforeTeam = originalRanks.byId[teamId] || originalRanks.byId[Number(teamId)] || {};
-          const afterTeam = afterRanks.byId[teamId] || afterRanks.byId[Number(teamId)] || {};
-          const positionImproved = POSITIONS.some((pos) => pos !== "BN" && (afterTeam.posValues?.[pos] || 0) > (beforeTeam.posValues?.[pos] || 0));
-          const resultText = positionImproved ? "Benefits this team" : "No position gain";
-          const resultClass = positionImproved ? "benefit" : "neutral";
-          let rows =
+          const scoreCh = scoreDelta(beforeTeam.totalScore, afterTeam.totalScore);
+          const projCh = scoreDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
+
+          const beforeNs = needsSurplusForTeam(originalRanks.posRank, teamId, teams.length || 10, beforeTeam);
+          const afterNs = needsSurplusForTeam(afterRanks.posRank, teamId, teams.length || 10, afterTeam);
+          const filledNeeds = (beforeNs.needs || []).filter((p) => (afterNs.needs || []).indexOf(p) < 0);
+          const newNeeds = (afterNs.needs || []).filter((p) => (beforeNs.needs || []).indexOf(p) < 0);
+          const dealtSurplus = (beforeNs.surplus || []).filter((p) => (afterNs.surplus || []).indexOf(p) < 0);
+
+          const powerImproved = pr(afterRanks.powerRank, teamId) != null && pr(originalRanks.powerRank, teamId) != null &&
+            pr(afterRanks.powerRank, teamId) < pr(originalRanks.powerRank, teamId);
+          const projUp = (afterTeam.expectedPts || 0) > (beforeTeam.expectedPts || 0) + 0.5;
+          const resultText = powerImproved || projUp || filledNeeds.length
+            ? "Helps this team"
+            : "Neutral / weaker";
+          const resultClass = powerImproved || projUp || filledNeeds.length ? "benefit" : "neutral";
+
+          let rows = "";
+          rows +=
             '<div class="calc-impact-row"><span class="calc-impact-label">Power rank</span>' +
-            '<span class="calc-impact-change ' + power.cls + '">' + power.text + " · " +
-            '<span class="impact-value" style="color:' + formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue).color + '">' + formatValueDelta(beforeTeam.rosterValue, afterTeam.rosterValue).text + "</span></span></div>";
-          for (const pos of POSITIONS.filter((position) => position !== "BN")) {
-            const delta = formatRankDelta(
-              posr(originalRanks.posRank, teamId, pos),
-              posr(afterRanks.posRank, teamId, pos)
-            );
-            const beforePositionValue = beforeTeam.posValues && beforeTeam.posValues[pos];
-            const afterPositionValue = afterTeam.posValues && afterTeam.posValues[pos];
+            '<span class="calc-impact-change ' + power.cls + '">' + power.text + "</span></div>";
+          rows +=
+            '<div class="calc-impact-row"><span class="calc-impact-label">Power score</span>' +
+            '<span class="calc-impact-change ' + scoreCh.cls + '">' + scoreCh.text + "</span></div>";
+          rows +=
+            '<div class="calc-impact-row"><span class="calc-impact-label">Projected starters</span>' +
+            '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + " PPG</span></div>";
+
+          // Only positions that change rank
+          for (const pos of ["QB", "RB", "WR", "TE"]) {
+            const before = posr(originalRanks.posRank, teamId, pos);
+            const after = posr(afterRanks.posRank, teamId, pos);
+            if (before == null || after == null || before === after) continue;
+            const delta = formatRankDelta(before, after);
             rows +=
-              '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + "</span>" +
-              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
-              '<span class="impact-value" style="color:' + formatValueDelta(beforePositionValue, afterPositionValue).color + '">' + formatValueDelta(beforePositionValue, afterPositionValue).text + "</span></span></div>";
+              '<div class="calc-impact-row"><span class="calc-impact-label">' + pos + " rank</span>" +
+              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + "</span></div>";
           }
-          for (const slot of ["QB", "RB", "WR", "TE", "FLEX", "SF"]) {
-            const delta = formatRankDelta(
-              originalRanks.starterRank?.[teamId]?.[slot],
-              afterRanks.starterRank?.[teamId]?.[slot]
-            );
-            const beforeStarterValue = beforeTeam.starterScores && beforeTeam.starterScores[slot];
-            const afterStarterValue = afterTeam.starterScores && afterTeam.starterScores[slot];
-            rows +=
-              '<div class="calc-impact-row"><span class="calc-impact-label">Starter ' + slot + "</span>" +
-              '<span class="calc-impact-change ' + delta.cls + '">' + delta.text + " · " +
-              '<span class="impact-value" style="color:' + formatValueDelta(beforeStarterValue, afterStarterValue).color + '">' + formatValueDelta(beforeStarterValue, afterStarterValue).text + "</span></span></div>";
-          }
-          return '<div class="calc-impact-card" tabindex="0" role="button" aria-expanded="true"><h4>' + escapeHtml(name) + '<span class="calc-impact-result ' + resultClass + '">' + resultText + "</span></h4>" + rows + "</div>";
+
+          let fitBits = "";
+          if (filledNeeds.length) fitBits += '<span class="calc-fit-tag fills">Fills ' + filledNeeds.join(", ") + "</span>";
+          if (dealtSurplus.length) fitBits += '<span class="calc-fit-tag deals">Deals ' + dealtSurplus.join(", ") + "</span>";
+          if (newNeeds.length) fitBits += '<span class="calc-fit-tag">Opens need ' + newNeeds.join(", ") + "</span>";
+
+          const summary = fitBits
+            ? '<div class="calc-impact-summary">' + fitBits + "</div>"
+            : "";
+
+          return '<div class="calc-impact-card" tabindex="0" role="button" aria-expanded="true">' +
+            "<h4>" + escapeHtml(name) +
+            '<span class="calc-impact-result ' + resultClass + '">' + resultText + "</span></h4>" +
+            summary + rows + "</div>";
         }
 
         grid.innerHTML = [...involved].map(card).join("");
@@ -3544,7 +3619,11 @@
       return { text: raw.slice(0, 8), cls: "questionable" };
     }
 
-    function needsSurplusForTeam(posRank, teamId, teamCount) {
+    /**
+     * Team needs & surplus from position ranks + optional scored model (depth/VORP).
+     * Returns structured lists with severity for UI and trade matching.
+     */
+    function needsSurplusForTeam(posRank, teamId, teamCount, scoredTeam) {
       const needs = [];
       const surplus = [];
       const skill = ["QB", "RB", "WR", "TE"];
@@ -3552,15 +3631,57 @@
         const row = posRank[teamId] || posRank[Number(teamId)] || posRank[String(teamId)] || {};
         return row[pos];
       }
-      const topCut = Math.max(2, Math.ceil(teamCount * 0.3));
-      const bottomCut = Math.max(teamCount - 2, teamCount - Math.ceil(teamCount * 0.3) + 1);
+      const n = teamCount || 10;
+      // Top ~30% = surplus candidates; bottom ~40% = needs
+      const topCut = Math.max(2, Math.ceil(n * 0.3));
+      const bottomCut = Math.max(n - Math.ceil(n * 0.4) + 1, Math.ceil(n * 0.6));
+
       for (const pos of skill) {
         const r = pr(pos);
         if (r == null) continue;
-        if (r <= topCut) surplus.push(pos);
-        else if (r >= bottomCut) needs.push(pos);
+        // Count how many of this pos are on roster (depth signal)
+        let depthCount = 0;
+        if (scoredTeam && scoredTeam.entries) {
+          depthCount = scoredTeam.entries.filter((e) => e.pos === pos).length;
+        }
+        const minDepth = pos === "QB" ? 2 : pos === "TE" ? 1 : 3;
+
+        if (r >= bottomCut || depthCount < minDepth) {
+          const severity = r >= n - 1 || depthCount < minDepth ? "high" : "med";
+          needs.push({ pos, rank: r, severity, depthCount });
+        } else if (r <= topCut && depthCount >= minDepth) {
+          // Surplus only if they also have depth to deal from
+          const severity = r === 1 ? "high" : "med";
+          surplus.push({ pos, rank: r, severity, depthCount });
+        }
       }
-      return { needs, surplus };
+      // Flat arrays for older callers
+      const needPos = needs.map((x) => x.pos);
+      const surPos = surplus.map((x) => x.pos);
+      return { needs: needPos, surplus: surPos, needDetails: needs, surplusDetails: surplus };
+    }
+
+    function formatNeedsHtml(ns) {
+      if (!ns) return '<span style="color:var(--text-muted);font-size:0.7rem">Balanced</span>';
+      let htmlNs = "";
+      const details = ns.needDetails || (ns.needs || []).map((p) => ({ pos: p, rank: null, severity: "med" }));
+      const surDetails = ns.surplusDetails || (ns.surplus || []).map((p) => ({ pos: p, rank: null, severity: "med" }));
+      for (const d of details) {
+        const tip = d.rank != null
+          ? d.pos + " rank #" + d.rank + (d.severity === "high" ? " · priority need" : "")
+          : "Need " + d.pos;
+        htmlNs += '<span class="need-tag need' + (d.severity === "high" ? " need-high" : "") +
+          '" title="' + tip + '">Need ' + d.pos +
+          (d.rank != null ? " #" + d.rank : "") + "</span>";
+      }
+      for (const d of surDetails) {
+        const tip = d.rank != null
+          ? d.pos + " rank #" + d.rank + " · depth to deal"
+          : "Surplus " + d.pos;
+        htmlNs += '<span class="need-tag surplus" title="' + tip + '">Surplus ' + d.pos +
+          (d.rank != null ? " #" + d.rank : "") + "</span>";
+      }
+      return htmlNs || '<span style="color:var(--text-muted);font-size:0.7rem">Balanced</span>';
     }
 
     function renderTradeBoard(data) {
@@ -3594,13 +3715,11 @@
           if (tradePlayers[id] === "ON_THE_BLOCK") onBlockCount++;
         }
 
-        const ns = needsSurplusForTeam(rankMaps.posRank, team.id, teamCount);
+        const scoredT = rankMaps.byId[team.id] || rankMaps.byId[Number(team.id)];
+        const ns = needsSurplusForTeam(rankMaps.posRank, team.id, teamCount, scoredT);
         let nsHtml = "";
         if (ns.needs.length || ns.surplus.length) {
-          nsHtml = '<div class="team-needs">';
-          for (const p of ns.needs) nsHtml += '<span class="need-tag need" title="Lower-ranked ' + p + '">Need ' + p + "</span>";
-          for (const p of ns.surplus) nsHtml += '<span class="need-tag surplus" title="Higher-ranked ' + p + '">Surplus ' + p + "</span>";
-          nsHtml += "</div>";
+          nsHtml = '<div class="team-needs">' + formatNeedsHtml(ns) + "</div>";
         }
 
         const card = document.createElement("article");
