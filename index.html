@@ -115,6 +115,80 @@
     .tab:hover { color: var(--text-secondary); }
     .tab.active { color: var(--text); border-bottom-color: var(--accent); }
 
+
+    /* Custom tooltips (work on mobile tap) */
+    .tip {
+      border-bottom: 1px dotted var(--text-muted);
+      cursor: help;
+    }
+    #app-tooltip {
+      position: fixed;
+      z-index: 200;
+      max-width: min(280px, calc(100vw - 24px));
+      padding: 0.55rem 0.7rem;
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.12s, transform 0.12s;
+    }
+    [data-theme="light"] #app-tooltip {
+      background: #0f172a;
+      color: #f8fafc;
+      border-color: #1e293b;
+    }
+    #app-tooltip.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Mobile simplification */
+    @media (max-width: 720px) {
+      .app-header { padding: 0.65rem 0.85rem; }
+      .brand h1 { font-size: 1rem; }
+      .brand .meta { font-size: 0.7rem; }
+      .header-actions { gap: 0.4rem; }
+      .btn { padding: 0.5rem 0.7rem; font-size: 0.78rem; min-height: 40px; }
+      .status-pill { display: none; }
+      .tabs {
+        padding: 0.4rem 0.5rem 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tab {
+        flex: 0 0 auto;
+        padding: 0.7rem 0.85rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+      }
+      .rankings-note { font-size: 0.78rem; padding: 0 0.25rem; line-height: 1.4; }
+      .calc-wrap, .rankings-wrap { padding: 0.75rem 0.75rem 1.5rem; }
+      .fp-power-table th, .fp-power-table td { padding: 0.55rem 0.45rem; }
+      .fp-team-sub { font-size: 0.7rem; }
+      .fp-detail-grid { gap: 0.65rem; }
+      .calc-toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem;
+      }
+      .calc-toolbar .btn { width: 100%; justify-content: center; }
+      .calc-toolbar .calc-filter-row,
+      .calc-toolbar .calc-chain-hint { grid-column: 1 / -1; }
+      .fair-bar-labels { font-size: 0.65rem; }
+      .fair-bar-status { font-size: 0.78rem; }
+      .odds-table th, .odds-table td { padding: 0.5rem 0.4rem; font-size: 0.75rem; }
+      .modal-card { max-height: 85vh; padding: 0.85rem; }
+    }
+
     .panel { display: none; }
     .panel.active { display: block; }
 
@@ -1578,8 +1652,7 @@
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
       <p class="rankings-note">
-        Click a team for week-by-week H2H win rates (wins out of all sims) and projected lineup scores.
-        Scores use bye-aware optimal lineups; each sim draws from those means, plays ESPN H2H plus a top-5-scorers win / bottom-5 loss, then the playoffs.
+        Tap a team for weekly H2H and top-5 win rates. 10,000 sims · ESPN schedule · top 5 scorers get an extra win each week.
       </p>
       <div class="odds-status" id="odds-status">Select Playoff Odds to load ESPN settings and run simulations.</div>
       <div class="odds-table-wrap">
@@ -1606,9 +1679,7 @@
             <p class="rankings-note">
         <strong>Power rankings</strong><br>
         Preseason question: how strong is this roster expected to be over the season?
-        Shared weekly projection engine: each week’s optimal lineup (bye-aware) from ESPN.
-        Power rankings summarize the full 17-week curve (mean, median, best, worst, volatility), plus depth, VORP, FantasyCalc, stability, and upside.
-        Playoff odds use the same weekly μ/σ to simulate the season and postseason week by week. #1 is always 100.
+        Weekly ESPN lineups (bye-aware) summarized into one score. Tap a row for the full breakdown. #1 is always 100.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -4241,7 +4312,7 @@
         if (!starterLis) starterLis = "<li>No projection data</li>";
 
         function metric(label, value, tip, color) {
-          const tipAttr = tip ? ' class="fp-label-tip" title="' + tip.replace(/"/g, "&quot;") + '"' : "";
+          const tipAttr = tip ? ' class="tip" data-tip="' + tip.replace(/"/g, "&quot;") + '"' : "";
           const style = color ? ' style="color:' + color + '"' : "";
           return '<div class="fp-metric-row"><span' + tipAttr + ">" + label +
             '</span><span class="fp-metric-val"' + style + ">" + value + "</span></div>";
@@ -4254,11 +4325,11 @@
           const wt = pct(w[weightKey]);
           const color = rk != null ? rankColor(rk, teamCount) : "var(--text-primary)";
           const bar =
-            '<div class="fp-score-bar" title="' + wt + ' of total score"><i style="width:' +
+            '<div class="fp-score-bar"><i style="width:' +
             Math.max(4, Math.min(100, scNum * 100)) + "%;background:" + color + '"></i></div>';
           return (
             '<div class="fp-metric-row" style="flex-wrap:wrap">' +
-              '<span class="fp-label-tip" title="' + (tip || "").replace(/"/g, "&quot;") + '">' + label +
+              '<span class="tip" data-tip="' + (tip || "").replace(/"/g, "&quot;") + '">' + label +
               ' <span style="color:var(--text-muted);font-weight:400">(' + wt + ")</span></span>" +
               '<span class="fp-metric-val" style="color:' + color + '">' +
                 (rk != null ? "#" + rk + " · " : "") + sc + "/100</span>" +
@@ -4974,6 +5045,60 @@
       });
     }
 
+
+    // Custom tooltips — hover on desktop, tap on mobile
+    (function initTooltips() {
+      const tipEl = document.getElementById("app-tooltip");
+      if (!tipEl) return;
+      let hideTimer = null;
+      let active = null;
+
+      function place(el) {
+        const text = el.getAttribute("data-tip") || el.getAttribute("title") || "";
+        if (!text) return;
+        tipEl.textContent = text;
+        tipEl.classList.add("show");
+        active = el;
+        const r = el.getBoundingClientRect();
+        const tw = tipEl.offsetWidth;
+        const th = tipEl.offsetHeight;
+        let left = r.left + r.width / 2 - tw / 2;
+        left = Math.max(12, Math.min(left, window.innerWidth - tw - 12));
+        let top = r.bottom + 8;
+        if (top + th > window.innerHeight - 8) top = r.top - th - 8;
+        tipEl.style.left = left + "px";
+        tipEl.style.top = top + "px";
+      }
+      function hide() {
+        tipEl.classList.remove("show");
+        active = null;
+      }
+
+      document.addEventListener("mouseover", (e) => {
+        const el = e.target.closest("[data-tip], .tip, .has-tip");
+        if (!el) return;
+        clearTimeout(hideTimer);
+        place(el);
+      });
+      document.addEventListener("mouseout", (e) => {
+        const el = e.target.closest("[data-tip], .tip, .has-tip");
+        if (!el) return;
+        hideTimer = setTimeout(hide, 80);
+      });
+      document.addEventListener("click", (e) => {
+        const el = e.target.closest("[data-tip], .tip, .has-tip");
+        if (el && el.getAttribute("data-tip")) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (active === el) hide();
+          else place(el);
+          return;
+        }
+        hide();
+      }, true);
+      document.addEventListener("scroll", hide, true);
+    })();
+
     // Tabs
     try {
       document.getElementById("tabs").addEventListener("click", (e) => {
@@ -5101,5 +5226,6 @@
 
     fetchLeague();
   </script>
+  <div id="app-tooltip" role="tooltip"></div>
 </body>
 </html>
