@@ -389,10 +389,32 @@
       border-bottom: 1px solid var(--border-subtle);
     }
     .fp-metric-row:last-child { border-bottom: none; }
-    .fp-metric-row span:last-child {
+
+    .fp-metric-row .fp-label-tip {
+      border-bottom: 1px dotted var(--text-muted);
+      cursor: help;
+    }
+    .fp-metric-val {
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      color: var(--text-primary);
+    }
+    .fp-score-bar {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--surface-1);
+      margin-top: 0.2rem;
+      overflow: hidden;
+    }
+    .fp-score-bar > i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+    }
+
+
+    .fp-metric-row .fp-metric-val {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }
     .fp-starter-list {
       list-style: none;
@@ -4218,17 +4240,31 @@
         ).join("");
         if (!starterLis) starterLis = "<li>No projection data</li>";
 
-        function metric(label, value, sub) {
-          return '<div class="fp-metric-row"><span>' + label +
-            (sub ? ' <span style="color:var(--text-muted);font-weight:400">(' + sub + ")</span>" : "") +
-            "</span><span>" + value + "</span></div>";
+        function metric(label, value, tip, color) {
+          const tipAttr = tip ? ' class="fp-label-tip" title="' + tip.replace(/"/g, "&quot;") + '"' : "";
+          const style = color ? ' style="color:' + color + '"' : "";
+          return '<div class="fp-metric-row"><span' + tipAttr + ">" + label +
+            '</span><span class="fp-metric-val"' + style + ">" + value + "</span></div>";
         }
 
-        function weightRow(label, scoreVal, rankMap, weightKey) {
+        function weightRow(label, scoreVal, rankMap, weightKey, tip) {
+          const scNum = scoreVal != null ? scoreVal : 0;
           const sc = scoreVal != null ? (scoreVal * 100).toFixed(0) : "—";
           const rk = rankMap[t.id];
           const wt = pct(w[weightKey]);
-          return metric(label, (rk != null ? "#" + rk + " · " : "") + sc + "/100", wt + " of score");
+          const color = rk != null ? rankColor(rk, teamCount) : "var(--text-primary)";
+          const bar =
+            '<div class="fp-score-bar" title="' + wt + ' of total score"><i style="width:' +
+            Math.max(4, Math.min(100, scNum * 100)) + "%;background:" + color + '"></i></div>';
+          return (
+            '<div class="fp-metric-row" style="flex-wrap:wrap">' +
+              '<span class="fp-label-tip" title="' + (tip || "").replace(/"/g, "&quot;") + '">' + label +
+              ' <span style="color:var(--text-muted);font-weight:400">(' + wt + ")</span></span>" +
+              '<span class="fp-metric-val" style="color:' + color + '">' +
+                (rk != null ? "#" + rk + " · " : "") + sc + "/100</span>" +
+              '<div style="flex-basis:100%">' + bar + "</div>" +
+            "</div>"
+          );
         }
 
         const fl = t.floorPts != null ? t.floorPts.toFixed(1) : "—";
@@ -4238,40 +4274,51 @@
         const riskTxt = riskLabel(t.stabilityRatio || 0.75, t._stabSorted);
         const fcVal = t.compRaw != null ? Math.round(t.compRaw).toLocaleString() : "—";
 
+        const tips = {
+          starter: "Bye-aware optimal lineup each week (mean, median, best, worst of the 17-week curve).",
+          scarcity: "Starter value over positional replacement — especially important at QB in Superflex.",
+          depth: "Next-tier players after the optimal starters (injury / bye insurance).",
+          market: "FantasyCalc trade values, weighted toward starters.",
+          stability: "Average floor relative to expected points — how safe the lineup is.",
+          upside: "Average ceiling relative to expected points — boom potential.",
+          consistency: "Lower week-to-week swing in projected lineup points ranks higher.",
+          actual: "Regressed actual PPG once games have been played."
+        };
+
         const detail =
           '<div class="fp-detail-grid">' +
             '<div class="fp-detail-block">' +
               "<h5>Score breakdown</h5>" +
-              weightRow("Weekly strength", t.starterScore, rankStarter, "starter") +
-              weightRow("Scarcity (VORP)", t.scarcityScore, componentRank("scarcityScore"), "scarcity") +
-              weightRow("Depth", t.depthScore, rankDepth, "depth") +
-              weightRow("Market (FC)", t.marketScore, rankMarket, "market") +
-              weightRow("Stability", t.stabilityScore, rankStab, "stability") +
-              weightRow("Upside", t.upsideScore, rankUps, "upside") +
-              weightRow("Consistency", t.consistencyScore, componentRank("consistencyScore"), "consistency") +
+              weightRow("Weekly strength", t.starterScore, rankStarter, "starter", tips.starter) +
+              weightRow("Scarcity (VORP)", t.scarcityScore, componentRank("scarcityScore"), "scarcity", tips.scarcity) +
+              weightRow("Depth", t.depthScore, rankDepth, "depth", tips.depth) +
+              weightRow("Market (FC)", t.marketScore, rankMarket, "market", tips.market) +
+              weightRow("Stability", t.stabilityScore, rankStab, "stability", tips.stability) +
+              weightRow("Upside", t.upsideScore, rankUps, "upside", tips.upside) +
+              weightRow("Consistency", t.consistencyScore, componentRank("consistencyScore"), "consistency", tips.consistency) +
               ((w.actual || 0) > 0.01
-                ? weightRow("Actual", t.actualScore, componentRank("actualScore"), "actual")
+                ? weightRow("Actual", t.actualScore, componentRank("actualScore"), "actual", tips.actual)
                 : "") +
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Lineup projections</h5>" +
-              metric("Mean week", exp) +
-              metric("Median week", t.medianExp != null ? t.medianExp.toFixed(1) : exp) +
-              metric("Best week", t.bestWeekPts != null ? t.bestWeekPts.toFixed(1) : "—") +
-              metric("Worst week", worst) +
-              metric("Week-to-week vol", t.weeklyVol != null ? t.weeklyVol.toFixed(1) : "—") +
-              metric("Floor (avg)", fl) +
-              metric("Ceiling (avg)", ce) +
-              metric("Depth", depthTxt) +
-              metric("Risk", riskTxt) +
-              metric("FantasyCalc (starters-heavy)", fcVal) +
+              metric("Mean week", exp, "Average optimal-lineup projection across weeks 1–17.") +
+              metric("Median week", t.medianExp != null ? t.medianExp.toFixed(1) : exp, "Middle week of the projection curve — less skewed by one huge or tiny week.") +
+              metric("Best week", t.bestWeekPts != null ? t.bestWeekPts.toFixed(1) : "—", "Highest single-week optimal lineup projection.") +
+              metric("Worst week", worst, "Lowest single-week projection (often a stacked bye week).") +
+              metric("Week-to-week vol", t.weeklyVol != null ? t.weeklyVol.toFixed(1) : "—", "Standard deviation of weekly projected lineup points. Lower is more consistent.") +
+              metric("Floor (avg)", fl, "Average weekly floor of the optimal lineup.") +
+              metric("Ceiling (avg)", ce, "Average weekly ceiling of the optimal lineup.") +
+              metric("Depth", depthTxt, "How strong the bench is after starters are filled.") +
+              metric("Risk", riskTxt, "League-relative read of floor vs expected (Low / Medium / High).") +
+              metric("FantasyCalc (starters-heavy)", fcVal, "Trade-value index: mostly starter values plus a bit of full roster.") +
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Position ranks</h5>" +
-              metric("QB", "#" + (ranks.QB || "—") + " · " + qbG) +
-              metric("RB", "#" + (ranks.RB || "—") + " · " + rbG) +
-              metric("WR", "#" + (ranks.WR || "—") + " · " + wrG) +
-              metric("TE", "#" + (ranks.TE || "—") + " · " + teG) +
+              metric("QB", "#" + (ranks.QB || "—") + " · " + qbG, "Rank of QB room trade/projection strength among teams.", rankColor(ranks.QB, teamCount)) +
+              metric("RB", "#" + (ranks.RB || "—") + " · " + rbG, "Rank of RB room strength among teams.", rankColor(ranks.RB, teamCount)) +
+              metric("WR", "#" + (ranks.WR || "—") + " · " + wrG, "Rank of WR room strength among teams.", rankColor(ranks.WR, teamCount)) +
+              metric("TE", "#" + (ranks.TE || "—") + " · " + teG, "Rank of TE room strength among teams.", rankColor(ranks.TE, teamCount)) +
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Optimal starters (no bye)</h5>" +
