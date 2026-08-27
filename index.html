@@ -118,7 +118,6 @@
 
     /* Custom tooltips (work on mobile tap) */
     .tip {
-      border-bottom: 1px dotted var(--text-muted);
       cursor: help;
     }
     #app-tooltip {
@@ -148,6 +147,56 @@
       transform: translateY(0);
     }
 
+    /* Hover tooltips — same pattern as Refresh button */
+    .tip,
+    .has-tip,
+    [data-tip] {
+      position: relative;
+    }
+    .tip::after,
+    .has-tip::after,
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: min(260px, 70vw);
+      padding: 0.5rem 0.7rem;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 0.72rem;
+      font-weight: 500;
+      line-height: 1.4;
+      text-align: left;
+      white-space: normal;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.12s, visibility 0.12s;
+      z-index: 100;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    }
+    .tip:hover::after,
+    .has-tip:hover::after,
+    [data-tip]:hover::after,
+    .tip:focus-visible::after,
+    .has-tip:focus-visible::after,
+    [data-tip]:focus-visible::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    /* Keep tips readable on metric rows */
+    .fp-metric-row .tip,
+    .calc-impact-label.tip {
+      display: inline-block;
+      cursor: help;
+    }
+
+
+
     /* Mobile simplification */
     @media (max-width: 720px) {
       .app-header { padding: 0.65rem 0.85rem; }
@@ -175,7 +224,25 @@
       .fp-power-table th, .fp-power-table td { padding: 0.55rem 0.45rem; }
       .fp-team-sub { font-size: 0.7rem; }
       .fp-detail-grid { gap: 0.65rem; }
-      .calc-toolbar {
+  
+    .calc-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .calc-toolbar .btn {
+      min-width: 7.5rem;
+      justify-content: center;
+    }
+    @media (max-width: 720px) {
+      .calc-toolbar .btn { min-width: 0; flex: 1 1 calc(50% - 0.5rem); }
+    }
+    .modal-card select { pointer-events: auto; z-index: 5; }
+    .suggestions-list { max-height: 55vh; overflow: auto; }
+
+    .calc-toolbar {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.4rem;
@@ -188,6 +255,103 @@
       .odds-table th, .odds-table td { padding: 0.5rem 0.4rem; font-size: 0.75rem; }
       .modal-card { max-height: 85vh; padding: 0.85rem; }
     }
+
+
+    .matchup-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 0.85rem;
+    }
+    .matchup-controls label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .matchup-week-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .matchup-scoreboard {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.75rem;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.85rem;
+    }
+    @media (max-width: 640px) {
+      .matchup-scoreboard { grid-template-columns: 1fr; text-align: center; }
+    }
+    .matchup-side h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+    .matchup-side .big {
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .matchup-side .sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+    .matchup-vs {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .matchup-vs .winpct {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 0.25rem;
+    }
+    .matchup-advice {
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      padding: 0.75rem 0.9rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+    .matchup-advice strong { color: var(--text-primary); }
+    .matchup-lineup {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .matchup-lineup th {
+      text-align: left;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      padding: 0.5rem 0.65rem;
+      background: var(--surface-2);
+    }
+    .matchup-lineup td {
+      padding: 0.45rem 0.65rem;
+      border-top: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+    .matchup-lineup .action-start { color: #4ade80; font-weight: 600; }
+    .matchup-lineup .action-bench { color: #fbbf24; font-weight: 600; }
+    .matchup-lineup .action-ok { color: var(--text-muted); }
+    .matchup-lineup .pts { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
     .panel { display: none; }
     .panel.active { display: block; }
@@ -465,7 +629,6 @@
     .fp-metric-row:last-child { border-bottom: none; }
 
     .fp-metric-row .fp-label-tip {
-      border-bottom: 1px dotted var(--text-muted);
       cursor: help;
     }
     .fp-metric-val {
@@ -1197,36 +1360,7 @@
     #calc-apply {
       width: 7.75rem;
     }
-
-
-    .has-tip {
-      position: relative;
-    }
-    .has-tip::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: 50%;
-      bottom: calc(100% + 8px);
-      transform: translateX(-50%);
-      width: max-content;
-      max-width: 220px;
-      padding: 0.5rem 0.65rem;
-      border-radius: 6px;
-      background: #0f172a;
-      color: #f8fafc;
-      font-size: 0.7rem;
-      font-weight: 500;
-      line-height: 1.35;
-      text-align: left;
-      white-space: normal;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.12s ease;
-      z-index: 40;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .has-tip:hover::after,
+.has-tip:hover::after,
     .has-tip:focus::after {
       opacity: 1;
     }
@@ -1646,9 +1780,27 @@
     <button class="tab active" data-panel="power" type="button" title="Rank teams by trade-value roster strength and PPG once games are scored">Power Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare trade values and chain multi-step trades">Trade Calculator</button>
     <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
+    <button class="tab" data-panel="matchup" type="button" title="This week matchup, win odds, and lineup advice">Matchup</button>
   </nav>
 
   <!-- TRADE BOARD -->
+
+  <div class="panel" id="panel-matchup">
+    <div class="calc-wrap">
+      <p class="rankings-note">
+        Floor/ceiling use team variance (not every player busting together). Strategy tips follow the projected margin.
+      </p>
+      <div class="matchup-controls">
+        <label>Your team
+          <select id="matchup-team" class="calc-team-select"></select>
+        </label>
+        <span class="matchup-week-label" id="matchup-week-label"></span>
+      </div>
+      <div id="matchup-status" class="odds-status">Select Matchup to load this week.</div>
+      <div id="matchup-root"></div>
+    </div>
+  </div>
+
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
       <p class="rankings-note">
@@ -1693,7 +1845,7 @@
           <strong id="fair-bar-center-label">Fair zone</strong>
           <span>→ Side B gets more</span>
         </div>
-        <div class="fair-bar-track" title="Marker moves toward the side receiving more FantasyCalc value. Green zone = fair enough.">
+        <div class="fair-bar-track tip" data-tip="Marker moves toward the side that receives more FantasyCalc value. Green zone means the trade is fair enough (within ~10% or 120 points).">
           <div class="fair-bar-zone"></div>
           <div class="fair-bar-thumb empty" id="fair-bar-thumb"></div>
         </div>
@@ -1706,11 +1858,8 @@
         <button type="button" class="btn" id="calc-complete" title="Auto-fill a fair package">Auto-fill</button>
         <button type="button" class="btn btn-share" id="calc-share" title="Copy link">Share</button>
         <button type="button" class="btn" id="calc-clear" title="Clear">Clear</button>
-        <label class="calc-filter-row" style="margin:0;border:none;padding:0">
-          <input type="checkbox" id="calc-onblock-only" /> On block
-        </label>
-        <span class="calc-chain-hint" id="calc-chain-hint"></span>
       </div>
+      <div id="calc-chain-hint" class="calc-chain-hint" style="text-align:center;margin-bottom:0.5rem;font-size:0.75rem;color:var(--text-muted)"></div>
 
       <div class="modal-backdrop" id="suggest-modal" hidden>
         <div class="modal-card" role="dialog" aria-label="Suggested trades">
@@ -2680,11 +2829,10 @@
         const fl = optimalLineupTotalForWeek(entryList, "projFloor", w);
         const ce = optimalLineupTotalForWeek(entryList, "projCeil", w);
         const mu = exp.total;
-        // σ from floor/ceiling; full Superflex lineups are noisy week to week
-        let sigma = 22;
+        let sigma = 18;
         if (ce.total > fl.total) {
-          sigma = (ce.total - fl.total) / 3.2;
-          sigma = Math.max(18, Math.min(36, sigma));
+          sigma = (ce.total - fl.total) / 4.2;
+          sigma = Math.max(14, Math.min(28, sigma));
         }
         byWeek[w] = {
           mu,
@@ -3103,7 +3251,7 @@
 
     function computeRankMaps(models) {
       const scored = finalizePowerScores(models);
-      const byPower = scored.slice().sort((a, b) => b.totalScore - a.totalScore);
+      const byPower = scored.slice().sort((a, b) => (b.rawPower || b.totalScore || 0) - (a.rawPower || a.totalScore || 0));
       const powerRank = {};
       byPower.forEach((t, i) => { powerRank[t.id] = i + 1; });
       const posRank = {};
@@ -3173,11 +3321,11 @@
     }
 
     function formatRankDelta(before, after) {
-      if (before == null || after == null) return { text: "—", cls: "same" };
-      const d = before - after; // positive = improved (lower rank number)
-      if (d === 0) return { text: "#" + after + " (same)", cls: "same" };
-      if (d > 0) return { text: "#" + before + " → #" + after + " (↑" + d + ", +" + d + ")", cls: "up" };
-      return { text: "#" + before + " → #" + after + " (↓" + Math.abs(d) + ", " + d + ")", cls: "down" };
+      if (before == null || after == null) return { text: "—", cls: "same", d: 0 };
+      const d = before - after; // positive = improved (lower rank number is better)
+      if (d === 0) return { text: "stays #" + after, cls: "same", d: 0 };
+      if (d > 0) return { text: "#" + before + " → #" + after + " (up " + d + ")", cls: "up", d };
+      return { text: "#" + before + " → #" + after + " (down " + Math.abs(d) + ")", cls: "down", d };
     }
 
     function formatValueDelta(before, after) {
@@ -3404,8 +3552,8 @@
       fillSelect(selB, teams[1] && teams[1].id);
 
       function rosterRows(teamId) {
-        const rows = (workingRosters[String(teamId)] || []).slice();
-        const onBlockOnly = document.getElementById("calc-onblock-only")?.checked;
+        const rows = (workingRosters[String(teamId)] || []).slice().sort((a, b) => (b.val || 0) - (a.val || 0));
+        const onBlockOnly = false;
         let list = rows;
         if (onBlockOnly) list = rows.filter((r) => r.onBlock);
         list.sort((a, b) => {
@@ -3506,13 +3654,6 @@
         updateCalcTotals();
       }
 
-      const onBlockFilter = document.getElementById("calc-onblock-only");
-      if (onBlockFilter) {
-        onBlockFilter.onchange = () => {
-          renderSide("a");
-          renderSide("b");
-        };
-      }
 
       function updateCalcTotals() {
         function sideTotal(side) {
@@ -3606,7 +3747,7 @@
         const hasChain = chainSteps.length > 0;
 
         if (!hasPicks && !hasChain) {
-          grid.innerHTML = '<div class="calc-impact-empty">Pick players to see power score and projected lineup changes.</div>';
+          grid.innerHTML = '<div class="calc-impact-empty">Pick players on both sides to see rank and projection changes.</div>';
           return;
         }
 
@@ -3643,10 +3784,10 @@
         function teamObj(maps, id) {
           return maps.byId[id] || maps.byId[Number(id)] || maps.byId[String(id)] || {};
         }
-        function scoreDelta(before, after) {
+        function projDelta(before, after) {
           if (before == null || after == null) return { text: "—", cls: "same", d: 0 };
           const d = Math.round((after - before) * 10) / 10;
-          if (Math.abs(d) < 0.15) return { text: after.toFixed(1), cls: "same", d: 0 };
+          if (Math.abs(d) < 0.3) return { text: after.toFixed(1) + " (flat)", cls: "same", d: 0 };
           if (d > 0) return { text: after.toFixed(1) + " (+" + d.toFixed(1) + ")", cls: "up", d };
           return { text: after.toFixed(1) + " (" + d.toFixed(1) + ")", cls: "down", d };
         }
@@ -3655,15 +3796,25 @@
           const name = teamName(teamId);
           const beforeTeam = teamObj(originalRanks, teamId);
           const afterTeam = teamObj(afterRanks, teamId);
-          const power = formatRankDelta(pr(originalRanks.powerRank, teamId), pr(afterRanks.powerRank, teamId));
-          const scoreCh = scoreDelta(beforeTeam.totalScore, afterTeam.totalScore);
-          const projCh = scoreDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
+          const rankBefore = pr(originalRanks.powerRank, teamId);
+          const rankAfter = pr(afterRanks.powerRank, teamId);
+          const power = formatRankDelta(rankBefore, rankAfter);
+          // rawPower is the true strength number; 0–100 display scores are only relative within one snapshot
+          const rawBefore = beforeTeam.rawPower;
+          const rawAfter = afterTeam.rawPower;
+          let rosterStronger = null; // true/false/null
+          if (rawBefore != null && rawAfter != null) {
+            const d = rawAfter - rawBefore;
+            if (d > 0.002) rosterStronger = true;
+            else if (d < -0.002) rosterStronger = false;
+          }
+          const projCh = projDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
 
           const beforeNs = needsSurplusForTeam(originalRanks.posRank, teamId, teams.length || 10, beforeTeam);
           const afterNs = needsSurplusForTeam(afterRanks.posRank, teamId, teams.length || 10, afterTeam);
           const filledNeeds = (beforeNs.needs || []).filter((p) => (afterNs.needs || []).indexOf(p) < 0);
+          const newNeeds = (afterNs.needs || []).filter((p) => (beforeNs.needs || []).indexOf(p) < 0);
 
-          // Only changed skill positions
           let posBits = [];
           for (const pos of ["QB", "RB", "WR", "TE"]) {
             const b = posr(originalRanks.posRank, teamId, pos);
@@ -3672,31 +3823,56 @@
             const better = a < b;
             posBits.push(
               '<span class="calc-fit-tag ' + (better ? "fills" : "") + '">' +
-              pos + " #" + b + "→#" + a + "</span>"
+              pos + " #" + b + " → #" + a + (better ? " better" : " worse") + "</span>"
             );
           }
 
-          const helps = scoreCh.d > 0.2 || projCh.d > 0.4 || filledNeeds.length > 0;
-          const hurts = scoreCh.d < -0.2 && !helps;
+          // Verdict priority: power rank → roster raw strength → proj PPG
+          let verdict = "About even";
+          let verdictCls = "neutral";
+          if (power.d > 0) {
+            verdict = "Moves up in rankings";
+            verdictCls = "benefit";
+          } else if (power.d < 0) {
+            verdict = "Moves down in rankings";
+            verdictCls = "neutral";
+          } else if (rosterStronger === true || projCh.d > 0.5) {
+            verdict = "Roster stronger, same rank";
+            verdictCls = "benefit";
+          } else if (rosterStronger === false || projCh.d < -0.5) {
+            verdict = "Roster weaker, same rank";
+            verdictCls = "neutral";
+          } else if (filledNeeds.length) {
+            verdict = "Fills a need";
+            verdictCls = "benefit";
+          }
+
+          const depthBefore = depthLabel(beforeTeam.depthNorm || 0);
+          const depthAfter = depthLabel(afterTeam.depthNorm || 0);
+          const depthLine = depthBefore === depthAfter ? depthAfter : depthBefore + " → " + depthAfter;
+
+          const strengthNote = rosterStronger === true
+            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength (before 0–100 scaling). Can rise even if rank falls only if other teams changed more — in a 2-team trade this should match rank direction.">Roster strength</span><span class="calc-impact-change up">Stronger</span></div>'
+            : rosterStronger === false
+            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength before the 0–100 display scaling.">Roster strength</span><span class="calc-impact-change down">Weaker</span></div>'
+            : "";
 
           return (
             '<div class="calc-impact-card">' +
               "<h4>" + escapeHtml(name) +
-                '<span class="calc-impact-result ' + (helps ? "benefit" : "neutral") + '">' +
-                (helps ? "Improves" : hurts ? "Weaker" : "About even") +
-                "</span></h4>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label">Power</span>' +
-                '<span class="calc-impact-big ' + scoreCh.cls + '">' + scoreCh.text +
-                " · " + power.text + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label">Starters</span>' +
-                '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + " proj PPG</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label">Depth</span>' +
-                '<span class="calc-impact-change">' + depthLabel(beforeTeam.depthNorm || 0) + " → " + depthLabel(afterTeam.depthNorm || 0) + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label">Risk</span>' +
-                '<span class="calc-impact-change">' + riskLabel(beforeTeam.stabilityRatio || 0.75, beforeTeam._stabSorted) +
-                " → " + riskLabel(afterTeam.stabilityRatio || 0.75, afterTeam._stabSorted) + "</span></div>" +
+                '<span class="calc-impact-result ' + verdictCls + '">' + verdict + "</span></h4>" +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Where this team ranks after the trade vs before. Lower rank number is better. This is the main result — ignore old 0–100 score deltas.">Power rank</span>' +
+                '<span class="calc-impact-big ' + power.cls + '">' + power.text + "</span></div>" +
+              strengthNote +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Average projected points from the optimal Superflex lineup across the season (bye-aware).">Proj PPG</span>' +
+                '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + "</span></div>" +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bench quality after starters are filled.">Depth</span>' +
+                '<span class="calc-impact-change">' + depthLine + "</span></div>" +
               (filledNeeds.length
-                ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills ' + filledNeeds.join(", ") + "</span></div>"
+                ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills need: ' + filledNeeds.join(", ") + "</span></div>"
+                : "") +
+              (newNeeds.length
+                ? '<div class="calc-impact-summary"><span class="calc-fit-tag">Opens need: ' + newNeeds.join(", ") + "</span></div>"
                 : "") +
               (posBits.length
                 ? '<div class="calc-impact-summary">' + posBits.join(" ") + "</div>"
@@ -4143,49 +4319,86 @@
       if (!select || !list) return;
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
       const previous = select.value;
-      select.innerHTML = '<option value="">Select team…</option>' + teams.map((team) =>
+      select.innerHTML = teams.map((team) =>
         '<option value="' + team.id + '">' + escapeHtml(team.name || team.abbrev || "Team " + team.id) + "</option>"
       ).join("");
-      select.value = teams.some((team) => String(team.id) === previous) ? previous : String(teams[0]?.id || "");
-      const team = teams.find((item) => String(item.id) === select.value);
+      if (previous && [...select.options].some((o) => o.value === String(previous))) {
+        select.value = String(previous);
+      } else if (teams[0]) {
+        select.value = String(teams[0].id);
+      }
+      const team = teams.find((item) => String(item.id) === String(select.value));
       if (!team) {
         list.innerHTML = '<div class="suggestion-meta">Choose a team to see trade ideas.</div>';
         return;
       }
-      const models = buildTeamModels(data);
+      list.innerHTML = '<div class="suggestion-meta">Finding trades…</div>';
+      let models;
+      try {
+        models = finalizePowerScores(buildTeamModels(data));
+      } catch (e) {
+        models = buildTeamModels(data);
+      }
       const ranks = computeRankMaps(models);
       const mine = models.find((model) => String(model.id) === String(team.id));
+      if (!mine) {
+        list.innerHTML = '<div class="suggestion-meta">Team data missing.</div>';
+        return;
+      }
       const others = models.filter((model) => String(model.id) !== String(team.id));
       const ideas = [];
-      const packageOptions = (entries) => {
-        const options = entries.filter((entry) => entry.val > 0).sort((a, b) => b.val - a.val).slice(0, 12).map((entry) => [entry]);
-        for (let i = 0; i < Math.min(entries.length, 12); i++) {
-          for (let j = i + 1; j < Math.min(entries.length, 12); j++) options.push([entries[i], entries[j]]);
-        }
-        return options;
-      };
-      for (const incomingTeam of others) {
-        const mineNeeds = needsSurplusForTeam(ranks.posRank, mine.id, models.length).needs;
-        const partnerNeeds = needsSurplusForTeam(ranks.posRank, incomingTeam.id, models.length).needs;
-        for (const incoming of packageOptions(incomingTeam.entries)) {
-          for (const outgoing of packageOptions(mine.entries)) {
-            const incomingValue = incoming.reduce((sum, entry) => sum + entry.val, 0);
-            const outgoingValue = outgoing.reduce((sum, entry) => sum + entry.val, 0);
-            if (!incomingValue || !outgoingValue) continue;
-            if (!incoming.some((entry) => mineNeeds.indexOf(entry.pos) >= 0) || !outgoing.some((entry) => partnerNeeds.indexOf(entry.pos) >= 0)) continue;
-            const ratio = Math.max(incomingValue, outgoingValue) / Math.min(incomingValue, outgoingValue);
-            if (Math.abs(incomingValue - outgoingValue) > 100 && ratio > 1.15) continue;
-            ideas.push({ incoming, outgoing, team: incomingTeam, gain: incomingValue - outgoingValue });
+      const topPlayers = (entries) =>
+        (entries || []).filter((e) => (e.val || 0) > 0).slice().sort((a, b) => b.val - a.val).slice(0, 10);
+
+      for (const partner of others) {
+        const mineNeeds = (needsSurplusForTeam(ranks.posRank, mine.id, models.length, mine).needs) || [];
+        const partnerNeeds = (needsSurplusForTeam(ranks.posRank, partner.id, models.length, partner).needs) || [];
+        const theirTop = topPlayers(partner.entries);
+        const myTop = topPlayers(mine.entries);
+        for (const inc of theirTop) {
+          for (const out of myTop) {
+            const gap = Math.abs((inc.val || 0) - (out.val || 0));
+            const lo = Math.min(inc.val || 0, out.val || 0) || 1;
+            const ratio = Math.max(inc.val || 0, out.val || 0) / lo;
+            if (gap > 200 && ratio > 1.3) continue;
+            const fillsMine = mineNeeds.indexOf(inc.pos) >= 0;
+            const fillsThem = partnerNeeds.indexOf(out.pos) >= 0;
+            const score = gap + (fillsMine ? 0 : 50) + (fillsThem ? 0 : 50);
+            ideas.push({
+              incoming: [inc],
+              outgoing: [out],
+              team: partner,
+              gain: (inc.val || 0) - (out.val || 0),
+              score,
+              fillsMine,
+              fillsThem
+            });
           }
         }
       }
-      const uniqueIdeas = [...new Map(ideas.map((idea) => [idea.team.id + ":" + idea.incoming.map((entry) => entry.id).join(",") + ":" + idea.outgoing.map((entry) => entry.id).join(","), idea])).values()];
-      uniqueIdeas.sort((a, b) => Math.abs(a.gain) - Math.abs(b.gain));
-      const visible = uniqueIdeas.slice(0, 12);
-      list.innerHTML = visible.length ? visible.map((idea) =>
-        '<div class="suggestion"><strong>Get ' + escapeHtml(idea.incoming.map((entry) => entry.name).join(" + ")) + '</strong> for ' +
-        escapeHtml(idea.outgoing.map((entry) => entry.name).join(" + ")) + '<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) + ' · <span class="suggestion-gain">' + (idea.gain >= 0 ? "+" : "") + idea.gain.toLocaleString() + ' value</span></div><button type="button" class="btn suggestion-load" data-suggestion="' + visible.indexOf(idea) + '">Load in calculator</button></div>'
-      ).join("") : '<div class="suggestion-meta">No close-value upgrades found for this team.</div>';
+      ideas.sort((a, b) => a.score - b.score || Math.abs(a.gain) - Math.abs(b.gain));
+      const seen = new Set();
+      const visible = [];
+      for (const idea of ideas) {
+        const key = idea.team.id + ":" + idea.incoming[0].id + ":" + idea.outgoing[0].id;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        visible.push(idea);
+        if (visible.length >= 15) break;
+      }
+      list.innerHTML = visible.length ? visible.map((idea, idx) =>
+        '<div class="suggestion">' +
+          "<strong>Get " + escapeHtml(idea.incoming.map((e) => e.name).join(" + ")) + "</strong>" +
+          " for " + escapeHtml(idea.outgoing.map((e) => e.name).join(" + ")) +
+          '<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) +
+          " · gap " + Math.abs(Math.round(idea.gain)).toLocaleString() +
+          (idea.fillsMine ? " · fills your need" : "") +
+          (idea.fillsThem ? " · fills their need" : "") +
+          "</div>" +
+          '<button type="button" class="btn suggestion-load" data-suggestion="' + idx + '">Load</button>' +
+        "</div>"
+      ).join("") : '<div class="suggestion-meta">No close-value trades found.</div>';
+
       list.onclick = (event) => {
         const button = event.target.closest("[data-suggestion]");
         if (!button) return;
@@ -4193,18 +4406,26 @@
         if (!idea) return;
         const modal = document.getElementById("suggest-modal");
         if (modal) modal.hidden = true;
-        const calcTab = document.querySelector('.tab[data-panel="calc"]');
-        if (calcTab && !calcTab.classList.contains("active")) calcTab.click();
         const calcA = document.getElementById("calc-team-a");
         const calcB = document.getElementById("calc-team-b");
+        if (!calcA || !calcB) return;
         calcA.value = String(team.id);
         calcB.value = String(idea.team.id);
         calcA.dispatchEvent(new Event("change"));
         calcB.dispatchEvent(new Event("change"));
         setTimeout(() => {
-          idea.outgoing.forEach((entry) => document.querySelector('#calc-players-a input[data-id="' + entry.id + '"]')?.click());
-          idea.incoming.forEach((entry) => document.querySelector('#calc-players-b input[data-id="' + entry.id + '"]')?.click());
-        }, 50);
+          document.querySelectorAll("#calc-players-a input:checked, #calc-players-b input:checked").forEach((inp) => {
+            if (inp.checked) inp.click();
+          });
+          idea.outgoing.forEach((entry) => {
+            const inp = document.querySelector('#calc-players-a input[data-id="' + entry.id + '"]');
+            if (inp && !inp.checked) inp.click();
+          });
+          idea.incoming.forEach((entry) => {
+            const inp = document.querySelector('#calc-players-b input[data-id="' + entry.id + '"]');
+            if (inp && !inp.checked) inp.click();
+          });
+        }, 80);
       };
       select.onchange = () => renderTradeSuggestions(data);
     }
@@ -4216,10 +4437,12 @@
       if (!openBtn || !modal) return;
       openBtn.onclick = () => {
         modal.hidden = false;
-        // suggestions load via modal only
+        renderTradeSuggestions(data);
       };
       if (closeBtn) closeBtn.onclick = () => { modal.hidden = true; };
       modal.onclick = (e) => { if (e.target === modal) modal.hidden = true; };
+      const card = modal.querySelector(".modal-card");
+      if (card) card.addEventListener("click", (e) => e.stopPropagation());
     }
 
 
@@ -4520,7 +4743,7 @@
         });
         leagueWeekMean[w] = c ? s / c : 115;
       }
-      const preseasonShrink = hasPlayedGames ? 0 : 0.55; // pull 55% toward league avg before week 1
+      const preseasonShrink = 0; // do not flatten strength for odds
       function effectiveMean(tid, week) {
         const raw = (weekMean[tid] && weekMean[tid][week] != null)
           ? weekMean[tid][week]
@@ -4535,8 +4758,8 @@
         let sd = (weekSd[tid] && weekSd[tid][week] != null)
           ? weekSd[tid][week]
           : (teamAvgSd[tid] || 22);
-        // Extra process noise so strong teams still lose often
-        sd = Math.max(20, sd * 1.15);
+        // Real week-to-week noise without erasing roster differences
+        sd = Math.max(18, sd * 1.05);
         return Math.max(0, mean + normal() * sd);
       }
 
@@ -4549,11 +4772,10 @@
           ? weekSd[String(a.id)][wa] : (teamAvgSd[String(a.id)] || 22);
         let sb = (weekSd[String(b.id)] && weekSd[String(b.id)][wa] != null)
           ? weekSd[String(b.id)][wa] : (teamAvgSd[String(b.id)] || 22);
-        sa = Math.max(20, sa * 1.15);
-        sb = Math.max(20, sb * 1.15);
+        sa = Math.max(18, sa * 1.05);
+        sb = Math.max(18, sb * 1.05);
         const z = (ma - mb) / Math.max(1, Math.sqrt(sa * sa + sb * sb));
-        // Softer logistic so favorites aren't near locks in a single game
-        return 1 / (1 + Math.exp(-1.05 * z));
+        return 1 / (1 + Math.exp(-1.25 * z));
       }
       const pickWinner = (a, b, week) => (Math.random() < playoffWinProb(a, b, week) ? a : b);
 
@@ -4737,6 +4959,18 @@
       const s = arr.slice().sort((a, b) => a - b);
       const m = Math.floor(s.length / 2);
       return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+    }
+
+    function meanOf(arr) {
+      if (!arr || !arr.length) return 0;
+      return arr.reduce((s, x) => s + x, 0) / arr.length;
+    }
+
+    function percentileOf(arr, p) {
+      if (!arr || !arr.length) return 0;
+      const s = arr.slice().sort((a, b) => a - b);
+      const idx = Math.min(s.length - 1, Math.max(0, Math.round((p / 100) * (s.length - 1))));
+      return s[idx];
     }
 
     function formatRecord(wins, losses) {
@@ -4926,6 +5160,454 @@
       }
     }
 
+
+    const SLOT_LABELS = {
+      0: "QB", 1: "TQB", 2: "RB", 3: "RB/WR", 4: "WR", 5: "WR/TE",
+      6: "TE", 7: "OP", 8: "DT", 9: "DE", 10: "LB", 11: "DL",
+      12: "CB", 13: "S", 14: "DB", 15: "DP", 16: "D/ST", 17: "K",
+      20: "BE", 21: "IR", 23: "FLEX", 24: "SF"
+    };
+
+    function isStarterSlot(slot) {
+      // Bench 20, IR 21
+      return slot !== 20 && slot !== 21 && slot != null;
+    }
+
+
+    function matchupWeekNumber(data) {
+      return Number(data.scoringPeriodId || 1);
+    }
+
+    function findOpponent(data, teamId, week) {
+      const schedule = data.schedule || [];
+      const tid = String(teamId);
+      for (const g of schedule) {
+        const period = Number(g.matchupPeriodId || g.week || 0);
+        if (period !== week) continue;
+        const home = g.home && typeof g.home === "object" ? g.home.teamId : g.home;
+        const away = g.away && typeof g.away === "object" ? g.away.teamId : g.away;
+        if (String(home) === tid) return { oppId: away, isHome: true, game: g };
+        if (String(away) === tid) return { oppId: home, isHome: false, game: g };
+      }
+      return null;
+    }
+
+    function teamEntriesFromData(data, teamId) {
+      const models = buildTeamModels(data);
+      const m = models.find((x) => String(x.id) === String(teamId));
+      return (m && m.entries) ? m.entries.map((e) => Object.assign({}, e)) : [];
+    }
+
+    /**
+     * Team projection for a week.
+     * Floor/ceiling = projected lineup mean ± team SD.
+     * Team SD comes from the spread of player floors/ceilings on that lineup,
+     * scaled down because players don't all boom/bust together.
+     */
+    function lineupProjection(entries, week) {
+      const exp = optimalLineupTotalForWeek(entries, "proj", week);
+      const fl = optimalLineupTotalForWeek(entries, "projFloor", week);
+      const ce = optimalLineupTotalForWeek(entries, "projCeil", week);
+      const mu = exp.total;
+      const spread = Math.max(0, ce.total - fl.total);
+      let sigma = Math.max(14, Math.min(28, spread / 4 || 18));
+      return {
+        mu,
+        floor: Math.max(0, mu - 1.05 * sigma),
+        ceil: mu + 1.25 * sigma,
+        sigma,
+        used: exp.used || [],
+        usedIds: new Set((exp.used || []).map((e) => String(e.id)))
+      };
+    }
+
+    function winProbFromProj(muA, sdA, muB, sdB) {
+      const sa = Math.max(14, Math.min(sdA || 20, 26));
+      const sb = Math.max(14, Math.min(sdB || 20, 26));
+      const z = (muA - muB) / Math.max(1, Math.sqrt(sa * sa + sb * sb));
+      return 1 / (1 + Math.exp(-1.85 * z));
+    }
+
+    function buildMatchupAdvice(winPct, margin, live) {
+      const tips = [];
+      const pct = (winPct * 100).toFixed(0);
+      if (winPct >= 0.65) tips.push("Favorite (" + pct + "%). Prefer safer FLEX/SF.");
+      else if (winPct <= 0.35) tips.push("Underdog (" + pct + "%). Prefer higher ceiling at FLEX/SF.");
+      else if (winPct >= 0.55) tips.push("Slight edge (" + pct + "%). Stick to higher projections.");
+      else if (winPct <= 0.45) tips.push("Slight underdog (" + pct + "%). Small ceiling lean is fine.");
+      else tips.push("Close game (" + pct + "%). Start the higher projected player.");
+      if (margin <= -12) tips.push("Down " + Math.abs(margin).toFixed(1) + " on proj — take ceiling.");
+      else if (margin >= 12) tips.push("Up " + margin.toFixed(1) + " on proj — protect floor if close.");
+      if (live && live.active) {
+        tips.push("Live: " + live.myLocked.toFixed(1) + " scored, " + live.myRemain.toFixed(1) + " still projected from players yet to play.");
+      }
+      return tips;
+    }
+
+    /** Pull live matchup payload (points already scored + locks). */
+    async function fetchLiveMatchupWeek(week) {
+      const url = API_URL + "&view=mMatchup&view=mRoster&scoringPeriodId=" + week;
+      const res = await fetchWithTimeout(url, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+      if (!res.ok) throw new Error("live HTTP " + res.status);
+      return res.json();
+    }
+
+    function playerLiveFromEntry(entry, week) {
+      const ppe = entry.playerPoolEntry || {};
+      const player = ppe.player || {};
+      const id = String(player.id || entry.playerId || "");
+      let actual = null;
+      // Actual week points: statSourceId 0
+      for (const s of player.stats || []) {
+        if (s.scoringPeriodId === week && s.statSourceId === 0 && s.statSplitTypeId === 1) {
+          if (s.appliedTotal != null) actual = s.appliedTotal;
+        }
+      }
+      if (actual == null && ppe.appliedStatTotal != null && ppe.appliedStatTotal > 0) {
+        actual = ppe.appliedStatTotal;
+      }
+      const locked = !!(ppe.lineupLocked || ppe.rosterLocked);
+      const hasPlayed = locked || (actual != null && actual > 0);
+      return {
+        id,
+        name: player.fullName || "Player",
+        slot: entry.lineupSlotId,
+        actual: actual != null ? actual : 0,
+        hasPlayed,
+        locked,
+        pos: POS_MAP[player.defaultPositionId] || "?",
+        proj: (() => {
+          const f = espnProjectionFields(player);
+          return f.proj || 0;
+        })(),
+        projFloor: espnProjectionFields(player).floor || 0,
+        projCeil: espnProjectionFields(player).ceil || 0
+      };
+    }
+
+    function liveMapFromMatchupData(liveData, teamId, week) {
+      const map = {};
+      const tid = String(teamId);
+      // From schedule side rosters when available
+      for (const g of liveData.schedule || []) {
+        if (Number(g.matchupPeriodId || 0) !== week) continue;
+        for (const side of ["home", "away"]) {
+          const block = g[side];
+          if (!block || String(block.teamId) !== tid) continue;
+          const roster = block.rosterForCurrentScoringPeriod || block.rosterForMatchupPeriod || {};
+          for (const entry of roster.entries || []) {
+            const row = playerLiveFromEntry(entry, week);
+            if (row.id) map[row.id] = row;
+          }
+          return {
+            map,
+            totalLive: block.totalPointsLive != null ? block.totalPointsLive : block.totalPoints,
+            totalProjLive: block.totalProjectedPointsLive
+          };
+        }
+      }
+      // Fallback: team roster
+      const team = (liveData.teams || []).find((t) => String(t.id) === tid);
+      if (team) {
+        for (const entry of team.roster?.entries || []) {
+          const row = playerLiveFromEntry(entry, week);
+          if (row.id) map[row.id] = row;
+        }
+      }
+      return { map, totalLive: null, totalProjLive: null };
+    }
+
+    function mergeLiveOntoEntries(entries, liveMap) {
+      return (entries || []).map((e) => {
+        const live = liveMap[String(e.id)];
+        if (!live) return Object.assign({}, e, { hasPlayed: false, actual: 0 });
+        return Object.assign({}, e, {
+          hasPlayed: live.hasPlayed,
+          actual: live.actual || 0,
+          locked: live.locked,
+          // if already played, proj remaining is 0
+          proj: live.hasPlayed ? 0 : e.proj,
+          projRemain: live.hasPlayed ? 0 : (e.proj || 0),
+          projFloor: live.hasPlayed ? live.actual : e.projFloor,
+          projCeil: live.hasPlayed ? live.actual : e.projCeil
+        });
+      });
+    }
+
+    function liveLineupTotals(entries, optimalIds) {
+      // Points already banked from players who played (starters)
+      let locked = 0;
+      let remain = 0;
+      (entries || []).forEach((e) => {
+        const isOpt = optimalIds.has(String(e.id));
+        const isStart = isStarterSlot(e.slot) || isOpt;
+        // For live "current lineup" use ESPN slots; for optimal use optimal set
+      });
+      // Current ESPN starters
+      let curLocked = 0, curRemain = 0;
+      let optLocked = 0, optRemain = 0;
+      (entries || []).forEach((e) => {
+        const played = !!e.hasPlayed;
+        const pts = played ? (e.actual || 0) : 0;
+        const rem = played ? 0 : (e.proj || 0);
+        if (isStarterSlot(e.slot)) {
+          curLocked += pts;
+          curRemain += rem;
+        }
+        if (optimalIds.has(String(e.id))) {
+          optLocked += pts;
+          optRemain += rem;
+        }
+      });
+      return {
+        current: { locked: curLocked, remain: curRemain, total: curLocked + curRemain },
+        optimal: { locked: optLocked, remain: optRemain, total: optLocked + optRemain }
+      };
+    }
+
+    function lateSwapAdvice(entries, winPct, margin) {
+      // Among players who have NOT played: suggest start/bench based on being ahead/behind
+      const unplayedStarters = entries.filter((e) => isStarterSlot(e.slot) && !e.hasPlayed);
+      const unplayedBench = entries.filter((e) => !isStarterSlot(e.slot) && e.slot !== 21 && !e.hasPlayed);
+      const tips = [];
+      if (!unplayedStarters.length && !unplayedBench.length) {
+        return ["All of your players have already played — no late swaps left."];
+      }
+      if (!unplayedBench.length) {
+        return ["No unplayed bench options for a late swap."];
+      }
+
+      const needCeiling = winPct < 0.45 || margin < -5;
+      const needFloor = winPct > 0.55 || margin > 5;
+
+      // Rank bench by ceiling or floor depending on need
+      const benchSorted = unplayedBench.slice().sort((a, b) => {
+        if (needCeiling) return (b.projCeil || b.proj || 0) - (a.projCeil || a.proj || 0);
+        if (needFloor) return (b.projFloor || b.proj || 0) - (a.projFloor || a.proj || 0);
+        return (b.proj || 0) - (a.proj || 0);
+      });
+      const weakStarter = unplayedStarters.slice().sort((a, b) => {
+        if (needCeiling) return (a.projCeil || a.proj || 0) - (b.projCeil || b.proj || 0);
+        if (needFloor) return (a.projFloor || a.proj || 0) - (b.projFloor || b.proj || 0);
+        return (a.proj || 0) - (b.proj || 0);
+      })[0];
+
+      const bestBench = benchSorted[0];
+      if (weakStarter && bestBench) {
+        const starterMetric = needCeiling ? (weakStarter.projCeil || weakStarter.proj) : needFloor ? (weakStarter.projFloor || weakStarter.proj) : weakStarter.proj;
+        const benchMetric = needCeiling ? (bestBench.projCeil || bestBench.proj) : needFloor ? (bestBench.projFloor || bestBench.proj) : bestBench.proj;
+        // Same position eligibility rough check for FLEX/SF-ish: any skill can flex in many cases
+        const canSwap =
+          weakStarter.pos === bestBench.pos ||
+          (["RB", "WR", "TE"].indexOf(weakStarter.pos) >= 0 && ["RB", "WR", "TE"].indexOf(bestBench.pos) >= 0) ||
+          weakStarter.pos === "QB" && bestBench.pos === "QB";
+        if (canSwap && benchMetric > starterMetric + 1.5) {
+          tips.push(
+            "Late swap: Start " + bestBench.name + " over " + weakStarter.name +
+            (needCeiling ? " (need upside)" : needFloor ? " (protect floor)" : " (higher proj)")
+          );
+        }
+      }
+      if (!tips.length) {
+        tips.push(
+          unplayedStarters.length
+            ? (unplayedStarters.length + " starter(s) still to play — current lineup looks fine among unplayed options.")
+            : "Only bench players left to play."
+        );
+      }
+      return tips;
+    }
+
+    function renderMatchupLineup(entries, week, optimalIds) {
+      const rows = entries.slice().sort((a, b) => {
+        const sa = a.slot != null ? a.slot : 99;
+        const sb = b.slot != null ? b.slot : 99;
+        return sa - sb || (b.proj || 0) - (a.proj || 0);
+      });
+
+      function rowHtml(e) {
+        const inOpt = optimalIds.has(String(e.id));
+        const isStart = isStarterSlot(e.slot);
+        let action = "—";
+        let actionCls = "action-ok";
+        if (e.hasPlayed) {
+          action = "Played";
+          actionCls = "action-ok";
+        } else if (isStart && !inOpt) {
+          action = "Bench";
+          actionCls = "action-bench";
+        } else if (!isStart && inOpt) {
+          action = "Start";
+          actionCls = "action-start";
+        } else if (isStart && inOpt) {
+          action = "OK";
+        }
+        const slotName = SLOT_LABELS[e.slot] || (isStart ? "ST" : "BE");
+        const floor = e.projFloor != null ? Number(e.projFloor).toFixed(1) : "—";
+        const ceil = e.projCeil != null ? Number(e.projCeil).toFixed(1) : "—";
+        const proj = e.hasPlayed
+          ? (Number(e.actual || 0).toFixed(1) + " actual")
+          : (e.proj != null ? Number(e.proj).toFixed(1) : "—");
+        return "<tr>" +
+          "<td>" + slotName + "</td>" +
+          "<td>" + escapeHtml(e.name) +
+            (e.pos ? " <span style=\"color:var(--text-muted)\">" + e.pos + "</span>" : "") +
+            (e.hasPlayed ? " <span style=\"color:var(--text-muted);font-size:0.7rem\">done</span>" : "") +
+          "</td>" +
+          '<td class="pts">' + proj + "</td>" +
+          '<td class="pts">' + (e.hasPlayed ? "—" : floor + " / " + ceil) + "</td>" +
+          '<td class="' + actionCls + '">' + action + "</td>" +
+          "</tr>";
+      }
+
+      return (
+        '<table class="matchup-lineup">' +
+          "<thead><tr><th>Slot</th><th>Player</th><th>Proj / actual</th><th>Floor/Ceil</th><th>Action</th></tr></thead>" +
+          "<tbody>" + rows.map(rowHtml).join("") + "</tbody>" +
+        "</table>"
+      );
+    }
+
+    let matchupTimer = null;
+
+    async function setupMatchup() {
+      const data = leagueData;
+      const status = document.getElementById("matchup-status");
+      const root = document.getElementById("matchup-root");
+      const sel = document.getElementById("matchup-team");
+      const weekLabel = document.getElementById("matchup-week-label");
+      if (!data || !sel || !root) return;
+
+      const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+      const prev = sel.value;
+      sel.innerHTML = teams.map((t) =>
+        '<option value="' + t.id + '">' + escapeHtml(t.name || t.abbrev || "Team " + t.id) + "</option>"
+      ).join("");
+      if (teams.some((t) => String(t.id) === String(prev))) sel.value = prev;
+
+      const week = matchupWeekNumber(data);
+      if (weekLabel) weekLabel.textContent = "Week " + week + " · auto-refreshes while open";
+
+      async function paint() {
+        const teamId = sel.value;
+        let liveData = data;
+        try {
+          liveData = await fetchLiveMatchupWeek(week);
+        } catch (e) {
+          console.warn("live fetch failed", e);
+        }
+        const myLive = liveMapFromMatchupData(liveData, teamId, week);
+        let entries = teamEntriesFromData(data, teamId);
+        entries = mergeLiveOntoEntries(entries, myLive.map);
+
+        // Optimal among remaining: treat played starters as locked in by using actual as proj for them when scoring optimal
+        // Simpler: optimal from pre-game projections on full roster, then late swaps only among unplayed
+        const baseProj = lineupProjection(entries.map((e) => Object.assign({}, e, {
+          proj: e.hasPlayed ? (e.actual || 0) : e.proj,
+          projFloor: e.hasPlayed ? (e.actual || 0) : e.projFloor,
+          projCeil: e.hasPlayed ? (e.actual || 0) : e.projCeil
+        })), week);
+
+        const oppInfo = findOpponent(liveData.schedule ? liveData : data, teamId, week) ||
+          findOpponent(data, teamId, week);
+        let oppName = "No opponent found";
+        let oppProj = { mu: 0, floor: 0, ceil: 0, sigma: 20 };
+        let oppEntries = [];
+        if (oppInfo && oppInfo.oppId != null) {
+          const oppLive = liveMapFromMatchupData(liveData, oppInfo.oppId, week);
+          oppEntries = mergeLiveOntoEntries(teamEntriesFromData(data, oppInfo.oppId), oppLive.map);
+          oppProj = lineupProjection(oppEntries.map((e) => Object.assign({}, e, {
+            proj: e.hasPlayed ? (e.actual || 0) : e.proj,
+            projFloor: e.hasPlayed ? (e.actual || 0) : e.projFloor,
+            projCeil: e.hasPlayed ? (e.actual || 0) : e.projCeil
+          })), week);
+          const ot = teams.find((t) => String(t.id) === String(oppInfo.oppId));
+          oppName = ot ? (ot.name || ot.abbrev) : ("Team " + oppInfo.oppId);
+        }
+
+        const liveTotals = liveLineupTotals(entries, baseProj.usedIds);
+        const myMu = liveTotals.current.total;
+        const myLocked = liveTotals.current.locked;
+        const myRemain = liveTotals.current.remain;
+        // Opponent current slots estimate
+        const oppOpt = lineupProjection(oppEntries, week);
+        const oppLiveTotals = liveLineupTotals(oppEntries, oppOpt.usedIds);
+        const oppMu = oppLiveTotals.current.total;
+
+        const margin = myMu - oppMu;
+        const winPct = winProbFromProj(myMu, baseProj.sigma, oppMu, oppProj.sigma);
+        const liveMeta = {
+          active: entries.some((e) => e.hasPlayed),
+          myLocked,
+          myRemain
+        };
+        const tips = buildMatchupAdvice(winPct, margin, liveMeta)
+          .concat(lateSwapAdvice(entries, winPct, margin));
+
+        const me = teams.find((t) => String(t.id) === String(teamId));
+        const myName = me ? (me.name || me.abbrev) : "You";
+
+        const toStart = (baseProj.used || []).filter((e) => {
+          const row = entries.find((x) => String(x.id) === String(e.id));
+          return row && !isStarterSlot(row.slot) && !row.hasPlayed;
+        });
+        const toBench = entries.filter((e) => isStarterSlot(e.slot) && !baseProj.usedIds.has(String(e.id)) && !e.hasPlayed);
+
+        let moves = "";
+        if (toStart.length || toBench.length) {
+          moves = "<div style=\"margin-top:0.45rem;font-size:0.8rem\">";
+          if (toStart.length) moves += "<div><strong>Start:</strong> " + toStart.map((e) => escapeHtml(e.name)).join(", ") + "</div>";
+          if (toBench.length) moves += "<div><strong>Bench:</strong> " + toBench.map((e) => escapeHtml(e.name)).join(", ") + "</div>";
+          moves += "</div>";
+        }
+
+        status.textContent = (oppInfo
+          ? ("Week " + week + " · " + (oppInfo.isHome ? "Home" : "Away") + " vs " + oppName)
+          : ("Week " + week)) +
+          (liveMeta.active ? " · LIVE" : " · Pre-game") +
+          " · updated " + new Date().toLocaleTimeString();
+
+        root.innerHTML =
+          '<div class="matchup-scoreboard">' +
+            '<div class="matchup-side">' +
+              "<h3>" + escapeHtml(myName) + "</h3>" +
+              '<div class="big">' + myMu.toFixed(1) + "</div>" +
+              '<div class="sub">Scored ' + myLocked.toFixed(1) + " · Left " + myRemain.toFixed(1) + "</div>" +
+              '<div class="sub tip" data-tip="Floor and ceiling are team-level: projected total ± a realistic SD. Not the sum of every player’s floor (that would assume all your starters bust together).">Floor ' +
+                (myLocked + Math.max(0, baseProj.floor - baseProj.mu + myRemain)).toFixed(1) +
+                " · Ceiling " + (myLocked + Math.max(0, baseProj.ceil - baseProj.mu + myRemain)).toFixed(1) + "</div>" +
+            "</div>" +
+            '<div class="matchup-vs">WIN CHANCE' +
+              '<div class="winpct">' + (winPct * 100).toFixed(0) + "%</div>" +
+              '<div style="margin-top:0.25rem">Margin ' + (margin >= 0 ? "+" : "") + margin.toFixed(1) + "</div>" +
+            "</div>" +
+            '<div class="matchup-side" style="text-align:right">' +
+              "<h3>" + escapeHtml(oppName) + "</h3>" +
+              '<div class="big">' + oppMu.toFixed(1) + "</div>" +
+              '<div class="sub">Scored ' + oppLiveTotals.current.locked.toFixed(1) +
+                " · Left " + oppLiveTotals.current.remain.toFixed(1) + "</div>" +
+              '<div class="sub">Floor ' + oppProj.floor.toFixed(1) + " · Ceiling " + oppProj.ceil.toFixed(1) + "</div>" +
+            "</div>" +
+          "</div>" +
+          '<div class="matchup-advice"><strong>Strategy</strong><ul style="margin:0.35rem 0 0 1.1rem">' +
+            tips.map((t) => "<li>" + t + "</li>").join("") +
+          "</ul>" + moves +
+          '<div style="margin-top:0.5rem;font-size:0.72rem;color:var(--text-muted)">Floor/ceiling = lineup projection ± team variance (players don’t all boom/bust at once).</div>' +
+          "</div>" +
+          "<h3 style=\"font-size:0.85rem;margin:0 0 0.5rem\">Your roster · Week " + week + "</h3>" +
+          renderMatchupLineup(entries, week, baseProj.usedIds);
+      }
+
+      sel.onchange = () => { paint(); };
+      paint();
+      if (matchupTimer) clearInterval(matchupTimer);
+      matchupTimer = setInterval(() => {
+        const panel = document.getElementById("panel-matchup");
+        if (panel && panel.classList.contains("active")) paint();
+      }, 60000);
+    }
+
+
     async function setupPlayoffOdds() {
       const status = document.getElementById("odds-status");
       const body = document.getElementById("odds-body");
@@ -4948,12 +5630,18 @@
         let htmlRows = "";
         rows.forEach((team) => {
           const result = simulation.results[String(team.id)];
-          const projW = medianOf(result.finalWins);
-          const projL = medianOf(result.finalLosses);
+          // Mean record spreads teams; median alone piles everyone on the same W-L
+          const meanW = meanOf(result.finalWins);
+          const meanL = meanOf(result.finalLosses);
+          const projW = Math.round(meanW);
+          const projL = Math.round(meanL);
+          const loW = percentileOf(result.finalWins, 20);
+          const hiW = percentileOf(result.finalWins, 80);
           const medW = medianOf(result.medianWins);
           const h2hW = medianOf(result.h2hWins);
           const nowRec = formatRecord(team.wins || 0, team.losses || 0);
           const projRec = formatRecord(projW, projL);
+          const rangeStr = loW + "–" + hiW + " W";
 
           const weekKeys = Object.keys(result.weeks || {}).map(Number).sort((a, b) => a - b);
           let weekRows = "";
@@ -4981,8 +5669,8 @@
             '<tr class="odds-expandable" data-odds-id="' + team.id + '">' +
               '<td class="odds-team">' + escapeHtml(team.name) + "</td>" +
               "<td>" + nowRec + "</td>" +
-              "<td>" + projRec +
-                '<div style="font-size:0.65rem;color:var(--text-muted)">~' + h2hW + " H2H · ~" + medW + " med</div></td>" +
+              '<td title="Mean projected W-L across sims. Each week counts H2H + top-5 result.">' + projRec +
+                '<div style="font-size:0.65rem;color:var(--text-muted)">' + rangeStr + " · ~" + Math.round(h2hW) + " H2H · ~" + Math.round(medW) + " top-5</div></td>" +
               "<td>" + playoffPercent(result.playoff, total) + "</td>" +
               "<td>" + playoffPercent(result.bye, total) + "</td>" +
               "<td>" + playoffPercent(result.champion, total) + "</td>" +
@@ -5046,26 +5734,29 @@
     }
 
 
-    // Custom tooltips — hover on desktop, tap on mobile
+    // Floating tooltip fallback (CSS :hover is primary; this covers mobile tap)
     (function initTooltips() {
-      const tipEl = document.getElementById("app-tooltip");
-      if (!tipEl) return;
-      let hideTimer = null;
+      let tipEl = document.getElementById("app-tooltip");
+      if (!tipEl) {
+        tipEl = document.createElement("div");
+        tipEl.id = "app-tooltip";
+        tipEl.setAttribute("role", "tooltip");
+        document.body.appendChild(tipEl);
+      }
       let active = null;
-
       function place(el) {
-        const text = el.getAttribute("data-tip") || el.getAttribute("title") || "";
+        const text = el.getAttribute("data-tip") || "";
         if (!text) return;
         tipEl.textContent = text;
         tipEl.classList.add("show");
         active = el;
         const r = el.getBoundingClientRect();
-        const tw = tipEl.offsetWidth;
-        const th = tipEl.offsetHeight;
+        const tw = tipEl.offsetWidth || 200;
+        const th = tipEl.offsetHeight || 40;
         let left = r.left + r.width / 2 - tw / 2;
         left = Math.max(12, Math.min(left, window.innerWidth - tw - 12));
         let top = r.bottom + 8;
-        if (top + th > window.innerHeight - 8) top = r.top - th - 8;
+        if (top + th > window.innerHeight - 8) top = Math.max(8, r.top - th - 8);
         tipEl.style.left = left + "px";
         tipEl.style.top = top + "px";
       }
@@ -5073,29 +5764,16 @@
         tipEl.classList.remove("show");
         active = null;
       }
-
-      document.addEventListener("mouseover", (e) => {
-        const el = e.target.closest("[data-tip], .tip, .has-tip");
-        if (!el) return;
-        clearTimeout(hideTimer);
-        place(el);
-      });
-      document.addEventListener("mouseout", (e) => {
-        const el = e.target.closest("[data-tip], .tip, .has-tip");
-        if (!el) return;
-        hideTimer = setTimeout(hide, 80);
-      });
+      // Mobile: tap to toggle (desktop uses CSS :hover)
       document.addEventListener("click", (e) => {
-        const el = e.target.closest("[data-tip], .tip, .has-tip");
-        if (el && el.getAttribute("data-tip")) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (active === el) hide();
-          else place(el);
-          return;
-        }
-        hide();
-      }, true);
+        const el = e.target.closest("[data-tip]");
+        if (!el) { hide(); return; }
+        const isTouch = window.matchMedia("(hover: none)").matches;
+        if (!isTouch) return;
+        e.preventDefault();
+        if (active === el) hide();
+        else place(el);
+      });
       document.addEventListener("scroll", hide, true);
     })();
 
@@ -5110,6 +5788,7 @@
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "odds") setupPlayoffOdds();
+        if (btn.dataset.panel === "matchup") setupMatchup();
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
