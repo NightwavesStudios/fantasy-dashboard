@@ -1439,21 +1439,9 @@
     <button class="tab active" data-panel="power" type="button" title="Rank teams by trade-value roster strength and PPG once games are scored">Power Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare trade values and chain multi-step trades">Trade Calculator</button>
     <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
-    <button class="tab" data-panel="history" type="button" title="Past trades graded with current values and power impact">League History</button>
   </nav>
 
   <!-- TRADE BOARD -->
-  <div class="panel" id="panel-history">
-    <div class="calc-wrap">
-      <p class="rankings-note">
-        Completed trades from ESPN activity, graded with current FantasyCalc values and today’s power rankings.
-        Grade reflects value fairness at current market; impact estimates how the trade moved each team’s power score.
-      </p>
-      <div class="odds-status" id="history-status">Open this tab to load trade history.</div>
-      <div id="history-list" class="history-list"></div>
-    </div>
-  </div>
-
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
       <p class="rankings-note">
@@ -1487,8 +1475,8 @@
             <p class="rankings-note">
         <strong>Power rankings</strong><br>
         Preseason question: how strong is this roster expected to be over the season?
-        Core is bye-aware optimal starter projections with positional value over replacement (especially important in Superflex),
-        plus depth, FantasyCalc market value (median-normalized), stability, upside, and schedule resilience.
+        Core is bye-aware starter projections with Superflex VORP, plus FantasyCalc market value (weighted toward starters),
+        depth, stability, upside, and bye/schedule resilience.
         Actual PPG is regressed toward projections and only ramps in after games are played.
         #1 is always 100.
       </p>
@@ -2600,14 +2588,15 @@
       const g = Math.max(0, Math.min(17, games || 0));
       // anchors: g, starter, depth, market, stability, upside, schedule, actual
       const anchors = [
-        { g: 0,  starter: 0.55, depth: 0.10, market: 0.10, stability: 0.10, upside: 0.10, schedule: 0.05, actual: 0.00 },
-        { g: 2,  starter: 0.50, depth: 0.10, market: 0.09, stability: 0.10, upside: 0.09, schedule: 0.05, actual: 0.07 },
-        { g: 4,  starter: 0.45, depth: 0.10, market: 0.08, stability: 0.10, upside: 0.08, schedule: 0.05, actual: 0.14 },
-        { g: 6,  starter: 0.40, depth: 0.10, market: 0.07, stability: 0.09, upside: 0.07, schedule: 0.05, actual: 0.22 },
-        { g: 8,  starter: 0.35, depth: 0.10, market: 0.06, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.29 },
-        { g: 10, starter: 0.30, depth: 0.10, market: 0.05, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.35 },
-        { g: 12, starter: 0.25, depth: 0.10, market: 0.04, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.42 },
-        { g: 17, starter: 0.20, depth: 0.10, market: 0.03, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.48 }
+        // Preseason leans more on FantasyCalc market + positional VORP (SF) so ranks track consensus boards
+        { g: 0,  starter: 0.48, depth: 0.06, market: 0.22, stability: 0.08, upside: 0.08, schedule: 0.08, actual: 0.00 },
+        { g: 2,  starter: 0.45, depth: 0.06, market: 0.20, stability: 0.08, upside: 0.08, schedule: 0.07, actual: 0.06 },
+        { g: 4,  starter: 0.42, depth: 0.07, market: 0.17, stability: 0.08, upside: 0.07, schedule: 0.06, actual: 0.13 },
+        { g: 6,  starter: 0.38, depth: 0.07, market: 0.14, stability: 0.08, upside: 0.07, schedule: 0.06, actual: 0.20 },
+        { g: 8,  starter: 0.34, depth: 0.08, market: 0.12, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.27 },
+        { g: 10, starter: 0.30, depth: 0.08, market: 0.10, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.33 },
+        { g: 12, starter: 0.26, depth: 0.08, market: 0.08, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.39 },
+        { g: 17, starter: 0.22, depth: 0.08, market: 0.06, stability: 0.06, upside: 0.06, schedule: 0.05, actual: 0.47 }
       ];
       let lo = anchors[0], hi = anchors[anchors.length - 1];
       for (let i = 0; i < anchors.length - 1; i++) {
@@ -2712,7 +2701,7 @@
         m.depthPts = depth.depthPts;
         m.depthVorp = depth.depthVorp;
 
-        m.compRaw = 0.70 * (m.starterValue || 0) + 0.30 * (m.rosterValue || 0);
+        m.compRaw = 0.82 * (m.starterValue || 0) + 0.18 * (m.rosterValue || 0);
 
         const exp = Math.max(m.expectedPts, 1e-6);
         m.stabilityRatio = Math.min(1.2, Math.max(0, (m.floorPts || 0) / exp));
@@ -2742,18 +2731,18 @@
         const vorpN = (m.starterVorp || 0) / maxVorp;
         const floorN = (m.floorPts || 0) / maxFloor;
         const ceilN = (m.ceilingPts || 0) / maxCeil;
-        const starterScore = 0.72 * expN + 0.14 * vorpN + 0.07 * floorN + 0.07 * ceilN;
+        const starterScore = 0.58 * expN + 0.28 * vorpN + 0.07 * floorN + 0.07 * ceilN;
 
         // --- Depth: median-normalized so "thin" isn't crushed vs one deep roster ---
         const depthRaw = (m.depthPts || 0) + (m.depthVorp || 0);
         let depthRel = depthRaw / Math.max(medDepth, 1e-6);
-        depthRel = Math.min(1.40, Math.max(0.50, depthRel));
-        const depthScore = (depthRel - 0.50) / (1.40 - 0.50);
+        depthRel = Math.min(1.35, Math.max(0.60, depthRel));
+        const depthScore = (depthRel - 0.60) / (1.35 - 0.60);
 
         // --- Market (median-normalized, capped) ---
         let marketRel = (m.compRaw || 0) / medComp;
-        marketRel = Math.min(1.30, Math.max(0.70, marketRel));
-        const marketScore = (marketRel - 0.70) / (1.30 - 0.70);
+        marketRel = Math.min(1.50, Math.max(0.55, marketRel));
+        const marketScore = (marketRel - 0.55) / (1.50 - 0.55);
 
         // --- Stability & upside relative to league ---
         const stabilityScore = (m.stabilityRatio - minStab) / Math.max(1e-6, maxStab - minStab);
@@ -4620,7 +4609,6 @@
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "odds") setupPlayoffOdds();
-        if (btn.dataset.panel === "history") setupLeagueHistory();
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
