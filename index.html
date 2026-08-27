@@ -315,6 +315,11 @@
       color: var(--text-primary);
       margin-top: 0.25rem;
     }
+    .matchup-vs .sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
     .matchup-advice {
       border-radius: 10px;
       border: 1px solid var(--border-subtle);
@@ -5530,12 +5535,21 @@
         const myLocked = liveTotals.current.locked;
         const myRemain = liveTotals.current.remain;
         // Opponent current slots estimate
-        const oppOpt = lineupProjection(oppEntries, week);
+        const oppOpt = lineupProjection(oppEntries.map((e) => Object.assign({}, e, {
+          proj: e.hasPlayed ? (e.actual || 0) : e.proj,
+          projFloor: e.hasPlayed ? (e.actual || 0) : e.projFloor,
+          projCeil: e.hasPlayed ? (e.actual || 0) : e.projCeil
+        })), week);
         const oppLiveTotals = liveLineupTotals(oppEntries, oppOpt.usedIds);
         const oppMu = oppLiveTotals.current.total;
 
         const margin = myMu - oppMu;
         const winPct = winProbFromProj(myMu, baseProj.sigma, oppMu, oppProj.sigma);
+        // Optimal lineups for both sides (same live locked points + optimal remaining)
+        const myOptMu = liveTotals.optimal.total;
+        const oppOptMu = oppLiveTotals.optimal.total;
+        const optMargin = myOptMu - oppOptMu;
+        const optWinPct = winProbFromProj(myOptMu, baseProj.sigma, oppOptMu, oppOpt.sigma);
         const liveMeta = {
           active: entries.some((e) => e.hasPlayed),
           myLocked,
@@ -5578,8 +5592,12 @@
                 " · Ceiling " + (myLocked + Math.max(0, baseProj.ceil - baseProj.mu + myRemain)).toFixed(1) + "</div>" +
             "</div>" +
             '<div class="matchup-vs">WIN CHANCE' +
-              '<div class="winpct">' + (winPct * 100).toFixed(0) + "%</div>" +
+              '<div class="winpct tip" data-tip="Based on current ESPN starting lineups (scored points + remaining projections).">' +
+                (winPct * 100).toFixed(0) + "%</div>" +
               '<div style="margin-top:0.25rem">Margin ' + (margin >= 0 ? "+" : "") + margin.toFixed(1) + "</div>" +
+              '<div class="sub tip" style="margin-top:0.55rem" data-tip="If both teams used optimal lineups for players still left to play.">' +
+                "Optimal " + (optWinPct * 100).toFixed(0) + "%</div>" +
+              '<div class="sub">Opt margin ' + (optMargin >= 0 ? "+" : "") + optMargin.toFixed(1) + "</div>" +
             "</div>" +
             '<div class="matchup-side" style="text-align:right">' +
               "<h3>" + escapeHtml(oppName) + "</h3>" +
