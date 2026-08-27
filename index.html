@@ -2022,12 +2022,13 @@
      * RBs/WRs are widest; QBs tighter; TEs in between.
      */
     const BOOM_BUST = {
-      QB: { floorMult: 0.72, ceilMult: 1.38, sdFrac: 0.20 },
-      RB: { floorMult: 0.48, ceilMult: 1.62, sdFrac: 0.36 },
-      WR: { floorMult: 0.52, ceilMult: 1.55, sdFrac: 0.33 },
-      TE: { floorMult: 0.58, ceilMult: 1.42, sdFrac: 0.28 },
-      K: { floorMult: 0.55, ceilMult: 1.45, sdFrac: 0.30 },
-      "D/ST": { floorMult: 0.40, ceilMult: 1.70, sdFrac: 0.40 }
+      // Milder spreads so team floor/expected is realistic (~0.78–0.90), not ~0.60
+      QB: { floorMult: 0.80, ceilMult: 1.28, sdFrac: 0.14 },
+      RB: { floorMult: 0.68, ceilMult: 1.42, sdFrac: 0.22 },
+      WR: { floorMult: 0.70, ceilMult: 1.38, sdFrac: 0.20 },
+      TE: { floorMult: 0.74, ceilMult: 1.32, sdFrac: 0.18 },
+      K: { floorMult: 0.70, ceilMult: 1.35, sdFrac: 0.20 },
+      "D/ST": { floorMult: 0.55, ceilMult: 1.50, sdFrac: 0.28 }
     };
 
     /** Pull weekly proj + ceiling + variance from a player.stats array. */
@@ -2166,13 +2167,13 @@
 
       // Floor: prefer mean - 1.1*sd, else profile floor, never above proj
       let floor;
-      if (proj > 0 && sd != null) floor = Math.max(0, proj - 1.15 * sd);
+      if (proj > 0 && sd != null) floor = Math.max(0, proj - 0.90 * sd);
       else if (proj > 0 && ceil != null) floor = Math.max(0, 2 * proj - ceil);
       else floor = proj * profile.floorMult;
       floor = Math.min(floor, proj) * injFloorCut;
 
       // Ceiling: prefer ESPN ceiling, else mean + 1.4*sd
-      if (ceil == null && proj > 0 && sd != null) ceil = proj + 1.4 * sd;
+      if (ceil == null && proj > 0 && sd != null) ceil = proj + 1.15 * sd;
       if (ceil == null) ceil = proj * profile.ceilMult;
       // Boom players (high ceil/proj ratio) keep upside
       const boomScore = proj > 0 ? (ceil / proj) : 1;
@@ -2422,16 +2423,26 @@
       return "Weak";
     }
 
-    function riskLabel(stabilityRatio) {
-      if (stabilityRatio >= 0.82) return "Low";
-      if (stabilityRatio >= 0.72) return "Medium";
+    function riskLabel(stabilityRatio, leagueSortedAsc) {
+      // Relative to league: top third Low, middle Medium, bottom High
+      if (!leagueSortedAsc || !leagueSortedAsc.length) {
+        if (stabilityRatio >= 0.84) return "Low";
+        if (stabilityRatio >= 0.78) return "Medium";
+        return "High";
+      }
+      const n = leagueSortedAsc.length;
+      const lo = leagueSortedAsc[Math.floor(n / 3)];
+      const hi = leagueSortedAsc[Math.floor((2 * n) / 3)];
+      if (stabilityRatio >= hi) return "Low";
+      if (stabilityRatio >= lo) return "Medium";
       return "High";
     }
 
     function depthLabel(norm) {
-      if (norm >= 0.85) return "Elite";
-      if (norm >= 0.65) return "Good";
-      if (norm >= 0.45) return "Average";
+      // norm is median-relative 0–1 after soft cap
+      if (norm >= 0.75) return "Elite";
+      if (norm >= 0.55) return "Good";
+      if (norm >= 0.40) return "Average";
       if (norm >= 0.25) return "Thin";
       return "Weak";
     }
@@ -2444,14 +2455,14 @@
       const g = Math.max(0, Math.min(17, games || 0));
       // anchors: g, starter, depth, market, stability, upside, schedule, actual
       const anchors = [
-        { g: 0,  starter: 0.50, depth: 0.15, market: 0.10, stability: 0.10, upside: 0.10, schedule: 0.05, actual: 0.00 },
-        { g: 2,  starter: 0.47, depth: 0.15, market: 0.09, stability: 0.10, upside: 0.09, schedule: 0.05, actual: 0.05 },
-        { g: 4,  starter: 0.42, depth: 0.15, market: 0.08, stability: 0.10, upside: 0.08, schedule: 0.05, actual: 0.12 },
-        { g: 6,  starter: 0.37, depth: 0.15, market: 0.07, stability: 0.09, upside: 0.07, schedule: 0.05, actual: 0.20 },
-        { g: 8,  starter: 0.32, depth: 0.15, market: 0.06, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.27 },
-        { g: 10, starter: 0.27, depth: 0.15, market: 0.05, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.33 },
-        { g: 12, starter: 0.22, depth: 0.15, market: 0.04, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.40 },
-        { g: 17, starter: 0.18, depth: 0.15, market: 0.03, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.45 }
+        { g: 0,  starter: 0.55, depth: 0.10, market: 0.10, stability: 0.10, upside: 0.10, schedule: 0.05, actual: 0.00 },
+        { g: 2,  starter: 0.50, depth: 0.10, market: 0.09, stability: 0.10, upside: 0.09, schedule: 0.05, actual: 0.07 },
+        { g: 4,  starter: 0.45, depth: 0.10, market: 0.08, stability: 0.10, upside: 0.08, schedule: 0.05, actual: 0.14 },
+        { g: 6,  starter: 0.40, depth: 0.10, market: 0.07, stability: 0.09, upside: 0.07, schedule: 0.05, actual: 0.22 },
+        { g: 8,  starter: 0.35, depth: 0.10, market: 0.06, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.29 },
+        { g: 10, starter: 0.30, depth: 0.10, market: 0.05, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.35 },
+        { g: 12, starter: 0.25, depth: 0.10, market: 0.04, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.42 },
+        { g: 17, starter: 0.20, depth: 0.10, market: 0.03, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.48 }
       ];
       let lo = anchors[0], hi = anchors[anchors.length - 1];
       for (let i = 0; i < anchors.length - 1; i++) {
@@ -2564,6 +2575,7 @@
       });
 
       const medComp = median(models.map((m) => m.compRaw || 0)) || 1;
+      const medDepth = median(models.map((m) => (m.depthPts || 0) + (m.depthVorp || 0))) || 1;
       const maxExp = Math.max(...models.map((m) => m.expectedPts || 0), 1);
       const maxVorp = Math.max(...models.map((m) => m.starterVorp || 0), 1);
       const maxFloor = Math.max(...models.map((m) => m.floorPts || 0), 1);
@@ -2571,28 +2583,36 @@
       const maxDepth = Math.max(...models.map((m) => (m.depthPts || 0) + (m.depthVorp || 0)), 1);
       const maxPpg = Math.max(...models.map((m) => m.ppg || 0), 0);
       const avgExp = models.reduce((s, m) => s + (m.expectedPts || 0), 0) / n;
+      const stabVals = models.map((m) => m.stabilityRatio || 0);
+      const upsVals = models.map((m) => m.upsideRatio || 0);
+      const minStab = Math.min(...stabVals);
+      const maxStab = Math.max(...stabVals);
+      const minUps = Math.min(...upsVals);
+      const maxUps = Math.max(...upsVals);
+      const stabSorted = stabVals.slice().sort((a, b) => a - b);
 
       const scored = models.map((m) => {
-        // --- Starter strength (internal mix) ---
+        // --- Starter strength: expected points dominate (who projects highest weekly) ---
         const expN = (m.expectedPts || 0) / maxExp;
         const vorpN = (m.starterVorp || 0) / maxVorp;
         const floorN = (m.floorPts || 0) / maxFloor;
         const ceilN = (m.ceilingPts || 0) / maxCeil;
-        const starterScore = 0.60 * expN + 0.20 * vorpN + 0.10 * floorN + 0.10 * ceilN;
+        const starterScore = 0.72 * expN + 0.14 * vorpN + 0.07 * floorN + 0.07 * ceilN;
 
-        // --- Depth ---
-        const depthScore = ((m.depthPts || 0) + (m.depthVorp || 0)) / maxDepth;
+        // --- Depth: median-normalized so "thin" isn't crushed vs one deep roster ---
+        const depthRaw = (m.depthPts || 0) + (m.depthVorp || 0);
+        let depthRel = depthRaw / Math.max(medDepth, 1e-6);
+        depthRel = Math.min(1.40, Math.max(0.50, depthRel));
+        const depthScore = (depthRel - 0.50) / (1.40 - 0.50);
 
         // --- Market (median-normalized, capped) ---
-        // Relative to median so one outlier doesn't dominate
         let marketRel = (m.compRaw || 0) / medComp;
-        marketRel = Math.min(1.35, Math.max(0.65, marketRel)); // soft cap
-        // map around 1.0 → 0–1-ish relative to league max of capped values
-        const marketScore = (marketRel - 0.65) / (1.35 - 0.65);
+        marketRel = Math.min(1.30, Math.max(0.70, marketRel));
+        const marketScore = (marketRel - 0.70) / (1.30 - 0.70);
 
-        // --- Stability & upside (ratios as quality metrics, then norm in league) ---
-        const stabilityScore = m.stabilityRatio; // already ~0.6–1.0
-        const upsideScore = Math.min(1.4, m.upsideRatio) / 1.4;
+        // --- Stability & upside relative to league ---
+        const stabilityScore = (m.stabilityRatio - minStab) / Math.max(1e-6, maxStab - minStab);
+        const upsideScore = (m.upsideRatio - minUps) / Math.max(1e-6, maxUps - minUps);
 
         // --- Schedule: 70% average week + 30% worst week (both already in profile) ---
         const avgWeek = m.expectedPts || 0;
@@ -2615,7 +2635,8 @@
           marketScore,
           stabilityScore,
           upsideScore,
-          adjustedPpg
+          adjustedPpg,
+          _stabSorted: stabSorted
         });
       });
 
@@ -3765,7 +3786,7 @@
         const ce = t.ceilingPts != null ? t.ceilingPts.toFixed(1) : "—";
         const ranks = posRankByTeam[t.id] || {};
         const depthTxt = depthLabel(t.depthNorm || 0);
-        const riskTxt = riskLabel(t.stabilityRatio || 0.75);
+        const riskTxt = riskLabel(t.stabilityRatio || 0.75, t._stabSorted);
         const qbG = posGradeLabel(ranks.QB, teamCount);
         const rbG = posGradeLabel(ranks.RB, teamCount);
         const wrG = posGradeLabel(ranks.WR, teamCount);
