@@ -318,6 +318,57 @@
     .power-line-scores .sc-avg { color: var(--text); }
     .power-row.collapsed .power-line-scores { display: none; }
 
+
+    .fp-power-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    .fp-power-table th {
+      text-align: left;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .fp-power-table th.fp-score-col,
+    .fp-power-table td.fp-score-col {
+      text-align: right;
+    }
+    .fp-power-table td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+    .fp-power-table tr:last-child td { border-bottom: none; }
+    .fp-power-table .fp-rk {
+      width: 2.5rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .fp-power-table .fp-team-name {
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+    .fp-power-table .fp-team-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+    .fp-power-table .fp-score {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .fp-power-table tr.fp-expandable { cursor: pointer; }
+    .fp-power-table tr.fp-expandable:hover td { background: var(--surface-2); }
+    .fp-detail-row td {
+      padding: 0 0.75rem 0.85rem;
+      background: var(--surface-2);
+    }
+    .fp-detail-row[hidden] { display: none; }
+
     .power-row {
       background: var(--surface);
       border: 1px solid var(--border-subtle);
@@ -1233,12 +1284,9 @@
   <div class="panel active" id="panel-power">
     <div class="rankings-wrap">
       <p class="rankings-note">
-        <strong>How these rankings work</strong><br>
-        Each team is scored with an optimal legal lineup of 1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, and 1 Superflex.
-        Expected, floor, and ceiling points come from ESPN projections in this league’s scoring (weekly projected total and ceiling when available).
-        Preseason weights lean on expected starters, trade value, ceiling, floor, and depth.
-        Once games are played, actual production ramps up (season PPG plus recent form) and pure roster value fades, but never disappears.
-        Scores are relative to this 10-team Superflex league, not a generic rankings list.
+        <strong>Power rankings</strong><br>
+        Ordered like FantasyPros: projected optimal starters (bye-aware), FantasyCalc roster strength, floor/ceiling, and actual PPG once games start.
+        Score is relative — the top team is 100.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -1373,54 +1421,17 @@
   <div class="panel" id="panel-settings">
     <div class="calc-wrap">
       <p class="rankings-note">
-        <strong>Value sources</strong><br>
-        Power rankings, the trade calculator, and the waiver wire all use the source you pick here.
-        Hybrid averages every source that loads successfully after normalizing each scale.
+        <strong>Value source</strong><br>
+        All rankings and the trade calculator use FantasyCalc only: 10-team Superflex full PPR redraft values from real trades.
       </p>
       <div class="settings-card">
-        <h3 class="settings-h">Trade value provider</h3>
-        <p class="settings-desc">Public APIs only. No keys required. Every source is <strong>redraft Superflex</strong> (full PPR where the API allows). Dynasty feeds are not used.</p>
-        <div class="settings-options" id="value-provider-options">
-          <label class="settings-option">
-            <input type="radio" name="valueProvider" value="fantasycalc" />
-            <span>
-              <strong>FantasyCalc</strong>
-              <small>Redraft Superflex · 10-team full PPR · real trades · ESPN player IDs</small>
-            </span>
-          </label>
-          <label class="settings-option">
-            <input type="radio" name="valueProvider" value="statsguy" />
-            <span>
-              <strong>Stats Guy Fantasy</strong>
-              <small>Redraft Superflex (sf_redraft) · trade-derived · matched by name</small>
-            </span>
-          </label>
-          <label class="settings-option">
-            <input type="radio" name="valueProvider" value="dynastydealer" />
-            <span>
-              <strong>Dynasty Dealer Redraft</strong>
-              <small>Redraft Superflex full PPR · not dynasty values · matched by name</small>
-            </span>
-          </label>
-          <label class="settings-option">
-            <input type="radio" name="valueProvider" value="hybrid" />
-            <span>
-              <strong>Hybrid average</strong>
-              <small>Average of all redraft SF sources that load (normalized to one scale)</small>
-            </span>
-          </label>
-        </div>
-        <div class="settings-status" id="settings-source-status">Current source loads with the league data.</div>
-        <button type="button" class="btn btn-primary" id="settings-apply" title="Save provider and reload values">Save and reload values</button>
-      </div>
-      <div class="settings-card">
-        <h3 class="settings-h">About the sources</h3>
-        <ul class="settings-list">
-          <li><strong>FantasyCalc</strong> — api.fantasycalc.com · isDynasty=false · numQbs=2 · ppr=1</li>
-          <li><strong>Stats Guy</strong> — api.statsguyfantasy.com · value.sf_redraft only</li>
-          <li><strong>Dynasty Dealer</strong> — dynastydealer.com · format=redraft&amp;scoring=ppr&amp;sf=true</li>
-          <li>KeepTradeCut, Roster Audit, and pure dynasty endpoints are excluded</li>
-        </ul>
+        <h3 class="settings-h">FantasyCalc</h3>
+        <p class="settings-desc">
+          <code>api.fantasycalc.com/values/current</code><br>
+          isDynasty=false · numQbs=2 · numTeams=10 · ppr=1
+        </p>
+        <div class="settings-status" id="settings-source-status">FantasyCalc loads with league data.</div>
+        <button type="button" class="btn btn-primary" id="settings-apply" title="Reload FantasyCalc values">Reload FantasyCalc values</button>
       </div>
     </div>
   </div>
@@ -1699,35 +1710,20 @@
     let valueSourceLabel = "FantasyCalc";
     let valueLoadNote = "";
 
-    // Redraft Superflex only (no dynasty sources)
+    // FantasyCalc only — 10-team Superflex full PPR redraft
     const VALUE_PROVIDERS = {
       fantasycalc: {
         id: "fantasycalc",
         label: "FantasyCalc",
         url: "https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1"
-      },
-      statsguy: {
-        id: "statsguy",
-        label: "Stats Guy",
-        url: "https://api.statsguyfantasy.com/api/v1/players"
-      },
-      dynastydealer: {
-        id: "dynastydealer",
-        label: "Dynasty Dealer Redraft",
-        url: "https://www.dynastydealer.com/api/player-values?format=redraft&scoring=ppr&sf=true"
-      },
-      hybrid: {
-        id: "hybrid",
-        label: "Hybrid average"
       }
     };
+    valueProvider = "fantasycalc";
+    valueSourceLabel = "FantasyCalc";
 
     function loadValueProviderSetting() {
-      try {
-        const saved = localStorage.getItem("leagueToolsValueProvider");
-        if (saved && VALUE_PROVIDERS[saved]) valueProvider = saved;
-      } catch (e) {}
-      valueSourceLabel = VALUE_PROVIDERS[valueProvider].label;
+      valueProvider = "fantasycalc";
+      valueSourceLabel = "FantasyCalc";
     }
     loadValueProviderSetting();
 
@@ -1830,97 +1826,10 @@
       });
     }
 
-    async function fetchStatsGuyEntries() {
-      const res = await fetchWithTimeout(VALUE_PROVIDERS.statsguy.url, { headers: { Accept: "application/json" } }, 15000);
-      if (!res.ok) throw new Error("Stats Guy HTTP " + res.status);
-      const data = await res.json();
-      const players = data.players || [];
-      return players.map((row) => {
-        const val = row.value && typeof row.value === "object" ? (row.value.sf_redraft || 0) : (row.value || 0);
-        const rank = row.rank && typeof row.rank === "object" ? row.rank.sf_redraft : row.rank;
-        const posRank = row.positionRank && typeof row.positionRank === "object" ? row.positionRank.sf_redraft : row.positionRank;
-        return {
-          espnId: null,
-          name: row.name,
-          value: val || 0,
-          overallRank: rank != null ? rank : null,
-          positionRank: posRank != null ? posRank : null
-        };
-      }).filter((e) => e.value > 0);
-    }
-
-    async function fetchDynastyDealerEntries() {
-      // Redraft Superflex full PPR only
-      const res = await fetchWithTimeout(VALUE_PROVIDERS.dynastydealer.url, { headers: { Accept: "application/json" } }, 15000);
-      if (!res.ok) throw new Error("Dynasty Dealer HTTP " + res.status);
-      const data = await res.json();
-      const players = data.players || [];
-      return players.map((row) => ({
-        espnId: null,
-        name: row.name,
-        value: row.current_value != null ? row.current_value : (row.base_value || 0),
-        overallRank: null,
-        positionRank: null
-      })).filter((e) => e.name && e.value > 0);
-    }
-
-    async function loadTradeValues(providerId) {
-      const id = providerId || valueProvider;
-      if (id === "hybrid") {
-        const results = await Promise.allSettled([
-          fetchFantasyCalcEntries(),
-          fetchStatsGuyEntries(),
-          fetchDynastyDealerEntries()
-        ]);
-        const labels = ["FantasyCalc", "Stats Guy SF redraft", "Dynasty Dealer redraft SF"];
-        const loaded = [];
-        const notes = [];
-        results.forEach((r, i) => {
-          if (r.status === "fulfilled" && r.value && r.value.length) {
-            loaded.push(normalizeValueMap(r.value));
-            notes.push(labels[i]);
-          } else {
-            notes.push(labels[i] + " failed");
-          }
-        });
-        if (!loaded.length) throw new Error("No value sources loaded");
-        // Average by normalized name; keep espnId from FantasyCalc when present
-        const bucket = {};
-        for (const entries of loaded) {
-          for (const e of entries) {
-            const key = normalizeNameLoose(e.name) || normalizeName(e.name);
-            if (!key) continue;
-            if (!bucket[key]) bucket[key] = { name: e.name, espnId: e.espnId, values: [], ranks: [] };
-            if (e.espnId && !bucket[key].espnId) bucket[key].espnId = e.espnId;
-            bucket[key].values.push(e.value || 0);
-            if (e.overallRank != null) bucket[key].ranks.push(e.overallRank);
-          }
-        }
-        const merged = Object.keys(bucket).map((key) => {
-          const b = bucket[key];
-          const avg = b.values.reduce((s, v) => s + v, 0) / b.values.length;
-          const rankAvg = b.ranks.length ? Math.round(b.ranks.reduce((s, v) => s + v, 0) / b.ranks.length) : null;
-          return {
-            espnId: b.espnId,
-            name: b.name,
-            value: Math.round(avg),
-            overallRank: rankAvg,
-            positionRank: null
-          };
-        });
-        const maps = ingestEntries(merged);
-        setValueMaps(maps.byEspn, maps.byName, "Hybrid average", notes.join(" · "));
-        return;
-      }
-
-      let entries;
-      if (id === "fantasycalc") entries = await fetchFantasyCalcEntries();
-      else if (id === "statsguy") entries = await fetchStatsGuyEntries();
-      else if (id === "dynastydealer") entries = await fetchDynastyDealerEntries();
-      else entries = await fetchFantasyCalcEntries();
-
+    async function loadTradeValues() {
+      const entries = await fetchFantasyCalcEntries();
       const maps = ingestEntries(entries);
-      setValueMaps(maps.byEspn, maps.byName, VALUE_PROVIDERS[id].label, entries.length + " players");
+      setValueMaps(maps.byEspn, maps.byName, "FantasyCalc", entries.length + " players");
     }
 
     let currentFilter = "all";
@@ -1956,13 +1865,18 @@
         fcByEspnId = {};
         fcByName = {};
         try {
-          await loadTradeValues(valueProvider);
+          await loadTradeValues();
         } catch (fcErr) {
           console.warn("Trade values unavailable", fcErr);
           valueLoadNote = "Value source failed to load";
         }
 
         await fetchByeWeeks();
+        try {
+          await enrichEspnProjections(leagueData);
+        } catch (projErr) {
+          console.warn("ESPN projection enrich failed", projErr);
+        }
 
         const counts = countStatuses(leagueData);
         statusEl.textContent =
@@ -2100,37 +2014,173 @@
       return total;
     }
 
-    /** Read ESPN projection fields already attached on player.stats (league scoring). */
+    /**
+     * Position boom/bust profiles (fraction of expected as residual spread).
+     * RBs/WRs are widest; QBs tighter; TEs in between.
+     */
+    const BOOM_BUST = {
+      QB: { floorMult: 0.72, ceilMult: 1.38, sdFrac: 0.20 },
+      RB: { floorMult: 0.48, ceilMult: 1.62, sdFrac: 0.36 },
+      WR: { floorMult: 0.52, ceilMult: 1.55, sdFrac: 0.33 },
+      TE: { floorMult: 0.58, ceilMult: 1.42, sdFrac: 0.28 },
+      K: { floorMult: 0.55, ceilMult: 1.45, sdFrac: 0.30 },
+      "D/ST": { floorMult: 0.40, ceilMult: 1.70, sdFrac: 0.40 }
+    };
+
+    /** Pull weekly proj + ceiling + variance from a player.stats array. */
+    function readWeeklyProjStat(stats) {
+      let best = null;
+      for (const s of stats || []) {
+        if (s.statSourceId === 1 && s.statSplitTypeId === 1 && s.scoringPeriodId > 0) {
+          if (!best || s.scoringPeriodId >= best.scoringPeriodId) best = s;
+        }
+      }
+      return best;
+    }
+
+    /**
+     * Enrich rostered players with matchup-view projections.
+     * mMatchup rosterForCurrentScoringPeriod includes appliedTotalCeiling + variance,
+     * which plain mRoster often omits.
+     */
+    async function enrichEspnProjections(data) {
+      const week = data.scoringPeriodId || 1;
+      const url = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mMatchup&view=mRoster&scoringPeriodId=${week}`;
+      const res = await fetchWithTimeout(url, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+      if (!res.ok) throw new Error("projection HTTP " + res.status);
+      const matchupData = await res.json();
+      const byId = {};
+
+      function ingestEntry(entry) {
+        const ppe = entry.playerPoolEntry || {};
+        const player = ppe.player;
+        if (!player || player.id == null) return;
+        const id = String(player.id);
+        const weekly = readWeeklyProjStat(player.stats);
+        if (!weekly) return;
+        const prev = byId[id];
+        if (prev && prev.scoringPeriodId > weekly.scoringPeriodId) return;
+        byId[id] = {
+          scoringPeriodId: weekly.scoringPeriodId,
+          appliedTotal: weekly.appliedTotal || 0,
+          appliedTotalCeiling: weekly.appliedTotalCeiling,
+          variance: weekly.variance || null,
+          stats: player.stats
+        };
+      }
+
+      for (const team of matchupData.teams || []) {
+        for (const entry of team.roster?.entries || []) ingestEntry(entry);
+      }
+      for (const game of matchupData.schedule || []) {
+        for (const side of ["home", "away"]) {
+          const block = game[side];
+          if (!block) continue;
+          const roster = block.rosterForCurrentScoringPeriod || block.rosterForMatchupPeriod || {};
+          for (const entry of roster.entries || []) ingestEntry(entry);
+        }
+      }
+
+      // Merge richer stats onto leagueData roster players
+      for (const team of data.teams || []) {
+        for (const entry of team.roster?.entries || []) {
+          const player = entry.playerPoolEntry && entry.playerPoolEntry.player;
+          if (!player) continue;
+          const enriched = byId[String(player.id)];
+          if (!enriched) continue;
+          player.stats = enriched.stats || player.stats;
+          player._projEnrich = {
+            appliedTotal: enriched.appliedTotal,
+            appliedTotalCeiling: enriched.appliedTotalCeiling,
+            variance: enriched.variance,
+            scoringPeriodId: enriched.scoringPeriodId
+          };
+        }
+      }
+      data._projEnriched = true;
+      data._projCount = Object.keys(byId).length;
+    }
+
+    /**
+     * Boom/bust aware floor & ceiling in league scoring points.
+     * Uses ESPN ceiling + variance when present, else position profiles.
+     */
     function espnProjectionFields(player) {
       const stats = (player && player.stats) || [];
-      let weekly = null;
-      let weeklyCeil = null;
-      let seasonProj = null;
+      const pos = POS_MAP[player.defaultPositionId] || "WR";
+      const profile = BOOM_BUST[pos] || BOOM_BUST.WR;
+      const enrich = player._projEnrich || null;
+
+      let weekly = readWeeklyProjStat(stats);
       let seasonAvg = null;
       for (const s of stats) {
-        // Weekly projection for a scoring period
-        if (s.statSourceId === 1 && s.statSplitTypeId === 1 && s.scoringPeriodId > 0) {
-          if (weekly == null || s.scoringPeriodId >= (weekly._week || 0)) {
-            weekly = { pts: s.appliedTotal || 0, ceil: s.appliedTotalCeiling, _week: s.scoringPeriodId };
-          }
-        }
-        // Season-long projection average / total
         if (s.statSourceId === 1 && s.statSplitTypeId === 0 && s.scoringPeriodId === 0) {
-          seasonProj = s.appliedTotal || seasonProj;
           if (s.appliedAverage != null) seasonAvg = s.appliedAverage;
         }
       }
-      const proj = weekly ? weekly.pts : (seasonAvg != null ? seasonAvg : 0);
-      let ceil = weekly && weekly.ceil != null ? weekly.ceil : null;
-      if (ceil == null && proj > 0) ceil = proj * 1.35;
-      // Symmetric floor around expected using ceiling spread, floored at 0
-      let floor = proj > 0 && ceil != null ? Math.max(0, 2 * proj - ceil) : proj * 0.7;
-      if (floor > proj) floor = proj * 0.75;
+
+      let proj = enrich && enrich.appliedTotal != null
+        ? enrich.appliedTotal
+        : (weekly ? (weekly.appliedTotal || 0) : (seasonAvg != null ? seasonAvg : 0));
+
+      let ceil = enrich && enrich.appliedTotalCeiling != null
+        ? enrich.appliedTotalCeiling
+        : (weekly && weekly.appliedTotalCeiling != null ? weekly.appliedTotalCeiling : null);
+
+      const variance = (enrich && enrich.variance) || (weekly && weekly.variance) || null;
+      let sd = null;
+      if (variance && typeof variance === "object") {
+        // Approximate points SD from spread of underlying stat variances (heuristic)
+        let sum = 0;
+        let n = 0;
+        for (const k of Object.keys(variance)) {
+          const v = Number(variance[k]);
+          if (v > 0) {
+            sum += v;
+            n++;
+          }
+        }
+        if (n > 0) sd = Math.sqrt(sum) * 0.15; // scale raw stat variance toward fantasy points
+      }
+
+      // Injury softens floor and slightly raises bust chance
+      const inj = (player.injuryStatus || "").toUpperCase();
+      let injFloorCut = 1;
+      if (inj.indexOf("OUT") >= 0 || inj.indexOf("IR") >= 0) {
+        proj = 0;
+        ceil = 0;
+        return { proj: 0, ceil: 0, floor: 0, seasonAvg: seasonAvg || 0, boomScore: 0 };
+      }
+      if (inj.indexOf("DOUBTFUL") >= 0) injFloorCut = 0.55;
+      else if (inj.indexOf("QUESTIONABLE") >= 0) injFloorCut = 0.85;
+
+      if (ceil == null && proj > 0) {
+        ceil = proj * profile.ceilMult;
+      }
+      if (sd == null && proj > 0) {
+        sd = proj * profile.sdFrac;
+      }
+
+      // Floor: prefer mean - 1.1*sd, else profile floor, never above proj
+      let floor;
+      if (proj > 0 && sd != null) floor = Math.max(0, proj - 1.15 * sd);
+      else if (proj > 0 && ceil != null) floor = Math.max(0, 2 * proj - ceil);
+      else floor = proj * profile.floorMult;
+      floor = Math.min(floor, proj) * injFloorCut;
+
+      // Ceiling: prefer ESPN ceiling, else mean + 1.4*sd
+      if (ceil == null && proj > 0 && sd != null) ceil = proj + 1.4 * sd;
+      if (ceil == null) ceil = proj * profile.ceilMult;
+      // Boom players (high ceil/proj ratio) keep upside
+      const boomScore = proj > 0 ? (ceil / proj) : 1;
+
       return {
         proj: proj || 0,
-        ceil: ceil != null ? ceil : 0,
+        ceil: ceil || 0,
         floor: floor || 0,
-        seasonAvg: seasonAvg != null ? seasonAvg : (proj || 0)
+        seasonAvg: seasonAvg != null ? seasonAvg : (proj || 0),
+        boomScore: boomScore,
+        sd: sd
       };
     }
 
@@ -2232,102 +2282,251 @@
      * Preseason: expected starters, player value, ceiling, floor, depth.
      * In season: actual production ramps up (season PPG + recent form proxy), roster value fades.
      */
-    function powerWeightsForWeek(gamesPlayed) {
-      // Approximate schedule from user model
-      const g = Math.max(0, Math.min(17, gamesPlayed || 0));
-      // Interpolate key anchors: 0,1,3,5,7,10,14,17
-      const anchors = [
-        { g: 0, actual: 0.00, expected: 0.35, value: 0.25, ceiling: 0.15, floor: 0.10, depth: 0.15 },
-        { g: 1, actual: 0.05, expected: 0.34, value: 0.24, ceiling: 0.14, floor: 0.09, depth: 0.14 },
-        { g: 3, actual: 0.15, expected: 0.32, value: 0.21, ceiling: 0.13, floor: 0.08, depth: 0.11 },
-        { g: 5, actual: 0.25, expected: 0.30, value: 0.18, ceiling: 0.11, floor: 0.07, depth: 0.09 },
-        { g: 7, actual: 0.35, expected: 0.28, value: 0.15, ceiling: 0.09, floor: 0.06, depth: 0.07 },
-        { g: 10, actual: 0.45, expected: 0.25, value: 0.12, ceiling: 0.07, floor: 0.05, depth: 0.06 },
-        { g: 14, actual: 0.55, expected: 0.23, value: 0.09, ceiling: 0.05, floor: 0.04, depth: 0.04 },
-        { g: 17, actual: 0.65, expected: 0.20, value: 0.06, ceiling: 0.04, floor: 0.03, depth: 0.02 }
-      ];
-      let lo = anchors[0], hi = anchors[anchors.length - 1];
-      for (let i = 0; i < anchors.length - 1; i++) {
-        if (g >= anchors[i].g && g <= anchors[i + 1].g) {
-          lo = anchors[i];
-          hi = anchors[i + 1];
-          break;
+    /**
+     * Optimal lineup for a specific NFL week: players on bye that week are unavailable.
+     * field: "proj" | "projCeil" | "projFloor" | "val"
+     */
+    function optimalLineupTotalForWeek(entryList, field, week) {
+      const remaining = (entryList || [])
+        .filter((entry) => {
+          if (["QB", "RB", "WR", "TE"].indexOf(entry.pos) < 0) return false;
+          const bye = entry.bye;
+          if (bye != null && Number(bye) === Number(week)) return false;
+          return true;
+        })
+        .slice()
+        .sort((a, b) => (b[field] || 0) - (a[field] || 0));
+      const takePosition = (pos, count) => {
+        const picked = remaining.filter((entry) => entry.pos === pos).slice(0, count);
+        picked.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
+        return picked;
+      };
+      const used = [];
+      takePosition("QB", 1).forEach((e) => used.push(e));
+      takePosition("RB", 2).forEach((e) => used.push(e));
+      takePosition("WR", 2).forEach((e) => used.push(e));
+      takePosition("TE", 1).forEach((e) => used.push(e));
+      remaining.filter((e) => ["RB", "WR", "TE"].indexOf(e.pos) >= 0).slice(0, 2)
+        .forEach((e) => {
+          used.push(e);
+          remaining.splice(remaining.indexOf(e), 1);
+        });
+      if (remaining.length) used.push(remaining[0]);
+      const total = used.reduce((s, e) => s + (e[field] || 0), 0);
+      return { total, used, count: used.length };
+    }
+
+    /**
+     * Season-long expected / floor / ceiling averaging weekly optimal lineups (bye-aware).
+     * Also measures bye overlap: how often 2+ of the team's *usual* top starters share a bye.
+     */
+    function seasonProjectionProfile(entryList) {
+      const weeks = [];
+      for (let w = 1; w <= 17; w++) weeks.push(w);
+
+      // Usual starters = optimal lineup ignoring byes (best 9 skill slots)
+      const baseline = optimalLineupTotalForWeek(entryList, "proj", -1); // -1 = no bye filter
+      // Recompute baseline without bye filter properly
+      const baseAll = optimalLineupTotal(entryList, "proj");
+      const basePlayers = (entryList || [])
+        .filter((e) => ["QB", "RB", "WR", "TE"].indexOf(e.pos) >= 0)
+        .slice()
+        .sort((a, b) => (b.proj || 0) - (a.proj || 0));
+      // Identify top starter set by filling slots once
+      const topStarters = optimalLineupTotalForWeek(entryList, "proj", -999);
+      // With week -999 no one matches bye, same as no filter if bye is 1-18
+
+      let sumExp = 0, sumFloor = 0, sumCeil = 0;
+      let byeOverlapEvents = 0;
+      let worstByeWeekPts = Infinity;
+      let softByeWeeks = 0;
+      const weeklyExp = [];
+
+      for (const w of weeks) {
+        const exp = optimalLineupTotalForWeek(entryList, "proj", w);
+        const fl = optimalLineupTotalForWeek(entryList, "projFloor", w);
+        const ce = optimalLineupTotalForWeek(entryList, "projCeil", w);
+        sumExp += exp.total;
+        sumFloor += fl.total;
+        sumCeil += ce.total;
+        weeklyExp.push(exp.total);
+        if (exp.total < worstByeWeekPts) worstByeWeekPts = exp.total;
+
+        // Overlap: how many of the no-bye optimal starters are on bye this week
+        const baseUsed = optimalLineupTotalForWeek(entryList, "proj", -999).used;
+        let onBye = 0;
+        for (const p of baseUsed) {
+          if (p.bye != null && Number(p.bye) === w) onBye++;
+        }
+        if (onBye >= 2) {
+          byeOverlapEvents++;
+          softByeWeeks += onBye - 1;
+        } else if (onBye === 1) {
+          softByeWeeks += 0.25;
         }
       }
-      const span = Math.max(1, hi.g - lo.g);
-      const t = (g - lo.g) / span;
-      const mix = (a, b) => a + (b - a) * t;
+
+      const n = weeks.length;
       return {
-        actual: mix(lo.actual, hi.actual),
-        expected: mix(lo.expected, hi.expected),
-        value: mix(lo.value, hi.value),
-        ceiling: mix(lo.ceiling, hi.ceiling),
-        floor: mix(lo.floor, hi.floor),
-        depth: mix(lo.depth, hi.depth)
+        expectedPts: sumExp / n,
+        floorPts: sumFloor / n,
+        ceilingPts: sumCeil / n,
+        worstByeWeekPts: worstByeWeekPts === Infinity ? 0 : worstByeWeekPts,
+        byeOverlapEvents,
+        softByeWeeks,
+        weeklyExp
       };
     }
 
+    /**
+     * FantasyPros-style power rankings with bye-aware projections + heavy composition weight.
+     *
+     * FULL FORMULA
+     * ------------
+     * For each team:
+     *
+     * 1) Weekly starter projection (bye-aware)
+     *    For week w = 1..17:
+     *      Lineup_w = optimal legal starters from players with bye ≠ w
+     *                 slots: 1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 SF
+     *      Exp_w    = sum of ESPN projected points (league scoring) on Lineup_w
+     *      Floor_w / Ceil_w use the same lineup with floor/ceiling points
+     *
+     * 2) Season projection averages
+     *    SeasonExp   = mean(Exp_w)
+     *    SeasonFloor = mean(Floor_w)
+     *    SeasonCeil  = mean(Ceil_w)
+     *    WorstBye    = min(Exp_w)
+     *
+     * 3) Bye overlap
+     *    Let BaseStarters = optimal lineup ignoring byes.
+     *    For each week, Overlap_w = count of BaseStarters on bye that week.
+     *    SoftBye = Σ max(0, Overlap_w - 1) + 0.25 × (weeks with exactly 1 starter on bye)
+     *    ByePenaltyPts = SoftBye × 1.8   (points shaved from the projection side)
+     *
+     * 4) Team composition (trade values)
+     *    CompRaw = 0.70 × StarterTradeValue + 0.30 × FullRosterTradeValue
+     *    CompNorm = (CompRaw / max CompRaw in league) × SeasonExp_league_max
+     *    (puts composition on the same points-like scale as SeasonExp)
+     *
+     * 5) Blend weights (composition stays heavy)
+     *    Preseason:   Proj 48% | Composition 40% | Floor 6% | Ceiling 6% | Actual 0%
+     *    In-season:   Actual share rises with games played, up to ~35% by week 17
+     *                 Composition never drops below 28%
+     *                 Projection takes the rest after floor/ceiling slices
+     *
+     *    actualShare = min(0.35, 0.04 + gamesPlayed × 0.02)   // 0 if no games
+     *    compShare   = max(0.28, 0.40 - gamesPlayed × 0.007)
+     *    floorShare  = 0.06
+     *    ceilShare   = 0.05
+     *    projShare   = 1 - actualShare - compShare - floorShare - ceilShare
+     *
+     * 6) Component scores (all on points-like scale)
+     *    ProjScore  = SeasonExp - ByePenaltyPts
+     *    CompScore  = CompNorm
+     *    FloorScore = SeasonFloor
+     *    CeilScore  = SeasonCeil
+     *    ActualScore = (team PPG / league max PPG) × league max SeasonExp
+     *
+     * 7) Power score
+     *    Blended = ProjScore×projShare + CompScore×compShare
+     *            + FloorScore×floorShare + CeilScore×ceilShare
+     *            + ActualScore×actualShare
+     *    totalScore = round( (Blended / maxBlendedInLeague) × 10000 )
+     */
     function finalizePowerScores(models) {
-      const maxRoster = Math.max(...models.map((m) => m.rosterValue || 0), 1);
-      const maxStarter = Math.max(...models.map((m) => m.starterValue || 0), 1);
-      const maxDepth = Math.max(...models.map((m) => m.depthValue || 0), 1);
+      const n = Math.max(models.length, 1);
+      const avgGames = models.reduce((s, m) => s + (m.gamesPlayed || 0), 0) / n;
+      const maxStarterVal = Math.max(...models.map((m) => m.starterValue || 0), 1);
+      const maxRosterVal = Math.max(...models.map((m) => m.rosterValue || 0), 1);
       const maxPpg = Math.max(...models.map((m) => m.ppg || 0), 0);
-      const avgGames = models.reduce((s, m) => s + (m.gamesPlayed || 0), 0) / Math.max(models.length, 1);
 
-      // Fill missing projections from relative starter trade values (preseason-safe fallback)
-      const withProj = models.filter((m) => m.expectedPts != null && m.expectedPts > 1);
-      const avgExp = withProj.length
-        ? withProj.reduce((s, m) => s + m.expectedPts, 0) / withProj.length
-        : 120;
+      // Bye-aware season profiles per team
       models.forEach((m) => {
-        if (m.expectedPts == null || m.expectedPts < 1) {
-          const scale = (m.starterValue || 0) / maxStarter;
-          m.expectedPts = avgExp * (0.75 + 0.5 * scale);
-          m.ceilingPts = m.expectedPts * 1.28;
-          m.floorPts = m.expectedPts * 0.78;
-          m.projFallback = true;
-        } else {
+        const profile = seasonProjectionProfile(m.entries || []);
+        if (profile.expectedPts > 1) {
+          m.expectedPts = profile.expectedPts;
+          m.floorPts = profile.floorPts;
+          m.ceilingPts = profile.ceilingPts;
+          m.worstByeWeekPts = profile.worstByeWeekPts;
+          m.byeOverlapEvents = profile.byeOverlapEvents;
+          m.softByeWeeks = profile.softByeWeeks;
           m.projFallback = false;
+        } else if (m.expectedPts == null || m.expectedPts < 1) {
+          const scale = (m.starterValue || 0) / maxStarterVal;
+          m.expectedPts = 110 * (0.78 + 0.44 * scale);
+          m.ceilingPts = m.expectedPts * 1.32;
+          m.floorPts = m.expectedPts * 0.72;
+          m.worstByeWeekPts = m.expectedPts * 0.85;
+          m.byeOverlapEvents = 0;
+          m.softByeWeeks = 0;
+          m.projFallback = true;
         }
+        m.compRaw = 0.70 * (m.starterValue || 0) + 0.30 * (m.rosterValue || 0);
       });
 
       const maxExp = Math.max(...models.map((m) => m.expectedPts || 0), 1);
-      const maxCeil = Math.max(...models.map((m) => m.ceilingPts || 0), 1);
       const maxFloor = Math.max(...models.map((m) => m.floorPts || 0), 1);
+      const maxCeil = Math.max(...models.map((m) => m.ceilingPts || 0), 1);
+      const maxComp = Math.max(...models.map((m) => m.compRaw || 0), 1);
 
-      return models.map((m) => {
-        const w = powerWeightsForWeek(m.gamesPlayed || avgGames);
-        // Actual production: season PPG primary; slight bump if above league median (proxy for recent form without week logs)
-        const seasonPpgNorm = maxPpg > 0 ? (m.ppg || 0) / maxPpg : 0;
-        const actualNorm = seasonPpgNorm * 10000;
-        const expectedNorm = ((m.expectedPts || 0) / maxExp) * 10000;
-        const valueNorm = ((m.starterValue || 0) / maxStarter) * 0.65 * 10000
-          + ((m.rosterValue || 0) / maxRoster) * 0.35 * 10000;
-        const ceilingNorm = ((m.ceilingPts || 0) / maxCeil) * 10000;
-        const floorNorm = ((m.floorPts || 0) / maxFloor) * 10000;
-        const depthNorm = ((m.depthValue || 0) / maxDepth) * 10000;
+      const games = avgGames;
+      const actualShare = maxPpg > 0 ? Math.min(0.35, 0.04 + games * 0.02) : 0;
+      const compShare = Math.max(0.28, 0.40 - games * 0.007);
+      const floorShare = 0.06;
+      const ceilShare = 0.05;
+      let projShare = 1 - actualShare - compShare - floorShare - ceilShare;
+      if (projShare < 0.20) {
+        // keep projection meaningful
+        const deficit = 0.20 - projShare;
+        projShare = 0.20;
+        // take deficit from actual first, then ceil
+      }
 
-        const totalScore = Math.round(
-          actualNorm * w.actual +
-          expectedNorm * w.expected +
-          valueNorm * w.value +
-          ceilingNorm * w.ceiling +
-          floorNorm * w.floor +
-          depthNorm * w.depth
-        );
+      const scored = models.map((m) => {
+        const byePenalty = (m.softByeWeeks || 0) * 1.8;
+        const projScore = Math.max(0, (m.expectedPts || 0) - byePenalty);
+        const compScore = ((m.compRaw || 0) / maxComp) * maxExp;
+        const floorScore = m.floorPts || 0;
+        const ceilScore = m.ceilingPts || 0;
+        const actualScore = maxPpg > 0 ? ((m.ppg || 0) / maxPpg) * maxExp : 0;
+
+        const blended =
+          projScore * projShare +
+          compScore * compShare +
+          floorScore * floorShare +
+          ceilScore * ceilShare +
+          actualScore * actualShare;
 
         return Object.assign({}, m, {
-          totalScore,
-          weights: w,
-          actualNorm: Math.round(actualNorm),
-          expectedNorm: Math.round(expectedNorm),
-          valueNorm: Math.round(valueNorm),
-          // legacy fields for older UI bits
-          ppgWeight: w.actual,
-          starterWeight: w.expected,
-          rosterWeight: w.value
+          projScore,
+          compScore,
+          byePenalty,
+          blended,
+          actualShare,
+          projShare,
+          compShare,
+          floorShare,
+          ceilShare,
+          weights: {
+            actual: actualShare,
+            expected: projShare,
+            value: compShare,
+            ceiling: ceilShare,
+            floor: floorShare,
+            depth: 0
+          },
+          ppgWeight: actualShare,
+          starterWeight: projShare,
+          rosterWeight: compShare
         });
       });
+
+      const maxBlended = Math.max(...scored.map((m) => m.blended || 0), 1);
+      // FantasyPros-style: #1 team = 100, others relative
+      return scored.map((m) => Object.assign({}, m, {
+        totalScore: Math.round(((m.blended || 0) / maxBlended) * 100)
+      }));
     }
 
     function renderAll(data) {
@@ -3412,124 +3611,92 @@
 
     function renderPowerRankings(models) {
       const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
-      const maxScore = sorted[0]?.totalScore || 1;
+      const teamCount = sorted.length || 10;
       const starterSlots = ["QB", "RB", "WR", "TE", "FLEX", "SF"];
 
-      // Position rank for each team: lower is better
       const posRankByTeam = {};
       for (const pos of POSITIONS) {
-        const order = models
-          .slice()
-          .sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
+        const order = models.slice().sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
         order.forEach((t, i) => {
           if (!posRankByTeam[t.id]) posRankByTeam[t.id] = {};
           posRankByTeam[t.id][pos] = i + 1;
         });
       }
+      const starterRankByTeam = {};
+      for (const slot of starterSlots) {
+        const order = models.slice().sort((a, b) =>
+          (b.starterScores?.[slot] || 0) - (a.starterScores?.[slot] || 0)
+        );
+        order.forEach((team, index) => {
+          if (!starterRankByTeam[team.id]) starterRankByTeam[team.id] = {};
+          starterRankByTeam[team.id][slot] = index + 1;
+        });
+      }
 
       const list = document.getElementById("power-list");
-      list.innerHTML = "";
+      let body = "";
       sorted.forEach((t, i) => {
         const rank = i + 1;
-        const pct = Math.max(4, Math.round((t.totalScore / maxScore) * 100));
-        const ranks = posRankByTeam[t.id] || {};
-
-        const row = document.createElement("div");
-        row.className = "power-row";
-        row.setAttribute("role", "button");
-        row.setAttribute("tabindex", "0");
-        row.setAttribute("aria-expanded", "true");
-        const togglePower = () => {
-          row.classList.toggle("collapsed");
-          row.setAttribute("aria-expanded", String(!row.classList.contains("collapsed")));
-        };
-        row.onclick = togglePower;
-        row.onkeydown = (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            togglePower();
-          }
-        };
-        const teamCount = sorted.length || 10;
-        let chips = "";
-        for (const pos of POSITIONS.filter((position) => position !== "BN")) {
-          const pr = ranks[pos] || null;
-          const pscore = t.posScores[pos] || 0;
-          const color = rankColor(pr, teamCount);
-          const chipTip = pos + " rank #" + (pr != null ? pr : "—") + " of " + teamCount + " · combined FantasyCalc value of all " + pos + "s: " + pscore.toLocaleString();
-          chips +=
-            '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
-            '<div class="pos-chip-label">' + pos + "</div>" +
-            '<div class="pos-chip-rank" style="color:' + color + '">#' + (pr != null ? pr : "—") + "</div>" +
-            '<div class="pos-chip-val">' + pscore.toLocaleString() + "</div>" +
-            "</div>";
-        }
-        const starterRankByTeam = {};
-        for (const slot of starterSlots) {
-          const order = models.slice().sort((a, b) =>
-            (b.starterScores?.[slot] || 0) - (a.starterScores?.[slot] || 0)
-          );
-          order.forEach((team, index) => {
-            if (!starterRankByTeam[team.id]) starterRankByTeam[team.id] = {};
-            starterRankByTeam[team.id][slot] = index + 1;
-          });
-        }
-        let starterChips = "";
-        for (const slot of starterSlots) {
-          const sr = starterRankByTeam[t.id]?.[slot] || null;
-          const starterValue = t.starterScores?.[slot] || 0;
-          const chipTip = slot + " starter rank #" + (sr != null ? sr : "—") +
-            " of " + teamCount + " · starter value: " + starterValue.toLocaleString();
-          starterChips +=
-            '<div class="pos-chip has-tip" data-tip="' + escapeHtml(chipTip) + '" title="' + escapeHtml(chipTip) + '">' +
-            '<div class="pos-chip-label">' + slot + "</div>" +
-            '<div class="pos-chip-rank" style="color:' + rankColor(sr, teamCount) + '">#' + (sr != null ? sr : "—") + "</div>" +
-            '<div class="pos-chip-val">' + starterValue.toLocaleString() + "</div>" +
-            "</div>";
-        }
+        const score = t.totalScore != null ? t.totalScore : 0;
         const recordStr = t.gamesPlayed > 0
           ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
-          : "Preseason · projections + roster value";
-        const w = t.weights || {};
-        const weightNote = t.gamesPlayed > 0
-          ? Math.round((w.actual || 0) * 100) + "% actual · " +
-            Math.round((w.expected || 0) * 100) + "% expected · " +
-            Math.round((w.value || 0) * 100) + "% value"
-          : Math.round((w.expected || 0) * 100) + "% expected · " +
-            Math.round((w.value || 0) * 100) + "% value · " +
-            Math.round((w.ceiling || 0) * 100) + "% ceiling";
-
+          : "Preseason";
         const exp = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         const fl = t.floorPts != null ? t.floorPts.toFixed(1) : "—";
         const ce = t.ceilingPts != null ? t.ceilingPts.toFixed(1) : "—";
-        const avgStr = t.gamesPlayed > 0 ? t.ppg.toFixed(1) : null;
-        const lineScores =
-          '<div class="power-line-scores" title="Optimal lineup: 1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 Superflex. ESPN league scoring.' +
-          (t.projFallback ? ' Projection estimated from trade values.' : '') + '">' +
-          '<span class="sc-exp">Exp <strong>' + exp + "</strong></span>" +
-          '<span class="sc-floor">Floor <strong>' + fl + "</strong></span>" +
-          '<span class="sc-ceil">Ceil <strong>' + ce + "</strong></span>" +
-          (avgStr != null ? '<span class="sc-avg">Avg <strong>' + avgStr + "</strong></span>" : "") +
-          "</div>";
+        const ranks = posRankByTeam[t.id] || {};
 
-        row.innerHTML =
-          '<div class="power-row-top">' +
-            '<div class="power-rank" style="color:' + rankColor(rank, teamCount) + '">' + rank + "</div>" +
-            '<div class="power-team">' +
-              '<div class="power-team-name">' + escapeHtml(t.name) + "</div>" +
-              '<div class="power-team-owner">' + escapeHtml(t.owner) +
-              (weightNote ? " · " + weightNote : "") + "</div>" +
-              '<div class="power-team-meta">' + recordStr + "</div>" +
-              lineScores +
-            "</div>" +
-            '<div class="power-score-wrap" title="Composite power score (0–10,000) using the weighted model above">' +
-              '<div class="power-score">' + t.totalScore.toLocaleString() + "</div>" +
-              '<div class="power-bar"><span style="width:' + pct + '%"></span></div>' +
-            "</div>" +
-          "</div>" +
-          '<div class="pos-breakdown">' + chips + "</div>" +
-          '<div class="starter-breakdown">' + starterChips + "</div>";
-        list.appendChild(row);
+        let chips = "";
+        for (const pos of POSITIONS.filter((p) => p !== "BN")) {
+          const pr = ranks[pos];
+          chips +=
+            '<div class="pos-chip">' +
+            '<div class="pos-chip-label">' + pos + "</div>" +
+            '<div class="pos-chip-rank" style="color:' + rankColor(pr, teamCount) + '">#' + (pr != null ? pr : "—") + "</div>" +
+            "</div>";
+        }
+        let starterChips = "";
+        for (const slot of starterSlots) {
+          const sr = starterRankByTeam[t.id]?.[slot];
+          starterChips +=
+            '<div class="pos-chip">' +
+            '<div class="pos-chip-label">' + slot + "</div>" +
+            '<div class="pos-chip-rank" style="color:' + rankColor(sr, teamCount) + '">#' + (sr != null ? sr : "—") + "</div>" +
+            "</div>";
+        }
+
+        body +=
+          '<tr class="fp-expandable" data-team-id="' + t.id + '">' +
+            '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".</td>" +
+            '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
+              '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr + "</div></td>" +
+            '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
+          "</tr>" +
+          '<tr class="fp-detail-row" hidden data-detail-for="' + t.id + '">' +
+            '<td colspan="3">' +
+              '<div class="power-line-scores">' +
+                '<span class="sc-exp">Starters <strong>' + exp + "</strong></span>" +
+                '<span class="sc-floor">Floor <strong>' + fl + "</strong></span>" +
+                '<span class="sc-ceil">Ceiling <strong>' + ce + "</strong></span>" +
+              "</div>" +
+              '<div class="pos-breakdown" style="margin-top:0.5rem">' + chips + "</div>" +
+              '<div class="starter-breakdown">' + starterChips + "</div>" +
+            "</td>" +
+          "</tr>";
+      });
+
+      list.innerHTML =
+        '<table class="fp-power-table">' +
+          "<thead><tr><th>RK</th><th>Team</th><th class=\"fp-score-col\">Score</th></tr></thead>" +
+          "<tbody>" + body + "</tbody>" +
+        "</table>";
+
+      list.querySelectorAll("tr.fp-expandable").forEach((tr) => {
+        tr.addEventListener("click", () => {
+          const id = tr.getAttribute("data-team-id");
+          const detail = list.querySelector('tr.fp-detail-row[data-detail-for="' + id + '"]');
+          if (detail) detail.hidden = !detail.hidden;
+        });
       });
     }
 
@@ -3872,9 +4039,7 @@
         if (btn.dataset.panel === "odds") setupPlayoffOdds();
         if (btn.dataset.panel === "settings") {
           try {
-            document.querySelectorAll('input[name="valueProvider"]').forEach((el) => {
-              el.checked = el.value === valueProvider;
-            });
+            // FantasyCalc only — no provider radios
             const st = document.getElementById("settings-source-status");
             if (st) st.textContent = "Active: " + valueSourceLabel + (valueLoadNote ? " · " + valueLoadNote : "");
           } catch (e) {}
@@ -3961,7 +4126,10 @@
       });
 
       function syncSettingsUI() {
-        document.querySelectorAll('input[name="valueProvider"]').forEach((el) => {
+        const status = document.getElementById("settings-source-status");
+        if (status) status.textContent = "FantasyCalc · " + (valueLoadNote || "loads with league data");
+        // no provider radios — FantasyCalc only
+        if (false) document.querySelectorAll('input[name="valueProvider"]').forEach((el) => {
           el.checked = el.value === valueProvider;
         });
         const st = document.getElementById("settings-source-status");
@@ -3973,31 +4141,18 @@
 
       const applySettings = document.getElementById("settings-apply");
       if (applySettings) applySettings.addEventListener("click", async () => {
-        const selected = document.querySelector('input[name="valueProvider"]:checked');
-        if (!selected) return;
-        valueProvider = selected.value;
-        try { localStorage.setItem("leagueToolsValueProvider", valueProvider); } catch (e) {}
-        valueSourceLabel = VALUE_PROVIDERS[valueProvider].label;
-        const st = document.getElementById("settings-source-status");
-        if (st) st.textContent = "Loading " + valueSourceLabel + "…";
         applySettings.disabled = true;
+        const status = document.getElementById("settings-source-status");
+        if (status) status.textContent = "Loading FantasyCalc…";
         try {
-          await loadTradeValues(valueProvider);
-          waiverLoaded = false;
-          playoffOddsLoaded = false;
-          if (leagueData) {
-            renderAll(leagueData);
-            fillWaiverTeamSelect();
-          } else {
-            await fetchLeague();
-          }
-          syncSettingsUI();
+          await loadTradeValues();
+          if (leagueData) renderAll(leagueData);
+          if (status) status.textContent = "FantasyCalc · " + (valueLoadNote || "loaded");
         } catch (err) {
           console.error(err);
-          if (st) st.textContent = "Failed to load " + valueSourceLabel + ": " + (err.message || "error");
-        } finally {
-          applySettings.disabled = false;
+          if (status) status.textContent = "Failed: " + (err.message || "error");
         }
+        applySettings.disabled = false;
       });
     } catch (bootErr) {
       console.error(bootErr);
