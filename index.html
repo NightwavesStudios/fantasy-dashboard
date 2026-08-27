@@ -1283,10 +1283,13 @@
   <!-- POWER RANKINGS (includes positional breakdown) -->
   <div class="panel active" id="panel-power">
     <div class="rankings-wrap">
-      <p class="rankings-note">
+            <p class="rankings-note">
         <strong>Power rankings</strong><br>
-        Ordered like FantasyPros: projected optimal starters (bye-aware), FantasyCalc roster strength, floor/ceiling, and actual PPG once games start.
-        Score is relative — the top team is 100.
+        Preseason question: how strong is this roster expected to be over the season?
+        Core is bye-aware optimal starter projections with positional value over replacement (especially important in Superflex),
+        plus depth, FantasyCalc market value (median-normalized), stability, upside, and schedule resilience.
+        Actual PPG is regressed toward projections and only ramps in after games are played.
+        #1 is always 100.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -2320,26 +2323,16 @@
      * Season-long expected / floor / ceiling averaging weekly optimal lineups (bye-aware).
      * Also measures bye overlap: how often 2+ of the team's *usual* top starters share a bye.
      */
+    /**
+     * Season-long bye-aware weekly optimal lineups.
+     * Returns averages, worst week, and weekly series for schedule score.
+     */
     function seasonProjectionProfile(entryList) {
       const weeks = [];
       for (let w = 1; w <= 17; w++) weeks.push(w);
-
-      // Usual starters = optimal lineup ignoring byes (best 9 skill slots)
-      const baseline = optimalLineupTotalForWeek(entryList, "proj", -1); // -1 = no bye filter
-      // Recompute baseline without bye filter properly
-      const baseAll = optimalLineupTotal(entryList, "proj");
-      const basePlayers = (entryList || [])
-        .filter((e) => ["QB", "RB", "WR", "TE"].indexOf(e.pos) >= 0)
-        .slice()
-        .sort((a, b) => (b.proj || 0) - (a.proj || 0));
-      // Identify top starter set by filling slots once
-      const topStarters = optimalLineupTotalForWeek(entryList, "proj", -999);
-      // With week -999 no one matches bye, same as no filter if bye is 1-18
-
       let sumExp = 0, sumFloor = 0, sumCeil = 0;
-      let byeOverlapEvents = 0;
       let worstByeWeekPts = Infinity;
-      let softByeWeeks = 0;
+      let bestWeekPts = -Infinity;
       const weeklyExp = [];
 
       for (const w of weeks) {
@@ -2351,97 +2344,187 @@
         sumCeil += ce.total;
         weeklyExp.push(exp.total);
         if (exp.total < worstByeWeekPts) worstByeWeekPts = exp.total;
-
-        // Overlap: how many of the no-bye optimal starters are on bye this week
-        const baseUsed = optimalLineupTotalForWeek(entryList, "proj", -999).used;
-        let onBye = 0;
-        for (const p of baseUsed) {
-          if (p.bye != null && Number(p.bye) === w) onBye++;
-        }
-        if (onBye >= 2) {
-          byeOverlapEvents++;
-          softByeWeeks += onBye - 1;
-        } else if (onBye === 1) {
-          softByeWeeks += 0.25;
-        }
+        if (exp.total > bestWeekPts) bestWeekPts = exp.total;
       }
-
       const n = weeks.length;
       return {
         expectedPts: sumExp / n,
         floorPts: sumFloor / n,
         ceilingPts: sumCeil / n,
         worstByeWeekPts: worstByeWeekPts === Infinity ? 0 : worstByeWeekPts,
-        byeOverlapEvents,
-        softByeWeeks,
+        bestWeekPts: bestWeekPts < 0 ? 0 : bestWeekPts,
         weeklyExp
       };
     }
 
+    /** League-wide replacement levels from rostered player projections (10-team SF). */
+    function computeReplacementLevels(models) {
+      const byPos = { QB: [], RB: [], WR: [], TE: [] };
+      for (const m of models) {
+        for (const e of m.entries || []) {
+          if (byPos[e.pos]) byPos[e.pos].push(e.proj || 0);
+        }
+      }
+      // Sort descending; replacement ≈ last starter-ish player in a 10-team SF pool
+      // QB: ~12th (SF starts ~2/team), RB ~24, WR ~36, TE ~12
+      const pick = (arr, idx) => {
+        const s = arr.slice().sort((a, b) => b - a);
+        if (!s.length) return 0;
+        const i = Math.min(idx - 1, s.length - 1);
+        return Math.max(0, s[Math.max(0, i)]);
+      };
+      return {
+        QB: pick(byPos.QB, 12),
+        RB: pick(byPos.RB, 24),
+        WR: pick(byPos.WR, 36),
+        TE: pick(byPos.TE, 12)
+      };
+    }
+
+    function playerVorp(entry, repl) {
+      const p = entry.proj || 0;
+      const r = repl[entry.pos] != null ? repl[entry.pos] : 0;
+      return Math.max(0, p - r);
+    }
+
+    /** Depth: value of next-tier players after optimal starters (bye-ignored baseline). */
+    function computeDepthScore(entryList, repl) {
+      const baseline = optimalLineupTotalForWeek(entryList, "proj", -999);
+      const starterIds = new Set((baseline.used || []).map((e) => e.id));
+      const leftovers = (entryList || [])
+        .filter((e) => ["QB", "RB", "WR", "TE"].indexOf(e.pos) >= 0 && !starterIds.has(e.id))
+        .slice()
+        .sort((a, b) => (b.proj || 0) - (a.proj || 0));
+
+      // Count depth slots we care about
+      const depthNeed = { QB: 2, RB: 2, WR: 3, TE: 1 }; // beyond starters
+      const taken = { QB: 0, RB: 0, WR: 0, TE: 0 };
+      let depthPts = 0;
+      let depthVorp = 0;
+      for (const e of leftovers) {
+        if (taken[e.pos] >= depthNeed[e.pos]) continue;
+        taken[e.pos]++;
+        depthPts += e.proj || 0;
+        depthVorp += playerVorp(e, repl);
+      }
+      // Fill SF-style QB depth more if still empty
+      return { depthPts, depthVorp, taken };
+    }
+
+    /** Positional grade from starter ranks / VORP share. */
+    function posGradeLabel(rank, teamCount) {
+      if (rank == null) return "—";
+      const pct = rank / teamCount;
+      if (pct <= 0.15) return "Elite";
+      if (pct <= 0.35) return "Good";
+      if (pct <= 0.55) return "Average";
+      if (pct <= 0.75) return "Below";
+      return "Weak";
+    }
+
+    function riskLabel(stabilityRatio) {
+      if (stabilityRatio >= 0.82) return "Low";
+      if (stabilityRatio >= 0.72) return "Medium";
+      return "High";
+    }
+
+    function depthLabel(norm) {
+      if (norm >= 0.85) return "Elite";
+      if (norm >= 0.65) return "Good";
+      if (norm >= 0.45) return "Average";
+      if (norm >= 0.25) return "Thin";
+      return "Weak";
+    }
+
     /**
-     * FantasyPros-style power rankings with bye-aware projections + heavy composition weight.
+     * Weight schedule by games played (league average).
+     * Preseason → late season shift from projection to regressed actual.
+     */
+    function powerWeightSchedule(games) {
+      const g = Math.max(0, Math.min(17, games || 0));
+      // anchors: g, starter, depth, market, stability, upside, schedule, actual
+      const anchors = [
+        { g: 0,  starter: 0.50, depth: 0.15, market: 0.10, stability: 0.10, upside: 0.10, schedule: 0.05, actual: 0.00 },
+        { g: 2,  starter: 0.47, depth: 0.15, market: 0.09, stability: 0.10, upside: 0.09, schedule: 0.05, actual: 0.05 },
+        { g: 4,  starter: 0.42, depth: 0.15, market: 0.08, stability: 0.10, upside: 0.08, schedule: 0.05, actual: 0.12 },
+        { g: 6,  starter: 0.37, depth: 0.15, market: 0.07, stability: 0.09, upside: 0.07, schedule: 0.05, actual: 0.20 },
+        { g: 8,  starter: 0.32, depth: 0.15, market: 0.06, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.27 },
+        { g: 10, starter: 0.27, depth: 0.15, market: 0.05, stability: 0.08, upside: 0.07, schedule: 0.05, actual: 0.33 },
+        { g: 12, starter: 0.22, depth: 0.15, market: 0.04, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.40 },
+        { g: 17, starter: 0.18, depth: 0.15, market: 0.03, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.45 }
+      ];
+      let lo = anchors[0], hi = anchors[anchors.length - 1];
+      for (let i = 0; i < anchors.length - 1; i++) {
+        if (g >= anchors[i].g && g <= anchors[i + 1].g) {
+          lo = anchors[i];
+          hi = anchors[i + 1];
+          break;
+        }
+      }
+      const span = Math.max(1e-6, hi.g - lo.g);
+      const t = (g - lo.g) / span;
+      const mix = (a, b) => a + (b - a) * t;
+      const w = {
+        starter: mix(lo.starter, hi.starter),
+        depth: mix(lo.depth, hi.depth),
+        market: mix(lo.market, hi.market),
+        stability: mix(lo.stability, hi.stability),
+        upside: mix(lo.upside, hi.upside),
+        schedule: mix(lo.schedule, hi.schedule),
+        actual: mix(lo.actual, hi.actual)
+      };
+      // normalize in case of float drift
+      const sum = w.starter + w.depth + w.market + w.stability + w.upside + w.schedule + w.actual;
+      Object.keys(w).forEach((k) => { w[k] = w[k] / sum; });
+      return w;
+    }
+
+    /** Confidence that actual PPG is trustworthy. */
+    function actualConfidence(games) {
+      const table = [
+        [0, 0], [1, 0.10], [2, 0.18], [3, 0.25], [4, 0.32],
+        [5, 0.38], [6, 0.44], [8, 0.55], [10, 0.65], [12, 0.75], [17, 0.85]
+      ];
+      const g = Math.max(0, games || 0);
+      for (let i = 0; i < table.length - 1; i++) {
+        if (g >= table[i][0] && g <= table[i + 1][0]) {
+          const span = table[i + 1][0] - table[i][0];
+          const t = span ? (g - table[i][0]) / span : 0;
+          return table[i][1] + (table[i + 1][1] - table[i][1]) * t;
+        }
+      }
+      return table[table.length - 1][1];
+    }
+
+    function median(arr) {
+      const s = arr.slice().sort((a, b) => a - b);
+      if (!s.length) return 0;
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+
+    /**
+     * NEW POWER MODEL
+     * ---------------
+     * Preseason (games=0):
+     *   50% Starter strength (60% expected pts + 20% positional VORP + 10% floor + 10% ceiling)
+     *   15% Depth / replacement strength
+     *   10% FantasyCalc market (median-normalized, 70% starter / 30% roster)
+     *   10% Stability (floor/expected)
+     *   10% Upside (ceiling/expected)
+     *    5% Schedule (70% avg week + 30% worst week)
      *
-     * FULL FORMULA
-     * ------------
-     * For each team:
-     *
-     * 1) Weekly starter projection (bye-aware)
-     *    For week w = 1..17:
-     *      Lineup_w = optimal legal starters from players with bye ≠ w
-     *                 slots: 1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 SF
-     *      Exp_w    = sum of ESPN projected points (league scoring) on Lineup_w
-     *      Floor_w / Ceil_w use the same lineup with floor/ceiling points
-     *
-     * 2) Season projection averages
-     *    SeasonExp   = mean(Exp_w)
-     *    SeasonFloor = mean(Floor_w)
-     *    SeasonCeil  = mean(Ceil_w)
-     *    WorstBye    = min(Exp_w)
-     *
-     * 3) Bye overlap
-     *    Let BaseStarters = optimal lineup ignoring byes.
-     *    For each week, Overlap_w = count of BaseStarters on bye that week.
-     *    SoftBye = Σ max(0, Overlap_w - 1) + 0.25 × (weeks with exactly 1 starter on bye)
-     *    ByePenaltyPts = SoftBye × 1.8   (points shaved from the projection side)
-     *
-     * 4) Team composition (trade values)
-     *    CompRaw = 0.70 × StarterTradeValue + 0.30 × FullRosterTradeValue
-     *    CompNorm = (CompRaw / max CompRaw in league) × SeasonExp_league_max
-     *    (puts composition on the same points-like scale as SeasonExp)
-     *
-     * 5) Blend weights (composition stays heavy)
-     *    Preseason:   Proj 48% | Composition 40% | Floor 6% | Ceiling 6% | Actual 0%
-     *    In-season:   Actual share rises with games played, up to ~35% by week 17
-     *                 Composition never drops below 28%
-     *                 Projection takes the rest after floor/ceiling slices
-     *
-     *    actualShare = min(0.35, 0.04 + gamesPlayed × 0.02)   // 0 if no games
-     *    compShare   = max(0.28, 0.40 - gamesPlayed × 0.007)
-     *    floorShare  = 0.06
-     *    ceilShare   = 0.05
-     *    projShare   = 1 - actualShare - compShare - floorShare - ceilShare
-     *
-     * 6) Component scores (all on points-like scale)
-     *    ProjScore  = SeasonExp - ByePenaltyPts
-     *    CompScore  = CompNorm
-     *    FloorScore = SeasonFloor
-     *    CeilScore  = SeasonCeil
-     *    ActualScore = (team PPG / league max PPG) × league max SeasonExp
-     *
-     * 7) Power score
-     *    Blended = ProjScore×projShare + CompScore×compShare
-     *            + FloorScore×floorShare + CeilScore×ceilShare
-     *            + ActualScore×actualShare
-     *    totalScore = round( (Blended / maxBlendedInLeague) × 10000 )
+     * In-season: weights shift toward regressed actual PPG per powerWeightSchedule.
+     * Final: Score = Raw / max(Raw) × 100  (#1 = 100)
      */
     function finalizePowerScores(models) {
       const n = Math.max(models.length, 1);
       const avgGames = models.reduce((s, m) => s + (m.gamesPlayed || 0), 0) / n;
       const maxStarterVal = Math.max(...models.map((m) => m.starterValue || 0), 1);
-      const maxRosterVal = Math.max(...models.map((m) => m.rosterValue || 0), 1);
-      const maxPpg = Math.max(...models.map((m) => m.ppg || 0), 0);
+      const repl = computeReplacementLevels(models);
+      const w = powerWeightSchedule(avgGames);
 
-      // Bye-aware season profiles per team
+      // Profiles + components per team
       models.forEach((m) => {
         const profile = seasonProjectionProfile(m.entries || []);
         if (profile.expectedPts > 1) {
@@ -2449,83 +2532,119 @@
           m.floorPts = profile.floorPts;
           m.ceilingPts = profile.ceilingPts;
           m.worstByeWeekPts = profile.worstByeWeekPts;
-          m.byeOverlapEvents = profile.byeOverlapEvents;
-          m.softByeWeeks = profile.softByeWeeks;
+          m.bestWeekPts = profile.bestWeekPts;
+          m.weeklyExp = profile.weeklyExp;
           m.projFallback = false;
-        } else if (m.expectedPts == null || m.expectedPts < 1) {
+        } else {
           const scale = (m.starterValue || 0) / maxStarterVal;
-          m.expectedPts = 110 * (0.78 + 0.44 * scale);
+          m.expectedPts = 115 * (0.78 + 0.44 * scale);
           m.ceilingPts = m.expectedPts * 1.32;
           m.floorPts = m.expectedPts * 0.72;
-          m.worstByeWeekPts = m.expectedPts * 0.85;
-          m.byeOverlapEvents = 0;
-          m.softByeWeeks = 0;
+          m.worstByeWeekPts = m.expectedPts * 0.88;
+          m.bestWeekPts = m.expectedPts * 1.08;
+          m.weeklyExp = [];
           m.projFallback = true;
         }
+
+        // Positional VORP of baseline (no-bye) optimal lineup
+        const baseLineup = optimalLineupTotalForWeek(m.entries || [], "proj", -999);
+        let vorpSum = 0;
+        (baseLineup.used || []).forEach((e) => { vorpSum += playerVorp(e, repl); });
+        m.starterVorp = vorpSum;
+
+        const depth = computeDepthScore(m.entries || [], repl);
+        m.depthPts = depth.depthPts;
+        m.depthVorp = depth.depthVorp;
+
         m.compRaw = 0.70 * (m.starterValue || 0) + 0.30 * (m.rosterValue || 0);
+
+        const exp = Math.max(m.expectedPts, 1e-6);
+        m.stabilityRatio = Math.min(1.2, Math.max(0, (m.floorPts || 0) / exp));
+        m.upsideRatio = Math.min(2.0, Math.max(0, (m.ceilingPts || 0) / exp));
       });
 
+      const medComp = median(models.map((m) => m.compRaw || 0)) || 1;
       const maxExp = Math.max(...models.map((m) => m.expectedPts || 0), 1);
+      const maxVorp = Math.max(...models.map((m) => m.starterVorp || 0), 1);
       const maxFloor = Math.max(...models.map((m) => m.floorPts || 0), 1);
       const maxCeil = Math.max(...models.map((m) => m.ceilingPts || 0), 1);
-      const maxComp = Math.max(...models.map((m) => m.compRaw || 0), 1);
-
-      const games = avgGames;
-      const actualShare = maxPpg > 0 ? Math.min(0.35, 0.04 + games * 0.02) : 0;
-      const compShare = Math.max(0.28, 0.40 - games * 0.007);
-      const floorShare = 0.06;
-      const ceilShare = 0.05;
-      let projShare = 1 - actualShare - compShare - floorShare - ceilShare;
-      if (projShare < 0.20) {
-        // keep projection meaningful
-        const deficit = 0.20 - projShare;
-        projShare = 0.20;
-        // take deficit from actual first, then ceil
-      }
+      const maxDepth = Math.max(...models.map((m) => (m.depthPts || 0) + (m.depthVorp || 0)), 1);
+      const maxPpg = Math.max(...models.map((m) => m.ppg || 0), 0);
+      const avgExp = models.reduce((s, m) => s + (m.expectedPts || 0), 0) / n;
 
       const scored = models.map((m) => {
-        const byePenalty = (m.softByeWeeks || 0) * 1.8;
-        const projScore = Math.max(0, (m.expectedPts || 0) - byePenalty);
-        const compScore = ((m.compRaw || 0) / maxComp) * maxExp;
-        const floorScore = m.floorPts || 0;
-        const ceilScore = m.ceilingPts || 0;
-        const actualScore = maxPpg > 0 ? ((m.ppg || 0) / maxPpg) * maxExp : 0;
+        // --- Starter strength (internal mix) ---
+        const expN = (m.expectedPts || 0) / maxExp;
+        const vorpN = (m.starterVorp || 0) / maxVorp;
+        const floorN = (m.floorPts || 0) / maxFloor;
+        const ceilN = (m.ceilingPts || 0) / maxCeil;
+        const starterScore = 0.60 * expN + 0.20 * vorpN + 0.10 * floorN + 0.10 * ceilN;
 
-        const blended =
-          projScore * projShare +
-          compScore * compShare +
-          floorScore * floorShare +
-          ceilScore * ceilShare +
-          actualScore * actualShare;
+        // --- Depth ---
+        const depthScore = ((m.depthPts || 0) + (m.depthVorp || 0)) / maxDepth;
+
+        // --- Market (median-normalized, capped) ---
+        // Relative to median so one outlier doesn't dominate
+        let marketRel = (m.compRaw || 0) / medComp;
+        marketRel = Math.min(1.35, Math.max(0.65, marketRel)); // soft cap
+        // map around 1.0 → 0–1-ish relative to league max of capped values
+        const marketScore = (marketRel - 0.65) / (1.35 - 0.65);
+
+        // --- Stability & upside (ratios as quality metrics, then norm in league) ---
+        const stabilityScore = m.stabilityRatio; // already ~0.6–1.0
+        const upsideScore = Math.min(1.4, m.upsideRatio) / 1.4;
+
+        // --- Schedule: 70% average week + 30% worst week (both already in profile) ---
+        const avgWeek = m.expectedPts || 0;
+        const worstWeek = m.worstByeWeekPts != null ? m.worstByeWeekPts : avgWeek;
+        const scheduleRaw = 0.70 * avgWeek + 0.30 * worstWeek;
+        // Will normalize across teams below — store raw for now
+        m._scheduleRaw = scheduleRaw;
+
+        // --- Regressed actual ---
+        const conf = actualConfidence(m.gamesPlayed || 0);
+        const projectedPpg = m.expectedPts || avgExp;
+        const actualPpg = m.ppg || 0;
+        const adjustedPpg = actualPpg * conf + projectedPpg * (1 - conf);
+        m.adjustedPpg = adjustedPpg;
+        m.actualConf = conf;
 
         return Object.assign({}, m, {
-          projScore,
-          compScore,
-          byePenalty,
-          blended,
-          actualShare,
-          projShare,
-          compShare,
-          floorShare,
-          ceilShare,
-          weights: {
-            actual: actualShare,
-            expected: projShare,
-            value: compShare,
-            ceiling: ceilShare,
-            floor: floorShare,
-            depth: 0
-          },
-          ppgWeight: actualShare,
-          starterWeight: projShare,
-          rosterWeight: compShare
+          starterScore,
+          depthScore,
+          marketScore,
+          stabilityScore,
+          upsideScore,
+          adjustedPpg
         });
       });
 
-      const maxBlended = Math.max(...scored.map((m) => m.blended || 0), 1);
-      // FantasyPros-style: #1 team = 100, others relative
+      const maxSched = Math.max(...scored.map((m) => m._scheduleRaw || 0), 1);
+      const maxAdj = Math.max(...scored.map((m) => m.adjustedPpg || 0), 1);
+
+      scored.forEach((m) => {
+        m.scheduleScore = (m._scheduleRaw || 0) / maxSched;
+        m.actualScore = maxAdj > 0 ? (m.adjustedPpg || 0) / maxAdj : 0;
+
+        m.rawPower =
+          w.starter * m.starterScore +
+          w.depth * m.depthScore +
+          w.market * m.marketScore +
+          w.stability * m.stabilityScore +
+          w.upside * m.upsideScore +
+          w.schedule * m.scheduleScore +
+          w.actual * m.actualScore;
+
+        m.weights = w;
+        m.projShare = w.starter;
+        m.compShare = w.market;
+        m.actualShare = w.actual;
+      });
+
+      const maxRaw = Math.max(...scored.map((m) => m.rawPower || 0), 1e-9);
       return scored.map((m) => Object.assign({}, m, {
-        totalScore: Math.round(((m.blended || 0) / maxBlended) * 100)
+        totalScore: Math.round(((m.rawPower || 0) / maxRaw) * 1000) / 10, // one decimal, #1 = 100.0
+        depthNorm: m.depthScore
       }));
     }
 
@@ -3637,7 +3756,7 @@
       let body = "";
       sorted.forEach((t, i) => {
         const rank = i + 1;
-        const score = t.totalScore != null ? t.totalScore : 0;
+        const score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
         const recordStr = t.gamesPlayed > 0
           ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
           : "Preseason";
@@ -3645,6 +3764,12 @@
         const fl = t.floorPts != null ? t.floorPts.toFixed(1) : "—";
         const ce = t.ceilingPts != null ? t.ceilingPts.toFixed(1) : "—";
         const ranks = posRankByTeam[t.id] || {};
+        const depthTxt = depthLabel(t.depthNorm || 0);
+        const riskTxt = riskLabel(t.stabilityRatio || 0.75);
+        const qbG = posGradeLabel(ranks.QB, teamCount);
+        const rbG = posGradeLabel(ranks.RB, teamCount);
+        const wrG = posGradeLabel(ranks.WR, teamCount);
+        const teG = posGradeLabel(ranks.TE, teamCount);
 
         let chips = "";
         for (const pos of POSITIONS.filter((p) => p !== "BN")) {
@@ -3653,6 +3778,7 @@
             '<div class="pos-chip">' +
             '<div class="pos-chip-label">' + pos + "</div>" +
             '<div class="pos-chip-rank" style="color:' + rankColor(pr, teamCount) + '">#' + (pr != null ? pr : "—") + "</div>" +
+            '<div class="pos-chip-val">' + posGradeLabel(pr, teamCount) + "</div>" +
             "</div>";
         }
         let starterChips = "";
@@ -3665,21 +3791,23 @@
             "</div>";
         }
 
+        const summary =
+          "Projected " + exp + " · Depth " + depthTxt +
+          " · Floor " + fl + " · Ceiling " + ce +
+          " · Risk " + riskTxt;
+
         body +=
           '<tr class="fp-expandable" data-team-id="' + t.id + '">' +
             '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".</td>" +
             '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
-              '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr + "</div></td>" +
+              '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr + "</div>" +
+              '<div class="fp-team-sub">' + summary + "</div>" +
+              '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG + "</div></td>" +
             '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
           "</tr>" +
           '<tr class="fp-detail-row" hidden data-detail-for="' + t.id + '">' +
             '<td colspan="3">' +
-              '<div class="power-line-scores">' +
-                '<span class="sc-exp">Starters <strong>' + exp + "</strong></span>" +
-                '<span class="sc-floor">Floor <strong>' + fl + "</strong></span>" +
-                '<span class="sc-ceil">Ceiling <strong>' + ce + "</strong></span>" +
-              "</div>" +
-              '<div class="pos-breakdown" style="margin-top:0.5rem">' + chips + "</div>" +
+              '<div class="pos-breakdown">' + chips + "</div>" +
               '<div class="starter-breakdown">' + starterChips + "</div>" +
             "</td>" +
           "</tr>";
