@@ -363,6 +363,77 @@
     }
     .fp-power-table tr.fp-expandable { cursor: pointer; }
     .fp-power-table tr.fp-expandable:hover td { background: var(--surface-2); }
+
+    .fp-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+    @media (max-width: 720px) {
+      .fp-detail-grid { grid-template-columns: 1fr; }
+    }
+    .fp-detail-block h5 {
+      margin: 0 0 0.4rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .fp-metric-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      padding: 0.2rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .fp-metric-row:last-child { border-bottom: none; }
+    .fp-metric-row span:last-child {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+    }
+    .fp-starter-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 0.8rem;
+    }
+    .fp-starter-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.18rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .fp-starter-list li:last-child { border-bottom: none; }
+    .fp-starter-pos {
+      width: 2.2rem;
+      flex-shrink: 0;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .fp-starter-name { flex: 1; min-width: 0; }
+    .fp-starter-pts {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+    }
+    .fp-weight-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      overflow: hidden;
+      margin-top: 0.15rem;
+    }
+    .fp-weight-bar > span {
+      display: block;
+      height: 100%;
+      background: #60a5fa;
+      border-radius: 999px;
+    }
+
     .fp-detail-row td {
       padding: 0 0.75rem 0.85rem;
       background: var(--surface-2);
@@ -878,6 +949,46 @@
     .odds-table th:first-child, .odds-table td:first-child { text-align: left; }
     .odds-table td { text-align: right; font-variant-numeric: tabular-nums; }
     .odds-table tr:last-child td { border-bottom: none; }
+
+    .odds-table tr.odds-expandable { cursor: pointer; }
+    .odds-table tr.odds-expandable:hover td { background: var(--surface-2); }
+    .odds-detail-row td {
+      text-align: left !important;
+      white-space: normal;
+      background: var(--surface-2);
+      padding: 0.75rem;
+    }
+    .odds-detail-row[hidden] { display: none; }
+    .odds-week-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 0.35rem;
+    }
+    .odds-week-table th {
+      text-align: left;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      padding: 0.3rem 0.4rem;
+      border-bottom: 1px solid var(--border-subtle);
+      background: transparent;
+      text-transform: uppercase;
+    }
+    .odds-week-table td {
+      text-align: left !important;
+      padding: 0.3rem 0.4rem;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    .odds-week-table td.num { text-align: right !important; font-variant-numeric: tabular-nums; }
+    .odds-summary {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+
+
     .odds-team { font-weight: 600; }
     .odds-muted { color: var(--text-muted); font-size: 0.75rem; }
     .odds-status { margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.8125rem; }
@@ -1445,10 +1556,8 @@
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
       <p class="rankings-note">
-        Walks each team’s remaining ESPN schedule week by week. Every week uses that team’s optimal lineup
-        with bye players removed (1 QB, 2 RB, 2 WR, 1 TE, 2 FLEX, 1 SF) and ESPN projections in league scoring.
-        Thousands of Monte Carlo sims draw weekly scores from those means, resolve H2H matchups and vs-median,
-        then play out the postseason. Projected record is the median final W–L across sims.
+        Click a team for week-by-week H2H win rates (wins out of all sims) and projected lineup scores.
+        Scores use bye-aware optimal lineups; each sim draws from those means, plays ESPN H2H plus a top-5-scorers win / bottom-5 loss, then the playoffs.
       </p>
       <div class="odds-status" id="odds-status">Select Playoff Odds to load ESPN settings and run simulations.</div>
       <div class="odds-table-wrap">
@@ -1475,10 +1584,9 @@
             <p class="rankings-note">
         <strong>Power rankings</strong><br>
         Preseason question: how strong is this roster expected to be over the season?
-        Core is bye-aware starter projections with Superflex VORP, plus FantasyCalc market value (weighted toward starters),
-        depth, stability, upside, and bye/schedule resilience.
-        Actual PPG is regressed toward projections and only ramps in after games are played.
-        #1 is always 100.
+        Shared weekly projection engine: each week’s optimal lineup (bye-aware) from ESPN.
+        Power rankings summarize the full 17-week curve (mean, median, best, worst, volatility), plus depth, VORP, FantasyCalc, stability, and upside.
+        Playoff odds use the same weekly μ/σ to simulate the season and postseason week by week. #1 is always 100.
       </p>
       <div id="power-list" class="power-list"></div>
     </div>
@@ -2461,35 +2569,79 @@
      * Season-long bye-aware weekly optimal lineups.
      * Returns averages, worst week, and weekly series for schedule score.
      */
-    function seasonProjectionProfile(entryList) {
+    /**
+     * Shared weekly team-strength engine.
+     * For each week 1..17: optimal bye-aware lineup → μ, floor, ceil, σ.
+     * Used by both power rankings (summarize curve) and playoff odds (simulate week-by-week).
+     */
+    function buildWeeklyTeamModel(entryList, options) {
       const weeks = [];
       for (let w = 1; w <= 17; w++) weeks.push(w);
-      let sumExp = 0, sumFloor = 0, sumCeil = 0;
-      let worstByeWeekPts = Infinity;
-      let bestWeekPts = -Infinity;
+      const byWeek = {};
       const weeklyExp = [];
+      const weeklyFloor = [];
+      const weeklyCeil = [];
 
       for (const w of weeks) {
         const exp = optimalLineupTotalForWeek(entryList, "proj", w);
         const fl = optimalLineupTotalForWeek(entryList, "projFloor", w);
         const ce = optimalLineupTotalForWeek(entryList, "projCeil", w);
-        sumExp += exp.total;
-        sumFloor += fl.total;
-        sumCeil += ce.total;
-        weeklyExp.push(exp.total);
-        if (exp.total < worstByeWeekPts) worstByeWeekPts = exp.total;
-        if (exp.total > bestWeekPts) bestWeekPts = exp.total;
+        const mu = exp.total;
+        // σ from floor/ceiling; full Superflex lineups are noisy week to week
+        let sigma = 22;
+        if (ce.total > fl.total) {
+          sigma = (ce.total - fl.total) / 3.2;
+          sigma = Math.max(18, Math.min(36, sigma));
+        }
+        byWeek[w] = {
+          mu,
+          floor: fl.total,
+          ceil: ce.total,
+          sigma,
+          used: exp.used || []
+        };
+        weeklyExp.push(mu);
+        weeklyFloor.push(fl.total);
+        weeklyCeil.push(ce.total);
       }
-      const n = weeks.length;
+
+      const mean = (arr) => arr.reduce((s, x) => s + x, 0) / Math.max(arr.length, 1);
+      const sorted = weeklyExp.slice().sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const medianExp = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      const meanExp = mean(weeklyExp);
+      const worstExp = Math.min(...weeklyExp);
+      const bestExp = Math.max(...weeklyExp);
+      const meanFloor = mean(weeklyFloor);
+      const meanCeil = mean(weeklyCeil);
+      // sample SD of weekly means
+      let variance = 0;
+      weeklyExp.forEach((x) => { variance += (x - meanExp) * (x - meanExp); });
+      const vol = Math.sqrt(variance / Math.max(weeklyExp.length - 1, 1));
+
       return {
-        expectedPts: sumExp / n,
-        floorPts: sumFloor / n,
-        ceilingPts: sumCeil / n,
-        worstByeWeekPts: worstByeWeekPts === Infinity ? 0 : worstByeWeekPts,
-        bestWeekPts: bestWeekPts < 0 ? 0 : bestWeekPts,
-        weeklyExp
+        byWeek,
+        weeklyExp,
+        meanExp,
+        medianExp,
+        worstExp,
+        bestExp,
+        meanFloor,
+        meanCeil,
+        volatility: vol,
+        // aliases used elsewhere
+        expectedPts: meanExp,
+        floorPts: meanFloor,
+        ceilingPts: meanCeil,
+        worstByeWeekPts: worstExp,
+        bestWeekPts: bestExp
       };
     }
+
+    function seasonProjectionProfile(entryList) {
+      return buildWeeklyTeamModel(entryList);
+    }
+
 
     /** League-wide replacement levels from rostered player projections (10-team SF). */
     function computeReplacementLevels(models) {
@@ -2588,15 +2740,15 @@
       const g = Math.max(0, Math.min(17, games || 0));
       // anchors: g, starter, depth, market, stability, upside, schedule, actual
       const anchors = [
-        // Preseason leans more on FantasyCalc market + positional VORP (SF) so ranks track consensus boards
-        { g: 0,  starter: 0.48, depth: 0.06, market: 0.22, stability: 0.08, upside: 0.08, schedule: 0.08, actual: 0.00 },
-        { g: 2,  starter: 0.45, depth: 0.06, market: 0.20, stability: 0.08, upside: 0.08, schedule: 0.07, actual: 0.06 },
-        { g: 4,  starter: 0.42, depth: 0.07, market: 0.17, stability: 0.08, upside: 0.07, schedule: 0.06, actual: 0.13 },
-        { g: 6,  starter: 0.38, depth: 0.07, market: 0.14, stability: 0.08, upside: 0.07, schedule: 0.06, actual: 0.20 },
-        { g: 8,  starter: 0.34, depth: 0.08, market: 0.12, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.27 },
-        { g: 10, starter: 0.30, depth: 0.08, market: 0.10, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.33 },
-        { g: 12, starter: 0.26, depth: 0.08, market: 0.08, stability: 0.07, upside: 0.07, schedule: 0.05, actual: 0.39 },
-        { g: 17, starter: 0.22, depth: 0.08, market: 0.06, stability: 0.06, upside: 0.06, schedule: 0.05, actual: 0.47 }
+        // starter = weekly strength curve; consistency = low SD of weekly exp
+        { g: 0,  starter: 0.50, depth: 0.12, market: 0.08, stability: 0.08, upside: 0.07, schedule: 0.00, consistency: 0.05, scarcity: 0.10, actual: 0.00 },
+        { g: 2,  starter: 0.46, depth: 0.12, market: 0.07, stability: 0.08, upside: 0.07, schedule: 0.00, consistency: 0.05, scarcity: 0.09, actual: 0.06 },
+        { g: 4,  starter: 0.42, depth: 0.11, market: 0.07, stability: 0.07, upside: 0.06, schedule: 0.00, consistency: 0.05, scarcity: 0.08, actual: 0.14 },
+        { g: 6,  starter: 0.38, depth: 0.11, market: 0.06, stability: 0.07, upside: 0.06, schedule: 0.00, consistency: 0.05, scarcity: 0.07, actual: 0.20 },
+        { g: 8,  starter: 0.34, depth: 0.10, market: 0.06, stability: 0.06, upside: 0.06, schedule: 0.00, consistency: 0.05, scarcity: 0.06, actual: 0.27 },
+        { g: 10, starter: 0.30, depth: 0.10, market: 0.05, stability: 0.06, upside: 0.05, schedule: 0.00, consistency: 0.04, scarcity: 0.05, actual: 0.35 },
+        { g: 12, starter: 0.26, depth: 0.09, market: 0.05, stability: 0.05, upside: 0.05, schedule: 0.00, consistency: 0.04, scarcity: 0.04, actual: 0.42 },
+        { g: 17, starter: 0.22, depth: 0.08, market: 0.04, stability: 0.05, upside: 0.05, schedule: 0.00, consistency: 0.04, scarcity: 0.03, actual: 0.49 }
       ];
       let lo = anchors[0], hi = anchors[anchors.length - 1];
       for (let i = 0; i < anchors.length - 1; i++) {
@@ -2615,11 +2767,12 @@
         market: mix(lo.market, hi.market),
         stability: mix(lo.stability, hi.stability),
         upside: mix(lo.upside, hi.upside),
-        schedule: mix(lo.schedule, hi.schedule),
+        schedule: mix(lo.schedule || 0, hi.schedule || 0),
+        consistency: mix(lo.consistency || 0, hi.consistency || 0),
+        scarcity: mix(lo.scarcity || 0, hi.scarcity || 0),
         actual: mix(lo.actual, hi.actual)
       };
-      // normalize in case of float drift
-      const sum = w.starter + w.depth + w.market + w.stability + w.upside + w.schedule + w.actual;
+      const sum = Object.keys(w).reduce((s, k) => s + w[k], 0) || 1;
       Object.keys(w).forEach((k) => { w[k] = w[k] / sum; });
       return w;
     }
@@ -2669,29 +2822,37 @@
       const repl = computeReplacementLevels(models);
       const w = powerWeightSchedule(avgGames);
 
-      // Profiles + components per team
+      // Attach shared weekly models
       models.forEach((m) => {
-        const profile = seasonProjectionProfile(m.entries || []);
-        if (profile.expectedPts > 1) {
-          m.expectedPts = profile.expectedPts;
-          m.floorPts = profile.floorPts;
-          m.ceilingPts = profile.ceilingPts;
-          m.worstByeWeekPts = profile.worstByeWeekPts;
-          m.bestWeekPts = profile.bestWeekPts;
-          m.weeklyExp = profile.weeklyExp;
-          m.projFallback = false;
+        const wm = buildWeeklyTeamModel(m.entries || []);
+        if (wm.meanExp > 1) {
+          Object.assign(m, {
+            weeklyModel: wm,
+            expectedPts: wm.meanExp,
+            medianExp: wm.medianExp,
+            floorPts: wm.meanFloor,
+            ceilingPts: wm.meanCeil,
+            worstByeWeekPts: wm.worstExp,
+            bestWeekPts: wm.bestExp,
+            weeklyExp: wm.weeklyExp,
+            weeklyVol: wm.volatility,
+            projFallback: false
+          });
         } else {
           const scale = (m.starterValue || 0) / maxStarterVal;
-          m.expectedPts = 115 * (0.78 + 0.44 * scale);
-          m.ceilingPts = m.expectedPts * 1.32;
-          m.floorPts = m.expectedPts * 0.72;
-          m.worstByeWeekPts = m.expectedPts * 0.88;
-          m.bestWeekPts = m.expectedPts * 1.08;
+          const base = 115 * (0.78 + 0.44 * scale);
+          m.expectedPts = base;
+          m.medianExp = base;
+          m.ceilingPts = base * 1.28;
+          m.floorPts = base * 0.78;
+          m.worstByeWeekPts = base * 0.88;
+          m.bestWeekPts = base * 1.10;
           m.weeklyExp = [];
+          m.weeklyVol = 8;
+          m.weeklyModel = null;
           m.projFallback = true;
         }
 
-        // Positional VORP of baseline (no-bye) optimal lineup
         const baseLineup = optimalLineupTotalForWeek(m.entries || [], "proj", -999);
         let vorpSum = 0;
         (baseLineup.used || []).forEach((e) => { vorpSum += playerVorp(e, repl); });
@@ -2700,7 +2861,6 @@
         const depth = computeDepthScore(m.entries || [], repl);
         m.depthPts = depth.depthPts;
         m.depthVorp = depth.depthVorp;
-
         m.compRaw = 0.82 * (m.starterValue || 0) + 0.18 * (m.rosterValue || 0);
 
         const exp = Math.max(m.expectedPts, 1e-6);
@@ -2710,58 +2870,60 @@
 
       const medComp = median(models.map((m) => m.compRaw || 0)) || 1;
       const medDepth = median(models.map((m) => (m.depthPts || 0) + (m.depthVorp || 0))) || 1;
-      const maxExp = Math.max(...models.map((m) => m.expectedPts || 0), 1);
+      const maxWeeklyStrength = Math.max(...models.map((m) => {
+        const mean = m.expectedPts || 0;
+        const med = m.medianExp != null ? m.medianExp : mean;
+        const worst = m.worstByeWeekPts != null ? m.worstByeWeekPts : mean;
+        const best = m.bestWeekPts != null ? m.bestWeekPts : mean;
+        return 0.65 * mean + 0.15 * med + 0.10 * worst + 0.10 * best;
+      }), 1);
       const maxVorp = Math.max(...models.map((m) => m.starterVorp || 0), 1);
-      const maxFloor = Math.max(...models.map((m) => m.floorPts || 0), 1);
-      const maxCeil = Math.max(...models.map((m) => m.ceilingPts || 0), 1);
-      const maxDepth = Math.max(...models.map((m) => (m.depthPts || 0) + (m.depthVorp || 0)), 1);
       const maxPpg = Math.max(...models.map((m) => m.ppg || 0), 0);
       const avgExp = models.reduce((s, m) => s + (m.expectedPts || 0), 0) / n;
       const stabVals = models.map((m) => m.stabilityRatio || 0);
       const upsVals = models.map((m) => m.upsideRatio || 0);
+      const volVals = models.map((m) => m.weeklyVol || 0);
       const minStab = Math.min(...stabVals);
       const maxStab = Math.max(...stabVals);
       const minUps = Math.min(...upsVals);
       const maxUps = Math.max(...upsVals);
+      const maxVol = Math.max(...volVals, 1);
       const stabSorted = stabVals.slice().sort((a, b) => a - b);
 
       const scored = models.map((m) => {
-        // --- Starter strength: expected points dominate (who projects highest weekly) ---
-        const expN = (m.expectedPts || 0) / maxExp;
-        const vorpN = (m.starterVorp || 0) / maxVorp;
-        const floorN = (m.floorPts || 0) / maxFloor;
-        const ceilN = (m.ceilingPts || 0) / maxCeil;
-        const starterScore = 0.58 * expN + 0.28 * vorpN + 0.07 * floorN + 0.07 * ceilN;
+        const mean = m.expectedPts || 0;
+        const med = m.medianExp != null ? m.medianExp : mean;
+        const worst = m.worstByeWeekPts != null ? m.worstByeWeekPts : mean;
+        const best = m.bestWeekPts != null ? m.bestWeekPts : mean;
+        // Weekly starting strength from full curve
+        const weeklyStrength = 0.65 * mean + 0.15 * med + 0.10 * worst + 0.10 * best;
+        const starterScore = weeklyStrength / maxWeeklyStrength;
 
-        // --- Depth: median-normalized so "thin" isn't crushed vs one deep roster ---
+        // Positional scarcity (VORP)
+        const scarcityScore = (m.starterVorp || 0) / maxVorp;
+
         const depthRaw = (m.depthPts || 0) + (m.depthVorp || 0);
         let depthRel = depthRaw / Math.max(medDepth, 1e-6);
         depthRel = Math.min(1.35, Math.max(0.60, depthRel));
         const depthScore = (depthRel - 0.60) / (1.35 - 0.60);
 
-        // --- Market (median-normalized, capped) ---
         let marketRel = (m.compRaw || 0) / medComp;
         marketRel = Math.min(1.50, Math.max(0.55, marketRel));
         const marketScore = (marketRel - 0.55) / (1.50 - 0.55);
 
-        // --- Stability & upside relative to league ---
         const stabilityScore = (m.stabilityRatio - minStab) / Math.max(1e-6, maxStab - minStab);
         const upsideScore = (m.upsideRatio - minUps) / Math.max(1e-6, maxUps - minUps);
 
-        // --- Schedule: 70% average week + 30% worst week (both already in profile) ---
-        const avgWeek = m.expectedPts || 0;
-        const worstWeek = m.worstByeWeekPts != null ? m.worstByeWeekPts : avgWeek;
-        const scheduleRaw = 0.70 * avgWeek + 0.30 * worstWeek;
-        // Will normalize across teams below — store raw for now
-        m._scheduleRaw = scheduleRaw;
+        // Consistency: lower weekly volatility = higher score
+        const consistencyScore = 1 - Math.min(1, (m.weeklyVol || 0) / maxVol);
 
-        // --- Regressed actual ---
         const conf = actualConfidence(m.gamesPlayed || 0);
         const projectedPpg = m.expectedPts || avgExp;
         const actualPpg = m.ppg || 0;
         const adjustedPpg = actualPpg * conf + projectedPpg * (1 - conf);
         m.adjustedPpg = adjustedPpg;
         m.actualConf = conf;
+        m.weeklyStrength = weeklyStrength;
 
         return Object.assign({}, m, {
           starterScore,
@@ -2769,17 +2931,18 @@
           marketScore,
           stabilityScore,
           upsideScore,
+          scarcityScore,
+          consistencyScore,
           adjustedPpg,
           _stabSorted: stabSorted
         });
       });
 
-      const maxSched = Math.max(...scored.map((m) => m._scheduleRaw || 0), 1);
       const maxAdj = Math.max(...scored.map((m) => m.adjustedPpg || 0), 1);
 
       scored.forEach((m) => {
-        m.scheduleScore = (m._scheduleRaw || 0) / maxSched;
         m.actualScore = maxAdj > 0 ? (m.adjustedPpg || 0) / maxAdj : 0;
+        m.scheduleScore = 0; // folded into weekly strength curve
 
         m.rawPower =
           w.starter * m.starterScore +
@@ -2787,7 +2950,8 @@
           w.market * m.marketScore +
           w.stability * m.stabilityScore +
           w.upside * m.upsideScore +
-          w.schedule * m.scheduleScore +
+          (w.scarcity || 0) * m.scarcityScore +
+          (w.consistency || 0) * m.consistencyScore +
           w.actual * m.actualScore;
 
         m.weights = w;
@@ -2798,7 +2962,7 @@
 
       const maxRaw = Math.max(...scored.map((m) => m.rawPower || 0), 1e-9);
       return scored.map((m) => Object.assign({}, m, {
-        totalScore: Math.round(((m.rawPower || 0) / maxRaw) * 1000) / 10, // one decimal, #1 = 100.0
+        totalScore: Math.round(((m.rawPower || 0) / maxRaw) * 1000) / 10,
         depthNorm: m.depthScore
       }));
     }
@@ -3994,25 +4158,38 @@
     function renderPowerRankings(models) {
       const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
       const teamCount = sorted.length || 10;
-      const starterSlots = ["QB", "RB", "WR", "TE", "FLEX", "SF"];
 
       const posRankByTeam = {};
-      for (const pos of POSITIONS) {
+      for (const pos of ["QB", "RB", "WR", "TE"]) {
         const order = models.slice().sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
         order.forEach((t, i) => {
           if (!posRankByTeam[t.id]) posRankByTeam[t.id] = {};
           posRankByTeam[t.id][pos] = i + 1;
         });
       }
-      const starterRankByTeam = {};
-      for (const slot of starterSlots) {
-        const order = models.slice().sort((a, b) =>
-          (b.starterScores?.[slot] || 0) - (a.starterScores?.[slot] || 0)
-        );
-        order.forEach((team, index) => {
-          if (!starterRankByTeam[team.id]) starterRankByTeam[team.id] = {};
-          starterRankByTeam[team.id][slot] = index + 1;
-        });
+
+      // Rank component scores among teams for display
+      function componentRank(key) {
+        const order = models.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0));
+        const map = {};
+        order.forEach((t, i) => { map[t.id] = i + 1; });
+        return map;
+      }
+      const rankStarter = componentRank("starterScore");
+      const rankMarket = componentRank("marketScore");
+      const rankDepth = componentRank("depthScore");
+      const rankStab = componentRank("stabilityScore");
+      const rankUps = componentRank("upsideScore");
+      const rankSched = componentRank("scheduleScore");
+
+      function optimalStarterNames(entries) {
+        const result = optimalLineupTotalForWeek(entries || [], "proj", -999);
+        return (result.used || []).map((e) => ({
+          pos: e.pos,
+          name: e.name || "Player",
+          proj: e.proj || 0,
+          val: e.val || 0
+        }));
       }
 
       const list = document.getElementById("power-list");
@@ -4024,55 +4201,96 @@
           ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
           : "Preseason";
         const exp = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
-        const fl = t.floorPts != null ? t.floorPts.toFixed(1) : "—";
-        const ce = t.ceilingPts != null ? t.ceilingPts.toFixed(1) : "—";
         const ranks = posRankByTeam[t.id] || {};
-        const depthTxt = depthLabel(t.depthNorm || 0);
-        const riskTxt = riskLabel(t.stabilityRatio || 0.75, t._stabSorted);
         const qbG = posGradeLabel(ranks.QB, teamCount);
         const rbG = posGradeLabel(ranks.RB, teamCount);
         const wrG = posGradeLabel(ranks.WR, teamCount);
         const teG = posGradeLabel(ranks.TE, teamCount);
 
-        let chips = "";
-        for (const pos of POSITIONS.filter((p) => p !== "BN")) {
-          const pr = ranks[pos];
-          chips +=
-            '<div class="pos-chip">' +
-            '<div class="pos-chip-label">' + pos + "</div>" +
-            '<div class="pos-chip-rank" style="color:' + rankColor(pr, teamCount) + '">#' + (pr != null ? pr : "—") + "</div>" +
-            '<div class="pos-chip-val">' + posGradeLabel(pr, teamCount) + "</div>" +
-            "</div>";
-        }
-        let starterChips = "";
-        for (const slot of starterSlots) {
-          const sr = starterRankByTeam[t.id]?.[slot];
-          starterChips +=
-            '<div class="pos-chip">' +
-            '<div class="pos-chip-label">' + slot + "</div>" +
-            '<div class="pos-chip-rank" style="color:' + rankColor(sr, teamCount) + '">#' + (sr != null ? sr : "—") + "</div>" +
-            "</div>";
+        const w = t.weights || {};
+        const pct = (x) => Math.round((x || 0) * 100) + "%";
+
+        const starters = optimalStarterNames(t.entries);
+        let starterLis = starters.map((s) =>
+          '<li><span class="fp-starter-pos">' + s.pos + "</span>" +
+          '<span class="fp-starter-name">' + escapeHtml(s.name) + "</span>" +
+          '<span class="fp-starter-pts">' + (s.proj ? s.proj.toFixed(1) : "—") + "</span></li>"
+        ).join("");
+        if (!starterLis) starterLis = "<li>No projection data</li>";
+
+        function metric(label, value, sub) {
+          return '<div class="fp-metric-row"><span>' + label +
+            (sub ? ' <span style="color:var(--text-muted);font-weight:400">(' + sub + ")</span>" : "") +
+            "</span><span>" + value + "</span></div>";
         }
 
-        const summary =
-          "Projected " + exp + " · Depth " + depthTxt +
-          " · Floor " + fl + " · Ceiling " + ce +
-          " · Risk " + riskTxt;
+        function weightRow(label, scoreVal, rankMap, weightKey) {
+          const sc = scoreVal != null ? (scoreVal * 100).toFixed(0) : "—";
+          const rk = rankMap[t.id];
+          const wt = pct(w[weightKey]);
+          return metric(label, (rk != null ? "#" + rk + " · " : "") + sc + "/100", wt + " of score");
+        }
+
+        const fl = t.floorPts != null ? t.floorPts.toFixed(1) : "—";
+        const ce = t.ceilingPts != null ? t.ceilingPts.toFixed(1) : "—";
+        const worst = t.worstByeWeekPts != null ? t.worstByeWeekPts.toFixed(1) : "—";
+        const depthTxt = depthLabel(t.depthNorm || t.depthScore || 0);
+        const riskTxt = riskLabel(t.stabilityRatio || 0.75, t._stabSorted);
+        const fcVal = t.compRaw != null ? Math.round(t.compRaw).toLocaleString() : "—";
+
+        const detail =
+          '<div class="fp-detail-grid">' +
+            '<div class="fp-detail-block">' +
+              "<h5>Score breakdown</h5>" +
+              weightRow("Weekly strength", t.starterScore, rankStarter, "starter") +
+              weightRow("Scarcity (VORP)", t.scarcityScore, componentRank("scarcityScore"), "scarcity") +
+              weightRow("Depth", t.depthScore, rankDepth, "depth") +
+              weightRow("Market (FC)", t.marketScore, rankMarket, "market") +
+              weightRow("Stability", t.stabilityScore, rankStab, "stability") +
+              weightRow("Upside", t.upsideScore, rankUps, "upside") +
+              weightRow("Consistency", t.consistencyScore, componentRank("consistencyScore"), "consistency") +
+              ((w.actual || 0) > 0.01
+                ? weightRow("Actual", t.actualScore, componentRank("actualScore"), "actual")
+                : "") +
+            "</div>" +
+            '<div class="fp-detail-block">' +
+              "<h5>Lineup projections</h5>" +
+              metric("Mean week", exp) +
+              metric("Median week", t.medianExp != null ? t.medianExp.toFixed(1) : exp) +
+              metric("Best week", t.bestWeekPts != null ? t.bestWeekPts.toFixed(1) : "—") +
+              metric("Worst week", worst) +
+              metric("Week-to-week vol", t.weeklyVol != null ? t.weeklyVol.toFixed(1) : "—") +
+              metric("Floor (avg)", fl) +
+              metric("Ceiling (avg)", ce) +
+              metric("Depth", depthTxt) +
+              metric("Risk", riskTxt) +
+              metric("FantasyCalc (starters-heavy)", fcVal) +
+            "</div>" +
+            '<div class="fp-detail-block">' +
+              "<h5>Position ranks</h5>" +
+              metric("QB", "#" + (ranks.QB || "—") + " · " + qbG) +
+              metric("RB", "#" + (ranks.RB || "—") + " · " + rbG) +
+              metric("WR", "#" + (ranks.WR || "—") + " · " + wrG) +
+              metric("TE", "#" + (ranks.TE || "—") + " · " + teG) +
+            "</div>" +
+            '<div class="fp-detail-block">' +
+              "<h5>Optimal starters (no bye)</h5>" +
+              '<ul class="fp-starter-list">' + starterLis + "</ul>" +
+            "</div>" +
+          "</div>";
 
         body +=
           '<tr class="fp-expandable" data-team-id="' + t.id + '">' +
             '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".</td>" +
             '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
-              '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr + "</div>" +
-              '<div class="fp-team-sub">' + summary + "</div>" +
-              '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG + "</div></td>" +
+              '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr +
+              " · Proj " + exp + "</div>" +
+              '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
+              " · Depth " + depthTxt + "</div></td>" +
             '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
           "</tr>" +
           '<tr class="fp-detail-row" hidden data-detail-for="' + t.id + '">' +
-            '<td colspan="3">' +
-              '<div class="pos-breakdown">' + chips + "</div>" +
-              '<div class="starter-breakdown">' + starterChips + "</div>" +
-            "</td>" +
+            '<td colspan="3">' + detail + "</td>" +
           "</tr>";
       });
 
@@ -4134,45 +4352,34 @@
       });
       const periods = Object.keys(gamesByPeriod).sort((a, b) => Number(a) - Number(b));
 
-      // Precompute bye-aware optimal lineup mean/floor/ceil for every team × remaining week
-      const weekMean = {}; // teamId -> { week -> mean }
+      // Shared weekly model (same engine as power rankings)
+      const weekMean = {};
       const weekSd = {};
       const teamAvgMean = {};
       const teamAvgSd = {};
 
       models.forEach((team) => {
         const tid = String(team.id);
+        const wm = team.weeklyModel || buildWeeklyTeamModel(team.entries || []);
+        team.weeklyModel = wm;
         weekMean[tid] = {};
         weekSd[tid] = {};
         let sumM = 0, sumSd = 0, cnt = 0;
-        const weeksToBuild = periods.length
-          ? periods.map(Number)
-          : Array.from({ length: 17 }, (_, i) => i + 1);
-        weeksToBuild.forEach((w) => {
-          const exp = optimalLineupTotalForWeek(team.entries || [], "proj", w);
-          const fl = optimalLineupTotalForWeek(team.entries || [], "projFloor", w);
-          const ce = optimalLineupTotalForWeek(team.entries || [], "projCeil", w);
-          let mean = exp.total;
-          // Light blend toward season actual PPG once sample exists
+        for (let w = 1; w <= 17; w++) {
+          const row = wm.byWeek[w] || { mu: wm.meanExp || 115, sigma: 16 };
+          let mean = row.mu;
           if (team.gamesPlayed > 0 && team.ppg > 0) {
             const conf = Math.min(0.45, team.gamesPlayed * 0.06);
             mean = mean * (1 - conf) + team.ppg * conf;
           }
-          // SD from floor/ceiling spread of that week's lineup
-          let sd = 18;
-          if (ce.total > fl.total && mean > 0) {
-            sd = Math.max(12, Math.min(28, (ce.total - fl.total) / 2.4));
-          } else if (team.stabilityRatio) {
-            sd = Math.max(12, 22 * (1.15 - Math.min(1, team.stabilityRatio)));
-          }
           weekMean[tid][w] = mean;
-          weekSd[tid][w] = sd;
+          weekSd[tid][w] = row.sigma || 16;
           sumM += mean;
-          sumSd += sd;
+          sumSd += row.sigma || 16;
           cnt++;
-        });
+        }
         teamAvgMean[tid] = cnt ? sumM / cnt : (team.expectedPts || 115);
-        teamAvgSd[tid] = cnt ? sumSd / cnt : 18;
+        teamAvgSd[tid] = cnt ? sumSd / cnt : 16;
       });
 
       const normal = () => {
@@ -4182,33 +4389,91 @@
         return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
       };
 
-      function drawWeekScore(teamId, week) {
-        const tid = String(teamId);
-        const mean = (weekMean[tid] && weekMean[tid][week] != null)
+      // Preseason: shrink projected gaps toward league mean so odds aren't near-certain
+      const leagueWeekMean = {};
+      for (let w = 1; w <= 17; w++) {
+        let s = 0, c = 0;
+        models.forEach((team) => {
+          const tid = String(team.id);
+          if (weekMean[tid] && weekMean[tid][w] != null) {
+            s += weekMean[tid][w];
+            c++;
+          }
+        });
+        leagueWeekMean[w] = c ? s / c : 115;
+      }
+      const preseasonShrink = hasPlayedGames ? 0 : 0.55; // pull 55% toward league avg before week 1
+      function effectiveMean(tid, week) {
+        const raw = (weekMean[tid] && weekMean[tid][week] != null)
           ? weekMean[tid][week]
           : (teamAvgMean[tid] || 115);
-        const sd = (weekSd[tid] && weekSd[tid][week] != null)
+        const league = leagueWeekMean[week] != null ? leagueWeekMean[week] : 115;
+        return raw * (1 - preseasonShrink) + league * preseasonShrink;
+      }
+
+      function drawWeekScore(teamId, week) {
+        const tid = String(teamId);
+        const mean = effectiveMean(tid, week);
+        let sd = (weekSd[tid] && weekSd[tid][week] != null)
           ? weekSd[tid][week]
-          : (teamAvgSd[tid] || 18);
+          : (teamAvgSd[tid] || 22);
+        // Extra process noise so strong teams still lose often
+        sd = Math.max(20, sd * 1.15);
         return Math.max(0, mean + normal() * sd);
       }
 
-      function playoffWinProb(a, b) {
-        const ma = teamAvgMean[String(a.id)] || 115;
-        const mb = teamAvgMean[String(b.id)] || 115;
-        const sa = teamAvgSd[String(a.id)] || 18;
-        const sb = teamAvgSd[String(b.id)] || 18;
+      // Matchup probability for a SPECIFIC week (playoffs use that week's μ/σ)
+      function playoffWinProb(a, b, week) {
+        const wa = week || 15;
+        const ma = effectiveMean(String(a.id), wa);
+        const mb = effectiveMean(String(b.id), wa);
+        let sa = (weekSd[String(a.id)] && weekSd[String(a.id)][wa] != null)
+          ? weekSd[String(a.id)][wa] : (teamAvgSd[String(a.id)] || 22);
+        let sb = (weekSd[String(b.id)] && weekSd[String(b.id)][wa] != null)
+          ? weekSd[String(b.id)][wa] : (teamAvgSd[String(b.id)] || 22);
+        sa = Math.max(20, sa * 1.15);
+        sb = Math.max(20, sb * 1.15);
         const z = (ma - mb) / Math.max(1, Math.sqrt(sa * sa + sb * sb));
-        return 1 / (1 + Math.exp(-1.7 * z));
+        // Softer logistic so favorites aren't near locks in a single game
+        return 1 / (1 + Math.exp(-1.05 * z));
       }
-      const pickWinner = (a, b) => (Math.random() < playoffWinProb(a, b) ? a : b);
+      const pickWinner = (a, b, week) => (Math.random() < playoffWinProb(a, b, week) ? a : b);
+
+      const teamNameById = {};
+      models.forEach((team) => {
+        teamNameById[String(team.id)] = team.name || ("Team " + team.id);
+      });
 
       const results = {};
       models.forEach((team) => {
-        results[String(team.id)] = {
+        const tid = String(team.id);
+        results[tid] = {
           playoff: 0, bye: 0, champion: 0,
-          finalWins: [], finalLosses: [], h2hWins: [], medianWins: []
+          finalWins: [], finalLosses: [], h2hWins: [], medianWins: [],
+          // week -> { h2hWins, medianWins, oppId, oppName, meanPts, oppMeanPts }
+          weeks: {}
         };
+        periods.forEach((periodKey) => {
+          const period = Number(periodKey);
+          const game = (gamesByPeriod[periodKey] || []).find(
+            (g) => String(g.homeTeamId) === tid || String(g.awayTeamId) === tid
+          );
+          let oppId = null;
+          if (game) {
+            oppId = String(game.homeTeamId) === tid ? String(game.awayTeamId) : String(game.homeTeamId);
+          }
+          results[tid].weeks[period] = {
+            h2hWins: 0,
+            medianWins: 0,
+            playedH2h: !!game,
+            oppId,
+            oppName: oppId ? (teamNameById[oppId] || ("Team " + oppId)) : "—",
+            meanPts: weekMean[tid][period] != null ? weekMean[tid][period] : (teamAvgMean[tid] || 0),
+            oppMeanPts: oppId && weekMean[oppId] && weekMean[oppId][period] != null
+              ? weekMean[oppId][period]
+              : (oppId ? (teamAvgMean[oppId] || 0) : null)
+          };
+        });
       });
 
       const simulations = 10000;
@@ -4247,29 +4512,36 @@
               home.wins++;
               home.h2hWins++;
               away.losses++;
+              results[String(home.team.id)].weeks[period].h2hWins++;
             } else {
               away.wins++;
               away.h2hWins++;
               home.losses++;
+              results[String(away.team.id)].weeks[period].h2hWins++;
             }
           });
 
-          // Vs league median (extra W/L each week)
-          const ordered = models.map((t) => scores[String(t.id)] || 0).slice().sort((a, b) => a - b);
-          const n = ordered.length;
-          const medianScore = n % 2 === 1
-            ? ordered[(n - 1) / 2]
-            : (ordered[n / 2 - 1] + ordered[n / 2]) / 2;
+          // League median matchup: top half of scorers get +1 win, bottom half get +1 loss
+          // 10-team league → top 5 win, bottom 5 lose (ties broken by team id for determinism within a sim)
+          const scoredTeams = models.map((t) => ({
+            id: String(t.id),
+            score: scores[String(t.id)] || 0
+          })).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+          const nTeams = scoredTeams.length;
+          const topN = Math.floor(nTeams / 2); // 5 of 10
+          const topIds = new Set(scoredTeams.slice(0, topN).map((x) => x.id));
           models.forEach((team) => {
             const row = standings[String(team.id)];
-            const s = scores[String(team.id)] || 0;
+            const tid = String(team.id);
+            const s = scores[tid] || 0;
             const playedH2h = gamesByPeriod[periodKey].some(
-              (g) => String(g.homeTeamId) === String(team.id) || String(g.awayTeamId) === String(team.id)
+              (g) => String(g.homeTeamId) === tid || String(g.awayTeamId) === tid
             );
             if (!playedH2h) row.points += s;
-            if (s >= medianScore) {
+            if (topIds.has(tid)) {
               row.wins++;
               row.medianWins++;
+              results[tid].weeks[period].medianWins++;
             } else {
               row.losses++;
             }
@@ -4293,31 +4565,34 @@
           result.medianWins.push(row.medianWins);
         });
 
-        // Single-elim playoffs using season-average lineup strength
+        // Single-elim playoffs using THAT WEEK's projections (not season average)
+        let playoffWeek = playoffStart;
         const byeTeams = playoffTeams.slice(0, byeSlots).map((r) => r.team);
         let round = playoffTeams.slice(byeSlots).map((r) => r.team);
         while (round.length > 1) {
           const nextRound = [];
           for (let i = 0; i < round.length; i += 2) {
-            if (round[i + 1]) nextRound.push(pickWinner(round[i], round[i + 1]));
+            if (round[i + 1]) nextRound.push(pickWinner(round[i], round[i + 1], playoffWeek));
             else nextRound.push(round[i]);
           }
           round = nextRound;
+          playoffWeek++;
         }
         let contenders = byeTeams.concat(round);
         while (contenders.length > 1) {
           const nextRound = [];
           contenders = contenders.slice().sort((a, b) =>
-            playoffWinProb(b, a) - playoffWinProb(a, b)
+            playoffWinProb(b, a, playoffWeek) - playoffWinProb(a, b, playoffWeek)
           );
           for (let i = 0; i < Math.floor(contenders.length / 2); i++) {
             const top = contenders[i];
             const bot = contenders[contenders.length - 1 - i];
             if (top === bot) nextRound.push(top);
-            else nextRound.push(pickWinner(top, bot));
+            else nextRound.push(pickWinner(top, bot, playoffWeek));
           }
           if (contenders.length % 2 === 1) nextRound.push(contenders[Math.floor(contenders.length / 2)]);
           contenders = nextRound;
+          playoffWeek++;
         }
         if (contenders[0]) results[String(contenders[0].id)].champion++;
       }
@@ -4327,11 +4602,15 @@
         teams: models,
         playoffCount,
         byeSlots,
-        periods: periods.length,
+        periods: periods.map(Number),
+        periodCount: periods.length,
         simulations,
         projectedSchedule,
-        usesMedian: true,
-        lineupBased: true
+        usesMedian: true, // top half scorers win, bottom half lose
+        topHalfWins: true,
+        lineupBased: true,
+        weekMean,
+        teamAvgMean
       };
     }
 
@@ -4548,7 +4827,8 @@
         const rows = simulation.teams.slice().sort((a, b) =>
           simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff
         );
-        body.innerHTML = rows.map((team) => {
+        let htmlRows = "";
+        rows.forEach((team) => {
           const result = simulation.results[String(team.id)];
           const projW = medianOf(result.finalWins);
           const projL = medianOf(result.finalLosses);
@@ -4556,21 +4836,70 @@
           const h2hW = medianOf(result.h2hWins);
           const nowRec = formatRecord(team.wins || 0, team.losses || 0);
           const projRec = formatRecord(projW, projL);
-          const tip = "Median across sims: " + projRec +
-            " (about " + h2hW + " H2H wins + " + medW + " median wins)";
-          return "<tr><td class=\"odds-team\">" + escapeHtml(team.name) + "</td>" +
-            "<td>" + nowRec + "</td>" +
-            "<td title=\"" + tip + "\">" + projRec +
-            "<div style=\"font-size:0.65rem;color:var(--text-muted)\">~" + h2hW + " H2H · ~" + medW + " med</div></td>" +
-            "<td>" + playoffPercent(result.playoff, total) + "</td>" +
-            "<td>" + playoffPercent(result.bye, total) + "</td>" +
-            "<td>" + playoffPercent(result.champion, total) + "</td></tr>";
-        }).join("");
+
+          const weekKeys = Object.keys(result.weeks || {}).map(Number).sort((a, b) => a - b);
+          let weekRows = "";
+          weekKeys.forEach((w) => {
+            const wk = result.weeks[w];
+            const h2hPct = total ? ((wk.h2hWins / total) * 100).toFixed(1) : "0.0";
+            const medPct = total ? ((wk.medianWins / total) * 100).toFixed(1) : "0.0";
+            const meanStr = wk.meanPts != null ? wk.meanPts.toFixed(1) : "—";
+            const oppMeanStr = wk.oppMeanPts != null ? wk.oppMeanPts.toFixed(1) : "—";
+            const h2hCell = wk.playedH2h
+              ? (wk.h2hWins.toLocaleString() + " / " + total.toLocaleString() + " (" + h2hPct + "%)")
+              : "—";
+            weekRows +=
+              "<tr>" +
+                "<td>W" + w + "</td>" +
+                "<td>" + escapeHtml(wk.oppName || "—") + "</td>" +
+                '<td class="num">' + meanStr + "</td>" +
+                '<td class="num">' + oppMeanStr + "</td>" +
+                '<td class="num">' + h2hCell + "</td>" +
+                '<td class="num">' + wk.medianWins.toLocaleString() + " / " + total.toLocaleString() + " (" + medPct + "%)</td>" +
+              "</tr>";
+          });
+
+          htmlRows +=
+            '<tr class="odds-expandable" data-odds-id="' + team.id + '">' +
+              '<td class="odds-team">' + escapeHtml(team.name) + "</td>" +
+              "<td>" + nowRec + "</td>" +
+              "<td>" + projRec +
+                '<div style="font-size:0.65rem;color:var(--text-muted)">~' + h2hW + " H2H · ~" + medW + " med</div></td>" +
+              "<td>" + playoffPercent(result.playoff, total) + "</td>" +
+              "<td>" + playoffPercent(result.bye, total) + "</td>" +
+              "<td>" + playoffPercent(result.champion, total) + "</td>" +
+            "</tr>" +
+            '<tr class="odds-detail-row" hidden data-odds-detail="' + team.id + '">' +
+              '<td colspan="6">' +
+                '<div class="odds-summary">' +
+                  escapeHtml(team.name) + " · " + total.toLocaleString() + " simulations · " +
+                  "playoffs in " + result.playoff.toLocaleString() + " · " +
+                  "bye in " + result.bye.toLocaleString() + " · " +
+                  "title in " + result.champion.toLocaleString() +
+                "</div>" +
+                '<table class="odds-week-table">' +
+                  "<thead><tr>" +
+                    "<th>Week</th><th>Opponent</th><th>Your proj</th><th>Opp proj</th>" +
+                    "<th>H2H wins</th><th>Top-5 wins</th>" +
+                  "</tr></thead>" +
+                  "<tbody>" + weekRows + "</tbody>" +
+                "</table>" +
+              "</td>" +
+            "</tr>";
+        });
+        body.innerHTML = htmlRows;
+        body.querySelectorAll("tr.odds-expandable").forEach((tr) => {
+          tr.addEventListener("click", () => {
+            const id = tr.getAttribute("data-odds-id");
+            const detail = body.querySelector('tr.odds-detail-row[data-odds-detail="' + id + '"]');
+            if (detail) detail.hidden = !detail.hidden;
+          });
+        });
         status.textContent =
           simulation.playoffCount + " playoff spots · " +
           simulation.byeSlots + " byes · " +
-          simulation.periods + " weeks left · " +
-          total.toLocaleString() + " sims · weekly optimal lineups (bye-aware) · H2H + vs median" +
+          (simulation.periodCount || simulation.periods) + " weeks left · " +
+          total.toLocaleString() + " sims · click a team for weekly win rates" +
           (simulation.projectedSchedule ? " · synthetic schedule (ESPN schedule empty)" : "");
         playoffOddsLoaded = true;
       } catch (error) {
