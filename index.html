@@ -349,14 +349,49 @@
       background: var(--surface-2);
     }
     .matchup-lineup td {
-      padding: 0.45rem 0.65rem;
+      padding: 0.5rem 0.65rem;
       border-top: 1px solid var(--border-subtle);
-      vertical-align: top;
+      vertical-align: middle;
     }
-    .matchup-lineup .action-start { color: #4ade80; font-weight: 600; }
-    .matchup-lineup .action-bench { color: #fbbf24; font-weight: 600; }
-    .matchup-lineup .action-ok { color: var(--text-muted); }
-    .matchup-lineup .pts { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .matchup-lineup tr.slot-qb { background: rgba(59, 130, 246, 0.08); }
+    .matchup-lineup tr.slot-rb { background: rgba(34, 197, 94, 0.07); }
+    .matchup-lineup tr.slot-wr { background: rgba(168, 85, 247, 0.07); }
+    .matchup-lineup tr.slot-te { background: rgba(249, 115, 22, 0.08); }
+    .matchup-lineup tr.slot-flex { background: rgba(14, 165, 233, 0.08); }
+    .matchup-lineup tr.slot-sf { background: rgba(236, 72, 153, 0.08); }
+    .matchup-lineup tr.slot-bench td { color: var(--text-secondary); }
+    .matchup-lineup tr.played td { opacity: 0.72; }
+    .matchup-lineup tr.suggest-start { box-shadow: inset 3px 0 0 #4ade80; }
+    .matchup-lineup tr.suggest-bench { box-shadow: inset 3px 0 0 #fbbf24; }
+    .matchup-slot-pill {
+      display: inline-block; min-width: 2.4rem; text-align: center;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.03em;
+      padding: 0.15rem 0.4rem; border-radius: 999px;
+      background: var(--surface-2); color: var(--text-secondary);
+    }
+    .slot-qb .matchup-slot-pill { background: rgba(59,130,246,0.22); color: #93c5fd; }
+    .slot-rb .matchup-slot-pill { background: rgba(34,197,94,0.22); color: #86efac; }
+    .slot-wr .matchup-slot-pill { background: rgba(168,85,247,0.22); color: #d8b4fe; }
+    .slot-te .matchup-slot-pill { background: rgba(249,115,22,0.22); color: #fdba74; }
+    .slot-flex .matchup-slot-pill { background: rgba(14,165,233,0.22); color: #7dd3fc; }
+    .slot-sf .matchup-slot-pill { background: rgba(236,72,153,0.22); color: #f9a8d4; }
+    .matchup-lineup .action-start,
+    .matchup-lineup .action-bench,
+    .matchup-lineup .action-ok,
+    .matchup-lineup .action-played {
+      font-weight: 600; font-size: 0.72rem;
+      padding: 0.15rem 0.45rem; border-radius: 999px; display: inline-block;
+    }
+    .matchup-lineup .action-start { color: #052e16; background: #4ade80; }
+    .matchup-lineup .action-bench { color: #422006; background: #fbbf24; }
+    .matchup-lineup .action-ok { color: var(--text-muted); background: var(--surface-2); }
+    .matchup-lineup .action-played { color: #93c5fd; background: rgba(59,130,246,0.15); }
+    .matchup-lineup .pts { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+    .matchup-lineup .pts-muted { color: var(--text-muted); font-weight: 500; }
+    .matchup-vs .winpct.lose { color: #f87171; }
+    .matchup-vs .winpct.even { color: #fbbf24; }
+    .matchup-vs .winpct { color: #4ade80; }
+    .matchup-advice { border-left: 3px solid var(--accent); }
 
     .panel { display: none; }
     .panel.active { display: block; }
@@ -5423,11 +5458,34 @@
       return tips;
     }
 
+    // Display order: QB, RB, WR, FLEX, TE, OP/SF, Bench, IR
+    const SLOT_SORT_ORDER = {
+      0: 10, 1: 11, 2: 20, 3: 21, 4: 30, 5: 31,
+      23: 40, 6: 50, 7: 60, 24: 61, 16: 70, 17: 71,
+      20: 200, 21: 210
+    };
+    function slotSortKey(slot) {
+      if (slot == null) return 190;
+      if (SLOT_SORT_ORDER[slot] != null) return SLOT_SORT_ORDER[slot];
+      return 80 + Number(slot);
+    }
+    function slotRowClass(slot) {
+      if (slot === 0 || slot === 1) return "slot-qb";
+      if (slot === 2 || slot === 3) return "slot-rb";
+      if (slot === 4 || slot === 5) return "slot-wr";
+      if (slot === 23) return "slot-flex";
+      if (slot === 6) return "slot-te";
+      if (slot === 7 || slot === 24) return "slot-sf";
+      if (slot === 20 || slot === 21) return "slot-bench";
+      return "";
+    }
+
     function renderMatchupLineup(entries, week, optimalIds) {
       const rows = entries.slice().sort((a, b) => {
-        const sa = a.slot != null ? a.slot : 99;
-        const sb = b.slot != null ? b.slot : 99;
-        return sa - sb || (b.proj || 0) - (a.proj || 0);
+        const ka = slotSortKey(a.slot);
+        const kb = slotSortKey(b.slot);
+        if (ka !== kb) return ka - kb;
+        return (b.proj || 0) - (a.proj || 0);
       });
 
       function rowHtml(e) {
@@ -5435,15 +5493,19 @@
         const isStart = isStarterSlot(e.slot);
         let action = "—";
         let actionCls = "action-ok";
+        let rowExtra = "";
         if (e.hasPlayed) {
           action = "Played";
-          actionCls = "action-ok";
+          actionCls = "action-played";
+          rowExtra = " played";
         } else if (isStart && !inOpt) {
           action = "Bench";
           actionCls = "action-bench";
+          rowExtra = " suggest-bench";
         } else if (!isStart && inOpt) {
           action = "Start";
           actionCls = "action-start";
+          rowExtra = " suggest-start";
         } else if (isStart && inOpt) {
           action = "OK";
         }
@@ -5453,15 +5515,15 @@
         const proj = e.hasPlayed
           ? (Number(e.actual || 0).toFixed(1) + " actual")
           : (e.proj != null ? Number(e.proj).toFixed(1) : "—");
-        return "<tr>" +
-          "<td>" + slotName + "</td>" +
+        const rowCls = (slotRowClass(e.slot) + rowExtra).trim();
+        return '<tr class="' + rowCls + '">' +
+          '<td><span class="matchup-slot-pill">' + slotName + "</span></td>" +
           "<td>" + escapeHtml(e.name) +
-            (e.pos ? " <span style=\"color:var(--text-muted)\">" + e.pos + "</span>" : "") +
-            (e.hasPlayed ? " <span style=\"color:var(--text-muted);font-size:0.7rem\">done</span>" : "") +
+            (e.pos ? ' <span style="color:var(--text-muted)">' + e.pos + "</span>" : "") +
           "</td>" +
           '<td class="pts">' + proj + "</td>" +
-          '<td class="pts">' + (e.hasPlayed ? "—" : floor + " / " + ceil) + "</td>" +
-          '<td class="' + actionCls + '">' + action + "</td>" +
+          '<td class="pts pts-muted">' + (e.hasPlayed ? "—" : floor + " / " + ceil) + "</td>" +
+          '<td><span class="' + actionCls + '">' + action + "</span></td>" +
           "</tr>";
       }
 
@@ -5592,7 +5654,8 @@
                 " · Ceiling " + (myLocked + Math.max(0, baseProj.ceil - baseProj.mu + myRemain)).toFixed(1) + "</div>" +
             "</div>" +
             '<div class="matchup-vs">WIN CHANCE' +
-              '<div class="winpct tip" data-tip="Based on current ESPN starting lineups (scored points + remaining projections).">' +
+              '<div class="winpct tip ' + (winPct >= 0.55 ? "" : winPct <= 0.45 ? "lose" : "even") +
+                '" data-tip="Based on current ESPN starting lineups (scored points + remaining projections).">' +
                 (winPct * 100).toFixed(0) + "%</div>" +
               '<div style="margin-top:0.25rem">Margin ' + (margin >= 0 ? "+" : "") + margin.toFixed(1) + "</div>" +
               '<div class="sub tip" style="margin-top:0.55rem" data-tip="If both teams used optimal lineups for players still left to play.">' +
