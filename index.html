@@ -497,6 +497,24 @@
     .rankings-note {
       font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;
     }
+    .rankings-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .rankings-sort {
+      min-width: 180px;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+    }
     .rank-table {
       width: 100%; border-collapse: collapse; font-size: 0.875rem;
       background: var(--surface); border: 1px solid var(--border-subtle);
@@ -1873,6 +1891,26 @@
         Preseason question: how strong is this roster expected to be over the season?
         Weekly ESPN lineups (bye-aware) summarized into one score. Tap a row for the full breakdown. #1 is always 100.
       </p>
+            <div class="rankings-toolbar">
+              <label for="power-sort">Sort by</label>
+              <select id="power-sort" class="rankings-sort" title="Sort power rankings by metric">
+                <option value="totalScore">Power score</option>
+                <option value="starterScore">Weekly strength</option>
+                <option value="scarcityScore">Scarcity (VORP)</option>
+                <option value="depthScore">Depth</option>
+                <option value="marketScore">Market (FantasyCalc)</option>
+                <option value="stabilityScore">Stability</option>
+                <option value="upsideScore">Upside</option>
+                <option value="consistencyScore">Consistency</option>
+                <option value="expectedPts">Mean projected week</option>
+                <option value="medianExp">Median projected week</option>
+                <option value="bestWeekPts">Best projected week</option>
+                <option value="worstByeWeekPts">Worst projected week</option>
+                <option value="floorPts">Average floor</option>
+                <option value="ceilingPts">Average ceiling</option>
+                <option value="ppg">Actual PPG</option>
+              </select>
+            </div>
       <div id="power-list" class="power-list"></div>
     </div>
   </div>
@@ -3592,15 +3630,12 @@
       fillSelect(selB, teams[1] && teams[1].id);
 
       function rosterRows(teamId) {
-        const rows = (workingRosters[String(teamId)] || []).slice().sort((a, b) => (b.val || 0) - (a.val || 0));
+        const rows = (workingRosters[String(teamId)] || []).slice();
         const onBlockOnly = false;
         let list = rows;
         if (onBlockOnly) list = rows.filter((r) => r.onBlock);
         list.sort((a, b) => {
-          const rank = (r) => (r.onBlock ? 0 : r.notLikely ? 2 : 1);
-          const d = rank(a) - rank(b);
-          if (d !== 0) return d;
-          return b.val - a.val || a.name.localeCompare(b.name);
+          return (b.val || 0) - (a.val || 0) || a.name.localeCompare(b.name);
         });
         return list;
       }
@@ -3824,12 +3859,30 @@
         function teamObj(maps, id) {
           return maps.byId[id] || maps.byId[Number(id)] || maps.byId[String(id)] || {};
         }
-        function projDelta(before, after) {
+        function valueChange(before, after, digits, suffix) {
           if (before == null || after == null) return { text: "—", cls: "same", d: 0 };
-          const d = Math.round((after - before) * 10) / 10;
-          if (Math.abs(d) < 0.3) return { text: after.toFixed(1) + " (flat)", cls: "same", d: 0 };
-          if (d > 0) return { text: after.toFixed(1) + " (+" + d.toFixed(1) + ")", cls: "up", d };
-          return { text: after.toFixed(1) + " (" + d.toFixed(1) + ")", cls: "down", d };
+          const scale = Math.pow(10, digits);
+          const b = Math.round(before * scale) / scale;
+          const a = Math.round(after * scale) / scale;
+          const d = Math.round((a - b) * scale) / scale;
+          const format = (value) => value.toFixed(digits) + (suffix || "");
+          const delta = d === 0 ? "flat" : (d > 0 ? "+" : "") + d.toFixed(digits);
+          return { text: format(b) + " → " + format(a) + " (" + delta + ")", cls: d > 0 ? "up" : d < 0 ? "down" : "same", d };
+        }
+        function rankChange(before, after) {
+          if (before == null || after == null) return { text: "—", cls: "same" };
+          const d = before - after;
+          return { text: "#" + before + " → #" + after + " (" + (d > 0 ? "up " + d : d < 0 ? "down " + Math.abs(d) : "flat") + ")", cls: d > 0 ? "up" : d < 0 ? "down" : "same" };
+        }
+        function metricRow(label, change, tip) {
+          return '<div class="calc-impact-row"><span class="calc-impact-label tip"' + (tip ? ' data-tip="' + tip.replace(/"/g, "&quot;") + '"' : "") + '">' + label + '</span><span class="calc-impact-change ' + change.cls + '">' + change.text + "</span></div>";
+        }
+        function starterNames(team) {
+          return optimalLineupTotalForWeek(team.entries || [], "proj", -999).used || [];
+        }
+        function starterSummary(before, after) {
+          const names = (team) => starterNames(team).map((entry) => entry.name || "Player").join(", ") || "No projection data";
+          return metricRow("Optimal starters", { text: escapeHtml(names(before)) + " → " + escapeHtml(names(after)), cls: "same" }, "The no-bye optimal starters used by the power-ranking lineup breakdown.");
         }
 
         function card(teamId) {
@@ -3838,85 +3891,34 @@
           const afterTeam = teamObj(afterRanks, teamId);
           const rankBefore = pr(originalRanks.powerRank, teamId);
           const rankAfter = pr(afterRanks.powerRank, teamId);
-          const power = formatRankDelta(rankBefore, rankAfter);
-          // rawPower is the true strength number; 0–100 display scores are only relative within one snapshot
-          const rawBefore = beforeTeam.rawPower;
-          const rawAfter = afterTeam.rawPower;
-          let rosterStronger = null; // true/false/null
-          if (rawBefore != null && rawAfter != null) {
-            const d = rawAfter - rawBefore;
-            if (d > 0.002) rosterStronger = true;
-            else if (d < -0.002) rosterStronger = false;
-          }
-          const projCh = projDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
-
-          const beforeNs = needsSurplusForTeam(originalRanks.posRank, teamId, teams.length || 10, beforeTeam);
-          const afterNs = needsSurplusForTeam(afterRanks.posRank, teamId, teams.length || 10, afterTeam);
-          const filledNeeds = (beforeNs.needs || []).filter((p) => (afterNs.needs || []).indexOf(p) < 0);
-          const newNeeds = (afterNs.needs || []).filter((p) => (beforeNs.needs || []).indexOf(p) < 0);
-
-          let posBits = [];
-          for (const pos of ["QB", "RB", "WR", "TE"]) {
-            const b = posr(originalRanks.posRank, teamId, pos);
-            const a = posr(afterRanks.posRank, teamId, pos);
-            if (b == null || a == null || b === a) continue;
-            const better = a < b;
-            posBits.push(
-              '<span class="calc-fit-tag ' + (better ? "fills" : "") + '">' +
-              pos + " #" + b + " → #" + a + (better ? " better" : " worse") + "</span>"
-            );
-          }
-
-          // Verdict priority: power rank → roster raw strength → proj PPG
-          let verdict = "About even";
-          let verdictCls = "neutral";
-          if (power.d > 0) {
-            verdict = "Moves up in rankings";
-            verdictCls = "benefit";
-          } else if (power.d < 0) {
-            verdict = "Moves down in rankings";
-            verdictCls = "neutral";
-          } else if (rosterStronger === true || projCh.d > 0.5) {
-            verdict = "Roster stronger, same rank";
-            verdictCls = "benefit";
-          } else if (rosterStronger === false || projCh.d < -0.5) {
-            verdict = "Roster weaker, same rank";
-            verdictCls = "neutral";
-          } else if (filledNeeds.length) {
-            verdict = "Fills a need";
-            verdictCls = "benefit";
-          }
-
-          const depthBefore = depthLabel(beforeTeam.depthNorm || 0);
-          const depthAfter = depthLabel(afterTeam.depthNorm || 0);
-          const depthLine = depthBefore === depthAfter ? depthAfter : depthBefore + " → " + depthAfter;
-
-          const strengthNote = rosterStronger === true
-            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength (before 0–100 scaling). Can rise even if rank falls only if other teams changed more — in a 2-team trade this should match rank direction.">Roster strength</span><span class="calc-impact-change up">Stronger</span></div>'
-            : rosterStronger === false
-            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength before the 0–100 display scaling.">Roster strength</span><span class="calc-impact-change down">Weaker</span></div>'
-            : "";
+          const scoreMetrics = [
+            ["Weekly strength", "starterScore"], ["Scarcity (VORP)", "scarcityScore"],
+            ["Depth", "depthScore"], ["Market (FC)", "marketScore"],
+            ["Stability", "stabilityScore"], ["Upside", "upsideScore"],
+            ["Consistency", "consistencyScore"]
+          ];
+          if ((beforeTeam.weights?.actual || afterTeam.weights?.actual || 0) > 0.01) scoreMetrics.push(["Actual", "actualScore"]);
+          const scoreRows = scoreMetrics.map(([label, key]) => metricRow(label, valueChange(beforeTeam[key] * 100, afterTeam[key] * 100, 0, "/100"))).join("");
+          const projectionRows = [
+            ["Mean week", "expectedPts"], ["Median week", "medianExp"], ["Best week", "bestWeekPts"],
+            ["Worst week", "worstByeWeekPts"], ["Week-to-week vol", "weeklyVol"],
+            ["Floor (avg)", "floorPts"], ["Ceiling (avg)", "ceilingPts"]
+          ].map(([label, key]) => metricRow(label, valueChange(beforeTeam[key], afterTeam[key], 1))).join("");
+          const positionRows = ["QB", "RB", "WR", "TE"].map((pos) => metricRow(pos, rankChange(posr(originalRanks.posRank, teamId, pos), posr(afterRanks.posRank, teamId, pos)))).join("");
+          const depthRows = metricRow("Depth", { text: depthLabel(beforeTeam.depthNorm || 0) + " → " + depthLabel(afterTeam.depthNorm || 0), cls: "same" }) +
+            metricRow("Risk", { text: riskLabel(beforeTeam.stabilityRatio || 0.75, beforeTeam._stabSorted) + " → " + riskLabel(afterTeam.stabilityRatio || 0.75, afterTeam._stabSorted), cls: "same" }) +
+            metricRow("FantasyCalc (starters-heavy)", valueChange(beforeTeam.compRaw, afterTeam.compRaw, 0));
 
           return (
             '<div class="calc-impact-card">' +
-              "<h4>" + escapeHtml(name) +
-                '<span class="calc-impact-result ' + verdictCls + '">' + verdict + "</span></h4>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Where this team ranks after the trade vs before. Lower rank number is better. This is the main result — ignore old 0–100 score deltas.">Power rank</span>' +
-                '<span class="calc-impact-big ' + power.cls + '">' + power.text + "</span></div>" +
-              strengthNote +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Average projected points from the optimal Superflex lineup across the season (bye-aware).">Proj PPG</span>' +
-                '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bench quality after starters are filled.">Depth</span>' +
-                '<span class="calc-impact-change">' + depthLine + "</span></div>" +
-              (filledNeeds.length
-                ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills need: ' + filledNeeds.join(", ") + "</span></div>"
-                : "") +
-              (newNeeds.length
-                ? '<div class="calc-impact-summary"><span class="calc-fit-tag">Opens need: ' + newNeeds.join(", ") + "</span></div>"
-                : "") +
-              (posBits.length
-                ? '<div class="calc-impact-summary">' + posBits.join(" ") + "</div>"
-                : "") +
+              "<h4>" + escapeHtml(name) + "</h4>" +
+              metricRow("Power rank", rankChange(rankBefore, rankAfter)) +
+              metricRow("Power score", valueChange(beforeTeam.totalScore, afterTeam.totalScore, 1)) +
+              '<div class="calc-impact-sub">Score breakdown</div>' + scoreRows +
+              '<div class="calc-impact-sub">Lineup projections</div>' + projectionRows +
+              '<div class="calc-impact-sub">Position ranks</div>' + positionRows +
+              '<div class="calc-impact-sub">Roster breakdown</div>' + depthRows +
+              starterSummary(beforeTeam, afterTeam) +
             "</div>"
           );
         }
@@ -4511,8 +4513,16 @@
       return "rgb(" + r + "," + g + "," + b + ")";
     }
 
+    let powerRankingModels = [];
+    let powerRankingSort = "totalScore";
+
     function renderPowerRankings(models) {
-      const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
+      powerRankingModels = models;
+      const sortKey = powerRankingSort;
+      const sorted = models.slice().sort((a, b) => {
+        const difference = (b[sortKey] || 0) - (a[sortKey] || 0);
+        return difference || (b.totalScore || 0) - (a.totalScore || 0) || a.name.localeCompare(b.name);
+      });
       const teamCount = sorted.length || 10;
 
       const posRankByTeam = {};
@@ -4690,6 +4700,14 @@
       });
     }
 
+    const powerSort = document.getElementById("power-sort");
+    if (powerSort) {
+      powerSort.addEventListener("change", (event) => {
+        powerRankingSort = event.target.value;
+        renderPowerRankings(powerRankingModels);
+      });
+    }
+
     function playoffPercent(value, total) {
       return ((value / total) * 100).toFixed(1) + "%";
     }
@@ -4783,7 +4801,7 @@
         });
         leagueWeekMean[w] = c ? s / c : 115;
       }
-      const preseasonShrink = 0; // do not flatten strength for odds
+      const preseasonShrink = hasPlayedGames ? 0 : 0.30;
       function effectiveMean(tid, week) {
         const raw = (weekMean[tid] && weekMean[tid][week] != null)
           ? weekMean[tid][week]
@@ -4798,8 +4816,8 @@
         let sd = (weekSd[tid] && weekSd[tid][week] != null)
           ? weekSd[tid][week]
           : (teamAvgSd[tid] || 22);
-        // Real week-to-week noise without erasing roster differences
-        sd = Math.max(18, sd * 1.05);
+        // Preseason projections carry more model uncertainty than live results.
+        sd = Math.max(18, sd * (hasPlayedGames ? 1.05 : 1.30));
         return Math.max(0, mean + normal() * sd);
       }
 
@@ -4812,8 +4830,9 @@
           ? weekSd[String(a.id)][wa] : (teamAvgSd[String(a.id)] || 22);
         let sb = (weekSd[String(b.id)] && weekSd[String(b.id)][wa] != null)
           ? weekSd[String(b.id)][wa] : (teamAvgSd[String(b.id)] || 22);
-        sa = Math.max(18, sa * 1.05);
-        sb = Math.max(18, sb * 1.05);
+        const uncertaintyMultiplier = hasPlayedGames ? 1.05 : 1.30;
+        sa = Math.max(18, sa * uncertaintyMultiplier);
+        sb = Math.max(18, sb * uncertaintyMultiplier);
         const z = (ma - mb) / Math.max(1, Math.sqrt(sa * sa + sb * sb));
         return 1 / (1 + Math.exp(-1.25 * z));
       }
