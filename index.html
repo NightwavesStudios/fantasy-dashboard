@@ -393,6 +393,96 @@
     .matchup-vs .winpct { color: #4ade80; }
     .matchup-advice { border-left: 3px solid var(--accent); }
 
+
+    .home-wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 2.5rem;
+    }
+    .home-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+    .home-sub {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+      line-height: 1.45;
+    }
+    .home-card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 0.85rem;
+    }
+    .home-label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+    .home-input {
+      display: block;
+      width: 100%;
+      margin-top: 0.35rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .home-go { width: 100%; justify-content: center; margin-top: 0.25rem; min-height: 42px; }
+    .home-hint {
+      margin-top: 0.65rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .home-section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.55rem;
+    }
+    .home-recent-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .home-recent-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .home-recent-item:hover { border-color: var(--accent); }
+    .home-recent-item .meta { color: var(--text-muted); font-size: 0.72rem; }
+    .home-current { font-size: 0.9rem; }
+    .matchup-proj-block {
+      text-align: center;
+      padding: 0.35rem 0;
+    }
+    .matchup-proj-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .matchup-chance-block {
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+    }
     .panel { display: none; }
     .panel.active { display: block; }
 
@@ -496,24 +586,6 @@
     }
     .rankings-note {
       font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;
-    }
-    .rankings-toolbar {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    .rankings-sort {
-      min-width: 180px;
-      padding: 0.45rem 0.6rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--surface);
-      color: var(--text);
-      font: inherit;
     }
     .rank-table {
       width: 100%; border-collapse: collapse; font-size: 0.875rem;
@@ -1824,7 +1896,7 @@
     <div class="header-inner">
       <div class="brand">
         <h1>League Tools</h1>
-        <div class="meta">League 2039212076 · 2026 Season</div>
+        <div class="meta" id="header-league-meta">Choose a league to get started</div>
       </div>
       <div class="header-actions">
         <span class="status-pill" id="status" title="Live load status: team count, players on the block, and current ESPN week">Loading…</span>
@@ -1835,7 +1907,8 @@
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-panel="power" type="button" title="Rank teams by trade-value roster strength and PPG once games are scored">Power Rankings</button>
+    <button class="tab active" data-panel="home" type="button" title="Choose or switch ESPN league">Home</button>
+    <button class="tab" data-panel="power" type="button" title="Rank teams by trade-value roster strength and PPG once games are scored">Power Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare trade values and chain multi-step trades">Trade Calculator</button>
     <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
     <button class="tab" data-panel="matchup" type="button" title="This week matchup, win odds, and lineup advice">Matchup</button>
@@ -1884,33 +1957,39 @@
   </div>
 
   <!-- POWER RANKINGS (includes positional breakdown) -->
-  <div class="panel active" id="panel-power">
+
+  <div class="panel active" id="panel-home">
+    <div class="home-wrap">
+      <h2 class="home-title">League Tools</h2>
+      <p class="home-sub">Connect a public ESPN fantasy football league to unlock power rankings, trade calc, matchup help, and playoff odds.</p>
+      <div class="home-card">
+        <label class="home-label">ESPN League ID
+          <input type="text" id="home-league-id" class="home-input" placeholder="e.g. 2039212076" inputmode="numeric" autocomplete="off" />
+        </label>
+        <label class="home-label">Season
+          <input type="number" id="home-season" class="home-input" value="2026" min="2018" max="2030" />
+        </label>
+        <button type="button" class="btn btn-primary home-go" id="home-load-btn">Load league</button>
+        <p class="home-hint">League must be public (or viewable without login). Find the ID in your ESPN league URL.</p>
+      </div>
+      <div class="home-card" id="home-recent-wrap" hidden>
+        <h3 class="home-section-title">Recent leagues</h3>
+        <div id="home-recent-list" class="home-recent-list"></div>
+      </div>
+      <div class="home-card" id="home-current-wrap" hidden>
+        <h3 class="home-section-title">Current</h3>
+        <div id="home-current" class="home-current"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-power">
     <div class="rankings-wrap">
             <p class="rankings-note">
         <strong>Power rankings</strong><br>
         Preseason question: how strong is this roster expected to be over the season?
         Weekly ESPN lineups (bye-aware) summarized into one score. Tap a row for the full breakdown. #1 is always 100.
       </p>
-            <div class="rankings-toolbar">
-              <label for="power-sort">Sort by</label>
-              <select id="power-sort" class="rankings-sort" title="Sort power rankings by metric">
-                <option value="totalScore">Power score</option>
-                <option value="starterScore">Weekly strength</option>
-                <option value="scarcityScore">Scarcity (VORP)</option>
-                <option value="depthScore">Depth</option>
-                <option value="marketScore">Market (FantasyCalc)</option>
-                <option value="stabilityScore">Stability</option>
-                <option value="upsideScore">Upside</option>
-                <option value="consistencyScore">Consistency</option>
-                <option value="expectedPts">Mean projected week</option>
-                <option value="medianExp">Median projected week</option>
-                <option value="bestWeekPts">Best projected week</option>
-                <option value="worstByeWeekPts">Worst projected week</option>
-                <option value="floorPts">Average floor</option>
-                <option value="ceilingPts">Average ceiling</option>
-                <option value="ppg">Actual PPG</option>
-              </select>
-            </div>
       <div id="power-list" class="power-list"></div>
     </div>
   </div>
@@ -2021,14 +2100,28 @@
       } catch (e) {}
     }
 
-    const LEAGUE_ID = "2039212076";
-    const SEASON = 2026;
-    const API_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
-    const PLAYOFF_API_URL = API_URL + "&view=mSettings&view=mMatchup";
+    let LEAGUE_ID = "2039212076";
+    let SEASON = 2026;
+    function getApiUrl() {
+      return `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
+    }
+    function getPlayoffApiUrl() {
+      return getApiUrl() + "&view=mSettings&view=mMatchup";
+    }
+    function getProTeamUrl() {
+      return `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
+    }
+    // Back-compat names used across the file
+    let API_URL = getApiUrl();
+    let PLAYOFF_API_URL = getPlayoffApiUrl();
+    let PRO_TEAM_URL = getProTeamUrl();
+    function refreshApiUrls() {
+      API_URL = getApiUrl();
+      PLAYOFF_API_URL = getPlayoffApiUrl();
+      PRO_TEAM_URL = getProTeamUrl();
+    }
     // FantasyCalc: 10-team Superflex (numQbs=2) full PPR redraft values
     const FC_URL = "https://api.fantasycalc.com/values/current?isDynasty=false&numQbs=2&numTeams=10&ppr=1";
-    // ESPN pro team schedule/bye data: settings.proTeams[].byeWeek, keyed by proTeamId
-    const PRO_TEAM_URL = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
 
     const POS_MAP = {
       1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST"
@@ -2412,6 +2505,134 @@
       }
     }
 
+
+    const LEAGUE_STORAGE_KEY = "leagueToolsLeagues";
+    const LEAGUE_ACTIVE_KEY = "leagueToolsActive";
+
+    function loadSavedLeagues() {
+      try {
+        return JSON.parse(localStorage.getItem(LEAGUE_STORAGE_KEY) || "[]");
+      } catch (e) {
+        return [];
+      }
+    }
+    function saveLeagueEntry(id, season, name) {
+      const list = loadSavedLeagues().filter((x) => !(String(x.id) === String(id) && Number(x.season) === Number(season)));
+      list.unshift({ id: String(id), season: Number(season), name: name || ("League " + id), ts: Date.now() });
+      try {
+        localStorage.setItem(LEAGUE_STORAGE_KEY, JSON.stringify(list.slice(0, 12)));
+        localStorage.setItem(LEAGUE_ACTIVE_KEY, JSON.stringify({ id: String(id), season: Number(season) }));
+      } catch (e) {}
+    }
+    function getActiveLeague() {
+      try {
+        return JSON.parse(localStorage.getItem(LEAGUE_ACTIVE_KEY) || "null");
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function updateHeaderMeta() {
+      const el = document.getElementById("header-league-meta");
+      if (!el) return;
+      if (!LEAGUE_ID) {
+        el.textContent = "Choose a league to get started";
+        return;
+      }
+      const name = (leagueData && leagueData.settings && leagueData.settings.name) ||
+        (leagueData && leagueData.teams ? leagueData.teams.length + " teams" : "");
+      el.textContent = "League " + LEAGUE_ID + " · " + SEASON + (name ? " · " + name : "");
+    }
+
+    function renderHomeScreen() {
+      const idInput = document.getElementById("home-league-id");
+      const seasonInput = document.getElementById("home-season");
+      const recentWrap = document.getElementById("home-recent-wrap");
+      const recentList = document.getElementById("home-recent-list");
+      const currentWrap = document.getElementById("home-current-wrap");
+      const currentEl = document.getElementById("home-current");
+      if (idInput && !idInput.value) idInput.value = LEAGUE_ID || "";
+      if (seasonInput) seasonInput.value = SEASON || 2026;
+
+      const recent = loadSavedLeagues();
+      if (recentWrap && recentList) {
+        if (recent.length) {
+          recentWrap.hidden = false;
+          recentList.innerHTML = recent.map((r) =>
+            '<button type="button" class="home-recent-item" data-league-id="' + r.id + '" data-season="' + r.season + '">' +
+              "<span>" + escapeHtml(r.name || ("League " + r.id)) + "</span>" +
+              '<span class="meta">' + r.id + " · " + r.season + "</span>" +
+            "</button>"
+          ).join("");
+          recentList.querySelectorAll("[data-league-id]").forEach((btn) => {
+            btn.onclick = () => {
+              applyLeague(btn.getAttribute("data-league-id"), btn.getAttribute("data-season"));
+            };
+          });
+        } else {
+          recentWrap.hidden = true;
+        }
+      }
+      if (currentWrap && currentEl) {
+        if (leagueData && LEAGUE_ID) {
+          currentWrap.hidden = false;
+          const n = (leagueData.teams || []).length;
+          const leagueName = (leagueData.settings && leagueData.settings.name) || "";
+          currentEl.innerHTML =
+            "<div><strong>" + escapeHtml(leagueName || ("League " + LEAGUE_ID)) + "</strong></div>" +
+            '<div class="meta" style="color:var(--text-muted);font-size:0.8rem;margin-top:0.25rem">' +
+            LEAGUE_ID + " · " + SEASON + " · " + n + " teams · Week " + (leagueData.scoringPeriodId || "—") +
+            "</div>";
+        } else {
+          currentWrap.hidden = true;
+        }
+      }
+    }
+
+    function applyLeague(id, season) {
+      const cleanId = String(id || "").trim();
+      const seasonNum = Number(season) || 2026;
+      if (!/^\d+$/.test(cleanId)) {
+        alert("Enter a numeric ESPN league ID.");
+        return;
+      }
+      LEAGUE_ID = cleanId;
+      SEASON = seasonNum;
+      refreshApiUrls();
+      playoffOddsLoaded = false;
+      historyLoaded = false;
+      leagueData = null;
+      updateHeaderMeta();
+      renderHomeScreen();
+      // switch to power after load success
+      fetchLeague().then(() => {
+        const name = (leagueData && leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
+        saveLeagueEntry(LEAGUE_ID, SEASON, name);
+        updateHeaderMeta();
+        renderHomeScreen();
+        const tab = document.querySelector('.tab[data-panel="power"]');
+        if (tab) tab.click();
+      }).catch(() => {});
+    }
+
+    function setupHomeScreen() {
+      const btn = document.getElementById("home-load-btn");
+      if (btn) {
+        btn.onclick = () => {
+          const id = document.getElementById("home-league-id").value;
+          const season = document.getElementById("home-season").value;
+          applyLeague(id, season);
+        };
+      }
+      const idInput = document.getElementById("home-league-id");
+      if (idInput) {
+        idInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") document.getElementById("home-load-btn")?.click();
+        });
+      }
+      renderHomeScreen();
+    }
+
     async function fetchLeague() {
       const statusEl = document.getElementById("status");
       statusEl.textContent = "Loading…";
@@ -2452,6 +2673,10 @@
         try {
           renderAll(leagueData);
           fillWaiverTeamSelect();
+          const name = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
+          saveLeagueEntry(LEAGUE_ID, SEASON, name);
+          updateHeaderMeta();
+          renderHomeScreen();
         } catch (renderErr) {
           console.error(renderErr);
           statusEl.textContent = "Data loaded but display failed (see console)";
@@ -2459,7 +2684,7 @@
         }
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Failed to load. Open via a local server if the request is blocked.";
+        statusEl.textContent = "Failed to load. Check league ID/season or open via a local server.";
         statusEl.classList.add("error");
       }
     }
@@ -3630,12 +3855,15 @@
       fillSelect(selB, teams[1] && teams[1].id);
 
       function rosterRows(teamId) {
-        const rows = (workingRosters[String(teamId)] || []).slice();
+        const rows = (workingRosters[String(teamId)] || []).slice().sort((a, b) => (b.val || 0) - (a.val || 0));
         const onBlockOnly = false;
         let list = rows;
         if (onBlockOnly) list = rows.filter((r) => r.onBlock);
         list.sort((a, b) => {
-          return (b.val || 0) - (a.val || 0) || a.name.localeCompare(b.name);
+          const rank = (r) => (r.onBlock ? 0 : r.notLikely ? 2 : 1);
+          const d = rank(a) - rank(b);
+          if (d !== 0) return d;
+          return b.val - a.val || a.name.localeCompare(b.name);
         });
         return list;
       }
@@ -3859,30 +4087,12 @@
         function teamObj(maps, id) {
           return maps.byId[id] || maps.byId[Number(id)] || maps.byId[String(id)] || {};
         }
-        function valueChange(before, after, digits, suffix) {
+        function projDelta(before, after) {
           if (before == null || after == null) return { text: "—", cls: "same", d: 0 };
-          const scale = Math.pow(10, digits);
-          const b = Math.round(before * scale) / scale;
-          const a = Math.round(after * scale) / scale;
-          const d = Math.round((a - b) * scale) / scale;
-          const format = (value) => value.toFixed(digits) + (suffix || "");
-          const delta = d === 0 ? "flat" : (d > 0 ? "+" : "") + d.toFixed(digits);
-          return { text: format(b) + " → " + format(a) + " (" + delta + ")", cls: d > 0 ? "up" : d < 0 ? "down" : "same", d };
-        }
-        function rankChange(before, after) {
-          if (before == null || after == null) return { text: "—", cls: "same" };
-          const d = before - after;
-          return { text: "#" + before + " → #" + after + " (" + (d > 0 ? "up " + d : d < 0 ? "down " + Math.abs(d) : "flat") + ")", cls: d > 0 ? "up" : d < 0 ? "down" : "same" };
-        }
-        function metricRow(label, change, tip) {
-          return '<div class="calc-impact-row"><span class="calc-impact-label tip"' + (tip ? ' data-tip="' + tip.replace(/"/g, "&quot;") + '"' : "") + '">' + label + '</span><span class="calc-impact-change ' + change.cls + '">' + change.text + "</span></div>";
-        }
-        function starterNames(team) {
-          return optimalLineupTotalForWeek(team.entries || [], "proj", -999).used || [];
-        }
-        function starterSummary(before, after) {
-          const names = (team) => starterNames(team).map((entry) => entry.name || "Player").join(", ") || "No projection data";
-          return metricRow("Optimal starters", { text: escapeHtml(names(before)) + " → " + escapeHtml(names(after)), cls: "same" }, "The no-bye optimal starters used by the power-ranking lineup breakdown.");
+          const d = Math.round((after - before) * 10) / 10;
+          if (Math.abs(d) < 0.3) return { text: after.toFixed(1) + " (flat)", cls: "same", d: 0 };
+          if (d > 0) return { text: after.toFixed(1) + " (+" + d.toFixed(1) + ")", cls: "up", d };
+          return { text: after.toFixed(1) + " (" + d.toFixed(1) + ")", cls: "down", d };
         }
 
         function card(teamId) {
@@ -3891,34 +4101,85 @@
           const afterTeam = teamObj(afterRanks, teamId);
           const rankBefore = pr(originalRanks.powerRank, teamId);
           const rankAfter = pr(afterRanks.powerRank, teamId);
-          const scoreMetrics = [
-            ["Weekly strength", "starterScore"], ["Scarcity (VORP)", "scarcityScore"],
-            ["Depth", "depthScore"], ["Market (FC)", "marketScore"],
-            ["Stability", "stabilityScore"], ["Upside", "upsideScore"],
-            ["Consistency", "consistencyScore"]
-          ];
-          if ((beforeTeam.weights?.actual || afterTeam.weights?.actual || 0) > 0.01) scoreMetrics.push(["Actual", "actualScore"]);
-          const scoreRows = scoreMetrics.map(([label, key]) => metricRow(label, valueChange(beforeTeam[key] * 100, afterTeam[key] * 100, 0, "/100"))).join("");
-          const projectionRows = [
-            ["Mean week", "expectedPts"], ["Median week", "medianExp"], ["Best week", "bestWeekPts"],
-            ["Worst week", "worstByeWeekPts"], ["Week-to-week vol", "weeklyVol"],
-            ["Floor (avg)", "floorPts"], ["Ceiling (avg)", "ceilingPts"]
-          ].map(([label, key]) => metricRow(label, valueChange(beforeTeam[key], afterTeam[key], 1))).join("");
-          const positionRows = ["QB", "RB", "WR", "TE"].map((pos) => metricRow(pos, rankChange(posr(originalRanks.posRank, teamId, pos), posr(afterRanks.posRank, teamId, pos)))).join("");
-          const depthRows = metricRow("Depth", { text: depthLabel(beforeTeam.depthNorm || 0) + " → " + depthLabel(afterTeam.depthNorm || 0), cls: "same" }) +
-            metricRow("Risk", { text: riskLabel(beforeTeam.stabilityRatio || 0.75, beforeTeam._stabSorted) + " → " + riskLabel(afterTeam.stabilityRatio || 0.75, afterTeam._stabSorted), cls: "same" }) +
-            metricRow("FantasyCalc (starters-heavy)", valueChange(beforeTeam.compRaw, afterTeam.compRaw, 0));
+          const power = formatRankDelta(rankBefore, rankAfter);
+          // rawPower is the true strength number; 0–100 display scores are only relative within one snapshot
+          const rawBefore = beforeTeam.rawPower;
+          const rawAfter = afterTeam.rawPower;
+          let rosterStronger = null; // true/false/null
+          if (rawBefore != null && rawAfter != null) {
+            const d = rawAfter - rawBefore;
+            if (d > 0.002) rosterStronger = true;
+            else if (d < -0.002) rosterStronger = false;
+          }
+          const projCh = projDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
+
+          const beforeNs = needsSurplusForTeam(originalRanks.posRank, teamId, teams.length || 10, beforeTeam);
+          const afterNs = needsSurplusForTeam(afterRanks.posRank, teamId, teams.length || 10, afterTeam);
+          const filledNeeds = (beforeNs.needs || []).filter((p) => (afterNs.needs || []).indexOf(p) < 0);
+          const newNeeds = (afterNs.needs || []).filter((p) => (beforeNs.needs || []).indexOf(p) < 0);
+
+          let posBits = [];
+          for (const pos of ["QB", "RB", "WR", "TE"]) {
+            const b = posr(originalRanks.posRank, teamId, pos);
+            const a = posr(afterRanks.posRank, teamId, pos);
+            if (b == null || a == null || b === a) continue;
+            const better = a < b;
+            posBits.push(
+              '<span class="calc-fit-tag ' + (better ? "fills" : "") + '">' +
+              pos + " #" + b + " → #" + a + (better ? " better" : " worse") + "</span>"
+            );
+          }
+
+          // Verdict priority: power rank → roster raw strength → proj PPG
+          let verdict = "About even";
+          let verdictCls = "neutral";
+          if (power.d > 0) {
+            verdict = "Moves up in rankings";
+            verdictCls = "benefit";
+          } else if (power.d < 0) {
+            verdict = "Moves down in rankings";
+            verdictCls = "neutral";
+          } else if (rosterStronger === true || projCh.d > 0.5) {
+            verdict = "Roster stronger, same rank";
+            verdictCls = "benefit";
+          } else if (rosterStronger === false || projCh.d < -0.5) {
+            verdict = "Roster weaker, same rank";
+            verdictCls = "neutral";
+          } else if (filledNeeds.length) {
+            verdict = "Fills a need";
+            verdictCls = "benefit";
+          }
+
+          const depthBefore = depthLabel(beforeTeam.depthNorm || 0);
+          const depthAfter = depthLabel(afterTeam.depthNorm || 0);
+          const depthLine = depthBefore === depthAfter ? depthAfter : depthBefore + " → " + depthAfter;
+
+          const strengthNote = rosterStronger === true
+            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength (before 0–100 scaling). Can rise even if rank falls only if other teams changed more — in a 2-team trade this should match rank direction.">Roster strength</span><span class="calc-impact-change up">Stronger</span></div>'
+            : rosterStronger === false
+            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength before the 0–100 display scaling.">Roster strength</span><span class="calc-impact-change down">Weaker</span></div>'
+            : "";
 
           return (
             '<div class="calc-impact-card">' +
-              "<h4>" + escapeHtml(name) + "</h4>" +
-              metricRow("Power rank", rankChange(rankBefore, rankAfter)) +
-              metricRow("Power score", valueChange(beforeTeam.totalScore, afterTeam.totalScore, 1)) +
-              '<div class="calc-impact-sub">Score breakdown</div>' + scoreRows +
-              '<div class="calc-impact-sub">Lineup projections</div>' + projectionRows +
-              '<div class="calc-impact-sub">Position ranks</div>' + positionRows +
-              '<div class="calc-impact-sub">Roster breakdown</div>' + depthRows +
-              starterSummary(beforeTeam, afterTeam) +
+              "<h4>" + escapeHtml(name) +
+                '<span class="calc-impact-result ' + verdictCls + '">' + verdict + "</span></h4>" +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Where this team ranks after the trade vs before. Lower rank number is better. This is the main result — ignore old 0–100 score deltas.">Power rank</span>' +
+                '<span class="calc-impact-big ' + power.cls + '">' + power.text + "</span></div>" +
+              strengthNote +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Average projected points from the optimal Superflex lineup across the season (bye-aware).">Proj PPG</span>' +
+                '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + "</span></div>" +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bench quality after starters are filled.">Depth</span>' +
+                '<span class="calc-impact-change">' + depthLine + "</span></div>" +
+              (filledNeeds.length
+                ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills need: ' + filledNeeds.join(", ") + "</span></div>"
+                : "") +
+              (newNeeds.length
+                ? '<div class="calc-impact-summary"><span class="calc-fit-tag">Opens need: ' + newNeeds.join(", ") + "</span></div>"
+                : "") +
+              (posBits.length
+                ? '<div class="calc-impact-summary">' + posBits.join(" ") + "</div>"
+                : "") +
             "</div>"
           );
         }
@@ -4513,16 +4774,8 @@
       return "rgb(" + r + "," + g + "," + b + ")";
     }
 
-    let powerRankingModels = [];
-    let powerRankingSort = "totalScore";
-
     function renderPowerRankings(models) {
-      powerRankingModels = models;
-      const sortKey = powerRankingSort;
-      const sorted = models.slice().sort((a, b) => {
-        const difference = (b[sortKey] || 0) - (a[sortKey] || 0);
-        return difference || (b.totalScore || 0) - (a.totalScore || 0) || a.name.localeCompare(b.name);
-      });
+      const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
       const teamCount = sorted.length || 10;
 
       const posRankByTeam = {};
@@ -4700,16 +4953,10 @@
       });
     }
 
-    const powerSort = document.getElementById("power-sort");
-    if (powerSort) {
-      powerSort.addEventListener("change", (event) => {
-        powerRankingSort = event.target.value;
-        renderPowerRankings(powerRankingModels);
-      });
-    }
-
-    function playoffPercent(value, total) {
-      return ((value / total) * 100).toFixed(1) + "%";
+    function playoffPercent(value, total, gamesPlayed) {
+      let raw = total ? value / total : 0;
+      if (gamesPlayed != null) raw = curveWinProbability(raw, gamesPlayed);
+      return (raw * 100).toFixed(1) + "%";
     }
 
     function runPlayoffSimulations(data, scheduleData) {
@@ -4801,7 +5048,7 @@
         });
         leagueWeekMean[w] = c ? s / c : 115;
       }
-      const preseasonShrink = hasPlayedGames ? 0 : 0.30;
+      const preseasonShrink = 0; // do not flatten strength for odds
       function effectiveMean(tid, week) {
         const raw = (weekMean[tid] && weekMean[tid][week] != null)
           ? weekMean[tid][week]
@@ -4816,8 +5063,8 @@
         let sd = (weekSd[tid] && weekSd[tid][week] != null)
           ? weekSd[tid][week]
           : (teamAvgSd[tid] || 22);
-        // Preseason projections carry more model uncertainty than live results.
-        sd = Math.max(18, sd * (hasPlayedGames ? 1.05 : 1.30));
+        // Independent team noise; keep room for upsets
+        sd = Math.max(20, sd * 1.12);
         return Math.max(0, mean + normal() * sd);
       }
 
@@ -4830,9 +5077,8 @@
           ? weekSd[String(a.id)][wa] : (teamAvgSd[String(a.id)] || 22);
         let sb = (weekSd[String(b.id)] && weekSd[String(b.id)][wa] != null)
           ? weekSd[String(b.id)][wa] : (teamAvgSd[String(b.id)] || 22);
-        const uncertaintyMultiplier = hasPlayedGames ? 1.05 : 1.30;
-        sa = Math.max(18, sa * uncertaintyMultiplier);
-        sb = Math.max(18, sb * uncertaintyMultiplier);
+        sa = Math.max(18, sa * 1.05);
+        sb = Math.max(18, sb * 1.05);
         const z = (ma - mb) / Math.max(1, Math.sqrt(sa * sa + sb * sb));
         return 1 / (1 + Math.exp(-1.25 * z));
       }
@@ -5280,11 +5526,69 @@
       };
     }
 
-    function winProbFromProj(muA, sdA, muB, sdB) {
-      const sa = Math.max(14, Math.min(sdA || 20, 26));
-      const sb = Math.max(14, Math.min(sdB || 20, 26));
-      const z = (muA - muB) / Math.max(1, Math.sqrt(sa * sa + sb * sb));
-      return 1 / (1 + Math.exp(-1.85 * z));
+
+    /**
+     * Pull extreme odds toward 50% until teams are proven by real games.
+     * gamesPlayed = league-average completed games (0 = preseason).
+     * Early: max ~62–65%. By ~8–10 games: near full simulated range.
+     */
+    function curveWinProbability(raw, gamesPlayed) {
+      const gp = Math.max(0, Number(gamesPlayed) || 0);
+      // How much of the simulated edge we trust
+      const trust = Math.min(1, gp / 9);
+      // Shrink factor on distance from 50%
+      const shrink = 0.30 + 0.70 * trust; // preseason keep 30% of edge
+      let curved = 0.5 + (raw - 0.5) * shrink;
+      // Hard caps that widen with sample
+      const maxDev = 0.12 + 0.38 * trust; // ±12% preseason → ±50% late
+      curved = Math.max(0.5 - maxDev, Math.min(0.5 + maxDev, curved));
+      return curved;
+    }
+
+    function leagueGamesPlayed(data) {
+      const teams = (data && data.teams) || [];
+      if (!teams.length) return 0;
+      let sum = 0;
+      for (const t of teams) {
+        const o = (t.record && t.record.overall) || {};
+        sum += (o.wins || 0) + (o.losses || 0) + (o.ties || 0);
+      }
+      return sum / teams.length;
+    }
+
+    /**
+     * Win chance by simulating each team independently, then comparing scores.
+     * Team A draws from N(muA, sdA), Team B from N(muB, sdB) — no joint logistic.
+     * Preseason uses wider noise so large proj gaps don't become 95%+ locks.
+     */
+    function winProbFromProj(muA, sdA, muB, sdB, options) {
+      const opts = options || {};
+      const sims = opts.sims || 4000;
+      const preseason = !!opts.preseason;
+      // Independent team noise; wider before games are played
+      let sa = Math.max(preseason ? 22 : 16, Number(sdA) || 20);
+      let sb = Math.max(preseason ? 22 : 16, Number(sdB) || 20);
+      if (preseason) {
+        sa = Math.min(38, sa * 1.35);
+        sb = Math.min(38, sb * 1.35);
+      } else {
+        sa = Math.min(32, sa);
+        sb = Math.min(32, sb);
+      }
+      const normal = () => {
+        let u = 0, v = 0;
+        while (!u) u = Math.random();
+        while (!v) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+      };
+      let wins = 0;
+      for (let i = 0; i < sims; i++) {
+        const a = Math.max(0, muA + normal() * sa);
+        const b = Math.max(0, muB + normal() * sb);
+        if (a > b) wins++;
+        else if (a === b && Math.random() < 0.5) wins++;
+      }
+      return wins / sims;
     }
 
     function buildMatchupAdvice(winPct, margin, live) {
@@ -5625,12 +5929,16 @@
         const oppMu = oppLiveTotals.current.total;
 
         const margin = myMu - oppMu;
-        const winPct = winProbFromProj(myMu, baseProj.sigma, oppMu, oppProj.sigma);
+        const gp = leagueGamesPlayed(leagueData || data);
+        const preseason = gp < 0.5;
+        let winPct = winProbFromProj(myMu, baseProj.sigma, oppMu, oppProj.sigma || baseProj.sigma, { preseason, sims: 5000 });
+        winPct = curveWinProbability(winPct, gp);
         // Optimal lineups for both sides (same live locked points + optimal remaining)
         const myOptMu = liveTotals.optimal.total;
         const oppOptMu = oppLiveTotals.optimal.total;
         const optMargin = myOptMu - oppOptMu;
-        const optWinPct = winProbFromProj(myOptMu, baseProj.sigma, oppOptMu, oppOpt.sigma);
+        let optWinPct = winProbFromProj(myOptMu, baseProj.sigma, oppOptMu, oppOpt.sigma || baseProj.sigma, { preseason, sims: 5000 });
+        optWinPct = curveWinProbability(optWinPct, gp);
         const liveMeta = {
           active: entries.some((e) => e.hasPlayed),
           myLocked,
@@ -5662,27 +5970,31 @@
           (liveMeta.active ? " · LIVE" : " · Pre-game") +
           " · updated " + new Date().toLocaleTimeString();
 
+        const chanceCls = winPct >= 0.58 ? "" : winPct <= 0.42 ? "lose" : "even";
         root.innerHTML =
           '<div class="matchup-scoreboard">' +
             '<div class="matchup-side">' +
               "<h3>" + escapeHtml(myName) + "</h3>" +
+              '<div class="matchup-proj-label">Projected</div>' +
               '<div class="big">' + myMu.toFixed(1) + "</div>" +
               '<div class="sub">Scored ' + myLocked.toFixed(1) + " · Left " + myRemain.toFixed(1) + "</div>" +
-              '<div class="sub tip" data-tip="Floor and ceiling are team-level: projected total ± a realistic SD. Not the sum of every player’s floor (that would assume all your starters bust together).">Floor ' +
+              '<div class="sub tip" data-tip="Team floor/ceiling = projected total ± realistic SD. Not every player floor added up.">Floor ' +
                 (myLocked + Math.max(0, baseProj.floor - baseProj.mu + myRemain)).toFixed(1) +
                 " · Ceiling " + (myLocked + Math.max(0, baseProj.ceil - baseProj.mu + myRemain)).toFixed(1) + "</div>" +
             "</div>" +
-            '<div class="matchup-vs">WIN CHANCE' +
-              '<div class="winpct tip ' + (winPct >= 0.55 ? "" : winPct <= 0.45 ? "lose" : "even") +
-                '" data-tip="Based on current ESPN starting lineups (scored points + remaining projections).">' +
-                (winPct * 100).toFixed(0) + "%</div>" +
-              '<div style="margin-top:0.25rem">Margin ' + (margin >= 0 ? "+" : "") + margin.toFixed(1) + "</div>" +
-              '<div class="sub tip" style="margin-top:0.55rem" data-tip="If both teams used optimal lineups for players still left to play.">' +
-                "Optimal " + (optWinPct * 100).toFixed(0) + "%</div>" +
+            '<div class="matchup-vs">' +
+              '<div class="matchup-proj-label">Proj margin</div>' +
+              '<div style="font-size:1.1rem;font-weight:700">' + (margin >= 0 ? "+" : "") + margin.toFixed(1) + "</div>" +
               '<div class="sub">Opt margin ' + (optMargin >= 0 ? "+" : "") + optMargin.toFixed(1) + "</div>" +
+              '<div class="matchup-chance-block">' +
+                '<div class="matchup-proj-label tip" data-tip="Each team is simulated on its own, then compared. Early season odds are pulled toward 50% and capped until more games are played.">Win chance</div>' +
+                '<div class="winpct ' + chanceCls + '">' + (winPct * 100).toFixed(0) + "%</div>" +
+                '<div class="sub">Optimal lineups ' + (optWinPct * 100).toFixed(0) + "%</div>" +
+              "</div>" +
             "</div>" +
             '<div class="matchup-side" style="text-align:right">' +
               "<h3>" + escapeHtml(oppName) + "</h3>" +
+              '<div class="matchup-proj-label">Projected</div>' +
               '<div class="big">' + oppMu.toFixed(1) + "</div>" +
               '<div class="sub">Scored ' + oppLiveTotals.current.locked.toFixed(1) +
                 " · Left " + oppLiveTotals.current.remain.toFixed(1) + "</div>" +
@@ -5724,6 +6036,7 @@
         }
         const simulation = runPlayoffSimulations(leagueData, scheduleData);
         const total = simulation.simulations;
+        const gpOdds = leagueGamesPlayed(leagueData);
         const rows = simulation.teams.slice().sort((a, b) =>
           simulation.results[String(b.id)].playoff - simulation.results[String(a.id)].playoff
         );
@@ -5771,9 +6084,9 @@
               "<td>" + nowRec + "</td>" +
               '<td title="Mean projected W-L across sims. Each week counts H2H + top-5 result.">' + projRec +
                 '<div style="font-size:0.65rem;color:var(--text-muted)">' + rangeStr + " · ~" + Math.round(h2hW) + " H2H · ~" + Math.round(medW) + " top-5</div></td>" +
-              "<td>" + playoffPercent(result.playoff, total) + "</td>" +
-              "<td>" + playoffPercent(result.bye, total) + "</td>" +
-              "<td>" + playoffPercent(result.champion, total) + "</td>" +
+              "<td>" + playoffPercent(result.playoff, total, gpOdds) + "</td>" +
+              "<td>" + playoffPercent(result.bye, total, gpOdds) + "</td>" +
+              "<td>" + playoffPercent(result.champion, total, gpOdds) + "</td>" +
             "</tr>" +
             '<tr class="odds-detail-row" hidden data-odds-detail="' + team.id + '">' +
               '<td colspan="6">' +
@@ -5889,6 +6202,7 @@
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "odds") setupPlayoffOdds();
         if (btn.dataset.panel === "matchup") setupMatchup();
+        if (btn.dataset.panel === "home") renderHomeScreen();
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
@@ -6003,7 +6317,18 @@
       console.error(bootErr);
     }
 
-    fetchLeague();
+    setupHomeScreen();
+    (function boot() {
+      const active = getActiveLeague();
+      if (active && active.id) {
+        LEAGUE_ID = String(active.id);
+        SEASON = Number(active.season) || 2026;
+        refreshApiUrls();
+      }
+      updateHeaderMeta();
+      renderHomeScreen();
+      fetchLeague();
+    })();
   </script>
   <div id="app-tooltip" role="tooltip"></div>
 </body>
