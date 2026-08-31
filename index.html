@@ -687,6 +687,32 @@
     .power-row.collapsed .power-line-scores { display: none; }
 
 
+
+    .power-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin: 0.75rem 0 0.85rem;
+    }
+    .power-filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .power-filter-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-right: 0.25rem;
+      min-width: 2.6rem;
+    }
+    @media (max-width: 720px) {
+      .power-filter-group { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .power-filter-group .filter-btn { flex-shrink: 0; }
+    }
     .fp-power-table {
       width: 100%;
       border-collapse: collapse;
@@ -1985,11 +2011,32 @@
 
   <div class="panel" id="panel-power">
     <div class="rankings-wrap">
-            <p class="rankings-note">
+      <p class="rankings-note">
         <strong>Power rankings</strong><br>
-        Preseason question: how strong is this roster expected to be over the season?
-        Weekly ESPN lineups (bye-aware) summarized into one score. Tap a row for the full breakdown. #1 is always 100.
+        How strong is this roster expected to be over the season?
+        Tap a row for the breakdown. #1 is always 100; early season scores stay tighter until games prove the gaps.
       </p>
+      <div class="power-filters" id="power-filters">
+        <div class="power-filter-group">
+          <span class="power-filter-label">Sort</span>
+          <button type="button" class="filter-btn active" data-power-sort="overall">Overall</button>
+          <button type="button" class="filter-btn" data-power-sort="proj">Proj PPG</button>
+          <button type="button" class="filter-btn" data-power-sort="QB">QB</button>
+          <button type="button" class="filter-btn" data-power-sort="RB">RB</button>
+          <button type="button" class="filter-btn" data-power-sort="WR">WR</button>
+          <button type="button" class="filter-btn" data-power-sort="TE">TE</button>
+          <button type="button" class="filter-btn" data-power-sort="depth">Depth</button>
+          <button type="button" class="filter-btn" data-power-sort="market">Market</button>
+        </div>
+        <div class="power-filter-group">
+          <span class="power-filter-label">Needs</span>
+          <button type="button" class="filter-btn active" data-power-need="all">All teams</button>
+          <button type="button" class="filter-btn" data-power-need="QB">Need QB</button>
+          <button type="button" class="filter-btn" data-power-need="RB">Need RB</button>
+          <button type="button" class="filter-btn" data-power-need="WR">Need WR</button>
+          <button type="button" class="filter-btn" data-power-need="TE">Need TE</button>
+        </div>
+      </div>
       <div id="power-list" class="power-list"></div>
     </div>
   </div>
@@ -3359,6 +3406,21 @@
      * In-season: weights shift toward regressed actual PPG per powerWeightSchedule.
      * Final: Score = Raw / max(Raw) × 100  (#1 = 100)
      */
+    /** Rank-based 0–1 score (robust to one extreme team). Higher value = higher score. */
+    function percentileScore(values, value, higherIsBetter) {
+      const arr = (values || []).slice();
+      if (!arr.length) return 0.5;
+      arr.sort((a, b) => a - b);
+      let below = 0;
+      for (const v of arr) {
+        if (v < value) below++;
+        else if (v === value) below += 0.5;
+      }
+      let p = below / arr.length;
+      if (!higherIsBetter) p = 1 - p;
+      return Math.max(0, Math.min(1, p));
+    }
+
     function finalizePowerScores(models) {
       const n = Math.max(models.length, 1);
       const avgGames = models.reduce((s, m) => s + (m.gamesPlayed || 0), 0) / n;
@@ -3447,19 +3509,22 @@
         const scarcityScore = (m.starterVorp || 0) / maxVorp;
 
         const depthRaw = (m.depthPts || 0) + (m.depthVorp || 0);
-        let depthRel = depthRaw / Math.max(medDepth, 1e-6);
-        depthRel = Math.min(1.35, Math.max(0.60, depthRel));
-        const depthScore = (depthRel - 0.60) / (1.35 - 0.60);
+        const depthScore = percentileScore(
+          models.map((x) => (x.depthPts || 0) + (x.depthVorp || 0)),
+          depthRaw,
+          true
+        );
+        const marketScore = percentileScore(
+          models.map((x) => x.compRaw || 0),
+          m.compRaw || 0,
+          true
+        );
 
-        let marketRel = (m.compRaw || 0) / medComp;
-        marketRel = Math.min(1.50, Math.max(0.55, marketRel));
-        const marketScore = (marketRel - 0.55) / (1.50 - 0.55);
-
-        const stabilityScore = (m.stabilityRatio - minStab) / Math.max(1e-6, maxStab - minStab);
-        const upsideScore = (m.upsideRatio - minUps) / Math.max(1e-6, maxUps - minUps);
-
-        // Consistency: lower weekly volatility = higher score
-        const consistencyScore = 1 - Math.min(1, (m.weeklyVol || 0) / maxVol);
+        // Percentile scores — less volatile than pure min–max when one team is an outlier
+        const stabilityScore = percentileScore(stabVals, m.stabilityRatio || 0, true);
+        const upsideScore = percentileScore(upsVals, m.upsideRatio || 0, true);
+        // Consistency: lower weekly volatility ranks higher
+        const consistencyScore = percentileScore(volVals, m.weeklyVol || 0, false);
 
         const conf = actualConfidence(m.gamesPlayed || 0);
         const projectedPpg = m.expectedPts || avgExp;
@@ -3505,17 +3570,31 @@
       });
 
       const maxRaw = Math.max(...scored.map((m) => m.rawPower || 0), 1e-9);
-      return scored.map((m) => Object.assign({}, m, {
-        totalScore: Math.round(((m.rawPower || 0) / maxRaw) * 1000) / 10,
-        depthNorm: m.depthScore
-      }));
+      // Early season: compress scores toward 100 (uncertainty). As games are played, allow a wider spread.
+      // pull=0.72 preseason → a team at 90% of #1 raw shows ~97, not 90.
+      const gp = avgGames;
+      const certainty = Math.min(1, gp / 10);
+      const pull = 0.72 * (1 - certainty); // 0.72 → 0 as season progresses
+      return scored.map((m) => {
+        const ratio = (m.rawPower || 0) / maxRaw;
+        const compressed = pull + (1 - pull) * ratio;
+        return Object.assign({}, m, {
+          totalScore: Math.round(compressed * 1000) / 10,
+          depthNorm: m.depthScore
+        });
+      });
     }
+
+    let powerModelsCache = null;
+    let powerSortMode = "overall";
+    let powerNeedFilter = "all";
 
     function renderAll(data) {
       renderTradeBoard(data);
-      const models = finalizePowerScores(buildTeamModels(data));
-      renderPowerRankings(models);
+      powerModelsCache = finalizePowerScores(buildTeamModels(data));
+      renderPowerRankings(powerModelsCache);
       setupTradeCalculator(data);
+      setupPowerFilters();
     }
 
 
@@ -3669,27 +3748,60 @@
         tradeBlockByTeam[String(team.id)] = (team.tradeBlock && team.tradeBlock.players) || {};
       }
 
+      // Full player rows from scored models (keeps proj/floor/ceil for impact calc)
+      const playerCatalog = {};
+      baseModels.forEach((m) => {
+        (m.entries || []).forEach((e) => {
+          if (e && e.id != null) playerCatalog[String(e.id)] = e;
+        });
+      });
+
       function snapshotFromEspn() {
         const map = {};
         for (const team of teams) {
           const tid = String(team.id);
           const block = tradeBlockByTeam[tid] || {};
+          const model = baseModels.find((m) => String(m.id) === tid);
           const rows = [];
-          for (const e of team.roster?.entries || []) {
-            const player = e.playerPoolEntry?.player;
-            if (!player) continue;
-            const id = String(player.id);
-            const inj = injuryLabel(player);
-            rows.push({
-              id,
-              name: player.fullName || "Unknown",
-              pos: POS_MAP[player.defaultPositionId] || "?",
-              val: playerFcValue(player),
-              onBlock: block[id] === "ON_THE_BLOCK",
-              notLikely: block[id] === "UNTOUCHABLE",
-              injury: inj,
-              bye: getByeWeek(player)
-            });
+          // Prefer model entries (full projection fields); fall back to roster parse
+          const source = (model && model.entries && model.entries.length)
+            ? model.entries
+            : null;
+          if (source) {
+            for (const e of source) {
+              const id = String(e.id);
+              rows.push(Object.assign({}, e, {
+                id,
+                onBlock: block[id] === "ON_THE_BLOCK",
+                notLikely: block[id] === "UNTOUCHABLE"
+              }));
+              playerCatalog[id] = rows[rows.length - 1];
+            }
+          } else {
+            for (const e of team.roster?.entries || []) {
+              const player = e.playerPoolEntry?.player;
+              if (!player) continue;
+              const id = String(player.id);
+              const inj = injuryLabel(player);
+              const row = {
+                id,
+                name: player.fullName || "Unknown",
+                pos: POS_MAP[player.defaultPositionId] || "?",
+                val: playerFcValue(player),
+                onBlock: block[id] === "ON_THE_BLOCK",
+                notLikely: block[id] === "UNTOUCHABLE",
+                injury: inj,
+                bye: getByeWeek(player),
+                slot: e.lineupSlotId
+              };
+              const proj = espnProjectionFields(player);
+              row.proj = proj.proj;
+              row.projFloor = proj.floor;
+              row.projCeil = proj.ceil;
+              row.seasonAvg = proj.seasonAvg;
+              rows.push(row);
+              playerCatalog[id] = row;
+            }
           }
           map[tid] = rows;
         }
@@ -4102,16 +4214,16 @@
           const rankBefore = pr(originalRanks.powerRank, teamId);
           const rankAfter = pr(afterRanks.powerRank, teamId);
           const power = formatRankDelta(rankBefore, rankAfter);
-          // rawPower is the true strength number; 0–100 display scores are only relative within one snapshot
-          const rawBefore = beforeTeam.rawPower;
-          const rawAfter = afterTeam.rawPower;
-          let rosterStronger = null; // true/false/null
-          if (rawBefore != null && rawAfter != null) {
-            const d = rawAfter - rawBefore;
-            if (d > 0.002) rosterStronger = true;
-            else if (d < -0.002) rosterStronger = false;
-          }
+
+          // Absolute metrics only (relative rawPower is not comparable across two finalize() runs)
           const projCh = projDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
+          const valBefore = beforeTeam.starterValue != null ? beforeTeam.starterValue : beforeTeam.rosterValue;
+          const valAfter = afterTeam.starterValue != null ? afterTeam.starterValue : afterTeam.rosterValue;
+          let valD = 0;
+          if (valBefore != null && valAfter != null) valD = Math.round(valAfter - valBefore);
+          const valCls = valD > 25 ? "up" : valD < -25 ? "down" : "same";
+          const valText = (valAfter != null ? Math.round(valAfter).toLocaleString() : "—") +
+            (valD ? " (" + (valD > 0 ? "+" : "") + valD.toLocaleString() + ")" : "");
 
           const beforeNs = needsSurplusForTeam(originalRanks.posRank, teamId, teams.length || 10, beforeTeam);
           const afterNs = needsSurplusForTeam(afterRanks.posRank, teamId, teams.length || 10, afterTeam);
@@ -4130,46 +4242,41 @@
             );
           }
 
-          // Verdict priority: power rank → roster raw strength → proj PPG
+          // Verdict: proj PPG first (absolute), then rank, then needs
           let verdict = "About even";
           let verdictCls = "neutral";
-          if (power.d > 0) {
-            verdict = "Moves up in rankings";
+          if (projCh.d > 1.0 || (power.d > 0 && projCh.d >= 0)) {
+            verdict = power.d > 0 ? "Moves up" : "Stronger lineup";
             verdictCls = "benefit";
-          } else if (power.d < 0) {
-            verdict = "Moves down in rankings";
-            verdictCls = "neutral";
-          } else if (rosterStronger === true || projCh.d > 0.5) {
-            verdict = "Roster stronger, same rank";
-            verdictCls = "benefit";
-          } else if (rosterStronger === false || projCh.d < -0.5) {
-            verdict = "Roster weaker, same rank";
+          } else if (projCh.d < -1.0 || (power.d < 0 && projCh.d <= 0)) {
+            verdict = power.d < 0 ? "Moves down" : "Weaker lineup";
             verdictCls = "neutral";
           } else if (filledNeeds.length) {
             verdict = "Fills a need";
             verdictCls = "benefit";
+          } else if (power.d > 0) {
+            verdict = "Moves up";
+            verdictCls = "benefit";
+          } else if (power.d < 0) {
+            verdict = "Moves down";
+            verdictCls = "neutral";
           }
 
           const depthBefore = depthLabel(beforeTeam.depthNorm || 0);
           const depthAfter = depthLabel(afterTeam.depthNorm || 0);
           const depthLine = depthBefore === depthAfter ? depthAfter : depthBefore + " → " + depthAfter;
 
-          const strengthNote = rosterStronger === true
-            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength (before 0–100 scaling). Can rise even if rank falls only if other teams changed more — in a 2-team trade this should match rank direction.">Roster strength</span><span class="calc-impact-change up">Stronger</span></div>'
-            : rosterStronger === false
-            ? '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Underlying roster strength before the 0–100 display scaling.">Roster strength</span><span class="calc-impact-change down">Weaker</span></div>'
-            : "";
-
           return (
             '<div class="calc-impact-card">' +
               "<h4>" + escapeHtml(name) +
                 '<span class="calc-impact-result ' + verdictCls + '">' + verdict + "</span></h4>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Where this team ranks after the trade vs before. Lower rank number is better. This is the main result — ignore old 0–100 score deltas.">Power rank</span>' +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Power rank after re-scoring both rosters with the same model.">Power rank</span>' +
                 '<span class="calc-impact-big ' + power.cls + '">' + power.text + "</span></div>" +
-              strengthNote +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Average projected points from the optimal Superflex lineup across the season (bye-aware).">Proj PPG</span>' +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bye-aware optimal lineup projection (points per week). Absolute number — comparable before and after.">Proj PPG</span>' +
                 '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bench quality after starters are filled.">Depth</span>' +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="FantasyCalc starter-side trade value on the roster.">Starter value</span>' +
+                '<span class="calc-impact-change ' + valCls + '">' + valText + "</span></div>" +
+              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bench quality after starters.">Depth</span>' +
                 '<span class="calc-impact-change">' + depthLine + "</span></div>" +
               (filledNeeds.length
                 ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills need: ' + filledNeeds.join(", ") + "</span></div>"
@@ -4650,28 +4757,68 @@
       }
       const others = models.filter((model) => String(model.id) !== String(team.id));
       const ideas = [];
-      const topPlayers = (entries) =>
-        (entries || []).filter((e) => (e.val || 0) > 0).slice().sort((a, b) => b.val - a.val).slice(0, 10);
+      const topPlayers = (entries, n) =>
+        (entries || []).filter((e) => (e.val || 0) > 0).slice().sort((a, b) => b.val - a.val).slice(0, n);
+
+      function packageOptions(entries, maxN) {
+        const top = topPlayers(entries, maxN);
+        const packs = [];
+        // 1-player
+        top.forEach((p) => packs.push([p]));
+        // 2-player
+        for (let i = 0; i < top.length; i++) {
+          for (let j = i + 1; j < top.length; j++) packs.push([top[i], top[j]]);
+        }
+        // 3-player (smaller pool)
+        const top6 = top.slice(0, 6);
+        for (let i = 0; i < top6.length; i++) {
+          for (let j = i + 1; j < top6.length; j++) {
+            for (let k = j + 1; k < top6.length; k++) packs.push([top6[i], top6[j], top6[k]]);
+          }
+        }
+        return packs;
+      }
+      function packVal(pack) {
+        return pack.reduce((s, e) => s + (e.val || 0), 0);
+      }
+      function packKey(pack) {
+        return pack.map((e) => e.id).sort().join(",");
+      }
 
       for (const partner of others) {
         const mineNeeds = (needsSurplusForTeam(ranks.posRank, mine.id, models.length, mine).needs) || [];
         const partnerNeeds = (needsSurplusForTeam(ranks.posRank, partner.id, models.length, partner).needs) || [];
-        const theirTop = topPlayers(partner.entries);
-        const myTop = topPlayers(mine.entries);
-        for (const inc of theirTop) {
-          for (const out of myTop) {
-            const gap = Math.abs((inc.val || 0) - (out.val || 0));
-            const lo = Math.min(inc.val || 0, out.val || 0) || 1;
-            const ratio = Math.max(inc.val || 0, out.val || 0) / lo;
-            if (gap > 200 && ratio > 1.3) continue;
-            const fillsMine = mineNeeds.indexOf(inc.pos) >= 0;
-            const fillsThem = partnerNeeds.indexOf(out.pos) >= 0;
-            const score = gap + (fillsMine ? 0 : 50) + (fillsThem ? 0 : 50);
+        const myPacks = packageOptions(mine.entries, 10);
+        const theirPacks = packageOptions(partner.entries, 10);
+
+        for (const incoming of theirPacks) {
+          const inVal = packVal(incoming);
+          if (inVal < 30) continue;
+          for (const outgoing of myPacks) {
+            // Skip pure 1-for-1 mirror of same size only if values identical-ish and same pos - still allow multi
+            const outVal = packVal(outgoing);
+            if (outVal < 30) continue;
+            const gap = Math.abs(inVal - outVal);
+            const ratio = Math.max(inVal, outVal) / Math.max(1, Math.min(inVal, outVal));
+            // Fairness window: tighter for big packages
+            const maxGap = 80 + 40 * Math.min(incoming.length, outgoing.length);
+            if (gap > maxGap && ratio > 1.22) continue;
+
+            const fillsMine = incoming.some((e) => mineNeeds.indexOf(e.pos) >= 0);
+            const fillsThem = outgoing.some((e) => partnerNeeds.indexOf(e.pos) >= 0);
+            // Prefer need-fills and multi when values are close
+            let score = gap;
+            if (!fillsMine) score += 45;
+            if (!fillsThem) score += 45;
+            // Slight preference for 2-for-1 / 2-for-2 variety
+            if (incoming.length + outgoing.length === 2) score += 8;
+            if (incoming.length >= 2 || outgoing.length >= 2) score -= 5;
+
             ideas.push({
-              incoming: [inc],
-              outgoing: [out],
+              incoming,
+              outgoing,
               team: partner,
-              gain: (inc.val || 0) - (out.val || 0),
+              gain: inVal - outVal,
               score,
               fillsMine,
               fillsThem
@@ -4683,7 +4830,7 @@
       const seen = new Set();
       const visible = [];
       for (const idea of ideas) {
-        const key = idea.team.id + ":" + idea.incoming[0].id + ":" + idea.outgoing[0].id;
+        const key = idea.team.id + ":" + idea.incoming.map((e) => e.id).sort().join(",") + "→" + idea.outgoing.map((e) => e.id).sort().join(",");
         if (seen.has(key)) continue;
         seen.add(key);
         visible.push(idea);
@@ -4694,6 +4841,7 @@
           "<strong>Get " + escapeHtml(idea.incoming.map((e) => e.name).join(" + ")) + "</strong>" +
           " for " + escapeHtml(idea.outgoing.map((e) => e.name).join(" + ")) +
           '<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) +
+          " · " + idea.incoming.length + " for " + idea.outgoing.length +
           " · gap " + Math.abs(Math.round(idea.gain)).toLocaleString() +
           (idea.fillsMine ? " · fills your need" : "") +
           (idea.fillsThem ? " · fills their need" : "") +
@@ -4774,9 +4922,33 @@
       return "rgb(" + r + "," + g + "," + b + ")";
     }
 
+    function setupPowerFilters() {
+      const root = document.getElementById("power-filters");
+      if (!root || root.dataset.bound === "1") return;
+      root.dataset.bound = "1";
+      root.addEventListener("click", (e) => {
+        const sortBtn = e.target.closest("[data-power-sort]");
+        const needBtn = e.target.closest("[data-power-need]");
+        if (sortBtn) {
+          powerSortMode = sortBtn.getAttribute("data-power-sort") || "overall";
+          root.querySelectorAll("[data-power-sort]").forEach((b) => b.classList.toggle("active", b === sortBtn));
+          if (powerModelsCache) renderPowerRankings(powerModelsCache);
+        }
+        if (needBtn) {
+          powerNeedFilter = needBtn.getAttribute("data-power-need") || "all";
+          root.querySelectorAll("[data-power-need]").forEach((b) => b.classList.toggle("active", b === needBtn));
+          if (powerModelsCache) renderPowerRankings(powerModelsCache);
+        }
+      });
+    }
+
     function renderPowerRankings(models) {
-      const sorted = models.slice().sort((a, b) => b.totalScore - a.totalScore);
-      const teamCount = sorted.length || 10;
+      if (!models || !models.length) {
+        const list = document.getElementById("power-list");
+        if (list) list.innerHTML = '<p class="rankings-note">No teams loaded.</p>';
+        return;
+      }
+      const teamCount = models.length || 10;
 
       const posRankByTeam = {};
       for (const pos of ["QB", "RB", "WR", "TE"]) {
@@ -4786,6 +4958,30 @@
           posRankByTeam[t.id][pos] = i + 1;
         });
       }
+
+      // Need = bottom 40% of league at that position
+      const needCut = Math.max(teamCount - Math.ceil(teamCount * 0.4) + 1, Math.ceil(teamCount * 0.6));
+      let filtered = models.slice();
+      if (powerNeedFilter && powerNeedFilter !== "all") {
+        filtered = filtered.filter((t) => {
+          const r = (posRankByTeam[t.id] || {})[powerNeedFilter];
+          return r != null && r >= needCut;
+        });
+      }
+
+      const sortMode = powerSortMode || "overall";
+      const sorted = filtered.slice().sort((a, b) => {
+        if (sortMode === "proj") return (b.expectedPts || 0) - (a.expectedPts || 0);
+        if (sortMode === "depth") return (b.depthScore || 0) - (a.depthScore || 0);
+        if (sortMode === "market") return (b.marketScore || 0) - (a.marketScore || 0);
+        if (["QB", "RB", "WR", "TE"].indexOf(sortMode) >= 0) {
+          return (b.posScores[sortMode] || 0) - (a.posScores[sortMode] || 0);
+        }
+        // Overall: stable primary sort on rawPower then totalScore
+        const d = (b.rawPower || 0) - (a.rawPower || 0);
+        if (Math.abs(d) > 1e-9) return d;
+        return (b.totalScore || 0) - (a.totalScore || 0);
+      });
 
       // Rank component scores among teams for display
       function componentRank(key) {
@@ -4812,10 +5008,27 @@
       }
 
       const list = document.getElementById("power-list");
+      if (!sorted.length) {
+        list.innerHTML = '<p class="rankings-note">No teams match this need filter.</p>';
+        return;
+      }
       let body = "";
+      const sortLabel = sortMode === "overall" ? "" :
+        ('<div class="rankings-note" style="margin-bottom:0.5rem">Sorted by ' +
+         (sortMode === "proj" ? "projected PPG" : sortMode) +
+         (powerNeedFilter !== "all" ? " · need " + powerNeedFilter : "") + "</div>");
       sorted.forEach((t, i) => {
         const rank = i + 1;
-        const score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
+        let score;
+        if (sortMode === "proj") score = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
+        else if (sortMode === "depth") score = t.depthScore != null ? (t.depthScore * 100).toFixed(0) : "—";
+        else if (sortMode === "market") score = t.marketScore != null ? (t.marketScore * 100).toFixed(0) : "—";
+        else if (["QB", "RB", "WR", "TE"].indexOf(sortMode) >= 0) {
+          const pr = (posRankByTeam[t.id] || {})[sortMode];
+          score = pr != null ? ("#" + pr) : "—";
+        } else {
+          score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
+        }
         const recordStr = t.gamesPlayed > 0
           ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
           : "Preseason";
