@@ -239,6 +239,215 @@
     @media (max-width: 720px) {
       .calc-toolbar .btn { min-width: 0; flex: 1 1 calc(50% - 0.5rem); }
     }
+
+    
+    .ms-dropdown {
+      position: relative;
+      margin-top: 0.35rem;
+    }
+    .ms-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .ms-trigger:hover {
+      border-color: rgba(59,130,246,0.5);
+    }
+    .ms-dropdown.open .ms-trigger {
+      border-color: rgba(59,130,246,0.65);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .ms-trigger-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
+    .ms-trigger-text.has-value {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .ms-caret {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+    .ms-panel {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 40;
+      max-height: 220px;
+      overflow: auto;
+      padding: 0.35rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+    .ms-panel[hidden] { display: none !important; }
+    .ms-option {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      user-select: none;
+    }
+    .ms-option:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .ms-option:has(input:checked) {
+      background: rgba(59,130,246,0.12);
+      color: #93c5fd;
+      font-weight: 600;
+    }
+    .ms-option input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #3b82f6;
+      flex-shrink: 0;
+    }
+    .suggest-select {
+      width: 100%;
+      margin-top: 0.35rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+    .suggest-player-picker { position: relative; margin-top: 0.35rem; }
+    .suggest-player-search {
+      border-radius: 10px !important;
+      padding: 0.55rem 0.7rem !important;
+    }
+    .suggest-player-results {
+      position: absolute;
+      left: 0; right: 0; top: calc(100% + 6px);
+      z-index: 40;
+      max-height: 180px;
+      overflow: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+    .suggest-player-results button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.55rem 0.7rem;
+      border: none;
+      border-bottom: 1px solid var(--border-subtle);
+      background: transparent;
+      color: var(--text);
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .suggest-player-results button:last-child { border-bottom: none; }
+    .suggest-player-results button:hover { background: var(--surface-2); }
+    .suggest-player-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.4rem;
+    }
+    .suggest-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(59,130,246,0.18);
+      color: #93c5fd;
+      border: 1px solid rgba(59,130,246,0.3);
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+    .suggest-chip.give {
+      background: rgba(251,191,36,0.15);
+      color: #fbbf24;
+      border-color: rgba(251,191,36,0.35);
+    }
+    .suggest-chip button {
+      border: none;
+      background: rgba(255,255,255,0.12);
+      color: inherit;
+      cursor: pointer;
+      font-size: 0.8rem;
+      line-height: 1;
+      width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 50%;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .suggest-chip button:hover { background: rgba(255,255,255,0.22); }
+    .suggest-filter-label {
+      font-weight: 500;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    #suggest-refresh {
+      border-radius: 10px;
+      min-height: 42px;
+      font-weight: 600;
+    }
+
+    .suggestions-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem 0.75rem;
+      margin-bottom: 1rem;
+      padding: 0.85rem;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+    }
+    .suggestions-filters > .suggest-filter-label:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .suggest-filter-label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .suggest-filter-label select,
+    .suggest-filter-label input {
+      margin-top: 0.25rem;
+      width: 100%;
+    }
+    #suggest-refresh { grid-column: 1 / -1; }
+    @media (max-width: 520px) {
+      .suggestions-filters { grid-template-columns: 1fr; }
+    }
     .modal-card select { pointer-events: auto; z-index: 5; }
     .suggestions-list { max-height: 55vh; overflow: auto; }
 
@@ -996,33 +1205,130 @@
     }
     .modal-backdrop[hidden] { display: none !important; }
     .modal-card {
-      width: min(560px, 100%);
-      max-height: min(80vh, 720px);
+      width: min(640px, 100%);
+      max-height: min(88vh, 820px);
       overflow: auto;
       background: var(--surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 1rem;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem 1.25rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     }
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
       gap: 0.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .modal-header strong {
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
     }
     .suggestion {
       border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 0.75rem;
-      background: var(--surface-1);
-      margin-bottom: 0.5rem;
+      border-radius: 12px;
+      padding: 0.85rem 0.95rem;
+      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+      margin-bottom: 0.65rem;
       font-size: 0.85rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .suggestion:hover {
+      border-color: rgba(59,130,246,0.45);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .suggestion-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.55rem;
+    }
+    .suggestion-partner {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .suggestion-gap {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .suggestion-gap.fair { color: #4ade80; }
+    .suggestion-sides {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.5rem;
+      align-items: start;
+      margin-bottom: 0.55rem;
+    }
+    .suggestion-side {
+      background: rgba(0,0,0,0.15);
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      min-height: 2.5rem;
+    }
+    [data-theme="light"] .suggestion-side {
+      background: rgba(15,23,42,0.04);
+    }
+    .suggestion-side-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.2rem;
+    }
+    .suggestion-side.get .suggestion-side-label { color: #4ade80; }
+    .suggestion-side.give .suggestion-side-label { color: #fbbf24; }
+    .suggestion-side-players {
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .suggestion-arrow {
+      align-self: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .suggestion-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .suggestion-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .suggestion-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+    .suggestion-tag.need {
+      color: #86efac;
+      border-color: rgba(74,222,128,0.35);
+      background: rgba(74,222,128,0.1);
     }
     .suggestion-meta { color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem; }
     .suggestion-gain { color: #4ade80; }
-    .suggestion-load { margin-top: 0.5rem; }
+    .suggestion-load {
+      margin-top: 0;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      min-width: 4.5rem;
+      justify-content: center;
+    }
     .history-list { display: flex; flex-direction: column; gap: 0.75rem; }
     .history-card {
       border: 1px solid var(--border-subtle);
@@ -2071,10 +2377,48 @@
             <strong>Suggested trades</strong>
             <button type="button" class="btn" id="suggest-modal-close">Close</button>
           </div>
-          <div class="suggestions-header" style="margin-bottom:0.75rem">
-            <label style="font-size:0.8rem;color:var(--text-muted)">For team
-              <select id="suggest-team" class="calc-team-select"></select>
+          <div class="suggestions-filters" id="suggest-filters">
+            <label class="suggest-filter-label">Your team
+              <select id="suggest-team" class="calc-team-select suggest-select"></select>
             </label>
+            <div class="suggest-filter-label">Looking for
+              <div class="ms-dropdown" id="suggest-want-pos-wrap" data-ms="pos">
+                <button type="button" class="ms-trigger" id="suggest-want-pos-btn">
+                  <span class="ms-trigger-text">Any position</span>
+                  <span class="ms-caret">▾</span>
+                </button>
+                <div class="ms-panel" id="suggest-want-pos" hidden>
+                  <label class="ms-option"><input type="checkbox" value="QB" /> <span>QB</span></label>
+                  <label class="ms-option"><input type="checkbox" value="RB" /> <span>RB</span></label>
+                  <label class="ms-option"><input type="checkbox" value="WR" /> <span>WR</span></label>
+                  <label class="ms-option"><input type="checkbox" value="TE" /> <span>TE</span></label>
+                </div>
+              </div>
+            </div>
+            <div class="suggest-filter-label">Partner teams
+              <div class="ms-dropdown" id="suggest-partner-wrap" data-ms="partner">
+                <button type="button" class="ms-trigger" id="suggest-partner-btn">
+                  <span class="ms-trigger-text">Any team</span>
+                  <span class="ms-caret">▾</span>
+                </button>
+                <div class="ms-panel" id="suggest-partner" hidden></div>
+              </div>
+            </div>
+            <div class="suggest-filter-label">Players to get
+              <div class="suggest-player-picker" data-side="get">
+                <input type="text" class="home-input suggest-player-search" placeholder="Search & add players…" autocomplete="off" />
+                <div class="suggest-player-results" hidden></div>
+                <div class="suggest-player-chips" id="suggest-get-chips"></div>
+              </div>
+            </div>
+            <div class="suggest-filter-label">Players to trade away
+              <div class="suggest-player-picker" data-side="give">
+                <input type="text" class="home-input suggest-player-search" placeholder="Search & add players…" autocomplete="off" />
+                <div class="suggest-player-results" hidden></div>
+                <div class="suggest-player-chips" id="suggest-give-chips"></div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="suggest-refresh">Find trades</button>
           </div>
           <div class="suggestions-list" id="suggestions-list"></div>
         </div>
@@ -3337,9 +3681,9 @@
         { g: 4,  starter: 0.42, depth: 0.11, market: 0.07, stability: 0.07, upside: 0.06, schedule: 0.00, consistency: 0.05, scarcity: 0.08, actual: 0.14 },
         { g: 6,  starter: 0.38, depth: 0.11, market: 0.06, stability: 0.07, upside: 0.06, schedule: 0.00, consistency: 0.05, scarcity: 0.07, actual: 0.20 },
         { g: 8,  starter: 0.34, depth: 0.10, market: 0.06, stability: 0.06, upside: 0.06, schedule: 0.00, consistency: 0.05, scarcity: 0.06, actual: 0.27 },
-        { g: 10, starter: 0.30, depth: 0.10, market: 0.05, stability: 0.06, upside: 0.05, schedule: 0.00, consistency: 0.04, scarcity: 0.05, actual: 0.35 },
-        { g: 12, starter: 0.26, depth: 0.09, market: 0.05, stability: 0.05, upside: 0.05, schedule: 0.00, consistency: 0.04, scarcity: 0.04, actual: 0.42 },
-        { g: 17, starter: 0.22, depth: 0.08, market: 0.04, stability: 0.05, upside: 0.05, schedule: 0.00, consistency: 0.04, scarcity: 0.03, actual: 0.49 }
+        { g: 10, starter: 0.28, depth: 0.08, market: 0.05, stability: 0.04, upside: 0.04, schedule: 0.00, consistency: 0.03, scarcity: 0.05, actual: 0.43 },
+        { g: 12, starter: 0.24, depth: 0.06, market: 0.04, stability: 0.03, upside: 0.03, schedule: 0.00, consistency: 0.03, scarcity: 0.04, actual: 0.53 },
+        { g: 17, starter: 0.20, depth: 0.05, market: 0.04, stability: 0.02, upside: 0.02, schedule: 0.00, consistency: 0.02, scarcity: 0.03, actual: 0.62 }
       ];
       let lo = anchors[0], hi = anchors[anchors.length - 1];
       for (let i = 0; i < anchors.length - 1; i++) {
@@ -3832,10 +4176,14 @@
           const posScores = {};
           const posValues = {};
           POSITIONS.forEach((p) => {
-            posValues[p] = p === "BN"
+            const atPos = p === "BN" ? getBenchPlayers(entries) : entries.filter((e) => e.pos === p);
+            const valSum = p === "BN"
               ? benchValue(entries)
-              : entries.filter((e) => e.pos === p).reduce((s, x) => s + (x.val || 0), 0);
-            posScores[p] = posValues[p];
+              : atPos.reduce((s, x) => s + (x.val || 0), 0);
+            const projSum = atPos.reduce((s, x) => s + (x.proj || 0), 0);
+            // FC value primary; if values missing, fall back to projections so ranks still work
+            posValues[p] = valSum;
+            posScores[p] = valSum > 0 ? valSum : projSum;
           });
           return Object.assign({}, m, {
             entries,
@@ -3873,7 +4221,12 @@
       }
 
       function dropsNeeded(teamId, giveMine, giveTheirs) {
-        return Math.max(0, postTradeSize(teamId, giveMine, giveTheirs) - MAX_ROSTER);
+        // Only require drops when this side receives MORE players than it sends.
+        // Even trades (1-for-1, 2-for-2) never force a drop, including with full IR.
+        const netGain = giveTheirs.size - giveMine.size;
+        if (netGain <= 0) return 0;
+        const cur = (workingRosters[String(teamId)] || []).length;
+        return Math.max(0, cur + netGain - MAX_ROSTER);
       }
 
       /** Players that can be dropped: stay on team after trade (not sent away), plus incoming. */
@@ -3914,8 +4267,8 @@
         box.hidden = false;
         const picked = calcSelected[dropKey].size;
         title.textContent =
-          "Drop " + need + " player" + (need === 1 ? "" : "s") +
-          " to stay at " + MAX_ROSTER + " (" + picked + "/" + need + " selected)";
+          "Drop " + need + " (receiving more players than you send · max " + MAX_ROSTER +
+          " incl. IR) · " + picked + "/" + need + " selected";
 
         list.innerHTML = "";
         for (const r of candidates) {
@@ -4723,10 +5076,189 @@
       applyTradeFilters();
     }
 
+
+    function updateMsTrigger(panelId, btnId, emptyLabel, isTeams) {
+      const vals = selectedValues(panelId);
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      const text = btn.querySelector(".ms-trigger-text");
+      if (!text) return;
+      if (!vals.length) {
+        text.textContent = emptyLabel;
+        text.classList.remove("has-value");
+        return;
+      }
+      text.classList.add("has-value");
+      if (!isTeams) {
+        text.textContent = vals.join(", ");
+        return;
+      }
+      // Team names from labels
+      const panel = document.getElementById(panelId);
+      const names = vals.map((v) => {
+        const lab = panel && panel.querySelector('input[value="' + v + '"]');
+        const span = lab && lab.parentElement && lab.parentElement.querySelector("span");
+        return span ? span.textContent : v;
+      });
+      text.textContent = names.length <= 2 ? names.join(", ") : names[0] + " +" + (names.length - 1);
+    }
+
+    function wireMsDropdowns() {
+      document.querySelectorAll(".ms-dropdown").forEach((dd) => {
+        if (dd.dataset.wired === "1") return;
+        dd.dataset.wired = "1";
+        const trigger = dd.querySelector(".ms-trigger");
+        const panel = dd.querySelector(".ms-panel");
+        if (!trigger || !panel) return;
+        trigger.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = !panel.hidden;
+          // close others
+          document.querySelectorAll(".ms-dropdown").forEach((other) => {
+            const p = other.querySelector(".ms-panel");
+            if (p) p.hidden = true;
+            other.classList.remove("open");
+          });
+          if (!open) {
+            panel.hidden = false;
+            dd.classList.add("open");
+          }
+        });
+        panel.addEventListener("click", (e) => e.stopPropagation());
+        panel.addEventListener("change", () => {
+          if (panel.id === "suggest-want-pos") {
+            updateMsTrigger("suggest-want-pos", "suggest-want-pos-btn", "Any position", false);
+          }
+          if (panel.id === "suggest-partner") {
+            updateMsTrigger("suggest-partner", "suggest-partner-btn", "Any team", true);
+          }
+          if (leagueData) renderTradeSuggestions(leagueData);
+        });
+      });
+      if (!document.body.dataset.msClose) {
+        document.body.dataset.msClose = "1";
+        document.addEventListener("click", () => {
+          document.querySelectorAll(".ms-dropdown").forEach((dd) => {
+            const p = dd.querySelector(".ms-panel");
+            if (p) p.hidden = true;
+            dd.classList.remove("open");
+          });
+        });
+      }
+    }
+
+    function isPlayerUntradeable(entry, teamModel, data) {
+      if (!entry) return true;
+      if (entry.notLikely || entry.trade === "not-likely") return true;
+      const tid = teamModel && teamModel.id;
+      const team = (data.teams || []).find((t) => String(t.id) === String(tid));
+      if (!team) return false;
+      const block = (team.tradeBlock && team.tradeBlock.players) || {};
+      const st = block[String(entry.id)] || block[entry.id];
+      return st === "UNTOUCHABLE";
+    }
+
+    // Selected player chips for suggestions (persist across re-renders)
+    let suggestGetIds = new Set();
+    let suggestGiveIds = new Set();
+    let suggestPlayerIndex = []; // {id,name,pos,teamId,teamName,side}
+
+    function selectedValues(containerId) {
+      const root = document.getElementById(containerId);
+      if (!root) return [];
+      return [...root.querySelectorAll('input[type="checkbox"]:checked')].map((el) => el.value);
+    }
+
+    function renderSuggestChips(side) {
+      const ids = side === "get" ? suggestGetIds : suggestGiveIds;
+      const el = document.getElementById(side === "get" ? "suggest-get-chips" : "suggest-give-chips");
+      if (!el) return;
+      const items = suggestPlayerIndex.filter((p) => ids.has(String(p.id)));
+      const chipCls = side === "give" ? "suggest-chip give" : "suggest-chip";
+      el.innerHTML = items.map((p) =>
+        '<span class="' + chipCls + '">' + escapeHtml(p.name) +
+        (p.pos ? ' <span style="opacity:0.75;font-weight:500">' + p.pos + "</span>" : "") +
+        ' <button type="button" data-remove-chip="' + p.id + '" data-side="' + side + '" aria-label="Remove">×</button></span>'
+      ).join("");
+    }
+
+    function buildSuggestPlayerIndex(models, teams) {
+      const out = [];
+      models.forEach((m) => {
+        const t = teams.find((x) => String(x.id) === String(m.id));
+        const tname = t ? (t.name || t.abbrev) : ("Team " + m.id);
+        (m.entries || []).forEach((e) => {
+          if (!e || !e.id) return;
+          out.push({
+            id: String(e.id),
+            name: e.name || "Player",
+            pos: e.pos || "?",
+            teamId: String(m.id),
+            teamName: tname,
+            val: e.val || 0
+          });
+        });
+      });
+      suggestPlayerIndex = out;
+    }
+
+    function wirePlayerPickers(myTeamId) {
+      document.querySelectorAll(".suggest-player-picker").forEach((picker) => {
+        const side = picker.getAttribute("data-side");
+        const input = picker.querySelector(".suggest-player-search");
+        const results = picker.querySelector(".suggest-player-results");
+        if (!input || !results) return;
+        input.oninput = () => {
+          const q = input.value.trim().toLowerCase();
+          if (q.length < 1) {
+            results.hidden = true;
+            results.innerHTML = "";
+            return;
+          }
+          let pool = suggestPlayerIndex.filter((p) => p.name.toLowerCase().indexOf(q) >= 0);
+          if (side === "give") pool = pool.filter((p) => p.teamId === String(myTeamId));
+          if (side === "get") pool = pool.filter((p) => p.teamId !== String(myTeamId));
+          pool = pool.slice(0, 12);
+          results.innerHTML = pool.length
+            ? pool.map((p) =>
+                '<button type="button" data-pick-id="' + p.id + '" data-side="' + side + '">' +
+                escapeHtml(p.name) + ' <span style="color:var(--text-muted)">' + p.pos + " · " + escapeHtml(p.teamName) + "</span></button>"
+              ).join("")
+            : '<button type="button" disabled>No matches</button>';
+          results.hidden = false;
+        };
+        results.onclick = (e) => {
+          const btn = e.target.closest("[data-pick-id]");
+          if (!btn) return;
+          const id = btn.getAttribute("data-pick-id");
+          if (side === "get") suggestGetIds.add(id);
+          else suggestGiveIds.add(id);
+          renderSuggestChips(side);
+          input.value = "";
+          results.hidden = true;
+          renderTradeSuggestions(leagueData);
+        };
+      });
+      document.querySelectorAll(".suggest-player-chips").forEach((el) => {
+        el.onclick = (e) => {
+          const btn = e.target.closest("[data-remove-chip]");
+          if (!btn) return;
+          const id = btn.getAttribute("data-remove-chip");
+          const side = btn.getAttribute("data-side");
+          if (side === "get") suggestGetIds.delete(id);
+          else suggestGiveIds.delete(id);
+          renderSuggestChips(side);
+          renderTradeSuggestions(leagueData);
+        };
+      });
+    }
+
     function renderTradeSuggestions(data) {
       const select = document.getElementById("suggest-team");
       const list = document.getElementById("suggestions-list");
+      const partnerBox = document.getElementById("suggest-partner");
       if (!select || !list) return;
+
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
       const previous = select.value;
       select.innerHTML = teams.map((team) =>
@@ -4737,11 +5269,32 @@
       } else if (teams[0]) {
         select.value = String(teams[0].id);
       }
+
+      // Partner multi-select dropdown (preserve checks)
+      if (partnerBox) {
+        const prevChecked = new Set(selectedValues("suggest-partner"));
+        partnerBox.innerHTML = teams
+          .filter((t) => String(t.id) !== String(select.value))
+          .map((t) => {
+            const id = String(t.id);
+            const ck = prevChecked.has(id) ? " checked" : "";
+            return '<label class="ms-option"><input type="checkbox" value="' + id + '"' + ck + " /> <span>" +
+              escapeHtml(t.name || t.abbrev || "Team " + id) + "</span></label>";
+          }).join("") || '<div class="ms-option" style="opacity:0.6">No other teams</div>';
+        updateMsTrigger("suggest-partner", "suggest-partner-btn", "Any team", true);
+      }
+      updateMsTrigger("suggest-want-pos", "suggest-want-pos-btn", "Any position", false);
+      wireMsDropdowns();
+
       const team = teams.find((item) => String(item.id) === String(select.value));
       if (!team) {
         list.innerHTML = '<div class="suggestion-meta">Choose a team to see trade ideas.</div>';
         return;
       }
+
+      const wantPositions = selectedValues("suggest-want-pos");
+      const partnerIds = selectedValues("suggest-partner");
+
       list.innerHTML = '<div class="suggestion-meta">Finding trades…</div>';
       let models;
       try {
@@ -4749,27 +5302,81 @@
       } catch (e) {
         models = buildTeamModels(data);
       }
+      buildSuggestPlayerIndex(models, teams);
+      renderSuggestChips("get");
+      renderSuggestChips("give");
+      wirePlayerPickers(team.id);
+
       const ranks = computeRankMaps(models);
       const mine = models.find((model) => String(model.id) === String(team.id));
       if (!mine) {
         list.innerHTML = '<div class="suggestion-meta">Team data missing.</div>';
         return;
       }
-      const others = models.filter((model) => String(model.id) !== String(team.id));
-      const ideas = [];
-      const topPlayers = (entries, n) =>
-        (entries || []).filter((e) => (e.val || 0) > 0).slice().sort((a, b) => b.val - a.val).slice(0, n);
 
-      function packageOptions(entries, maxN) {
-        const top = topPlayers(entries, maxN);
+      models.forEach((m) => {
+        const t = teams.find((x) => String(x.id) === String(m.id));
+        const block = (t && t.tradeBlock && t.tradeBlock.players) || {};
+        (m.entries || []).forEach((e) => {
+          const st = block[String(e.id)];
+          e.notLikely = st === "UNTOUCHABLE" || e.trade === "not-likely";
+          e.onBlock = st === "ON_THE_BLOCK" || e.trade === "definitely";
+        });
+      });
+
+      let others = models.filter((model) => String(model.id) !== String(team.id));
+      if (partnerIds.length) {
+        others = others.filter((m) => partnerIds.indexOf(String(m.id)) >= 0);
+      }
+
+      const ideas = [];
+      const tradeable = (entries, teamModel) =>
+        (entries || []).filter((e) => (e.val || 0) > 0 && !isPlayerUntradeable(e, teamModel, data));
+
+      function findEntry(entries, id) {
+        return (entries || []).find((e) => String(e.id) === String(id));
+      }
+
+      function topPlayers(entries, teamModel, n, forceIds) {
+        const pool = tradeable(entries, teamModel).slice().sort((a, b) => b.val - a.val);
+        const forced = [];
+        (forceIds || []).forEach((id) => {
+          const e = findEntry(entries, id);
+          if (e && !isPlayerUntradeable(e, teamModel, data) && !forced.some((x) => x.id === e.id)) {
+            forced.push(e);
+          }
+        });
+        const rest = pool.filter((e) => !forced.some((f) => f.id === e.id));
+        return forced.concat(rest).slice(0, Math.max(n, forced.length));
+      }
+
+      function packageOptions(entries, teamModel, maxN, forceIds) {
+        const top = topPlayers(entries, teamModel, maxN, forceIds);
         const packs = [];
-        // 1-player
+        // If specific players are forced, require them in every package
+        const required = (forceIds || []).map((id) => findEntry(entries, id)).filter(Boolean)
+          .filter((e) => !isPlayerUntradeable(e, teamModel, data));
+        if (required.length) {
+          // packages that include all required players (+ optional extras from top)
+          packs.push(required.slice());
+          top.forEach((p) => {
+            if (required.some((r) => r.id === p.id)) return;
+            packs.push(required.concat([p]));
+          });
+          // 2 extras
+          for (let i = 0; i < top.length; i++) {
+            if (required.some((r) => r.id === top[i].id)) continue;
+            for (let j = i + 1; j < top.length; j++) {
+              if (required.some((r) => r.id === top[j].id)) continue;
+              packs.push(required.concat([top[i], top[j]]));
+            }
+          }
+          return packs;
+        }
         top.forEach((p) => packs.push([p]));
-        // 2-player
         for (let i = 0; i < top.length; i++) {
           for (let j = i + 1; j < top.length; j++) packs.push([top[i], top[j]]);
         }
-        // 3-player (smaller pool)
         const top6 = top.slice(0, 6);
         for (let i = 0; i < top6.length; i++) {
           for (let j = i + 1; j < top6.length; j++) {
@@ -4781,37 +5388,49 @@
       function packVal(pack) {
         return pack.reduce((s, e) => s + (e.val || 0), 0);
       }
-      function packKey(pack) {
-        return pack.map((e) => e.id).sort().join(",");
-      }
+
+      const getForce = [...suggestGetIds];
+      const giveForce = [...suggestGiveIds];
 
       for (const partner of others) {
+        // If get-players selected, they must be on this partner
+        if (getForce.length) {
+          const partnerIdsSet = new Set((partner.entries || []).map((e) => String(e.id)));
+          if (!getForce.every((id) => partnerIdsSet.has(String(id)))) continue;
+        }
+        if (giveForce.length) {
+          const mineIds = new Set((mine.entries || []).map((e) => String(e.id)));
+          if (!giveForce.every((id) => mineIds.has(String(id)))) continue;
+        }
+
         const mineNeeds = (needsSurplusForTeam(ranks.posRank, mine.id, models.length, mine).needs) || [];
         const partnerNeeds = (needsSurplusForTeam(ranks.posRank, partner.id, models.length, partner).needs) || [];
-        const myPacks = packageOptions(mine.entries, 10);
-        const theirPacks = packageOptions(partner.entries, 10);
+        const myPacks = packageOptions(mine.entries, mine, 10, giveForce);
+        const theirPacks = packageOptions(partner.entries, partner, 10, getForce);
 
         for (const incoming of theirPacks) {
+          if (wantPositions.length && !incoming.some((e) => wantPositions.indexOf(e.pos) >= 0)) continue;
+          if (getForce.length && !getForce.every((id) => incoming.some((e) => String(e.id) === String(id)))) continue;
           const inVal = packVal(incoming);
-          if (inVal < 30) continue;
+          if (inVal < 20) continue;
           for (const outgoing of myPacks) {
-            // Skip pure 1-for-1 mirror of same size only if values identical-ish and same pos - still allow multi
+            if (giveForce.length && !giveForce.every((id) => outgoing.some((e) => String(e.id) === String(id)))) continue;
+            if (incoming.some((e) => isPlayerUntradeable(e, partner, data))) continue;
+            if (outgoing.some((e) => isPlayerUntradeable(e, mine, data))) continue;
             const outVal = packVal(outgoing);
-            if (outVal < 30) continue;
+            if (outVal < 20) continue;
             const gap = Math.abs(inVal - outVal);
             const ratio = Math.max(inVal, outVal) / Math.max(1, Math.min(inVal, outVal));
-            // Fairness window: tighter for big packages
-            const maxGap = 80 + 40 * Math.min(incoming.length, outgoing.length);
-            if (gap > maxGap && ratio > 1.22) continue;
+            const maxGap = 100 + 50 * Math.min(incoming.length, outgoing.length);
+            if (gap > maxGap && ratio > 1.28) continue;
 
             const fillsMine = incoming.some((e) => mineNeeds.indexOf(e.pos) >= 0);
             const fillsThem = outgoing.some((e) => partnerNeeds.indexOf(e.pos) >= 0);
-            // Prefer need-fills and multi when values are close
             let score = gap;
-            if (!fillsMine) score += 45;
-            if (!fillsThem) score += 45;
-            // Slight preference for 2-for-1 / 2-for-2 variety
-            if (incoming.length + outgoing.length === 2) score += 8;
+            if (!fillsMine) score += 40;
+            if (!fillsThem) score += 40;
+            if (wantPositions.length && incoming.some((e) => wantPositions.indexOf(e.pos) >= 0)) score -= 25;
+            if (getForce.length || giveForce.length) score -= 30;
             if (incoming.length >= 2 || outgoing.length >= 2) score -= 5;
 
             ideas.push({
@@ -4834,21 +5453,42 @@
         if (seen.has(key)) continue;
         seen.add(key);
         visible.push(idea);
-        if (visible.length >= 15) break;
+        if (visible.length >= 20) break;
       }
-      list.innerHTML = visible.length ? visible.map((idea, idx) =>
-        '<div class="suggestion">' +
-          "<strong>Get " + escapeHtml(idea.incoming.map((e) => e.name).join(" + ")) + "</strong>" +
-          " for " + escapeHtml(idea.outgoing.map((e) => e.name).join(" + ")) +
-          '<div class="suggestion-meta">From ' + escapeHtml(idea.team.name) +
-          " · " + idea.incoming.length + " for " + idea.outgoing.length +
-          " · gap " + Math.abs(Math.round(idea.gain)).toLocaleString() +
-          (idea.fillsMine ? " · fills your need" : "") +
-          (idea.fillsThem ? " · fills their need" : "") +
-          "</div>" +
-          '<button type="button" class="btn suggestion-load" data-suggestion="' + idx + '">Load</button>' +
-        "</div>"
-      ).join("") : '<div class="suggestion-meta">No close-value trades found.</div>';
+      list.innerHTML = visible.length ? visible.map((idea, idx) => {
+        const gap = Math.abs(Math.round(idea.gain));
+        const fair = gap <= 80;
+        const tags = [];
+        tags.push(idea.incoming.length + " for " + idea.outgoing.length);
+        if (idea.fillsMine) tags.push("fills your need");
+        if (idea.fillsThem) tags.push("fills their need");
+        return (
+          '<div class="suggestion">' +
+            '<div class="suggestion-top">' +
+              '<div class="suggestion-partner">' + escapeHtml(idea.team.name) + "</div>" +
+              '<div class="suggestion-gap' + (fair ? " fair" : "") + '">gap ' + gap.toLocaleString() + "</div>" +
+            "</div>" +
+            '<div class="suggestion-sides">' +
+              '<div class="suggestion-side get">' +
+                '<div class="suggestion-side-label">You get</div>' +
+                '<div class="suggestion-side-players">' + escapeHtml(idea.incoming.map((e) => e.name).join(", ")) + "</div>" +
+              "</div>" +
+              '<div class="suggestion-arrow">↔</div>' +
+              '<div class="suggestion-side give">' +
+                '<div class="suggestion-side-label">You send</div>' +
+                '<div class="suggestion-side-players">' + escapeHtml(idea.outgoing.map((e) => e.name).join(", ")) + "</div>" +
+              "</div>" +
+            "</div>" +
+            '<div class="suggestion-footer">' +
+              '<div class="suggestion-tags">' +
+                tags.map((t) => '<span class="suggestion-tag' +
+                  (t.indexOf("need") >= 0 ? " need" : "") + '">' + t + "</span>").join("") +
+              "</div>" +
+              '<button type="button" class="btn btn-primary suggestion-load" data-suggestion="' + idx + '">Load</button>' +
+            "</div>" +
+          "</div>"
+        );
+      }).join("") : '<div class="suggestion-meta" style="text-align:center;padding:1.25rem 0.5rem">No trades match these filters.<br><span style="font-size:0.7rem">Untradeables are excluded. Try clearing player chips or positions.</span></div>';
 
       list.onclick = (event) => {
         const button = event.target.closest("[data-suggestion]");
@@ -4878,7 +5518,18 @@
           });
         }, 80);
       };
-      select.onchange = () => renderTradeSuggestions(data);
+
+      select.onchange = () => {
+        suggestGiveIds.clear();
+        renderTradeSuggestions(data);
+      };
+      if (partnerBox) {
+        partnerBox.onchange = () => renderTradeSuggestions(data);
+      }
+      const wantBox = document.getElementById("suggest-want-pos");
+      if (wantBox) wantBox.onchange = () => renderTradeSuggestions(data);
+      const refreshBtn = document.getElementById("suggest-refresh");
+      if (refreshBtn) refreshBtn.onclick = () => renderTradeSuggestions(data);
     }
 
     function setupSuggestModal(data) {
