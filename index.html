@@ -2704,6 +2704,48 @@
       flex-shrink: 0;
     }
 
+  
+    .pr-weight-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem 1rem;
+      align-items: center;
+      margin: 0 0 0.55rem;
+      font-size: 0.78rem;
+    }
+    .pr-weight-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .pr-weight-input {
+      width: 3.4rem;
+      padding: 0.25rem 0.35rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .pr-share-colheads {
+      display: grid;
+      grid-template-columns: 2rem 1fr auto;
+      gap: 0.55rem;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7a90;
+      font-weight: 650;
+      padding: 0 0 0.35rem;
+      border-bottom: 1px solid #2a3140;
+      margin-bottom: 0.15rem;
+    }
+    .pr-share-colheads span:last-child { text-align: right; }
+
   </style>
 </head>
 <body>
@@ -6291,7 +6333,8 @@
 
 
     let powerMode = "site"; // site | hybrid
-    let externalRankSources = []; // [{id, name, ranks: {teamId: rankNumber}}]
+    let externalRankSources = []; // [{id, name, ranks, order, weight, enabled}]
+    let siteRankWeight = 1; // equal with sources by default; 0 = exclude site from hybrid
     let editingSourceId = null;
 
     function externalRanksStorageKey() {
@@ -6301,28 +6344,46 @@
       try {
         const raw = JSON.parse(localStorage.getItem(externalRanksStorageKey()) || "[]");
         externalRankSources = Array.isArray(raw) ? raw : [];
+        externalRankSources.forEach((s) => {
+          if (s.weight == null) s.weight = 1;
+          if (s.enabled == null) s.enabled = true;
+        });
       } catch (e) {
         externalRankSources = [];
       }
+      try {
+        const w = JSON.parse(localStorage.getItem(externalRanksStorageKey() + "_siteW"));
+        if (typeof w === "number") siteRankWeight = w;
+      } catch (e) {}
     }
     function saveExternalRankSources() {
       try {
         localStorage.setItem(externalRanksStorageKey(), JSON.stringify(externalRankSources));
+        localStorage.setItem(externalRanksStorageKey() + "_siteW", JSON.stringify(siteRankWeight));
       } catch (e) {}
     }
 
-    /** Average ordinal ranks across site + external sources → hybrid score (lower rank better). */
+    /**
+     * Weighted average of ordinal ranks (site + external sources).
+     * Default: equal weight on every included source (and site).
+     * Lower hybridAvgRank is better. Share card uses avg position.
+     */
     function applyHybridRanks(models) {
       if (!models || !models.length) return models;
       const n = models.length;
-      // Site rank by current totalScore / rawPower
       const siteOrder = models.slice().sort((a, b) =>
         (b.rawPower || 0) - (a.rawPower || 0) || (b.totalScore || 0) - (a.totalScore || 0)
       );
       const siteRank = {};
       siteOrder.forEach((t, i) => { siteRank[String(t.id)] = i + 1; });
 
+      // Site weight (default 1, can be 0 to exclude)
+      const siteW = (typeof siteRankWeight === "number") ? siteRankWeight : 1;
+
       const activeSources = externalRankSources.filter((s) => {
+        if (s.enabled === false) return false;
+        const w = s.weight == null ? 1 : Number(s.weight);
+        if (w <= 0) return false;
         const ranks = s.ranks || {};
         const filled = models.filter((t) => ranks[String(t.id)] > 0).length;
         return filled >= Math.max(2, Math.ceil(n * 0.5));
@@ -6330,31 +6391,50 @@
 
       models.forEach((t) => {
         const id = String(t.id);
-        const ranks = [siteRank[id]];
+        let sum = 0;
+        let wSum = 0;
+        const parts = [];
+
+        if (siteW > 0) {
+          sum += siteRank[id] * siteW;
+          wSum += siteW;
+          parts.push({ name: "Site", rank: siteRank[id], weight: siteW });
+        }
         activeSources.forEach((s) => {
           const r = Number((s.ranks || {})[id]);
-          if (r > 0) ranks.push(r);
+          const w = s.weight == null ? 1 : Number(s.weight);
+          if (r > 0 && w > 0) {
+            sum += r * w;
+            wSum += w;
+            parts.push({ name: s.name, rank: r, weight: w });
+          }
         });
-        const avgRank = ranks.reduce((a, b) => a + b, 0) / ranks.length;
+        const avgRank = wSum > 0 ? sum / wSum : siteRank[id];
         t.hybridAvgRank = avgRank;
-        t.hybridSources = ranks.length;
-        // Convert avg rank to 0-100 score (#1 → 100)
-        t.hybridScore = n <= 1 ? 100 : (100 * (n - avgRank) / (n - 1));
+        t.hybridSources = parts.length;
+        t.hybridParts = parts;
         t.siteRank = siteRank[id];
-      });
-
-      if (powerMode === "hybrid" && activeSources.length) {
-        models.forEach((t) => {
+        // Optional 0–100 display (not used on share card)
+        t.hybridScore = n <= 1 ? 100 : Math.max(0, 100 * (n - avgRank) / (n - 1));
+        if (powerMode === "hybrid" && parts.length > 1) {
           t.displayScore = t.hybridScore;
           t.displayRankKey = t.hybridAvgRank;
-        });
-      } else {
-        models.forEach((t) => {
+        } else {
           t.displayScore = t.totalScore;
           t.displayRankKey = -(t.rawPower || 0);
-        });
-      }
+        }
+      });
       return models;
+    }
+
+    function siteDefaultOrderIds() {
+      const teams = getPowerTeamsForSources();
+      if (powerModelsCache && powerModelsCache.length) {
+        return powerModelsCache.slice()
+          .sort((a, b) => (b.rawPower || 0) - (a.rawPower || 0) || (b.totalScore || 0) - (a.totalScore || 0))
+          .map((t) => String(t.id));
+      }
+      return teams.map((t) => String(t.id));
     }
 
     function teamStrengthsWeaknesses(t, posRankByTeam, teamCount) {
@@ -6412,15 +6492,21 @@
         return;
       }
 
-      // Ensure each source has a full order
+      const defaultOrder = siteDefaultOrderIds();
+      // Ensure each source has a full order (default = this site's ranking)
       externalRankSources.forEach((s) => {
+        if (s.weight == null) s.weight = 1;
+        if (s.enabled == null) s.enabled = true;
         if (!s.order || !s.order.length) {
-          s.order = orderFromRanks(teams, s.ranks || {});
+          if (s.ranks && Object.keys(s.ranks).length) {
+            s.order = orderFromRanks(teams, s.ranks);
+          } else {
+            s.order = defaultOrder.slice();
+          }
         }
-        // Include any new teams at end
         const have = new Set(s.order.map(String));
-        teams.forEach((t) => {
-          if (!have.has(String(t.id))) s.order.push(String(t.id));
+        defaultOrder.forEach((id) => {
+          if (!have.has(String(id))) s.order.push(String(id));
         });
         s.order = s.order.filter((id) => teams.some((t) => String(t.id) === String(id)));
         s.ranks = ranksFromOrder(s.order);
@@ -6429,7 +6515,17 @@
       const nameById = {};
       teams.forEach((t) => { nameById[String(t.id)] = t.name; });
 
-      list.innerHTML = externalRankSources.length ? externalRankSources.map((s) => {
+      const siteW = (typeof siteRankWeight === "number") ? siteRankWeight : 1;
+      list.innerHTML =
+        '<div class="pr-weight-bar">' +
+          '<label class="pr-weight-label"><input type="checkbox" id="pr-site-enabled" ' + (siteW > 0 ? "checked" : "") + ' /> Include this site</label>' +
+          '<label class="pr-weight-label">Site weight ' +
+            '<input type="number" id="pr-site-weight" class="pr-weight-input" min="0" max="10" step="0.1" value="' + (siteW > 0 ? siteW : 1) + '" />' +
+          "</label>" +
+        "</div>" +
+        (externalRankSources.length ? externalRankSources.map((s) => {
+        const w = s.weight == null ? 1 : s.weight;
+        const on = s.enabled !== false && w > 0;
         const items = (s.order || []).map((id, idx) =>
           '<li class="pr-dnd-item" draggable="true" data-team-id="' + id + '">' +
             '<span class="pr-dnd-handle" title="Drag">⠿</span>' +
@@ -6440,14 +6536,20 @@
         return (
           '<div class="pr-source-block" data-sid="' + s.id + '">' +
             "<h4>" +
-              '<input type="text" class="pr-source-name-input" data-rename="' + s.id + '" value="' + escapeHtml(s.name) + '" />' +
+              '<input type="text" class="pr-source-name-input" data-rename="' + s.id + '" value="' + escapeHtml(s.name).replace(/"/g, "&quot;") + '" />' +
               ' <button type="button" class="btn" data-del-source="' + s.id + '">Remove</button>' +
             "</h4>" +
-            '<p class="pr-dnd-hint">Drag teams to rank — top is #1</p>' +
+            '<div class="pr-weight-bar">' +
+              '<label class="pr-weight-label"><input type="checkbox" data-src-enabled="' + s.id + '" ' + (on ? "checked" : "") + ' /> Use in hybrid</label>' +
+              '<label class="pr-weight-label">Weight ' +
+                '<input type="number" class="pr-weight-input" data-src-weight="' + s.id + '" min="0" max="10" step="0.1" value="' + w + '" />' +
+              "</label>" +
+            "</div>" +
+            '<p class="pr-dnd-hint">Drag to rank — starts in this site’s order · top is #1</p>' +
             '<ol class="pr-dnd-list" data-source-list="' + s.id + '">' + items + "</ol>" +
           "</div>"
         );
-      }).join("") : '<p class="pr-modal-note">No sources yet. Add one below, then drag teams into order.</p>';
+      }).join("") : '<p class="pr-modal-note">No sources yet. Add one below (starts from this site’s order), then drag to adjust.</p>');
 
       list.querySelectorAll("[data-del-source]").forEach((btn) => {
         btn.onclick = (e) => {
@@ -6543,23 +6645,27 @@
         }
         return (b.rawPower || 0) - (a.rawPower || 0);
       });
-      const topScore = sorted[0] ? (powerMode === "hybrid" ? sorted[0].hybridScore : sorted[0].totalScore) : 100;
       const weekDefault = (typeof leagueData !== "undefined" && leagueData && leagueData.scoringPeriodId)
         ? ("Week " + leagueData.scoringPeriodId)
         : "Preseason";
       if (labelInput && !labelInput.value) labelInput.value = weekDefault;
       const label = (labelInput && labelInput.value) || weekDefault;
-      const modeNote = powerMode === "hybrid" ? "Hybrid average" : "League Tools";
+      const nSrc = (sorted[0] && sorted[0].hybridSources) || 1;
+      const modeNote = powerMode === "hybrid"
+        ? ("Avg of " + nSrc + " ranking" + (nSrc === 1 ? "" : "s"))
+        : "League Tools";
 
       const rows = sorted.map((t, i) => {
         const rank = i + 1;
-        const raw = powerMode === "hybrid" ? t.hybridScore : t.totalScore;
-        const score = topScore > 0 ? (100 * (raw || 0) / topScore) : 0;
+        const avgPos = (powerMode === "hybrid" && t.hybridAvgRank != null)
+          ? t.hybridAvgRank
+          : rank;
         const sw = teamStrengthsWeaknesses(t, posRankByTeam, teamCount);
         const strong = sw.strengths.map((x) => x.pos).join("/") || "—";
         const weak = sw.weaknesses.map((x) => x.pos).join("/") || "—";
         const exp = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         const color = rankColor(rank, teamCount);
+        const avgStr = (Math.round(avgPos * 10) / 10).toFixed(1).replace(/\.0$/, "");
         return (
           '<div class="pr-share-row">' +
             '<div class="pr-share-rk" style="color:' + color + '">' + rank + "</div>" +
@@ -6568,7 +6674,7 @@
               " · Best " + strong +
               (weak !== "—" ? " · Soft " + weak : "") +
               "</div></div>" +
-            '<div class="pr-share-score">' + score.toFixed(0) + "</div>" +
+            '<div class="pr-share-score" title="Average position across sources">' + avgStr + "</div>" +
           "</div>"
         );
       }).join("");
@@ -6579,8 +6685,9 @@
           "<h3>Power Rankings</h3>" +
           '<div class="week-label">' + escapeHtml(label) + " · " + modeNote + "</div>" +
         "</div>" +
+        '<div class="pr-share-colheads"><span></span><span></span><span>Avg</span></div>' +
         rows +
-        '<div class="pr-share-foot">#1 = 100 · strengths/soft spots from positional ranks</div>';
+        '<div class="pr-share-foot">Avg = weighted average rank across sources · Best / Soft from positions</div>';
       modal.hidden = false;
     }
 
@@ -6609,13 +6716,14 @@
         loadExternalRankSources();
         const nameEl = document.getElementById("pr-source-name");
         const name = ((nameEl && nameEl.value) || "").trim() || ("Source " + (externalRankSources.length + 1));
-        const teams = getPowerTeamsForSources();
-        const order = teams.map((t) => String(t.id));
+        const order = siteDefaultOrderIds();
         externalRankSources.push({
           id: "src_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
           name,
           order,
-          ranks: ranksFromOrder(order)
+          ranks: ranksFromOrder(order),
+          weight: 1,
+          enabled: true
         });
         if (nameEl) nameEl.value = "";
         saveExternalRankSources();
@@ -6623,10 +6731,25 @@
       });
 
       if (saveBtn) saveBtn.addEventListener("click", () => {
-        // Sync any rename fields + current DOM order
+        const siteEn = document.getElementById("pr-site-enabled");
+        const siteWi = document.getElementById("pr-site-weight");
+        let sw = siteWi ? parseFloat(siteWi.value) : 1;
+        if (!isFinite(sw) || sw < 0) sw = 1;
+        siteRankWeight = (siteEn && !siteEn.checked) ? 0 : sw;
         document.querySelectorAll("[data-rename]").forEach((inp) => {
           const src = externalRankSources.find((s) => s.id === inp.getAttribute("data-rename"));
           if (src) src.name = (inp.value || "").trim() || src.name;
+        });
+        document.querySelectorAll("[data-src-weight]").forEach((inp) => {
+          const src = externalRankSources.find((s) => s.id === inp.getAttribute("data-src-weight"));
+          if (!src) return;
+          let w = parseFloat(inp.value);
+          if (!isFinite(w) || w < 0) w = 1;
+          src.weight = w;
+        });
+        document.querySelectorAll("[data-src-enabled]").forEach((inp) => {
+          const src = externalRankSources.find((s) => s.id === inp.getAttribute("data-src-enabled"));
+          if (src) src.enabled = !!inp.checked;
         });
         document.querySelectorAll("[data-source-list]").forEach((ol) => {
           const sid = ol.getAttribute("data-source-list");
@@ -6753,8 +6876,8 @@
         else if (["QB", "RB", "WR", "TE"].indexOf(sortMode) >= 0) {
           const pr = (posRankByTeam[t.id] || {})[sortMode];
           score = pr != null ? ("#" + pr) : "—";
-        } else if (powerMode === "hybrid" && t.hybridScore != null) {
-          score = t.hybridScore.toFixed(1);
+        } else if (powerMode === "hybrid" && t.hybridAvgRank != null) {
+          score = (Math.round(t.hybridAvgRank * 10) / 10).toFixed(1).replace(/\.0$/, "");
         } else {
           score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
         }
