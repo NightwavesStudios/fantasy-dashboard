@@ -6,16 +6,16 @@
   <title>Trade Board — League 2039212076</title>
   <style>
     :root {
-      --bg: #0b0f14;
-      --surface: #12181f;
-      --surface-2: #1a222d;
-      --border: #2a3544;
-      --border-subtle: #1e2836;
-      --text: #e8eef5;
-      --text-secondary: #9aa8bc;
-      --text-muted: #6b7a90;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
+      --bg: #0c0e12;
+      --surface: #14181f;
+      --surface-2: #1b212b;
+      --border: #2c3440;
+      --border-subtle: #222830;
+      --text: #eef2f7;
+      --text-secondary: #a0aec0;
+      --text-muted: #718096;
+      --accent: #4a8af4;
+      --accent-hover: #3b7ae8;
       --definitely: #16a34a;
       --definitely-bg: rgba(22, 163, 74, 0.12);
       --definitely-border: rgba(22, 163, 74, 0.35);
@@ -65,18 +65,18 @@
 
     .app-header {
       position: sticky; top: 0; z-index: 50;
-      background: rgba(11, 15, 20, 0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0.875rem 1.5rem;
+      background: rgba(12, 14, 18, 0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.7rem 1.25rem;
     }
     .header-inner {
       max-width: 1440px; margin: 0 auto;
       display: flex; flex-wrap: wrap; align-items: center;
       justify-content: space-between; gap: 1rem;
     }
-    .brand h1 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; }
-    .brand .meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .brand h1 { font-size: 1.05rem; font-weight: 650; letter-spacing: -0.025em; }
+    .brand .meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.05rem; }
     .header-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
     .btn {
@@ -100,20 +100,20 @@
 
     /* Tabs */
     .tabs {
-      max-width: 1440px; margin: 0 auto;
-      padding: 0.75rem 1.5rem 0;
-      display: flex; gap: 0.25rem;
-      border-bottom: 1px solid var(--border);
+      max-width: 1100px; margin: 0 auto;
+      padding: 0.35rem 1.25rem 0;
+      display: flex; gap: 0.15rem;
+      border-bottom: 1px solid var(--border-subtle);
     }
     .tab {
-      padding: 0.6rem 1rem; font-size: 0.8125rem; font-weight: 500;
+      padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 550;
       font-family: inherit; background: transparent; border: none;
       color: var(--text-muted); cursor: pointer;
       border-bottom: 2px solid transparent; margin-bottom: -1px;
-      transition: color 0.15s, border-color 0.15s;
+      transition: color 0.12s, border-color 0.12s;
     }
     .tab:hover { color: var(--text-secondary); }
-    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tab.active { color: var(--text); border-bottom-color: var(--text); }
 
 
     /* Custom tooltips (work on mobile tap) */
@@ -2430,6 +2430,280 @@
       .starter-breakdown { grid-template-columns: repeat(2, 1fr); }
       .power-row { padding: 0.75rem; }
     }
+  
+    .pr-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+    .pr-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 0;
+    }
+    .pr-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.2rem 0 0;
+    }
+    .pr-actions {
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+    .pr-actions .btn {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.7rem;
+      border-radius: 8px;
+    }
+    .power-mode-row {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.65rem;
+    }
+    .pr-modal { width: min(520px, 100%); }
+    .pr-share-modal { width: min(440px, 100%); }
+    .pr-modal-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0 0 0.85rem;
+      line-height: 1.4;
+    }
+    .pr-add-source {
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.65rem;
+    }
+    .pr-add-source .home-input { flex: 1; }
+    .pr-source-block {
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      margin-bottom: 0.5rem;
+      background: var(--surface-2);
+    }
+    .pr-source-block h4 {
+      font-size: 0.82rem;
+      margin: 0 0 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pr-rank-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+      font-size: 0.8rem;
+    }
+    .pr-rank-row span {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pr-rank-row input {
+      width: 3.2rem;
+      padding: 0.3rem 0.35rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .pr-share-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .pr-share-label {
+      flex: 1;
+      min-width: 140px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .pr-share-label input { margin-top: 0.25rem; width: 100%; }
+
+    .pr-share-card {
+      background: #0f1218;
+      color: #eef2f7;
+      border-radius: 16px;
+      padding: 1.15rem 1.1rem 1.25rem;
+      border: 1px solid #2a3140;
+      font-family: var(--font);
+    }
+    .pr-share-card-head {
+      text-align: center;
+      margin-bottom: 0.95rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #2a3140;
+    }
+    .pr-share-card-head .league {
+      font-size: 0.72rem;
+      color: #8b9bb0;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+    .pr-share-card-head h3 {
+      font-size: 1.2rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin: 0.25rem 0 0.15rem;
+    }
+    .pr-share-card-head .week-label {
+      font-size: 0.8rem;
+      color: #a0aec0;
+    }
+    .pr-share-row {
+      display: grid;
+      grid-template-columns: 2rem 1fr auto;
+      gap: 0.55rem;
+      align-items: start;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid #1e2430;
+    }
+    .pr-share-row:last-child { border-bottom: none; }
+    .pr-share-rk {
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding-top: 0.1rem;
+    }
+    .pr-share-name {
+      font-weight: 650;
+      font-size: 0.9rem;
+      line-height: 1.25;
+    }
+    .pr-share-meta {
+      font-size: 0.7rem;
+      color: #8b9bb0;
+      margin-top: 0.15rem;
+      line-height: 1.35;
+    }
+    .pr-share-score {
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.95rem;
+      padding-top: 0.1rem;
+    }
+    .pr-share-foot {
+      margin-top: 0.85rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid #2a3140;
+      font-size: 0.65rem;
+      color: #6b7a90;
+      text-align: center;
+    }
+    @media print {
+      body * { visibility: hidden !important; }
+      #pr-share-card, #pr-share-card * { visibility: visible !important; }
+      #pr-share-card {
+        position: absolute;
+        left: 0; top: 0;
+        width: 100%;
+        border: none;
+        background: #fff !important;
+        color: #111 !important;
+      }
+      #pr-share-card .pr-share-card-head .league,
+      #pr-share-card .pr-share-meta,
+      #pr-share-card .week-label,
+      #pr-share-card .pr-share-foot { color: #555 !important; }
+      #pr-share-card .pr-share-row { border-color: #ddd !important; }
+      #pr-share-card .pr-share-card-head,
+      #pr-share-card .pr-share-foot { border-color: #ccc !important; }
+    }
+    @media (max-width: 600px) {
+      .pr-top { flex-direction: column; }
+      .pr-actions { width: 100%; }
+      .pr-actions .btn { flex: 1; justify-content: center; }
+    }
+
+  
+    .pr-dnd-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin: 0 0 0.45rem;
+    }
+    .pr-dnd-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 280px;
+      overflow: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+    .pr-dnd-item {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: grab;
+      user-select: none;
+      font-size: 0.84rem;
+      background: var(--surface);
+    }
+    .pr-dnd-item:last-child { border-bottom: none; }
+    .pr-dnd-item.dragging {
+      opacity: 0.55;
+      background: var(--surface-2);
+    }
+    .pr-dnd-handle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: grab;
+      flex-shrink: 0;
+    }
+    .pr-dnd-rank {
+      width: 1.4rem;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+    .pr-dnd-name {
+      flex: 1;
+      min-width: 0;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pr-source-name-input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.25rem 0.4rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 650;
+    }
+    .pr-source-block h4 {
+      gap: 0.4rem;
+    }
+    .pr-source-block h4 .btn {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.5rem;
+      flex-shrink: 0;
+    }
+
   </style>
 </head>
 <body>
@@ -2476,7 +2750,7 @@
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
       <p class="rankings-note">
-        Tap a team for weekly H2H, top-half wins, and SOS detail. 10,000 sims · remaining schedule · SOS = average opponent projected PPG.
+        Tap a team for weekly detail. SOS is remaining opponents’ avg proj PPG vs the league average (+ harder / red, − easier / green).
       </p>
       <div class="odds-status" id="odds-status">Select Playoff Odds to load ESPN settings and run simulations.</div>
       <div class="odds-table-wrap">
@@ -2486,7 +2760,7 @@
               <th>Team</th>
               <th title="Current ESPN record">Now</th>
               <th title="Mean projected final record (H2H + top-half scoring)">Projected</th>
-              <th title="Remaining H2H strength of schedule. Harder = stronger opponents by projected PPG.">SOS</th>
+              <th title="Remaining H2H SOS vs league average opponent proj PPG. + harder (red), − easier (green).">SOS</th>
               <th>Playoffs</th>
               <th>1st-round bye</th>
               <th>Championship</th>
@@ -2527,16 +2801,25 @@
 
   <div class="panel" id="panel-power">
     <div class="rankings-wrap">
-      <p class="rankings-note">
-        <strong>Power rankings</strong><br>
-        How strong is this roster expected to be over the season?
-        Tap a row for the breakdown. #1 is always 100; early season scores stay tighter until games prove the gaps.
-      </p>
+      <div class="pr-top">
+        <div>
+          <h2 class="pr-title">Power rankings</h2>
+          <p class="pr-sub" id="pr-sub">Site model · tap a row for detail</p>
+        </div>
+        <div class="pr-actions">
+          <button type="button" class="btn" id="pr-sources-btn" title="Add rankings from other sites">Sources</button>
+          <button type="button" class="btn btn-primary" id="pr-share-btn" title="Open shareable ranking card">Share card</button>
+        </div>
+      </div>
+      <div class="power-mode-row" id="power-mode-row">
+        <button type="button" class="filter-btn active" data-power-mode="site">This site</button>
+        <button type="button" class="filter-btn" data-power-mode="hybrid">Hybrid avg</button>
+      </div>
       <div class="power-filters" id="power-filters">
         <div class="power-filter-group">
           <span class="power-filter-label">Sort</span>
           <button type="button" class="filter-btn active" data-power-sort="overall">Overall</button>
-          <button type="button" class="filter-btn" data-power-sort="proj">Proj PPG</button>
+          <button type="button" class="filter-btn" data-power-sort="proj">Proj</button>
           <button type="button" class="filter-btn" data-power-sort="QB">QB</button>
           <button type="button" class="filter-btn" data-power-sort="RB">RB</button>
           <button type="button" class="filter-btn" data-power-sort="WR">WR</button>
@@ -2546,14 +2829,48 @@
         </div>
         <div class="power-filter-group">
           <span class="power-filter-label">Needs</span>
-          <button type="button" class="filter-btn active" data-power-need="all">All teams</button>
-          <button type="button" class="filter-btn" data-power-need="QB">Need QB</button>
-          <button type="button" class="filter-btn" data-power-need="RB">Need RB</button>
-          <button type="button" class="filter-btn" data-power-need="WR">Need WR</button>
-          <button type="button" class="filter-btn" data-power-need="TE">Need TE</button>
+          <button type="button" class="filter-btn active" data-power-need="all">All</button>
+          <button type="button" class="filter-btn" data-power-need="QB">QB</button>
+          <button type="button" class="filter-btn" data-power-need="RB">RB</button>
+          <button type="button" class="filter-btn" data-power-need="WR">WR</button>
+          <button type="button" class="filter-btn" data-power-need="TE">TE</button>
         </div>
       </div>
       <div id="power-list" class="power-list"></div>
+    </div>
+
+    <div class="modal-backdrop" id="pr-sources-modal" hidden>
+      <div class="modal-card pr-modal" role="dialog" aria-label="External rankings">
+        <div class="modal-header">
+          <strong>External rankings</strong>
+          <button type="button" class="btn" id="pr-sources-close">Close</button>
+        </div>
+        <p class="pr-modal-note">Add a source, then drag teams into order (top = #1). Hybrid averages this site with your sources.</p>
+        <div id="pr-sources-list"></div>
+        <div class="pr-add-source">
+          <input type="text" id="pr-source-name" class="home-input" placeholder="Source name (e.g. FantasyPros)" />
+          <button type="button" class="btn btn-primary" id="pr-source-add">Add source</button>
+        </div>
+        <div id="pr-source-editor" class="pr-source-editor" hidden></div>
+        <button type="button" class="btn btn-primary" id="pr-sources-save" style="width:100%;margin-top:0.75rem;justify-content:center">Save &amp; apply</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="pr-share-modal" hidden>
+      <div class="modal-card pr-share-modal" role="dialog" aria-label="Shareable rankings">
+        <div class="modal-header">
+          <strong>Share card</strong>
+          <button type="button" class="btn" id="pr-share-close">Close</button>
+        </div>
+        <div class="pr-share-toolbar">
+          <label class="pr-share-label">Label
+            <input type="text" id="pr-share-label" class="home-input" placeholder="Preseason · Week 1 · …" />
+          </label>
+          <button type="button" class="btn" id="pr-share-print">Print / Save PDF</button>
+        </div>
+        <p class="pr-modal-note">Screenshot the card below for group chat, or print/save as PDF.</p>
+        <div id="pr-share-card" class="pr-share-card"></div>
+      </div>
     </div>
   </div>
 
@@ -4168,6 +4485,7 @@
 
     function renderAll(data) {
       renderTradeBoard(data);
+      loadExternalRankSources();
       powerModelsCache = finalizePowerScores(buildTeamModels(data));
       renderPowerRankings(powerModelsCache);
       setupTradeCalculator(data);
@@ -5951,21 +6269,388 @@
 
     function setupPowerFilters() {
       const root = document.getElementById("power-filters");
-      if (!root || root.dataset.bound === "1") return;
-      root.dataset.bound = "1";
-      root.addEventListener("click", (e) => {
-        const sortBtn = e.target.closest("[data-power-sort]");
-        const needBtn = e.target.closest("[data-power-need]");
-        if (sortBtn) {
-          powerSortMode = sortBtn.getAttribute("data-power-sort") || "overall";
-          root.querySelectorAll("[data-power-sort]").forEach((b) => b.classList.toggle("active", b === sortBtn));
-          if (powerModelsCache) renderPowerRankings(powerModelsCache);
+      if (root && root.dataset.bound !== "1") {
+        root.dataset.bound = "1";
+        root.addEventListener("click", (e) => {
+          const sortBtn = e.target.closest("[data-power-sort]");
+          const needBtn = e.target.closest("[data-power-need]");
+          if (sortBtn) {
+            powerSortMode = sortBtn.getAttribute("data-power-sort") || "overall";
+            root.querySelectorAll("[data-power-sort]").forEach((b) => b.classList.toggle("active", b === sortBtn));
+            if (powerModelsCache) renderPowerRankings(powerModelsCache);
+          }
+          if (needBtn) {
+            powerNeedFilter = needBtn.getAttribute("data-power-need") || "all";
+            root.querySelectorAll("[data-power-need]").forEach((b) => b.classList.toggle("active", b === needBtn));
+            if (powerModelsCache) renderPowerRankings(powerModelsCache);
+          }
+        });
+      }
+      wirePowerExtras();
+    }
+
+
+    let powerMode = "site"; // site | hybrid
+    let externalRankSources = []; // [{id, name, ranks: {teamId: rankNumber}}]
+    let editingSourceId = null;
+
+    function externalRanksStorageKey() {
+      return "leagueToolsExtRanks_" + String(LEAGUE_ID) + "_" + String(SEASON);
+    }
+    function loadExternalRankSources() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(externalRanksStorageKey()) || "[]");
+        externalRankSources = Array.isArray(raw) ? raw : [];
+      } catch (e) {
+        externalRankSources = [];
+      }
+    }
+    function saveExternalRankSources() {
+      try {
+        localStorage.setItem(externalRanksStorageKey(), JSON.stringify(externalRankSources));
+      } catch (e) {}
+    }
+
+    /** Average ordinal ranks across site + external sources → hybrid score (lower rank better). */
+    function applyHybridRanks(models) {
+      if (!models || !models.length) return models;
+      const n = models.length;
+      // Site rank by current totalScore / rawPower
+      const siteOrder = models.slice().sort((a, b) =>
+        (b.rawPower || 0) - (a.rawPower || 0) || (b.totalScore || 0) - (a.totalScore || 0)
+      );
+      const siteRank = {};
+      siteOrder.forEach((t, i) => { siteRank[String(t.id)] = i + 1; });
+
+      const activeSources = externalRankSources.filter((s) => {
+        const ranks = s.ranks || {};
+        const filled = models.filter((t) => ranks[String(t.id)] > 0).length;
+        return filled >= Math.max(2, Math.ceil(n * 0.5));
+      });
+
+      models.forEach((t) => {
+        const id = String(t.id);
+        const ranks = [siteRank[id]];
+        activeSources.forEach((s) => {
+          const r = Number((s.ranks || {})[id]);
+          if (r > 0) ranks.push(r);
+        });
+        const avgRank = ranks.reduce((a, b) => a + b, 0) / ranks.length;
+        t.hybridAvgRank = avgRank;
+        t.hybridSources = ranks.length;
+        // Convert avg rank to 0-100 score (#1 → 100)
+        t.hybridScore = n <= 1 ? 100 : (100 * (n - avgRank) / (n - 1));
+        t.siteRank = siteRank[id];
+      });
+
+      if (powerMode === "hybrid" && activeSources.length) {
+        models.forEach((t) => {
+          t.displayScore = t.hybridScore;
+          t.displayRankKey = t.hybridAvgRank;
+        });
+      } else {
+        models.forEach((t) => {
+          t.displayScore = t.totalScore;
+          t.displayRankKey = -(t.rawPower || 0);
+        });
+      }
+      return models;
+    }
+
+    function teamStrengthsWeaknesses(t, posRankByTeam, teamCount) {
+      const ranks = posRankByTeam[t.id] || {};
+      const items = ["QB", "RB", "WR", "TE"].map((p) => ({
+        pos: p,
+        rank: ranks[p] || teamCount,
+        grade: posGradeLabel(ranks[p], teamCount)
+      }));
+      items.sort((a, b) => a.rank - b.rank);
+      const strengths = items.filter((x) => x.rank <= Math.ceil(teamCount * 0.35)).slice(0, 2);
+      const weaknesses = items.filter((x) => x.rank >= Math.ceil(teamCount * 0.65)).slice(0, 2);
+      return { strengths, weaknesses, items };
+    }
+
+
+    function getPowerTeamsForSources() {
+      if (powerModelsCache && powerModelsCache.length) {
+        return powerModelsCache.map((t) => ({ id: String(t.id), name: t.name || ("Team " + t.id) }));
+      }
+      if (typeof leagueData !== "undefined" && leagueData && leagueData.teams) {
+        return (leagueData.teams || []).map((t) => ({
+          id: String(t.id),
+          name: t.name || t.abbrev || ("Team " + t.id)
+        }));
+      }
+      return [];
+    }
+
+    function ranksFromOrder(orderIds) {
+      const ranks = {};
+      orderIds.forEach((id, i) => { ranks[String(id)] = i + 1; });
+      return ranks;
+    }
+
+    function orderFromRanks(teams, ranks) {
+      const ranked = teams.slice().sort((a, b) => {
+        const ra = Number((ranks || {})[String(a.id)]) || 999;
+        const rb = Number((ranks || {})[String(b.id)]) || 999;
+        if (ra !== rb) return ra - rb;
+        return (a.name || "").localeCompare(b.name || "");
+      });
+      return ranked.map((t) => String(t.id));
+    }
+
+    function openPrSourcesModal() {
+      loadExternalRankSources();
+      const modal = document.getElementById("pr-sources-modal");
+      const list = document.getElementById("pr-sources-list");
+      if (!modal || !list) return;
+      const teams = getPowerTeamsForSources();
+      if (!teams.length) {
+        list.innerHTML = '<p class="pr-modal-note">Load a league first so teams appear here.</p>';
+        modal.hidden = false;
+        return;
+      }
+
+      // Ensure each source has a full order
+      externalRankSources.forEach((s) => {
+        if (!s.order || !s.order.length) {
+          s.order = orderFromRanks(teams, s.ranks || {});
         }
-        if (needBtn) {
-          powerNeedFilter = needBtn.getAttribute("data-power-need") || "all";
-          root.querySelectorAll("[data-power-need]").forEach((b) => b.classList.toggle("active", b === needBtn));
-          if (powerModelsCache) renderPowerRankings(powerModelsCache);
+        // Include any new teams at end
+        const have = new Set(s.order.map(String));
+        teams.forEach((t) => {
+          if (!have.has(String(t.id))) s.order.push(String(t.id));
+        });
+        s.order = s.order.filter((id) => teams.some((t) => String(t.id) === String(id)));
+        s.ranks = ranksFromOrder(s.order);
+      });
+
+      const nameById = {};
+      teams.forEach((t) => { nameById[String(t.id)] = t.name; });
+
+      list.innerHTML = externalRankSources.length ? externalRankSources.map((s) => {
+        const items = (s.order || []).map((id, idx) =>
+          '<li class="pr-dnd-item" draggable="true" data-team-id="' + id + '">' +
+            '<span class="pr-dnd-handle" title="Drag">⠿</span>' +
+            '<span class="pr-dnd-rank">' + (idx + 1) + "</span>" +
+            '<span class="pr-dnd-name">' + escapeHtml(nameById[String(id)] || id) + "</span>" +
+          "</li>"
+        ).join("");
+        return (
+          '<div class="pr-source-block" data-sid="' + s.id + '">' +
+            "<h4>" +
+              '<input type="text" class="pr-source-name-input" data-rename="' + s.id + '" value="' + escapeHtml(s.name) + '" />' +
+              ' <button type="button" class="btn" data-del-source="' + s.id + '">Remove</button>' +
+            "</h4>" +
+            '<p class="pr-dnd-hint">Drag teams to rank — top is #1</p>' +
+            '<ol class="pr-dnd-list" data-source-list="' + s.id + '">' + items + "</ol>" +
+          "</div>"
+        );
+      }).join("") : '<p class="pr-modal-note">No sources yet. Add one below, then drag teams into order.</p>';
+
+      list.querySelectorAll("[data-del-source]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const id = btn.getAttribute("data-del-source");
+          externalRankSources = externalRankSources.filter((s) => s.id !== id);
+          saveExternalRankSources();
+          openPrSourcesModal();
+        };
+      });
+      list.querySelectorAll("[data-rename]").forEach((inp) => {
+        inp.addEventListener("change", () => {
+          const src = externalRankSources.find((s) => s.id === inp.getAttribute("data-rename"));
+          if (src) {
+            src.name = (inp.value || "").trim() || src.name;
+            saveExternalRankSources();
+          }
+        });
+      });
+
+      // Drag and drop
+      list.querySelectorAll(".pr-dnd-list").forEach((ol) => {
+        let dragEl = null;
+        ol.querySelectorAll(".pr-dnd-item").forEach((li) => {
+          li.addEventListener("dragstart", (e) => {
+            dragEl = li;
+            li.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            try { e.dataTransfer.setData("text/plain", li.getAttribute("data-team-id")); } catch (err) {}
+          });
+          li.addEventListener("dragend", () => {
+            li.classList.remove("dragging");
+            dragEl = null;
+            // persist order
+            const sid = ol.getAttribute("data-source-list");
+            const src = externalRankSources.find((s) => s.id === sid);
+            if (!src) return;
+            src.order = [...ol.querySelectorAll(".pr-dnd-item")].map((el) => el.getAttribute("data-team-id"));
+            src.ranks = ranksFromOrder(src.order);
+            // update rank numbers
+            ol.querySelectorAll(".pr-dnd-item").forEach((el, i) => {
+              const rk = el.querySelector(".pr-dnd-rank");
+              if (rk) rk.textContent = String(i + 1);
+            });
+            saveExternalRankSources();
+          });
+        });
+        ol.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          const after = getDragAfterElement(ol, e.clientY);
+          const dragging = ol.querySelector(".dragging");
+          if (!dragging) return;
+          if (after == null) ol.appendChild(dragging);
+          else ol.insertBefore(dragging, after);
+        });
+      });
+
+      modal.hidden = false;
+    }
+
+    function getDragAfterElement(container, y) {
+      const els = [...container.querySelectorAll(".pr-dnd-item:not(.dragging)")];
+      let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+      for (const child of els) {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          closest = { offset, element: child };
         }
+      }
+      return closest.element;
+    }
+
+    function openPrShareCard() {
+      const modal = document.getElementById("pr-share-modal");
+      const card = document.getElementById("pr-share-card");
+      const labelInput = document.getElementById("pr-share-label");
+      if (!modal || !card || !powerModelsCache) return;
+      loadExternalRankSources();
+      const models = applyHybridRanks(powerModelsCache.slice());
+      const teamCount = models.length;
+      const posRankByTeam = {};
+      for (const pos of ["QB", "RB", "WR", "TE"]) {
+        const order = models.slice().sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
+        order.forEach((t, i) => {
+          if (!posRankByTeam[t.id]) posRankByTeam[t.id] = {};
+          posRankByTeam[t.id][pos] = i + 1;
+        });
+      }
+      const sorted = models.slice().sort((a, b) => {
+        if (powerMode === "hybrid" && (a.hybridAvgRank != null)) {
+          return a.hybridAvgRank - b.hybridAvgRank;
+        }
+        return (b.rawPower || 0) - (a.rawPower || 0);
+      });
+      const topScore = sorted[0] ? (powerMode === "hybrid" ? sorted[0].hybridScore : sorted[0].totalScore) : 100;
+      const weekDefault = (typeof leagueData !== "undefined" && leagueData && leagueData.scoringPeriodId)
+        ? ("Week " + leagueData.scoringPeriodId)
+        : "Preseason";
+      if (labelInput && !labelInput.value) labelInput.value = weekDefault;
+      const label = (labelInput && labelInput.value) || weekDefault;
+      const modeNote = powerMode === "hybrid" ? "Hybrid average" : "League Tools";
+
+      const rows = sorted.map((t, i) => {
+        const rank = i + 1;
+        const raw = powerMode === "hybrid" ? t.hybridScore : t.totalScore;
+        const score = topScore > 0 ? (100 * (raw || 0) / topScore) : 0;
+        const sw = teamStrengthsWeaknesses(t, posRankByTeam, teamCount);
+        const strong = sw.strengths.map((x) => x.pos).join("/") || "—";
+        const weak = sw.weaknesses.map((x) => x.pos).join("/") || "—";
+        const exp = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
+        const color = rankColor(rank, teamCount);
+        return (
+          '<div class="pr-share-row">' +
+            '<div class="pr-share-rk" style="color:' + color + '">' + rank + "</div>" +
+            '<div><div class="pr-share-name">' + escapeHtml(t.name) + "</div>" +
+              '<div class="pr-share-meta">Proj ' + exp +
+              " · Best " + strong +
+              (weak !== "—" ? " · Soft " + weak : "") +
+              "</div></div>" +
+            '<div class="pr-share-score">' + score.toFixed(0) + "</div>" +
+          "</div>"
+        );
+      }).join("");
+
+      card.innerHTML =
+        '<div class="pr-share-card-head">' +
+          '<div class="league">League ' + escapeHtml(String(LEAGUE_ID)) + "</div>" +
+          "<h3>Power Rankings</h3>" +
+          '<div class="week-label">' + escapeHtml(label) + " · " + modeNote + "</div>" +
+        "</div>" +
+        rows +
+        '<div class="pr-share-foot">#1 = 100 · strengths/soft spots from positional ranks</div>';
+      modal.hidden = false;
+    }
+
+    function wirePowerExtras() {
+      if (window.__prExtrasWired) return;
+      window.__prExtrasWired = true;
+      const srcBtn = document.getElementById("pr-sources-btn");
+      const shareBtn = document.getElementById("pr-share-btn");
+      const srcClose = document.getElementById("pr-sources-close");
+      const shareClose = document.getElementById("pr-share-close");
+      const srcModal = document.getElementById("pr-sources-modal");
+      const shareModal = document.getElementById("pr-share-modal");
+      const addBtn = document.getElementById("pr-source-add");
+      const saveBtn = document.getElementById("pr-sources-save");
+      const printBtn = document.getElementById("pr-share-print");
+      const labelInput = document.getElementById("pr-share-label");
+
+      if (srcBtn) srcBtn.addEventListener("click", () => openPrSourcesModal());
+      if (shareBtn) shareBtn.addEventListener("click", () => openPrShareCard());
+      if (srcClose) srcClose.addEventListener("click", () => { if (srcModal) srcModal.hidden = true; });
+      if (shareClose) shareClose.addEventListener("click", () => { if (shareModal) shareModal.hidden = true; });
+      if (srcModal) srcModal.addEventListener("click", (e) => { if (e.target === srcModal) srcModal.hidden = true; });
+      if (shareModal) shareModal.addEventListener("click", (e) => { if (e.target === shareModal) shareModal.hidden = true; });
+
+      if (addBtn) addBtn.addEventListener("click", () => {
+        loadExternalRankSources();
+        const nameEl = document.getElementById("pr-source-name");
+        const name = ((nameEl && nameEl.value) || "").trim() || ("Source " + (externalRankSources.length + 1));
+        const teams = getPowerTeamsForSources();
+        const order = teams.map((t) => String(t.id));
+        externalRankSources.push({
+          id: "src_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
+          name,
+          order,
+          ranks: ranksFromOrder(order)
+        });
+        if (nameEl) nameEl.value = "";
+        saveExternalRankSources();
+        openPrSourcesModal();
+      });
+
+      if (saveBtn) saveBtn.addEventListener("click", () => {
+        // Sync any rename fields + current DOM order
+        document.querySelectorAll("[data-rename]").forEach((inp) => {
+          const src = externalRankSources.find((s) => s.id === inp.getAttribute("data-rename"));
+          if (src) src.name = (inp.value || "").trim() || src.name;
+        });
+        document.querySelectorAll("[data-source-list]").forEach((ol) => {
+          const sid = ol.getAttribute("data-source-list");
+          const src = externalRankSources.find((s) => s.id === sid);
+          if (!src) return;
+          src.order = [...ol.querySelectorAll(".pr-dnd-item")].map((el) => el.getAttribute("data-team-id"));
+          src.ranks = ranksFromOrder(src.order);
+        });
+        saveExternalRankSources();
+        if (srcModal) srcModal.hidden = true;
+        if (powerModelsCache) renderPowerRankings(powerModelsCache);
+      });
+
+      if (printBtn) printBtn.addEventListener("click", () => window.print());
+      if (labelInput) labelInput.addEventListener("change", () => openPrShareCard());
+
+      document.querySelectorAll("#power-mode-row [data-power-mode]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          powerMode = btn.getAttribute("data-power-mode") || "site";
+          document.querySelectorAll("#power-mode-row [data-power-mode]").forEach((b) => {
+            b.classList.toggle("active", b === btn);
+          });
+          if (powerModelsCache) renderPowerRankings(powerModelsCache);
+        });
       });
     }
 
@@ -5975,7 +6660,19 @@
         if (list) list.innerHTML = '<p class="rankings-note">No teams loaded.</p>';
         return;
       }
+      loadExternalRankSources();
+      models = applyHybridRanks(models);
       const teamCount = models.length || 10;
+      const sub = document.getElementById("pr-sub");
+      const nSrc = externalRankSources.filter((s) => {
+        const ranks = s.ranks || {};
+        return models.filter((t) => ranks[String(t.id)] > 0).length >= Math.max(2, Math.ceil(teamCount * 0.5));
+      }).length;
+      if (sub) {
+        sub.textContent = powerMode === "hybrid" && nSrc
+          ? ("Hybrid · this site + " + nSrc + " source" + (nSrc === 1 ? "" : "s"))
+          : (powerMode === "hybrid" ? "Hybrid (add sources to average)" : "Site model · tap a row for detail");
+      }
 
       const posRankByTeam = {};
       for (const pos of ["QB", "RB", "WR", "TE"]) {
@@ -6004,7 +6701,10 @@
         if (["QB", "RB", "WR", "TE"].indexOf(sortMode) >= 0) {
           return (b.posScores[sortMode] || 0) - (a.posScores[sortMode] || 0);
         }
-        // Overall: stable primary sort on rawPower then totalScore
+        // Overall: hybrid avg rank when enabled, else site rawPower
+        if (powerMode === "hybrid" && a.hybridAvgRank != null && b.hybridAvgRank != null) {
+          return a.hybridAvgRank - b.hybridAvgRank;
+        }
         const d = (b.rawPower || 0) - (a.rawPower || 0);
         if (Math.abs(d) > 1e-9) return d;
         return (b.totalScore || 0) - (a.totalScore || 0);
@@ -6053,6 +6753,8 @@
         else if (["QB", "RB", "WR", "TE"].indexOf(sortMode) >= 0) {
           const pr = (posRankByTeam[t.id] || {})[sortMode];
           score = pr != null ? ("#" + pr) : "—";
+        } else if (powerMode === "hybrid" && t.hybridScore != null) {
+          score = t.hybridScore.toFixed(1);
         } else {
           score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
         }
@@ -6566,28 +7268,25 @@
           oppList
         };
       });
-      const sosVals = models.map((t) => sosRaw[String(t.id)].avgOpp);
-      const minSos = Math.min(...sosVals);
-      const maxSos = Math.max(...sosVals);
+      const sosVals = models.map((t) => sosRaw[String(t.id)].avgOpp).filter((v) => v > 0);
+      const leagueSos = sosVals.length
+        ? sosVals.reduce((s, v) => s + v, 0) / sosVals.length
+        : 0;
       const sosByTeam = {};
-      // Rank 1 = hardest schedule
+      // Rank 1 = hardest (highest avg opponent proj)
       const byHardest = models.slice().sort((a, b) =>
         sosRaw[String(b.id)].avgOpp - sosRaw[String(a.id)].avgOpp
       );
       byHardest.forEach((t, i) => {
         const tid = String(t.id);
         const avg = sosRaw[tid].avgOpp;
-        const span = Math.max(1e-6, maxSos - minSos);
-        const hard01 = (avg - minSos) / span; // 0 easy → 1 hard
-        let label = "Average";
-        if (hard01 >= 0.67) label = "Hard";
-        else if (hard01 <= 0.33) label = "Easy";
+        const delta = avg - leagueSos; // + = harder than avg, - = easier
         sosByTeam[tid] = {
           avgOpp: avg,
+          leagueAvg: leagueSos,
+          delta,
           games: sosRaw[tid].games,
           rank: i + 1,
-          hard01,
-          label,
           oppList: sosRaw[tid].oppList
         };
       });
@@ -7433,14 +8132,36 @@
           });
 
           const sos = (simulation.sosByTeam && simulation.sosByTeam[String(team.id)]) || null;
-          const sosColor = !sos ? "var(--text-muted)"
-            : sos.label === "Hard" ? "#f87171"
-            : sos.label === "Easy" ? "#4ade80"
-            : "var(--text-secondary)";
+          function sosDeltaColor(delta) {
+            // +delta (harder) → red; -delta (easier) → green; near 0 → default
+            const t = Math.max(-1, Math.min(1, (delta || 0) / 8)); // ±8 proj pts ≈ full scale
+            if (Math.abs(t) < 0.08) return "var(--text-secondary)";
+            if (t > 0) {
+              // toward red
+              const a = 0.35 + 0.65 * t;
+              return "rgba(248,113,113," + (0.55 + 0.45 * t).toFixed(2) + ")";
+            }
+            const a = -t;
+            return "rgba(74,222,128," + (0.55 + 0.45 * a).toFixed(2) + ")";
+          }
+          function sosDeltaTextColor(delta) {
+            const t = Math.max(-1, Math.min(1, (delta || 0) / 8));
+            if (Math.abs(t) < 0.08) return "var(--text-secondary)";
+            if (t > 0) return "#f87171";
+            return "#4ade80";
+          }
           const sosCell = sos
-            ? ('<span style="color:' + sosColor + ';font-weight:650">' + sos.label + "</span>" +
-               '<div style="font-size:0.65rem;color:var(--text-muted)">#' + sos.rank +
-               " · " + (sos.avgOpp ? sos.avgOpp.toFixed(1) : "—") + " opp</div>")
+            ? (function () {
+                const d = sos.delta || 0;
+                const sign = d > 0.05 ? "+" : "";
+                return (
+                  '<span style="color:' + sosDeltaTextColor(d) + ';font-weight:700;font-variant-numeric:tabular-nums">' +
+                    sign + d.toFixed(1) +
+                  "</span>" +
+                  '<div style="font-size:0.65rem;color:var(--text-muted)">#' + sos.rank +
+                  " · " + (sos.avgOpp ? sos.avgOpp.toFixed(1) : "—") + " opp</div>"
+                );
+              })()
             : "—";
 
           htmlRows +=
@@ -7461,7 +8182,8 @@
                   "playoffs in " + result.playoff.toLocaleString() + " · " +
                   "bye in " + result.bye.toLocaleString() + " · " +
                   "title in " + result.champion.toLocaleString() +
-                  (sos ? (" · SOS " + sos.label + " (#" + sos.rank + ", " + sos.avgOpp.toFixed(1) + " avg opp proj)") : "") +
+                  (sos ? (" · SOS " + (sos.delta > 0.05 ? "+" : "") + sos.delta.toFixed(1) +
+                    " vs avg (#" + sos.rank + ", " + sos.avgOpp.toFixed(1) + " opp proj)") : "") +
                 "</div>" +
                 '<table class="odds-week-table">' +
                   "<thead><tr>" +
