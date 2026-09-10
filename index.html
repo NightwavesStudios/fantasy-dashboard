@@ -2746,6 +2746,63 @@
     }
     .pr-share-colheads span:last-child { text-align: right; }
 
+  
+    .home-platform {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.85rem;
+    }
+    .home-platform .filter-btn { flex: 1; justify-content: center; }
+  
+    .calc-advice {
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin: -0.15rem 0 0.35rem;
+      letter-spacing: -0.01em;
+    }
+    .calc-advice.benefit { color: #4ade80; }
+    .calc-advice.hurt { color: #f87171; }
+    .calc-advice.neutral { color: var(--text-muted); }
+    .calc-impact-result.hurt {
+      background: rgba(248,113,113,0.15);
+      color: #fca5a5;
+    }
+    .calc-impact-why {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 0.55rem;
+      line-height: 1.35;
+    }
+    .calc-trade-summary {
+      grid-column: 1 / -1;
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      margin-bottom: 0.25rem;
+    }
+    .calc-trade-summary-title {
+      font-weight: 700;
+      font-size: 0.92rem;
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.015em;
+    }
+    .calc-trade-summary-body {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+    .calc-trade-summary-note {
+      margin-top: 0.45rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .calc-impact-simple {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
   </style>
 </head>
 <body>
@@ -2819,16 +2876,20 @@
   <div class="panel active" id="panel-home">
     <div class="home-wrap">
       <h2 class="home-title">League Tools</h2>
-      <p class="home-sub">Connect a public ESPN fantasy football league to unlock power rankings, trade calc, matchup help, and playoff odds.</p>
+      <p class="home-sub">Connect an ESPN or Sleeper league for power rankings, trade calc, matchups, and playoff odds.</p>
       <div class="home-card">
-        <label class="home-label">ESPN League ID
+        <div class="home-platform" id="home-platform">
+          <button type="button" class="filter-btn active" data-platform="espn">ESPN</button>
+          <button type="button" class="filter-btn" data-platform="sleeper">Sleeper</button>
+        </div>
+        <label class="home-label" id="home-league-label">ESPN League ID
           <input type="text" id="home-league-id" class="home-input" placeholder="e.g. 2039212076" inputmode="numeric" autocomplete="off" />
         </label>
         <label class="home-label">Season
           <input type="number" id="home-season" class="home-input" value="2026" min="2018" max="2030" />
         </label>
         <button type="button" class="btn btn-primary home-go" id="home-load-btn">Load league</button>
-        <p class="home-hint">League must be public (or viewable without login). Find the ID in your ESPN league URL.</p>
+        <p class="home-hint" id="home-hint">ESPN: ID from the league URL (public leagues). Sleeper: league ID from the Sleeper URL or app.</p>
       </div>
       <div class="home-card" id="home-recent-wrap" hidden>
         <h3 class="home-section-title">Recent leagues</h3>
@@ -3085,6 +3146,9 @@
 
     let LEAGUE_ID = "2039212076";
     let SEASON = 2026;
+    let PLATFORM = "espn"; // espn | sleeper
+    let sleeperPlayersCache = null; // map id -> player
+
     function getApiUrl() {
       return `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mTeam&view=mRoster&view=mScoreboard`;
     }
@@ -3136,7 +3200,10 @@
 
     /** Bye week number for a raw ESPN player object, or null if unknown. */
     function getByeWeek(player) {
-      if (!player || player.proTeamId == null) return null;
+      if (!player) return null;
+      if (player._sleeperBye) return player._sleeperBye;
+      if (player.bye_week) return player.bye_week;
+      if (player.proTeamId == null) return null;
       const w = byeByProTeam[player.proTeamId];
       return w || null;
     }
@@ -3499,12 +3566,13 @@
         return [];
       }
     }
-    function saveLeagueEntry(id, season, name) {
-      const list = loadSavedLeagues().filter((x) => !(String(x.id) === String(id) && Number(x.season) === Number(season)));
-      list.unshift({ id: String(id), season: Number(season), name: name || ("League " + id), ts: Date.now() });
+    function saveLeagueEntry(id, season, name, platform) {
+      const plat = platform || PLATFORM || "espn";
+      const list = loadSavedLeagues().filter((x) => !(String(x.id) === String(id) && Number(x.season) === Number(season) && (x.platform || "espn") === plat));
+      list.unshift({ id: String(id), season: Number(season), name: name || ("League " + id), platform: plat, ts: Date.now() });
       try {
         localStorage.setItem(LEAGUE_STORAGE_KEY, JSON.stringify(list.slice(0, 12)));
-        localStorage.setItem(LEAGUE_ACTIVE_KEY, JSON.stringify({ id: String(id), season: Number(season) }));
+        localStorage.setItem(LEAGUE_ACTIVE_KEY, JSON.stringify({ id: String(id), season: Number(season), platform: plat }));
       } catch (e) {}
     }
     function getActiveLeague() {
@@ -3524,7 +3592,7 @@
       }
       const name = (leagueData && leagueData.settings && leagueData.settings.name) ||
         (leagueData && leagueData.teams ? leagueData.teams.length + " teams" : "");
-      el.textContent = "League " + LEAGUE_ID + " · " + SEASON + (name ? " · " + name : "");
+      el.textContent = (PLATFORM === "sleeper" ? "Sleeper" : "ESPN") + " · " + LEAGUE_ID + " · " + SEASON + (name ? " · " + name : "");
     }
 
     function renderHomeScreen() {
@@ -3542,14 +3610,14 @@
         if (recent.length) {
           recentWrap.hidden = false;
           recentList.innerHTML = recent.map((r) =>
-            '<button type="button" class="home-recent-item" data-league-id="' + r.id + '" data-season="' + r.season + '">' +
+            '<button type="button" class="home-recent-item" data-league-id="' + r.id + '" data-season="' + r.season + '" data-platform="' + (r.platform || "espn") + '">' +
               "<span>" + escapeHtml(r.name || ("League " + r.id)) + "</span>" +
-              '<span class="meta">' + r.id + " · " + r.season + "</span>" +
+              '<span class="meta">' + (r.platform === "sleeper" ? "Sleeper" : "ESPN") + " · " + r.id + " · " + r.season + "</span>" +
             "</button>"
           ).join("");
           recentList.querySelectorAll("[data-league-id]").forEach((btn) => {
             btn.onclick = () => {
-              applyLeague(btn.getAttribute("data-league-id"), btn.getAttribute("data-season"));
+              applyLeague(btn.getAttribute("data-league-id"), btn.getAttribute("data-season"), btn.getAttribute("data-platform") || "espn");
             };
           });
         } else {
@@ -3572,13 +3640,15 @@
       }
     }
 
-    function applyLeague(id, season) {
+    function applyLeague(id, season, platform) {
       const cleanId = String(id || "").trim();
       const seasonNum = Number(season) || 2026;
+      const plat = platform || PLATFORM || "espn";
       if (!/^\d+$/.test(cleanId)) {
-        alert("Enter a numeric ESPN league ID.");
+        alert("Enter a numeric league ID.");
         return;
       }
+      PLATFORM = plat;
       LEAGUE_ID = cleanId;
       SEASON = seasonNum;
       refreshApiUrls();
@@ -3587,10 +3657,9 @@
       leagueData = null;
       updateHeaderMeta();
       renderHomeScreen();
-      // switch to power after load success
       fetchLeague().then(() => {
         const name = (leagueData && leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
-        saveLeagueEntry(LEAGUE_ID, SEASON, name);
+        saveLeagueEntry(LEAGUE_ID, SEASON, name, PLATFORM);
         updateHeaderMeta();
         renderHomeScreen();
         const tab = document.querySelector('.tab[data-panel="power"]');
@@ -3599,12 +3668,33 @@
     }
 
     function setupHomeScreen() {
+      const platRow = document.getElementById("home-platform");
+      if (platRow) {
+        platRow.querySelectorAll("[data-platform]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            PLATFORM = btn.getAttribute("data-platform") || "espn";
+            platRow.querySelectorAll("[data-platform]").forEach((b) => b.classList.toggle("active", b === btn));
+            const label = document.getElementById("home-league-label");
+            const hint = document.getElementById("home-hint");
+            const input = document.getElementById("home-league-id");
+            if (PLATFORM === "sleeper") {
+              if (label) label.childNodes[0].textContent = "Sleeper League ID ";
+              if (hint) hint.textContent = "Sleeper: open your league in the app/web — the long number in the URL is the league ID.";
+              if (input) input.placeholder = "e.g. 112345678901234567";
+            } else {
+              if (label) label.childNodes[0].textContent = "ESPN League ID ";
+              if (hint) hint.textContent = "ESPN: ID from the league URL (public leagues).";
+              if (input) input.placeholder = "e.g. 2039212076";
+            }
+          });
+        });
+      }
       const btn = document.getElementById("home-load-btn");
       if (btn) {
         btn.onclick = () => {
           const id = document.getElementById("home-league-id").value;
           const season = document.getElementById("home-season").value;
-          applyLeague(id, season);
+          applyLeague(id, season, PLATFORM);
         };
       }
       const idInput = document.getElementById("home-league-id");
@@ -3616,20 +3706,212 @@
       renderHomeScreen();
     }
 
+
+    const SLEEPER_POS_TO_ESPN = { QB: 1, RB: 2, WR: 3, TE: 4, K: 5, DEF: 16, DL: 16, LB: 16, DB: 16 };
+
+    async function fetchSleeperPlayers() {
+      if (sleeperPlayersCache) return sleeperPlayersCache;
+      try {
+        const cached = localStorage.getItem("sleeperPlayersNfl_v1");
+        const cachedAt = Number(localStorage.getItem("sleeperPlayersNfl_v1_ts") || 0);
+        if (cached && Date.now() - cachedAt < 24 * 3600 * 1000) {
+          sleeperPlayersCache = JSON.parse(cached);
+          return sleeperPlayersCache;
+        }
+      } catch (e) {}
+      const res = await fetchWithTimeout(
+        "https://api.sleeper.app/v1/players/nfl",
+        { credentials: "omit", headers: { Accept: "application/json" } },
+        60000
+      );
+      if (!res.ok) throw new Error("Sleeper players HTTP " + res.status);
+      const data = await res.json();
+      // Store compact subset only (full dump is huge)
+      const compact = {};
+      Object.keys(data).forEach((id) => {
+        const p = data[id];
+        if (!p) return;
+        compact[id] = {
+          player_id: id,
+          full_name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" "),
+          position: p.position || p.fantasy_positions?.[0] || "?",
+          team: p.team || null,
+          status: p.status || null,
+          injury_status: p.injury_status || null,
+          bye_week: p.bye_week || null,
+          number: p.number || null
+        };
+      });
+      sleeperPlayersCache = compact;
+      try {
+        localStorage.setItem("sleeperPlayersNfl_v1", JSON.stringify(compact));
+        localStorage.setItem("sleeperPlayersNfl_v1_ts", String(Date.now()));
+      } catch (e) {
+        // quota — keep in memory only
+      }
+      return sleeperPlayersCache;
+    }
+
+    async function fetchSleeperLeagueData(leagueId) {
+      const base = "https://api.sleeper.app/v1";
+      const [leagueRes, usersRes, rostersRes, stateRes] = await Promise.all([
+        fetchWithTimeout(base + "/league/" + leagueId, { headers: { Accept: "application/json" } }, 20000),
+        fetchWithTimeout(base + "/league/" + leagueId + "/users", { headers: { Accept: "application/json" } }, 20000),
+        fetchWithTimeout(base + "/league/" + leagueId + "/rosters", { headers: { Accept: "application/json" } }, 20000),
+        fetchWithTimeout(base + "/state/nfl", { headers: { Accept: "application/json" } }, 10000)
+      ]);
+      if (!leagueRes.ok) throw new Error("Sleeper league HTTP " + leagueRes.status + " — check the league ID");
+      if (!rostersRes.ok) throw new Error("Sleeper rosters HTTP " + rostersRes.status);
+      const league = await leagueRes.json();
+      const users = usersRes.ok ? await usersRes.json() : [];
+      const rosters = await rostersRes.json();
+      const state = stateRes.ok ? await stateRes.json() : {};
+      const week = Number(state.week || state.display_week || 1) || 1;
+
+      let matchups = [];
+      try {
+        const mRes = await fetchWithTimeout(
+          base + "/league/" + leagueId + "/matchups/" + week,
+          { headers: { Accept: "application/json" } },
+          15000
+        );
+        if (mRes.ok) matchups = await mRes.json();
+      } catch (e) {}
+
+      // Build multi-week schedule when possible (weeks 1–18)
+      const schedule = [];
+      const maxW = Math.min(18, Math.max(week + 4, 14));
+      for (let w = 1; w <= maxW; w++) {
+        try {
+          const r = await fetchWithTimeout(
+            base + "/league/" + leagueId + "/matchups/" + w,
+            { headers: { Accept: "application/json" } },
+            12000
+          );
+          if (!r.ok) continue;
+          const ms = await r.json();
+          const byMatch = {};
+          (ms || []).forEach((m) => {
+            const mid = m.matchup_id;
+            if (mid == null) return;
+            if (!byMatch[mid]) byMatch[mid] = [];
+            byMatch[mid].push(m);
+          });
+          Object.keys(byMatch).forEach((mid) => {
+            const pair = byMatch[mid];
+            if (pair.length < 2) return;
+            schedule.push({
+              matchupPeriodId: w,
+              home: { teamId: pair[0].roster_id },
+              away: { teamId: pair[1].roster_id },
+              homeTeamId: pair[0].roster_id,
+              awayTeamId: pair[1].roster_id
+            });
+          });
+        } catch (e) {}
+      }
+
+      const players = await fetchSleeperPlayers();
+      const userById = {};
+      (users || []).forEach((u) => { userById[u.user_id] = u; });
+
+      const members = (users || []).map((u) => ({
+        id: u.user_id,
+        displayName: u.display_name || u.username || u.user_id,
+        firstName: u.display_name || u.username || "",
+        lastName: ""
+      }));
+
+      const teams = (rosters || []).map((roster) => {
+        const owner = userById[roster.owner_id] || {};
+        const teamName = (owner.metadata && owner.metadata.team_name) ||
+          owner.display_name || owner.username || ("Team " + roster.roster_id);
+        const settings = roster.settings || {};
+        const wins = settings.wins || 0;
+        const losses = settings.losses || 0;
+        const ties = settings.ties || 0;
+        const fpts = (settings.fpts || 0) + (settings.fpts_decimal || 0) / 100;
+        const starters = new Set((roster.starters || []).map(String));
+        const reserve = new Set((roster.reserve || []).map(String));
+        const taxi = new Set((roster.taxi || []).map(String));
+        const entries = [];
+        for (const pid of (roster.players || [])) {
+          const sp = players[String(pid)] || {};
+          const pos = (sp.position || "?").toUpperCase();
+          const espnPos = SLEEPER_POS_TO_ESPN[pos] || 3;
+          let slot = 20; // bench
+          if (starters.has(String(pid))) {
+            if (pos === "QB") slot = 0;
+            else if (pos === "RB") slot = 2;
+            else if (pos === "WR") slot = 4;
+            else if (pos === "TE") slot = 6;
+            else slot = 23; // flex-ish
+          }
+          if (reserve.has(String(pid))) slot = 21; // IR
+          if (taxi.has(String(pid))) slot = 21;
+          const fullName = sp.full_name || ("Player " + pid);
+          entries.push({
+            lineupSlotId: slot,
+            playerPoolEntry: {
+              player: {
+                id: pid,
+                fullName,
+                defaultPositionId: espnPos,
+                proTeamId: null,
+                injuryStatus: sp.injury_status || null,
+                bye_week: sp.bye_week || null,
+                sleeperTeam: sp.team || null,
+                stats: []
+              }
+            }
+          });
+        }
+        return {
+          id: roster.roster_id,
+          name: teamName,
+          abbrev: (teamName || "").slice(0, 6),
+          primaryOwner: roster.owner_id,
+          points: fpts,
+          record: {
+            overall: {
+              wins, losses, ties,
+              pointsFor: fpts
+            }
+          },
+          roster: { entries },
+          tradeBlock: { players: {} }
+        };
+      });
+
+      // Playoff settings from league
+      const settings = league.settings || {};
+      return {
+        id: league.league_id || leagueId,
+        scoringPeriodId: week,
+        status: { currentMatchupPeriod: week },
+        settings: {
+          name: league.name || ("Sleeper " + leagueId),
+          scheduleSettings: {
+            playoffTeamCount: settings.playoff_teams || 6,
+            playoffMatchupPeriod: settings.playoff_week_start || 15,
+            numPlayoffTeams: settings.playoff_teams || 6
+          }
+        },
+        members,
+        teams,
+        schedule,
+        platform: "sleeper",
+        sleeperRaw: { league, users, rosters }
+      };
+    }
+
+
     async function fetchLeague() {
       const statusEl = document.getElementById("status");
       statusEl.textContent = "Loading…";
       statusEl.classList.remove("error");
       try {
-        const espnRes = await fetchWithTimeout(
-          API_URL,
-          { credentials: "omit", headers: { Accept: "application/json" } },
-          20000
-        );
-        if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
-        leagueData = await espnRes.json();
         playoffOddsLoaded = false;
-
         fcByEspnId = {};
         fcByName = {};
         try {
@@ -3639,11 +3921,28 @@
           valueLoadNote = "Value source failed to load";
         }
 
-        await fetchByeWeeks();
-        try {
-          await enrichEspnProjections(leagueData);
-        } catch (projErr) {
-          console.warn("ESPN projection enrich failed", projErr);
+        if (PLATFORM === "sleeper") {
+          statusEl.textContent = "Loading Sleeper league…";
+          leagueData = await fetchSleeperLeagueData(LEAGUE_ID);
+          // Bye weeks from Sleeper player dump
+          byeByProTeam = {};
+          try {
+            await applySleeperProjectionProxies(leagueData);
+          } catch (e) { console.warn(e); }
+        } else {
+          const espnRes = await fetchWithTimeout(
+            API_URL,
+            { credentials: "omit", headers: { Accept: "application/json" } },
+            20000
+          );
+          if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
+          leagueData = await espnRes.json();
+          await fetchByeWeeks();
+          try {
+            await enrichEspnProjections(leagueData);
+          } catch (projErr) {
+            console.warn("ESPN projection enrich failed", projErr);
+          }
         }
 
         const counts = countStatuses(leagueData);
@@ -3651,13 +3950,13 @@
           leagueData.teams.length + " teams · " +
           counts.definitely + " on block · Week " +
           (leagueData.scoringPeriodId || "—") +
-          " · " + valueSourceLabel;
+          " · " + (PLATFORM === "sleeper" ? "Sleeper" : valueSourceLabel);
 
         try {
           renderAll(leagueData);
           fillWaiverTeamSelect();
           const name = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
-          saveLeagueEntry(LEAGUE_ID, SEASON, name);
+          saveLeagueEntry(LEAGUE_ID, SEASON, name, PLATFORM);
           updateHeaderMeta();
           renderHomeScreen();
         } catch (renderErr) {
@@ -3667,10 +3966,48 @@
         }
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Failed to load. Check league ID/season or open via a local server.";
+        statusEl.textContent = "Failed to load: " + (err.message || "check league ID / platform");
         statusEl.classList.add("error");
       }
     }
+
+    /** Estimate weekly proj from FantasyCalc rank so Sleeper leagues still rank/lineup. */
+    async function applySleeperProjectionProxies(data) {
+      const base = { QB: 17.5, RB: 11.5, WR: 10.8, TE: 7.8, K: 7, "D/ST": 7 };
+      for (const team of data.teams || []) {
+        for (const entry of team.roster?.entries || []) {
+          const player = entry.playerPoolEntry && entry.playerPoolEntry.player;
+          if (!player) continue;
+          const pos = POS_MAP[player.defaultPositionId] || "WR";
+          const meta = playerFcMeta(player);
+          let proj = base[pos] || 9;
+          if (meta && meta.overallRank) {
+            const rf = Math.max(0.4, 1.2 - (meta.overallRank / 220));
+            proj = (base[pos] || 9) * rf;
+          } else if (playerFcValue(player) > 0) {
+            proj = (base[pos] || 9) * 0.85;
+          } else {
+            proj = (base[pos] || 9) * 0.55;
+          }
+          const ceil = proj * 1.32;
+          const floor = proj * 0.72;
+          // Synthetic stat row so espnProjectionFields can read it
+          player.stats = [{
+            statSourceId: 1,
+            statSplitTypeId: 1,
+            scoringPeriodId: data.scoringPeriodId || 1,
+            appliedTotal: proj,
+            appliedTotalCeiling: ceil,
+            variance: ((ceil - floor) / 4)
+          }];
+          if (player.bye_week) {
+            // store for getByeWeek fallback
+            player._sleeperBye = player.bye_week;
+          }
+        }
+      }
+    }
+
 
     function countStatuses(data) {
       const c = { all: 0, definitely: 0, "not-likely": 0, maybe: 0 };
@@ -4445,22 +4782,29 @@
         const scarcityScore = (m.starterVorp || 0) / maxVorp;
 
         const depthRaw = (m.depthPts || 0) + (m.depthVorp || 0);
-        const depthScore = percentileScore(
+        let depthScore = percentileScore(
           models.map((x) => (x.depthPts || 0) + (x.depthVorp || 0)),
           depthRaw,
           true
         );
-        const marketScore = percentileScore(
+        let marketScore = percentileScore(
           models.map((x) => x.compRaw || 0),
           m.compRaw || 0,
           true
         );
 
-        // Percentile scores — less volatile than pure min–max when one team is an outlier
-        const stabilityScore = percentileScore(stabVals, m.stabilityRatio || 0, true);
-        const upsideScore = percentileScore(upsVals, m.upsideRatio || 0, true);
+        // Pull secondary metrics toward 0.5 so pure bench/value swaps don't swing power ranks
+        const soften = (s, amt) => 0.5 + (s - 0.5) * (1 - amt);
+        depthScore = soften(depthScore, 0.45);
+        marketScore = soften(marketScore, 0.40);
+
+        let stabilityScore = percentileScore(stabVals, m.stabilityRatio || 0, true);
+        let upsideScore = percentileScore(upsVals, m.upsideRatio || 0, true);
+        stabilityScore = soften(stabilityScore, 0.35);
+        upsideScore = soften(upsideScore, 0.35);
         // Consistency: lower weekly volatility ranks higher
-        const consistencyScore = percentileScore(volVals, m.weeklyVol || 0, false);
+        let consistencyScore = percentileScore(volVals, m.weeklyVol || 0, false);
+        consistencyScore = soften(consistencyScore, 0.30);
 
         const conf = actualConfidence(m.gamesPlayed || 0);
         const projectedPpg = m.expectedPts || avgExp;
@@ -4489,15 +4833,25 @@
         m.actualScore = maxAdj > 0 ? (m.adjustedPpg || 0) / maxAdj : 0;
         m.scheduleScore = 0; // folded into weekly strength curve
 
-        m.rawPower =
-          w.starter * m.starterScore +
-          w.depth * m.depthScore +
-          w.market * m.marketScore +
-          w.stability * m.stabilityScore +
-          w.upside * m.upsideScore +
-          (w.scarcity || 0) * m.scarcityScore +
-          (w.consistency || 0) * m.consistencyScore +
-          w.actual * m.actualScore;
+        // Core = starters + scarcity (what you put on the field). Secondary metrics can't dominate.
+        const coreW = (w.starter || 0) + (w.scarcity || 0) + (w.actual || 0);
+        const core =
+          ((w.starter || 0) * m.starterScore +
+           (w.scarcity || 0) * m.scarcityScore +
+           (w.actual || 0) * m.actualScore) / Math.max(coreW, 1e-6);
+        const secondaryW =
+          (w.depth || 0) + (w.market || 0) + (w.stability || 0) +
+          (w.upside || 0) + (w.consistency || 0);
+        const secondary =
+          secondaryW < 1e-6 ? 0.5 : (
+            (w.depth || 0) * m.depthScore +
+            (w.market || 0) * m.marketScore +
+            (w.stability || 0) * m.stabilityScore +
+            (w.upside || 0) * m.upsideScore +
+            (w.consistency || 0) * m.consistencyScore
+          ) / secondaryW;
+        // 78% core / 22% secondary → bench-only moves barely move the needle
+        m.rawPower = 0.78 * core + 0.22 * secondary;
 
         m.weights = w;
         m.projShare = w.starter;
@@ -5188,56 +5542,142 @@
             );
           }
 
-          // Verdict: proj PPG first (absolute), then rank, then needs
-          let verdict = "About even";
-          let verdictCls = "neutral";
-          if (projCh.d > 1.0 || (power.d > 0 && projCh.d >= 0)) {
-            verdict = power.d > 0 ? "Moves up" : "Stronger lineup";
-            verdictCls = "benefit";
-          } else if (projCh.d < -1.0 || (power.d < 0 && projCh.d <= 0)) {
-            verdict = power.d < 0 ? "Moves down" : "Weaker lineup";
-            verdictCls = "neutral";
-          } else if (filledNeeds.length) {
-            verdict = "Fills a need";
-            verdictCls = "benefit";
-          } else if (power.d > 0) {
-            verdict = "Moves up";
-            verdictCls = "benefit";
-          } else if (power.d < 0) {
-            verdict = "Moves down";
-            verdictCls = "neutral";
+          // Benefit score for this team (not the same as "fair value")
+          let fitPts = 0;
+          const reasons = [];
+          if (projCh.d > 1.2) { fitPts += 3; reasons.push("starters score +" + projCh.d.toFixed(1) + " PPG"); }
+          else if (projCh.d > 0.4) { fitPts += 1; reasons.push("slight starter bump"); }
+          else if (projCh.d < -1.2) { fitPts -= 3; reasons.push("starters score " + projCh.d.toFixed(1) + " PPG"); }
+          else if (projCh.d < -0.4) { fitPts -= 1; reasons.push("slight starter drop"); }
+
+          if (power.d >= 2) { fitPts += 2; reasons.push("power rank jumps"); }
+          else if (power.d === 1) { fitPts += 1; reasons.push("power rank +1"); }
+          else if (power.d <= -2) { fitPts -= 2; reasons.push("power rank falls"); }
+          else if (power.d === -1) { fitPts -= 1; reasons.push("power rank −1"); }
+
+          if (filledNeeds.length) {
+            fitPts += 2;
+            reasons.push("fills " + filledNeeds.join("/"));
+          }
+          if (newNeeds.length) {
+            fitPts -= 1;
+            reasons.push("opens " + newNeeds.join("/") + " need");
+          }
+
+          const posUp = [];
+          const posDown = [];
+          for (const pos of ["QB", "RB", "WR", "TE"]) {
+            const b = posr(originalRanks.posRank, teamId, pos);
+            const a = posr(afterRanks.posRank, teamId, pos);
+            if (b == null || a == null || b === a) continue;
+            if (a < b) posUp.push(pos);
+            else posDown.push(pos);
+          }
+          if (posUp.length) { fitPts += 1; reasons.push(posUp.join("/") + " room improves"); }
+          if (posDown.length) { fitPts -= 1; reasons.push(posDown.join("/") + " room weaker"); }
+
+          // FC value delta is secondary for *fit* (fairness is separate)
+          if (valD > 80) { fitPts += 1; reasons.push("gains trade value"); }
+          else if (valD < -80) { fitPts -= 1; reasons.push("loses trade value"); }
+
+          let verdict, verdictCls, advice;
+          if (fitPts >= 4) {
+            verdict = "Strong yes"; verdictCls = "benefit"; advice = "Definitely accept";
+          } else if (fitPts >= 2) {
+            verdict = "Helps you"; verdictCls = "benefit"; advice = "Lean accept";
+          } else if (fitPts <= -4) {
+            verdict = "Hurts you"; verdictCls = "hurt"; advice = "Definitely decline";
+          } else if (fitPts <= -2) {
+            verdict = "Hurts a bit"; verdictCls = "hurt"; advice = "Lean decline";
+          } else {
+            verdict = "Neutral fit"; verdictCls = "neutral"; advice = "Up to you";
           }
 
           const depthBefore = depthLabel(beforeTeam.depthNorm || 0);
           const depthAfter = depthLabel(afterTeam.depthNorm || 0);
           const depthLine = depthBefore === depthAfter ? depthAfter : depthBefore + " → " + depthAfter;
+          const why = reasons.slice(0, 3).join(" · ") || "No major starter or need change";
 
-          return (
-            '<div class="calc-impact-card">' +
-              "<h4>" + escapeHtml(name) +
-                '<span class="calc-impact-result ' + verdictCls + '">' + verdict + "</span></h4>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Power rank after re-scoring both rosters with the same model.">Power rank</span>' +
-                '<span class="calc-impact-big ' + power.cls + '">' + power.text + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bye-aware optimal lineup projection (points per week). Absolute number — comparable before and after.">Proj PPG</span>' +
-                '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="FantasyCalc starter-side trade value on the roster.">Starter value</span>' +
-                '<span class="calc-impact-change ' + valCls + '">' + valText + "</span></div>" +
-              '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Bench quality after starters.">Depth</span>' +
-                '<span class="calc-impact-change">' + depthLine + "</span></div>" +
-              (filledNeeds.length
-                ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills need: ' + filledNeeds.join(", ") + "</span></div>"
-                : "") +
-              (newNeeds.length
-                ? '<div class="calc-impact-summary"><span class="calc-fit-tag">Opens need: ' + newNeeds.join(", ") + "</span></div>"
-                : "") +
-              (posBits.length
-                ? '<div class="calc-impact-summary">' + posBits.join(" ") + "</div>"
-                : "") +
-            "</div>"
-          );
+          return {
+            html:
+              '<div class="calc-impact-card">' +
+                "<h4>" + escapeHtml(name) +
+                  '<span class="calc-impact-result ' + verdictCls + '">' + verdict + "</span></h4>" +
+                '<div class="calc-advice ' + verdictCls + '">' + advice + "</div>" +
+                '<div class="calc-impact-why">' + escapeHtml(why) + "</div>" +
+                '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Power rank using the same model before and after. Bench-only moves barely move this.">Power rank</span>' +
+                  '<span class="calc-impact-big ' + power.cls + '">' + power.text + "</span></div>" +
+                '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="Optimal starting lineup projected points per week. Main signal for whether the trade helps you.">Starter PPG</span>' +
+                  '<span class="calc-impact-change ' + projCh.cls + '">' + projCh.text + "</span></div>" +
+                '<div class="calc-impact-row"><span class="calc-impact-label tip" data-tip="FantasyCalc starter trade value — fairness, not the same as fit.">Trade value</span>' +
+                  '<span class="calc-impact-change ' + valCls + '">' + valText + "</span></div>" +
+                '<div class="calc-impact-row"><span class="calc-impact-label">Depth</span>' +
+                  '<span class="calc-impact-change">' + depthLine + "</span></div>" +
+                (filledNeeds.length
+                  ? '<div class="calc-impact-summary"><span class="calc-fit-tag fills">Fills need: ' + filledNeeds.join(", ") + "</span></div>"
+                  : "") +
+                (newNeeds.length
+                  ? '<div class="calc-impact-summary"><span class="calc-fit-tag">Opens need: ' + newNeeds.join(", ") + "</span></div>"
+                  : "") +
+                (posBits.length
+                  ? '<div class="calc-impact-summary">' + posBits.join(" ") + "</div>"
+                  : "") +
+              "</div>",
+            fitPts,
+            advice,
+            verdict,
+            name,
+            why,
+            projD: projCh.d,
+            valD
+          };
         }
 
-        grid.innerHTML = [...involved].map(card).join("");
+        const cards = [...involved].map(card);
+        const fairStatus = document.getElementById("fair-bar-status");
+        const fairText = fairStatus ? fairStatus.textContent : "";
+        const isFairDeal = /Fair/i.test(fairText);
+        let overall = "";
+        if (cards.length >= 2) {
+          const a = cards[0];
+          const b = cards[1];
+          const bothHelp = a.fitPts >= 2 && b.fitPts >= 2;
+          const bothHurt = a.fitPts <= -2 && b.fitPts <= -2;
+          const oneHelp = a.fitPts >= 2 || b.fitPts >= 2;
+          let headline, detail;
+          if (bothHelp) {
+            headline = "Both sides should lean accept";
+            detail = "Each roster’s starters or needs improve. Value can still look “even” while both get better fits.";
+          } else if (bothHurt) {
+            headline = "Both sides look worse";
+            detail = "Even if FantasyCalc values match, starter strength or positional fit drops for each team.";
+          } else if (isFairDeal && a.fitPts >= 1 && b.fitPts <= -1) {
+            headline = "Fair on value — better fit for " + a.name;
+            detail = "Trade values are close, but " + a.name + " improves starters/needs while " + b.name + " does not. " + b.name + ": " + b.advice + ".";
+          } else if (isFairDeal && b.fitPts >= 1 && a.fitPts <= -1) {
+            headline = "Fair on value — better fit for " + b.name;
+            detail = "Trade values are close, but " + b.name + " improves starters/needs while " + a.name + " does not. " + a.name + ": " + a.advice + ".";
+          } else if (isFairDeal && Math.abs(a.fitPts) <= 1 && Math.abs(b.fitPts) <= 1) {
+            headline = "Fair value, neutral fit for both";
+            detail = "Values line up and neither lineup changes much. True “up to you” / preference trade.";
+          } else if (oneHelp) {
+            const winner = a.fitPts >= b.fitPts ? a : b;
+            const loser = winner === a ? b : a;
+            headline = winner.name + " benefits more";
+            detail = winner.advice + " for them. " + loser.name + ": " + loser.advice +
+              " (fairness is separate from whether the roster actually gets better).";
+          } else {
+            headline = "Mostly a preference trade";
+            detail = "Small moves on both sides. Use needs and risk tolerance.";
+          }
+          overall =
+            '<div class="calc-trade-summary">' +
+              '<div class="calc-trade-summary-title">' + escapeHtml(headline) + "</div>" +
+              '<div class="calc-trade-summary-body">' + escapeHtml(detail) + "</div>" +
+              '<div class="calc-trade-summary-note">Fair value ≠ good fit. Starter PPG and needs decide “should you accept.”</div>' +
+            "</div>";
+        }
+        grid.innerHTML = overall + cards.map((c) => c.html).join("");
       }
 
       function completeFairTrade() {
@@ -8535,7 +8975,15 @@
       if (active && active.id) {
         LEAGUE_ID = String(active.id);
         SEASON = Number(active.season) || 2026;
+        PLATFORM = active.platform || "espn";
         refreshApiUrls();
+        // Sync platform toggle UI
+        const platRow = document.getElementById("home-platform");
+        if (platRow) {
+          platRow.querySelectorAll("[data-platform]").forEach((b) => {
+            b.classList.toggle("active", b.getAttribute("data-platform") === PLATFORM);
+          });
+        }
       }
       updateHeaderMeta();
       renderHomeScreen();
