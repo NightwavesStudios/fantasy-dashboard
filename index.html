@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>League HQ — Fantasy Football Command Center</title>
+  <title>League HQ — Fantasy Football Dashboard</title>
   <style>
     :root {
       --bg: #0c0e12;
@@ -3025,26 +3025,9 @@
     <button class="tab" data-panel="power" type="button" title="Rank teams by roster strength and projected points">Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare players and evaluate a trade">Trade desk</button>
     <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoffs</button>
-    <button class="tab" data-panel="matchup" type="button" title="This week matchup, win odds, and lineup advice">Matchup</button>
   </nav>
 
-  <!-- TRADE BOARD -->
-
-  <div class="panel" id="panel-matchup">
-    <div class="calc-wrap">
-      <p class="rankings-note">
-        Floor/ceiling use team variance (not every player busting together). Strategy tips follow the projected margin.
-      </p>
-      <div class="matchup-controls">
-        <label>Your team
-          <select id="matchup-team" class="calc-team-select"></select>
-        </label>
-        <span class="matchup-week-label" id="matchup-week-label"></span>
-      </div>
-      <div id="matchup-status" class="odds-status">Select Matchup to load this week.</div>
-      <div id="matchup-root"></div>
-    </div>
-  </div>
+  <!-- LEAGUE DASHBOARD -->
 
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
@@ -3076,7 +3059,7 @@
   <div class="panel active" id="panel-home">
     <div class="home-wrap">
       <h2 class="home-title">Your league, at a glance.</h2>
-      <p class="home-sub">Connect your league to turn roster data into sharper decisions, cleaner matchups, and a clearer path to the playoffs.</p>
+      <p class="home-sub">Connect your league to see the information that matters most each week.</p>
       <div class="home-card">
         <div class="home-platform" id="home-platform">
           <button type="button" class="filter-btn active" data-platform="espn">ESPN</button>
@@ -3194,14 +3177,13 @@
 
       <div class="calc-toolbar">
         <button type="button" class="btn btn-primary" id="calc-apply" title="Apply this trade to the chain">Apply</button>
-        <button type="button" class="btn" id="calc-suggest-open" title="Browse suggested fair trades">Suggest</button>
         <button type="button" class="btn" id="calc-complete" title="Auto-fill a fair package">Auto-fill</button>
         <button type="button" class="btn" id="calc-share" title="Copy shareable link">Share</button>
         <button type="button" class="btn calc-btn-muted" id="calc-clear" title="Clear selection">Clear</button>
       </div>
       <div id="calc-chain-hint" class="calc-chain-hint"></div>
 
-      <div class="modal-backdrop" id="suggest-modal" hidden>
+      <div class="modal-backdrop" id="suggest-modal" hidden aria-hidden="true">
         <div class="modal-card" role="dialog" aria-label="Suggested trades">
           <div class="modal-header">
             <strong>Suggested trades</strong>
@@ -4348,6 +4330,38 @@
       return best;
     }
 
+    function playerWeeklyProjectionProfile(player, fields, currentWeek) {
+      const actuals = {};
+      let actualTotal = 0;
+      let actualCount = 0;
+      (player.stats || []).forEach((stat) => {
+        if (stat.statSourceId !== 0 || stat.statSplitTypeId !== 1 || stat.scoringPeriodId <= 0) return;
+        const points = Number(stat.appliedTotal);
+        if (!isFinite(points) || points < 0) return;
+        actuals[Number(stat.scoringPeriodId)] = points;
+        actualTotal += points;
+        actualCount++;
+      });
+      const baseline = fields.proj || fields.seasonAvg || 0;
+      const observed = actualCount ? actualTotal / actualCount : baseline;
+      const form = baseline > 0 ? Math.max(0.78, Math.min(1.22, observed / baseline)) : 1;
+      const weeklyProj = {};
+      const weeklyFloor = {};
+      const weeklyCeil = {};
+      for (let week = 1; week <= 17; week++) {
+        if (actuals[week] != null && week <= Number(currentWeek || 0)) {
+          weeklyProj[week] = actuals[week];
+        } else {
+          const rhythm = 1 + 0.045 * Math.sin((week + Number(player.id || 0)) * 1.7);
+          weeklyProj[week] = baseline * (0.72 + 0.28 * form) * rhythm;
+        }
+        const ratio = baseline > 0 ? weeklyProj[week] / baseline : 1;
+        weeklyFloor[week] = Math.max(0, (fields.floor || 0) * ratio);
+        weeklyCeil[week] = Math.max(weeklyProj[week], (fields.ceil || 0) * ratio);
+      }
+      return { weeklyProj, weeklyFloor, weeklyCeil };
+    }
+
     /**
      * Enrich rostered players with matchup-view projections.
      * mMatchup rosterForCurrentScoringPeriod includes appliedTotalCeiling + variance,
@@ -4517,6 +4531,7 @@
           const meta = playerFcMeta(player);
           rosterValue += val;
           const proj = espnProjectionFields(player);
+          const weekly = playerWeeklyProjectionProfile(player, proj, scoringPeriod);
           const row = {
             id: String(player.id),
             name: player.fullName || "Unknown",
@@ -4529,7 +4544,10 @@
             proj: proj.proj,
             projCeil: proj.ceil,
             projFloor: proj.floor,
-            seasonAvg: proj.seasonAvg
+            seasonAvg: proj.seasonAvg,
+            weeklyProj: weekly.weeklyProj,
+            weeklyFloor: weekly.weeklyFloor,
+            weeklyCeil: weekly.weeklyCeil
           };
           entries.push(row);
           if (byPos[pos]) byPos[pos].push(row);
@@ -4597,6 +4615,10 @@
      * field: "proj" | "projCeil" | "projFloor" | "val"
      */
     function optimalLineupTotalForWeek(entryList, field, week) {
+      const weekField = field === "proj" ? "weeklyProj" : field === "projFloor" ? "weeklyFloor" : field === "projCeil" ? "weeklyCeil" : null;
+      const valueFor = (entry) => weekField && entry[weekField] && entry[weekField][week] != null
+        ? entry[weekField][week]
+        : (entry[field] || 0);
       const remaining = (entryList || [])
         .filter((entry) => {
           if (["QB", "RB", "WR", "TE"].indexOf(entry.pos) < 0) return false;
@@ -4605,7 +4627,7 @@
           return true;
         })
         .slice()
-        .sort((a, b) => (b[field] || 0) - (a[field] || 0));
+        .sort((a, b) => valueFor(b) - valueFor(a));
       const takePosition = (pos, count) => {
         const picked = remaining.filter((entry) => entry.pos === pos).slice(0, count);
         picked.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
@@ -4622,7 +4644,7 @@
           remaining.splice(remaining.indexOf(e), 1);
         });
       if (remaining.length) used.push(remaining[0]);
-      const total = used.reduce((s, e) => s + (e[field] || 0), 0);
+      const total = used.reduce((s, e) => s + valueFor(e), 0);
       return { total, used, count: used.length };
     }
 
