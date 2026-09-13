@@ -7812,9 +7812,9 @@
       const settingsRoot = scheduleData.settings || data.settings || {};
       const settings = settingsRoot.scheduleSettings || settingsRoot;
       const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || settings.numPlayoffTeams || 6);
-      const hasPlayedGames = models.some((team) => team.gamesPlayed > 0);
-      // Simulate weeks after completed scoring periods; if week 1 not done yet, include from week 1
-      const currentPeriod = hasPlayedGames ? Number(data.scoringPeriodId || 0) : 0;
+      // Do not turn the in-progress scoring period into a projected result.
+      // Playoff odds begin with the next scoring period and the actual record.
+      const currentPeriod = Number(data.scoringPeriodId || 0);
       const playoffStart = Number(settings.playoffMatchupPeriod || settings.playoffStartWeek || settings.playoffStart || 15);
       const rawSchedule = scheduleData.schedule || data.schedule || [];
       const schedule = rawSchedule.map((game) => Object.assign({}, game, {
@@ -8567,37 +8567,6 @@
       }
     }
 
-    function applyLiveCurrentResults(liveData) {
-      if (!leagueData || !liveData) return;
-      const week = matchupWeekNumber(leagueData);
-      for (const game of liveData.schedule || []) {
-        if (Number(game.matchupPeriodId || game.week || 0) !== week) continue;
-        const home = game.home && typeof game.home === "object" ? game.home : { teamId: game.home };
-        const away = game.away && typeof game.away === "object" ? game.away : { teamId: game.away };
-        const homeScore = Number(home.totalPointsLive != null ? home.totalPointsLive : home.totalPoints);
-        const awayScore = Number(away.totalPointsLive != null ? away.totalPointsLive : away.totalPoints);
-        if (!isFinite(homeScore) || !isFinite(awayScore) || (homeScore === 0 && awayScore === 0)) continue;
-        const homeTeam = (leagueData.teams || []).find((team) => String(team.id) === String(home.teamId));
-        const awayTeam = (leagueData.teams || []).find((team) => String(team.id) === String(away.teamId));
-        if (!homeTeam || !awayTeam) continue;
-        for (const team of [homeTeam, awayTeam]) {
-          if (!team._liveRecordBase) {
-            const overall = team.record?.overall || {};
-            team._liveRecordBase = { wins: overall.wins || 0, losses: overall.losses || 0, ties: overall.ties || 0 };
-          }
-          team.record = team.record || {};
-          team.record.overall = Object.assign({}, team._liveRecordBase);
-        }
-        if (homeScore > awayScore) {
-          homeTeam.record.overall.wins++;
-          awayTeam.record.overall.losses++;
-        } else if (awayScore > homeScore) {
-          awayTeam.record.overall.wins++;
-          homeTeam.record.overall.losses++;
-        }
-      }
-    }
-
     async function renderSnapshotDeck(liveDataOverride) {
       const powerList = document.getElementById("snapshot-power-list");
       const medianList = document.getElementById("snapshot-median-list");
@@ -8621,20 +8590,8 @@
         (team.totalScore != null ? team.totalScore.toFixed(1) : "—") + ' ' + movementHtml + '</span></div>';
       }).join("") || '<span class="snapshot-empty">No teams loaded.</span>';
 
-      const projections = models.map((team) => Number(team.expectedPts) || 0).sort((a, b) => a - b);
-      const median = projections.length ? medianOf(projections) : 0;
-      const top = models.slice().sort((a, b) => (b.expectedPts || 0) - (a.expectedPts || 0)).slice(0, 5);
-      const bottom = models.slice().sort((a, b) => (a.expectedPts || 0) - (b.expectedPts || 0)).slice(0, 5);
-      const medianRows = (title, rows) => '<div class="snapshot-card-note" style="margin:0.2rem 0 0.35rem">' + title + '</div>' + rows.map((team, index) => {
-        const delta = (Number(team.expectedPts) || 0) - median;
-        return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
-          escapeHtml(team.name) + '</strong><small>' + (team.expectedPts || 0).toFixed(1) + ' projected · median ' + median.toFixed(1) + '</small></span><span class="snapshot-value" style="color:' +
-          (delta >= 0 ? '#4ade80' : '#f87171') + '">' + (delta >= 0 ? '+' : '') + delta.toFixed(1) + '</span></div>';
-      }).join("");
-      medianList.innerHTML = medianRows("Top 5", top) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom);
-
       let liveData = liveDataOverride || leagueData;
-      let liveUpdated = false;
+      let liveUpdated = !!liveDataOverride;
       if (!liveDataOverride) {
         try {
           liveData = await fetchLiveMatchupWeek(week);
@@ -8643,6 +8600,32 @@
           console.warn("Snapshot live refresh failed", error);
         }
       }
+      const liveProjectionById = {};
+      models.forEach((team) => {
+        const live = liveMapFromMatchupData(liveData, team.id, week);
+        const entries = mergeLiveOntoEntries(teamEntriesFromData(leagueData, team.id), live.map);
+        const projection = lineupProjection(entries.map((entry) => Object.assign({}, entry, {
+          proj: entry.hasPlayed ? (entry.actual || 0) : entry.proj,
+          projFloor: entry.hasPlayed ? (entry.actual || 0) : entry.projFloor,
+          projCeil: entry.hasPlayed ? (entry.actual || 0) : entry.projCeil
+        })), week);
+        liveProjectionById[String(team.id)] = liveLineupTotals(entries, projection.usedIds).current.total;
+      });
+      const projectionValue = (team) => liveProjectionById[String(team.id)] != null
+        ? liveProjectionById[String(team.id)]
+        : (Number(team.expectedPts) || 0);
+      const projections = models.map(projectionValue).sort((a, b) => a - b);
+      const median = projections.length ? medianOf(projections) : 0;
+      const top = models.slice().sort((a, b) => projectionValue(b) - projectionValue(a)).slice(0, 5);
+      const bottom = models.slice().sort((a, b) => projectionValue(a) - projectionValue(b)).slice(0, 5);
+      const medianRows = (title, rows) => '<div class="snapshot-card-note" style="margin:0.2rem 0 0.35rem">' + title + '</div>' + rows.map((team, index) => {
+        const liveProjection = projectionValue(team);
+        const delta = liveProjection - median;
+        return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
+          escapeHtml(team.name) + '</strong><small>' + liveProjection.toFixed(1) + ' live proj · median ' + median.toFixed(1) + '</small></span><span class="snapshot-value" style="color:' +
+          (delta >= 0 ? '#4ade80' : '#f87171') + '">' + (delta >= 0 ? '+' : '') + delta.toFixed(1) + '</span></div>';
+      }).join("");
+      medianList.innerHTML = medianRows("Top 5", top) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom);
       const games = (liveData.schedule || leagueData.schedule || []).filter((game) => Number(game.matchupPeriodId || game.week || 0) === week);
       const matchupRows = games.map((game) => {
         const home = game.home && typeof game.home === "object" ? game.home : { teamId: game.home };
@@ -9133,7 +9116,6 @@
         try {
           const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
           applyLiveDataToLeague(liveData);
-          applyLiveCurrentResults(liveData);
           powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
           renderPowerRankings(powerModelsCache);
           scheduleData = liveData;
