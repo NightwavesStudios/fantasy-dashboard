@@ -8536,8 +8536,10 @@
       medianList.innerHTML = medianRows("Top 5", top) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom);
 
       let liveData = leagueData;
+      let liveUpdated = false;
       try {
         liveData = await fetchLiveMatchupWeek(week);
+        liveUpdated = true;
       } catch (error) {
         console.warn("Snapshot live refresh failed", error);
       }
@@ -8573,7 +8575,9 @@
       }).filter(Boolean).join("");
       matchups.innerHTML = matchupRows || '<span class="snapshot-empty">Live matchup scores are unavailable for this week.</span>';
       const matchupNote = document.getElementById("snapshot-matchup-note");
-      if (matchupNote) matchupNote.textContent = "Week " + week + " · live at " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + " · model win odds";
+      if (matchupNote) matchupNote.textContent = liveUpdated
+        ? "Week " + week + " · ESPN live at " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + " · model win odds"
+        : "Week " + week + " · ESPN live refresh unavailable · cached projections";
     }
 
     async function refreshSnapshotDeck() {
@@ -8588,10 +8592,18 @@
 
     /** Pull live matchup payload (points already scored + locks). */
     async function fetchLiveMatchupWeek(week) {
-      const url = API_URL + "&view=mMatchup&view=mRoster&scoringPeriodId=" + week;
-      const res = await fetchWithTimeout(url, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+      const url = API_URL + "&view=mMatchup&view=mRoster&scoringPeriodId=" + encodeURIComponent(week) + "&_live=" + Date.now();
+      const res = await fetchWithTimeout(url, {
+        credentials: "omit",
+        cache: "no-store",
+        headers: { Accept: "application/json", "Cache-Control": "no-cache" }
+      }, 20000);
       if (!res.ok) throw new Error("live HTTP " + res.status);
-      return res.json();
+      const data = await res.json();
+      if (!data || (!Array.isArray(data.teams) && !Array.isArray(data.schedule))) {
+        throw new Error("live response missing teams and schedule");
+      }
+      return data;
     }
 
     function playerLiveFromEntry(entry, week) {
@@ -8599,17 +8611,25 @@
       const player = ppe.player || {};
       const id = String(player.id || entry.playerId || "");
       let actual = null;
+      let hasActualStat = false;
       // Actual week points: statSourceId 0
       for (const s of player.stats || []) {
         if (s.scoringPeriodId === week && s.statSourceId === 0 && s.statSplitTypeId === 1) {
-          if (s.appliedTotal != null) actual = s.appliedTotal;
+          if (s.appliedTotal != null) {
+            actual = s.appliedTotal;
+            hasActualStat = true;
+          }
         }
       }
-      if (actual == null && ppe.appliedStatTotal != null && ppe.appliedStatTotal > 0) {
+      const weekly = espnProjectionFields(player);
+      const locked = !!(ppe.lineupLocked || ppe.rosterLocked || entry.lineupLocked || entry.rosterLocked);
+      if (!hasActualStat && locked && ppe.appliedStatTotal != null) {
         actual = ppe.appliedStatTotal;
       }
-      const locked = !!(ppe.lineupLocked || ppe.rosterLocked);
-      const hasPlayed = locked || (actual != null && actual > 0);
+      if (!hasActualStat && locked && actual == null && entry.appliedStatTotal != null) {
+        actual = entry.appliedStatTotal;
+      }
+      const hasPlayed = locked || actual != null;
       return {
         id,
         name: player.fullName || "Player",
@@ -8618,12 +8638,9 @@
         hasPlayed,
         locked,
         pos: POS_MAP[player.defaultPositionId] || "?",
-        proj: (() => {
-          const f = espnProjectionFields(player);
-          return f.proj || 0;
-        })(),
-        projFloor: espnProjectionFields(player).floor || 0,
-        projCeil: espnProjectionFields(player).ceil || 0
+        proj: weekly.proj || 0,
+        projFloor: weekly.floor || 0,
+        projCeil: weekly.ceil || 0
       };
     }
 
@@ -8667,11 +8684,11 @@
           hasPlayed: live.hasPlayed,
           actual: live.actual || 0,
           locked: live.locked,
-          // if already played, proj remaining is 0
-          proj: live.hasPlayed ? 0 : e.proj,
-          projRemain: live.hasPlayed ? 0 : (e.proj || 0),
-          projFloor: live.hasPlayed ? live.actual : e.projFloor,
-          projCeil: live.hasPlayed ? live.actual : e.projCeil
+          // Use the current ESPN matchup projection for unplayed players.
+          proj: live.hasPlayed ? 0 : (live.proj != null ? live.proj : e.proj),
+          projRemain: live.hasPlayed ? 0 : (live.proj != null ? live.proj : (e.proj || 0)),
+          projFloor: live.hasPlayed ? live.actual : (live.projFloor != null ? live.projFloor : e.projFloor),
+          projCeil: live.hasPlayed ? live.actual : (live.projCeil != null ? live.projCeil : e.projCeil)
         });
       });
     }
