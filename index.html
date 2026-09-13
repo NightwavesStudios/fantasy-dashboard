@@ -8499,7 +8499,10 @@
       return tips;
     }
 
-    function renderSnapshotDeck() {
+    let snapshotTimer = null;
+    let snapshotRefreshInFlight = false;
+
+    async function renderSnapshotDeck() {
       const powerList = document.getElementById("snapshot-power-list");
       const medianList = document.getElementById("snapshot-median-list");
       const matchups = document.getElementById("snapshot-matchups");
@@ -8532,23 +8535,55 @@
       }).join("");
       medianList.innerHTML = medianRows("Top 5", top) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom);
 
-      const games = (leagueData.schedule || []).filter((game) => Number(game.matchupPeriodId || game.week || 0) === week);
+      let liveData = leagueData;
+      try {
+        liveData = await fetchLiveMatchupWeek(week);
+      } catch (error) {
+        console.warn("Snapshot live refresh failed", error);
+      }
+      const games = (liveData.schedule || leagueData.schedule || []).filter((game) => Number(game.matchupPeriodId || game.week || 0) === week);
       const matchupRows = games.map((game) => {
         const home = game.home && typeof game.home === "object" ? game.home : { teamId: game.home };
         const away = game.away && typeof game.away === "object" ? game.away : { teamId: game.away };
         const homeModel = byId[String(home.teamId)];
         const awayModel = byId[String(away.teamId)];
         if (!homeModel || !awayModel) return "";
-        const homeProj = Number(homeModel.expectedPts) || 0;
-        const awayProj = Number(awayModel.expectedPts) || 0;
-        const homeScore = Number(home.totalPoints || home.points || home.score || 0);
-        const awayScore = Number(away.totalPoints || away.points || away.score || 0);
-        const pct = winProbFromProj(homeProj, 18, awayProj, 18, { sims: 1200, preseason: leagueGamesPlayed(leagueData) < 1 });
+        const homeLive = liveMapFromMatchupData(liveData, home.teamId, week);
+        const awayLive = liveMapFromMatchupData(liveData, away.teamId, week);
+        const homeEntries = mergeLiveOntoEntries(teamEntriesFromData(leagueData, home.teamId), homeLive.map);
+        const awayEntries = mergeLiveOntoEntries(teamEntriesFromData(leagueData, away.teamId), awayLive.map);
+        const homeProjection = lineupProjection(homeEntries.map((entry) => Object.assign({}, entry, {
+          proj: entry.hasPlayed ? (entry.actual || 0) : entry.proj,
+          projFloor: entry.hasPlayed ? (entry.actual || 0) : entry.projFloor,
+          projCeil: entry.hasPlayed ? (entry.actual || 0) : entry.projCeil
+        })), week);
+        const awayProjection = lineupProjection(awayEntries.map((entry) => Object.assign({}, entry, {
+          proj: entry.hasPlayed ? (entry.actual || 0) : entry.proj,
+          projFloor: entry.hasPlayed ? (entry.actual || 0) : entry.projFloor,
+          projCeil: entry.hasPlayed ? (entry.actual || 0) : entry.projCeil
+        })), week);
+        const homeTotals = liveLineupTotals(homeEntries, homeProjection.usedIds);
+        const awayTotals = liveLineupTotals(awayEntries, awayProjection.usedIds);
+        const homeProj = homeTotals.current.total;
+        const awayProj = awayTotals.current.total;
+        const homeScore = homeTotals.current.locked;
+        const awayScore = awayTotals.current.locked;
+        const pct = winProbFromProj(homeProj, homeProjection.sigma, awayProj, awayProjection.sigma, { sims: 1200, preseason: leagueGamesPlayed(leagueData) < 1 });
         return '<div class="snapshot-matchup"><div class="snapshot-team"><strong>' + escapeHtml(homeModel.name) + '</strong><span>' + homeScore.toFixed(1) + ' live · ' + homeProj.toFixed(1) + ' proj</span></div><div class="snapshot-odds">' + (pct * 100).toFixed(0) + '%<small>win odds</small></div><div class="snapshot-team"><strong>' + escapeHtml(awayModel.name) + '</strong><span>' + awayScore.toFixed(1) + ' live · ' + awayProj.toFixed(1) + ' proj</span></div></div>';
       }).filter(Boolean).join("");
       matchups.innerHTML = matchupRows || '<span class="snapshot-empty">Live matchup scores are unavailable for this week.</span>';
       const matchupNote = document.getElementById("snapshot-matchup-note");
-      if (matchupNote) matchupNote.textContent = "Week " + week + " · current score · model win odds";
+      if (matchupNote) matchupNote.textContent = "Week " + week + " · live at " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + " · model win odds";
+    }
+
+    async function refreshSnapshotDeck() {
+      if (snapshotRefreshInFlight || !leagueData || !powerModelsCache) return;
+      snapshotRefreshInFlight = true;
+      try {
+        await renderSnapshotDeck();
+      } finally {
+        snapshotRefreshInFlight = false;
+      }
     }
 
     /** Pull live matchup payload (points already scored + locks). */
@@ -9194,8 +9229,16 @@
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "snapshots") {
-          renderSnapshotDeck();
+          refreshSnapshotDeck();
+          if (snapshotTimer) clearInterval(snapshotTimer);
+          snapshotTimer = setInterval(() => {
+            const snapshotPanel = document.getElementById("panel-snapshots");
+            if (snapshotPanel && snapshotPanel.classList.contains("active")) refreshSnapshotDeck();
+          }, 60000);
           setupPlayoffOdds();
+        } else if (snapshotTimer) {
+          clearInterval(snapshotTimer);
+          snapshotTimer = null;
         }
         if (btn.dataset.panel === "matchup") setupMatchup();
         if (btn.dataset.panel === "home") renderHomeScreen();
