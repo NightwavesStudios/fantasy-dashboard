@@ -3566,6 +3566,27 @@
     .calc-outcome-gate.is-unlocked .calc-impact-locked { display: none; }
     .calc-outcome-gate.is-unlocked #calc-impact { display: block; }
 
+  
+    .fp-score-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.15rem;
+    }
+    .fp-delta {
+      font-size: 0.68rem;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+    .fp-delta.up { color: var(--good, #22c55e); }
+    .fp-delta.down { color: var(--bad, #ef4444); }
+    .fp-delta.flat { color: var(--text-muted); }
+    .fp-delta .rk {
+      margin-left: 0.25rem;
+      opacity: 0.9;
+    }
+
   </style>
 </head>
 <body>
@@ -3577,7 +3598,7 @@
       </div>
       <div class="header-actions">
         <span class="status-pill" id="status" title="Live load status: team count, players on the block, and current ESPN week">Loading…</span>
-        <button class="btn theme-toggle" id="themeBtn" type="button" title="Switch to light mode" aria-label="Switch to light mode"><span aria-hidden="true">☀</span> Light</button>
+        <button class="btn theme-toggle" id="themeBtn" type="button" title="Switch to light mode" aria-label="Switch to light mode">☀</button>
         <button class="btn btn-primary has-tip" id="refreshBtn" type="button" data-tip="Reload rosters, trade blocks, and FantasyCalc values from the live APIs." title="Reload rosters, trade blocks, and FantasyCalc values from the live APIs.">Refresh</button>
       </div>
     </div>
@@ -3906,10 +3927,8 @@
       try { localStorage.setItem("leagueToolsTheme", t); } catch (e) {}
       const tb = document.getElementById("themeBtn");
       if (tb) {
-        // Show what you'll switch TO, with a simple icon
-        tb.innerHTML = t === "light"
-          ? '<span aria-hidden="true">☾</span> Dark'
-          : '<span aria-hidden="true">☀</span> Light';
+        // Icon only: shows current mode (sun = light active, moon = dark active)
+        tb.textContent = t === "light" ? "☾" : "☀";
         tb.setAttribute("aria-label", t === "light" ? "Switch to dark mode" : "Switch to light mode");
         tb.title = tb.getAttribute("aria-label");
       }
@@ -4440,6 +4459,7 @@
       SEASON = seasonNum;
       refreshApiUrls();
       playoffOddsLoaded = false;
+      lastPlayoffSimulation = null;
       historyLoaded = false;
       leagueData = null;
       updateHeaderMeta();
@@ -4695,10 +4715,14 @@
 
     async function fetchLeague() {
       const statusEl = document.getElementById("status");
-      statusEl.textContent = "Loading…";
-      statusEl.classList.remove("error");
+      if (statusEl) {
+        statusEl.textContent = "Loading…";
+        statusEl.classList.remove("error");
+      }
       try {
         playoffOddsLoaded = false;
+        lastPlayoffSimulation = null;
+        refreshApiUrls();
         fcByEspnId = {};
         fcByName = {};
         try {
@@ -4709,52 +4733,68 @@
         }
 
         if (PLATFORM === "sleeper") {
-          statusEl.textContent = "Loading Sleeper league…";
+          if (statusEl) statusEl.textContent = "Loading Sleeper league…";
           leagueData = await fetchSleeperLeagueData(LEAGUE_ID);
-          // Bye weeks from Sleeper player dump
           byeByProTeam = {};
           try {
             await applySleeperProjectionProxies(leagueData);
           } catch (e) { console.warn(e); }
         } else {
+          if (statusEl) statusEl.textContent = "Loading ESPN league…";
           const espnRes = await fetchWithTimeout(
             API_URL,
             { credentials: "omit", headers: { Accept: "application/json" } },
-            20000
+            25000
           );
           if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
           leagueData = await espnRes.json();
-          await fetchByeWeeks();
+          if (!leagueData || !Array.isArray(leagueData.teams)) {
+            throw new Error("ESPN returned no teams (private league or bad ID)");
+          }
+          // Ensure members array exists for downstream code
+          if (!leagueData.members) leagueData.members = [];
+          try { await fetchByeWeeks(); } catch (e) { console.warn(e); }
+          // Projections: don't block UI forever — race with timeout
           try {
-            await enrichEspnProjections(leagueData);
+            await Promise.race([
+              enrichEspnProjections(leagueData),
+              new Promise((_, rej) => setTimeout(() => rej(new Error("projection timeout")), 28000))
+            ]);
           } catch (projErr) {
-            console.warn("ESPN projection enrich failed", projErr);
+            console.warn("ESPN projection enrich failed/timed out", projErr);
           }
         }
 
+        if (!leagueData || !leagueData.teams) throw new Error("No league data");
         const counts = countStatuses(leagueData);
-        statusEl.textContent =
-          leagueData.teams.length + " teams · " +
-          counts.definitely + " on block · Week " +
-          (leagueData.scoringPeriodId || "—") +
-          " · " + (PLATFORM === "sleeper" ? "Sleeper" : valueSourceLabel);
+        if (statusEl) {
+          statusEl.textContent =
+            leagueData.teams.length + " teams · " +
+            counts.definitely + " on block · Week " +
+            (leagueData.scoringPeriodId || "—") +
+            " · " + (PLATFORM === "sleeper" ? "Sleeper" : valueSourceLabel);
+        }
 
         try {
           renderAll(leagueData);
-          fillWaiverTeamSelect();
+          try { fillWaiverTeamSelect(); } catch (e) {}
           const name = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
           saveLeagueEntry(LEAGUE_ID, SEASON, name, PLATFORM);
           updateHeaderMeta();
           renderHomeScreen();
         } catch (renderErr) {
           console.error(renderErr);
-          statusEl.textContent = "Data loaded but display failed (see console)";
-          statusEl.classList.add("error");
+          if (statusEl) {
+            statusEl.textContent = "Data loaded but display failed (see console)";
+            statusEl.classList.add("error");
+          }
         }
       } catch (err) {
         console.error(err);
-        statusEl.textContent = "Failed to load: " + (err.message || "check league ID / platform");
-        statusEl.classList.add("error");
+        if (statusEl) {
+          statusEl.textContent = "Failed to load: " + (err.message || "check league ID / platform");
+          statusEl.classList.add("error");
+        }
       }
     }
 
@@ -4946,13 +4986,12 @@
      */
     async function enrichEspnProjections(data) {
       const current = Number(data.scoringPeriodId || 1) || 1;
-      // Current week + remaining regular season (cap API load)
+      // Current + next few weeks only (reliable load). Synthetic variation fills other weeks.
       const weeks = [];
       const start = Math.max(1, current);
-      const end = Math.min(18, Math.max(current + 14, 17));
+      const end = Math.min(18, current + 5);
       for (let w = start; w <= end; w++) weeks.push(w);
-      // Always include week 1–current if early (for completed curve); limit to 8 past weeks max
-      for (let w = Math.max(1, current - 7); w < start; w++) weeks.unshift(w);
+      if (current > 1) weeks.unshift(Math.max(1, current - 1));
 
       const byPlayerWeek = {}; // id -> { week: {proj,ceil,floor,variance} }
       const latestById = {};
@@ -5182,6 +5221,7 @@
     }
 
     function buildTeamModels(data) {
+      if (!data) return [];
       const members = data.members || [];
       const scoringPeriod = data.scoringPeriodId || 1;
 
@@ -8190,6 +8230,83 @@
       });
     }
 
+
+    function powerSnapStorageKey() {
+      return "ltPowerSnap_v1_" + (PLATFORM || "espn") + "_" + LEAGUE_ID + "_" + SEASON;
+    }
+
+    function loadPowerHistory() {
+      try {
+        const raw = localStorage.getItem(powerSnapStorageKey());
+        if (!raw) return { weeks: {} };
+        const o = JSON.parse(raw);
+        if (!o || typeof o !== "object") return { weeks: {} };
+        if (!o.weeks) o.weeks = {};
+        return o;
+      } catch (e) {
+        return { weeks: {} };
+      }
+    }
+
+    function savePowerWeekSnapshot(week, rankedRows) {
+      // rankedRows: [{ id, score, rank }]
+      if (!week || !rankedRows || !rankedRows.length) return;
+      const hist = loadPowerHistory();
+      const byId = {};
+      rankedRows.forEach((r) => {
+        byId[String(r.id)] = {
+          score: Math.round(Number(r.score) * 10) / 10,
+          rank: r.rank
+        };
+      });
+      hist.weeks[String(week)] = { byId: byId, savedAt: Date.now() };
+      hist.latestWeek = week;
+      // prune old weeks (keep 10)
+      const keys = Object.keys(hist.weeks).map(Number).sort((a, b) => a - b);
+      while (keys.length > 10) {
+        delete hist.weeks[String(keys.shift())];
+      }
+      try {
+        localStorage.setItem(powerSnapStorageKey(), JSON.stringify(hist));
+      } catch (e) {}
+    }
+
+    /** Score/rank change vs previous scoring week snapshot (if we stored one). */
+    function powerWeekDelta(teamId, week, score, rank) {
+      const hist = loadPowerHistory();
+      const w = Number(week) || 0;
+      let prev = hist.weeks[String(w - 1)];
+      let prevWeek = w - 1;
+      // Fall back to nearest older snapshot if exact prior week missing
+      if (!prev || !prev.byId) {
+        const older = Object.keys(hist.weeks).map(Number).filter((x) => x < w).sort((a, b) => b - a);
+        if (older.length) {
+          prevWeek = older[0];
+          prev = hist.weeks[String(prevWeek)];
+        }
+      }
+      if (!prev || !prev.byId) return null;
+      const p = prev.byId[String(teamId)];
+      if (!p) return null;
+      const scoreD = Math.round((Number(score) - Number(p.score)) * 10) / 10;
+      const rankD = Number(p.rank) - Number(rank); // + = rose in rankings
+      return { scoreD: scoreD, rankD: rankD, prevScore: p.score, prevRank: p.rank, prevWeek: prevWeek };
+    }
+
+    function formatPowerDelta(d) {
+      if (!d) return "";
+      const scoreBit = d.scoreD > 0.05
+        ? '<span class="fp-delta up">+' + d.scoreD.toFixed(1) + "</span>"
+        : d.scoreD < -0.05
+          ? '<span class="fp-delta down">' + d.scoreD.toFixed(1) + "</span>"
+          : '<span class="fp-delta flat">0.0</span>';
+      let rankBit = "";
+      if (d.rankD > 0) rankBit = '<span class="fp-delta up rk">↑' + d.rankD + "</span>";
+      else if (d.rankD < 0) rankBit = '<span class="fp-delta down rk">↓' + Math.abs(d.rankD) + "</span>";
+      else rankBit = '<span class="fp-delta flat rk">—</span>';
+      return scoreBit + rankBit;
+    }
+
     function renderPowerRankings(models) {
       if (!models || !models.length) {
         const list = document.getElementById("power-list");
@@ -8280,9 +8397,30 @@
         ('<div class="rankings-note" style="margin-bottom:0.5rem">Sorted by ' +
          (sortMode === "proj" ? "projected PPG" : sortMode) +
          (powerNeedFilter !== "all" ? " · need " + powerNeedFilter : "") + "</div>");
+      const currentWeek = (typeof leagueData !== "undefined" && leagueData && leagueData.scoringPeriodId)
+        ? Number(leagueData.scoringPeriodId) : 1;
+      // Snapshot overall ranks/scores for week-over-week (only in overall site mode)
+      const snapshotRows = [];
+      if (sortMode === "overall" && powerMode !== "hybrid") {
+        const overallOrder = models.slice().sort((a, b) => {
+          const d = (b.rawPower || 0) - (a.rawPower || 0);
+          if (Math.abs(d) > 1e-9) return d;
+          return (b.totalScore || 0) - (a.totalScore || 0);
+        });
+        overallOrder.forEach((t, i) => {
+          snapshotRows.push({
+            id: t.id,
+            score: t.totalScore != null ? t.totalScore : 0,
+            rank: i + 1
+          });
+        });
+        if (snapshotRows.length) savePowerWeekSnapshot(currentWeek, snapshotRows);
+      }
+
       sorted.forEach((t, i) => {
         const rank = i + 1;
         let score;
+        let scoreNum = null;
         if (sortMode === "proj") score = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         else if (sortMode === "depth") score = t.depthScore != null ? (t.depthScore * 100).toFixed(0) : "—";
         else if (sortMode === "market") score = t.marketScore != null ? (t.marketScore * 100).toFixed(0) : "—";
@@ -8290,9 +8428,18 @@
           const pr = (posRankByTeam[t.id] || {})[sortMode];
           score = pr != null ? ("#" + pr) : "—";
         } else if (powerMode === "hybrid" && t.hybridAvgRank != null) {
-          score = (Math.round(t.hybridAvgRank * 10) / 10).toFixed(1).replace(/\.0$/, "");
+          scoreNum = Math.round(t.hybridAvgRank * 10) / 10;
+          score = scoreNum.toFixed(1).replace(/\.0$/, "");
         } else {
-          score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
+          scoreNum = t.totalScore != null ? t.totalScore : 0;
+          score = scoreNum.toFixed(1);
+        }
+        let deltaHtml = "";
+        if (sortMode === "overall" && powerMode !== "hybrid" && scoreNum != null) {
+          // Rank in overall table for delta (use snapshot overall rank)
+          const overallRank = (snapshotRows.find((r) => String(r.id) === String(t.id)) || {}).rank || rank;
+          const d = powerWeekDelta(t.id, currentWeek, scoreNum, overallRank);
+          deltaHtml = formatPowerDelta(d);
         }
         const recordStr = t.gamesPlayed > 0
           ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
@@ -8409,14 +8556,22 @@
               " · Proj " + exp + "</div>" +
               '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
               " · Depth " + depthTxt + "</div></td>" +
-            '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
+            '<td class="fp-score-col"><div class="fp-score-wrap"><span class="fp-score">' + score + "</span>" +
+              (deltaHtml ? '<div class="fp-delta-row">' + deltaHtml + "</div>" : "") +
+              "</div></td>" +
           "</tr>" +
           '<tr class="fp-detail-row" hidden data-detail-for="' + t.id + '">' +
             '<td colspan="3">' + detail + "</td>" +
           "</tr>";
       });
 
+      const hasAnyDelta = body.indexOf("fp-delta") >= 0;
       list.innerHTML =
+        (hasAnyDelta
+          ? '<p class="rankings-note" style="margin-bottom:0.45rem">Δ vs last week: score change and rank movement (↑ rose).</p>'
+          : (currentWeek > 1
+            ? '<p class="rankings-note" style="margin-bottom:0.45rem">Week-over-week Δ appears after this week is saved and you return next week.</p>'
+            : "")) +
         '<table class="fp-power-table">' +
           "<thead><tr><th>RK</th><th>Team</th><th class=\"fp-score-col\">Score</th></tr></thead>" +
           "<tbody>" + body + "</tbody>" +
@@ -8458,8 +8613,12 @@
     }
 
     function runPlayoffSimulations(data, scheduleData) {
+      if (!data || !Array.isArray(data.teams)) {
+        throw new Error("League data not loaded");
+      }
+      scheduleData = scheduleData || data;
       const models = finalizePowerScores(buildTeamModels(data));
-      const settingsRoot = scheduleData.settings || data.settings || {};
+      const settingsRoot = (scheduleData && scheduleData.settings) || data.settings || {};
       const settings = settingsRoot.scheduleSettings || settingsRoot;
       const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || settings.numPlayoffTeams || 6);
       const hasPlayedGames = models.some((team) => team.gamesPlayed > 0);
@@ -9450,21 +9609,171 @@
       return;
     }
 
+
+    function openWeekShareCard(weekOverride) {
+      const modal = document.getElementById("week-share-modal");
+      const card = document.getElementById("week-share-card");
+      const weekInput = document.getElementById("week-share-week");
+      if (!modal || !card) {
+        alert("Weekly card UI missing");
+        return;
+      }
+      if (!leagueData || !leagueData.teams) {
+        alert("Load a league first");
+        return;
+      }
+      const week = Number(weekOverride || (weekInput && weekInput.value) || leagueData.scoringPeriodId || 1) || 1;
+      if (weekInput) weekInput.value = String(week);
+
+      const models = (() => {
+        try { return finalizePowerScores(buildTeamModels(leagueData)); }
+        catch (e) { return buildTeamModels(leagueData); }
+      })();
+      const byId = {};
+      models.forEach((m) => { byId[String(m.id)] = m; });
+
+      // Schedule games for this week
+      const schedule = leagueData.schedule || [];
+      const games = schedule.filter((g) => Number(g.matchupPeriodId || g.week || 0) === week);
+      const sim = lastPlayoffSimulation;
+      const results = sim && sim.results ? sim.results : {};
+
+      function teamLabel(id) {
+        const m = byId[String(id)];
+        return m ? (m.name || "Team " + id) : ("Team " + id);
+      }
+      function scoreSide(side) {
+        if (!side) return null;
+        if (typeof side === "object") {
+          if (side.totalPoints != null) return Number(side.totalPoints);
+          if (side.score != null) return Number(side.score);
+        }
+        return null;
+      }
+
+      let gameHtml = "";
+      if (games.length) {
+        games.forEach((g) => {
+          const homeId = g.home && typeof g.home === "object" ? g.home.teamId : g.homeTeamId || g.home;
+          const awayId = g.away && typeof g.away === "object" ? g.away.teamId : g.awayTeamId || g.away;
+          const hs = scoreSide(g.home);
+          const as_ = scoreSide(g.away);
+          const played = hs != null && as_ != null && (hs > 0 || as_ > 0);
+          let winner = null;
+          if (played) winner = hs >= as_ ? homeId : awayId;
+          const homeName = teamLabel(homeId);
+          const awayName = teamLabel(awayId);
+          // Win % from sim if available
+          let wp = "";
+          const hr = results[String(homeId)];
+          if (hr && hr.weeks && hr.weeks[week] && hr.weeks[week].h2h != null) {
+            const pct = Math.round(100 * hr.weeks[week].h2h / (sim.simulations || 1));
+            wp = pct + "% home";
+          }
+          gameHtml +=
+            '<div class="ws-game">' +
+              '<div class="ws-team' + (winner != null && String(winner) === String(homeId) ? " winner" : (played ? " loser" : "")) + '">' +
+                escapeHtml(homeName) + "</div>" +
+              '<div class="ws-score">' + (played ? hs.toFixed(1) + " – " + as_.toFixed(1) : "vs") + "</div>" +
+              '<div class="ws-team' + (winner != null && String(winner) === String(awayId) ? " winner" : (played ? " loser" : "")) + '">' +
+                escapeHtml(awayName) + "</div>" +
+              (wp ? '<div class="ws-sub">' + wp + "</div>" : "") +
+            "</div>";
+        });
+      } else {
+        gameHtml = '<div class="ws-sub">No matchup data for week ' + week + " yet.</div>";
+      }
+
+      // Standings-ish from models
+      const sorted = models.slice().sort((a, b) => {
+        if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+        return (b.ppg || 0) - (a.ppg || 0);
+      });
+      let standHtml = sorted.map((m, i) => {
+        const rec = (m.wins || 0) + "-" + (m.losses || 0);
+        const po = results[String(m.id)] && sim
+          ? Math.round(100 * results[String(m.id)].playoff / (sim.simulations || 1)) + "%"
+          : "—";
+        return (
+          '<div class="ws-stand-row">' +
+            '<span class="ws-rk">' + (i + 1) + "</span>" +
+            '<span class="ws-name">' + escapeHtml(m.name) + "</span>" +
+            '<span class="ws-rec">' + rec + "</span>" +
+            '<span class="ws-odds">' + po + "</span>" +
+          "</div>"
+        );
+      }).join("");
+
+      const leagueName = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
+      card.innerHTML =
+        '<div class="pr-share-card-head">' +
+          '<div class="league">' + escapeHtml(leagueName) + "</div>" +
+          "<h3>Week " + week + " summary</h3>" +
+          '<div class="week-label">Matchups · records · playoff odds</div>' +
+        "</div>" +
+        '<div class="ws-section"><h4>Matchups</h4>' + gameHtml + "</div>" +
+        '<div class="ws-section"><h4>Standings / playoff odds</h4>' +
+          '<div class="ws-sub">Rk · Team · Record · Playoff%</div>' +
+          standHtml +
+        "</div>";
+
+      modal.hidden = false;
+    }
+
+    function closeWeekShareCard() {
+      const modal = document.getElementById("week-share-modal");
+      if (modal) modal.hidden = true;
+    }
+
+    function wireWeekShareCard() {
+      if (window.__weekShareWired) return;
+      window.__weekShareWired = true;
+      const modal = document.getElementById("week-share-modal");
+      const close = document.getElementById("week-share-close");
+      const printBtn = document.getElementById("week-share-print");
+      const refresh = document.getElementById("week-share-refresh");
+      const weekInput = document.getElementById("week-share-week");
+      const btn = document.getElementById("week-share-btn");
+      if (btn) btn.addEventListener("click", () => {
+        try { openWeekShareCard(); } catch (e) { console.error(e); alert(e.message || e); }
+      });
+      if (close) close.addEventListener("click", closeWeekShareCard);
+      if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) closeWeekShareCard(); });
+      if (printBtn) printBtn.addEventListener("click", () => window.print());
+      if (refresh) refresh.addEventListener("click", () => openWeekShareCard());
+      if (weekInput) weekInput.addEventListener("change", () => openWeekShareCard(weekInput.value));
+    }
+
     async function setupPlayoffOdds() {
       const status = document.getElementById("odds-status");
       const body = document.getElementById("odds-body");
+      if (!status) return;
+      if (!leagueData || !leagueData.teams) {
+        status.textContent = "Load a league first (Home tab).";
+        return;
+      }
       if (playoffOddsLoaded) return;
-      status.textContent = "Fetching ESPN schedule and running simulations…";
+      status.textContent = "Fetching schedule and running simulations…";
       try {
         let scheduleData = leagueData;
         try {
+          refreshApiUrls();
           const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
-          if (response.ok) scheduleData = await response.json();
-          else console.warn("Optional ESPN schedule view unavailable", response.status);
+          if (response.ok) {
+            const extra = await response.json();
+            // Merge schedule/settings onto league data; never replace members/teams with null
+            scheduleData = Object.assign({}, leagueData, {
+              schedule: extra.schedule || leagueData.schedule || [],
+              settings: extra.settings || leagueData.settings || {}
+            });
+            if (extra.teams && extra.teams.length) {
+              // keep rostered leagueData.teams as source of truth
+            }
+          } else console.warn("Optional ESPN schedule view unavailable", response.status);
         } catch (scheduleError) {
           console.warn("Optional ESPN schedule view unavailable", scheduleError);
         }
-        const simulation = runPlayoffSimulations(leagueData, scheduleData);
+        const simulation = runPlayoffSimulations(leagueData, scheduleData || leagueData);
         lastPlayoffSimulation = simulation;
         const total = simulation.simulations;
         const gpOdds = leagueGamesPlayed(leagueData);
