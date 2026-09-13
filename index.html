@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trade Board — League 2039212076</title>
+  <title>League HQ — Fantasy Football Command Center</title>
   <style>
     :root {
       --bg: #0c0e12;
@@ -2886,6 +2886,123 @@
     [data-theme="light"] .app-header { background: rgba(255, 255, 255, 0.9); }
     [data-theme="light"] .brand h1::before { box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12); }
 
+    /* Shared component system */
+    button, input, select { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .panel.active { animation: panel-enter 0.24s ease-out both; }
+    @keyframes panel-enter {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .btn { gap: 0.4rem; transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:not(.btn-primary):hover { background: #1d2d46; border-color: #3b5577; }
+    .theme-toggle { min-width: 2.35rem; justify-content: center; font-size: 1rem; }
+
+    .home-wrap, .calc-wrap, .rankings-wrap {
+      width: min(100% - 2rem, 1180px);
+      padding-top: 2rem;
+      padding-bottom: 3rem;
+    }
+    .home-title, .pr-title { font-size: clamp(1.6rem, 2.5vw, 2.15rem); line-height: 1.1; }
+    .home-sub { max-width: 42rem; font-size: 0.98rem; line-height: 1.65; }
+    .home-card { background: rgba(17, 27, 45, 0.78); }
+    .home-card:first-of-type {
+      position: relative;
+      overflow: hidden;
+      border-color: rgba(59, 156, 255, 0.35);
+    }
+    .home-card:first-of-type::before {
+      content: "LEAGUE CONNECTION";
+      display: block;
+      margin-bottom: 1rem;
+      color: var(--accent);
+      font-size: 0.68rem;
+      font-weight: 750;
+      letter-spacing: 0.14em;
+    }
+    .home-input, .calc-team-select, .ms-trigger, select, input[type="text"], input[type="number"] {
+      min-height: 2.65rem;
+      border-radius: 7px;
+      border-color: #2b4161;
+      background: #0e192b;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+    .home-input:focus, .calc-team-select:focus, .ms-trigger:focus, select:focus, input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 156, 255, 0.13);
+      outline: none;
+    }
+    .filter-btn {
+      border-radius: 6px;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    .filter-btn.active { box-shadow: inset 0 0 0 1px rgba(59, 156, 255, 0.2); }
+    .pr-top { align-items: flex-end; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .pr-actions { gap: 0.5rem; }
+    .power-filters, .power-mode-row { border-color: var(--border-subtle); }
+    .power-filter-group { gap: 0.35rem; }
+    .power-list { display: grid; gap: 0.65rem; }
+    .power-row, .odds-row, .matchup-card {
+      border-color: rgba(105, 137, 181, 0.22);
+      background: rgba(17, 27, 45, 0.72);
+      border-radius: 9px;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+    .power-row:hover, .odds-row:hover, .matchup-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59, 156, 255, 0.5);
+      background: rgba(23, 39, 63, 0.9);
+    }
+    .odds-table-wrap { overflow: auto; border-radius: 10px; }
+    .odds-table thead th { position: sticky; top: 0; z-index: 1; background: #17243a; color: var(--text-secondary); }
+    .calc-wrap { padding-top: 1.5rem; }
+    .calc-toolbar { align-items: center; }
+    .calc-toolbar::before {
+      content: "Decision desk";
+      margin-right: auto;
+      color: var(--text-secondary);
+      font-size: 0.77rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .calc-sides { gap: 1rem; }
+    .calc-side-total-row { background: rgba(23, 36, 58, 0.62); }
+    .calc-impact-title { color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+    .modal-backdrop { backdrop-filter: blur(6px); background: rgba(4, 9, 17, 0.7); }
+    .modal-card { border: 1px solid #314968; border-radius: 12px; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42); }
+    .modal-header { border-bottom-color: var(--border-subtle); }
+    .calc-player, .suggestion-card { border-color: rgba(105, 137, 181, 0.2); border-radius: 7px; }
+    .app-footer { border-top-color: var(--border-subtle); color: var(--text-muted); }
+
+    [data-theme="light"] .home-card, [data-theme="light"] .calc-side,
+    [data-theme="light"] .power-row, [data-theme="light"] .odds-row,
+    [data-theme="light"] .matchup-card { background: rgba(255, 255, 255, 0.88); }
+    [data-theme="light"] .home-input, [data-theme="light"] .calc-team-select,
+    [data-theme="light"] .ms-trigger, [data-theme="light"] select,
+    [data-theme="light"] input[type="text"], [data-theme="light"] input[type="number"] { background: #fff; border-color: #c4d0df; }
+    [data-theme="light"] .odds-table thead th { background: #eef4fb; }
+
+    @media (max-width: 720px) {
+      .home-wrap, .calc-wrap, .rankings-wrap { width: 100%; padding-top: 1.25rem; }
+      .home-title, .pr-title { font-size: 1.55rem; }
+      .home-sub { font-size: 0.88rem; }
+      .pr-top { align-items: flex-start; gap: 0.8rem; }
+      .pr-actions { width: 100%; }
+      .pr-actions .btn { flex: 1; justify-content: center; }
+      .calc-toolbar { gap: 0.45rem; }
+      .calc-toolbar::before { width: 100%; margin-bottom: 0.15rem; }
+      .calc-toolbar .btn { flex: 1 1 calc(50% - 0.45rem); }
+      .calc-sides { grid-template-columns: 1fr; }
+      .calc-side { min-width: 0; }
+      .odds-table { min-width: 680px; }
+    }
+
   </style>
 </head>
 <body>
@@ -2904,10 +3021,10 @@
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-panel="home" type="button" title="Choose or switch ESPN league">Home</button>
-    <button class="tab" data-panel="power" type="button" title="Rank teams by roster strength and projected points">Power Rankings</button>
-    <button class="tab" data-panel="calc" type="button" title="Compare players and evaluate a trade">Trade Calculator</button>
-    <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
+    <button class="tab active" data-panel="home" type="button" title="Choose or switch your league">Overview</button>
+    <button class="tab" data-panel="power" type="button" title="Rank teams by roster strength and projected points">Rankings</button>
+    <button class="tab" data-panel="calc" type="button" title="Compare players and evaluate a trade">Trade desk</button>
+    <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoffs</button>
     <button class="tab" data-panel="matchup" type="button" title="This week matchup, win odds, and lineup advice">Matchup</button>
   </nav>
 
@@ -2971,7 +3088,7 @@
         <label class="home-label">Season
           <input type="number" id="home-season" class="home-input" value="2026" min="2018" max="2030" />
         </label>
-        <button type="button" class="btn btn-primary home-go" id="home-load-btn">Load league</button>
+        <button type="button" class="btn btn-primary home-go" id="home-load-btn">Open league dashboard</button>
         <p class="home-hint" id="home-hint">ESPN: ID from the league URL (public leagues). Sleeper: league ID from the Sleeper URL or app.</p>
       </div>
       <div class="home-card" id="home-recent-wrap" hidden>
@@ -2989,8 +3106,8 @@
     <div class="rankings-wrap">
       <div class="pr-top">
         <div>
-          <h2 class="pr-title">Power rankings</h2>
-          <p class="pr-sub" id="pr-sub">Site model · tap a row for detail</p>
+          <h2 class="pr-title">Team rankings</h2>
+          <p class="pr-sub" id="pr-sub">Your league model · select a team to inspect the edge</p>
         </div>
         <div class="pr-actions">
           <button type="button" class="btn" id="pr-sources-btn" title="Add rankings from other sites">Sources</button>
