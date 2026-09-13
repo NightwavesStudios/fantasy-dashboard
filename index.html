@@ -3,25 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>League Tools</title>
+  <title>Trade Board — League 2039212076</title>
   <style>
     :root {
-      --bg: #0b0d10;
-      --surface: #12151a;
-      --surface-2: #1a1f27;
-      --border: #2a313c;
-      --border-subtle: #1e242c;
-      --text: #f1f4f8;
-      --text-secondary: #9aa8b8;
-      --text-muted: #6b7787;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --accent-soft: rgba(59, 130, 246, 0.12);
-      --good: #22c55e;
-      --good-soft: rgba(34, 197, 94, 0.12);
-      --bad: #ef4444;
-      --bad-soft: rgba(239, 68, 68, 0.12);
-      --warn: #eab308;
+      --bg: #0c0e12;
+      --surface: #14181f;
+      --surface-2: #1b212b;
+      --border: #2c3440;
+      --border-subtle: #222830;
+      --text: #eef2f7;
+      --text-secondary: #a0aec0;
+      --text-muted: #718096;
+      --accent: #4a8af4;
+      --accent-hover: #3b7ae8;
       --definitely: #16a34a;
       --definitely-bg: rgba(22, 163, 74, 0.12);
       --definitely-border: rgba(22, 163, 74, 0.35);
@@ -32,117 +26,94 @@
       --maybe-bg: rgba(202, 138, 4, 0.1);
       --maybe-border: rgba(202, 138, 4, 0.3);
       --rank-1: #fbbf24;
-      --radius: 10px;
-      --radius-sm: 6px;
-      --shadow: 0 1px 2px rgba(0,0,0,0.24);
-      --header-bg: rgba(11, 13, 16, 0.88);
-      --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      --content: 1120px;
+      --radius: 8px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     }
 
     [data-theme="light"] {
-      --bg: #f7f8fa;
+      --bg: #f4f6f9;
       --surface: #ffffff;
-      --surface-2: #f0f2f5;
-      --border: #d8dee8;
-      --border-subtle: #e8ecf1;
+      --surface-2: #eef1f6;
+      --border: #d0d7e2;
+      --border-subtle: #e2e8f0;
       --text: #0f172a;
       --text-secondary: #475569;
       --text-muted: #64748b;
       --accent: #2563eb;
       --accent-hover: #1d4ed8;
-      --accent-soft: rgba(37, 99, 235, 0.1);
-      --good: #16a34a;
-      --good-soft: rgba(22, 163, 74, 0.1);
-      --bad: #dc2626;
-      --bad-soft: rgba(220, 38, 38, 0.08);
-      --warn: #ca8a04;
       --definitely: #16a34a;
       --definitely-bg: rgba(22, 163, 74, 0.1);
-      --definitely-border: rgba(22, 163, 74, 0.3);
+      --definitely-border: rgba(22, 163, 74, 0.35);
       --not-likely: #dc2626;
       --not-likely-bg: rgba(220, 38, 38, 0.08);
-      --not-likely-border: rgba(220, 38, 38, 0.28);
+      --not-likely-border: rgba(220, 38, 38, 0.3);
       --maybe: #ca8a04;
       --maybe-bg: rgba(202, 138, 4, 0.1);
-      --maybe-border: rgba(202, 138, 4, 0.28);
+      --maybe-border: rgba(202, 138, 4, 0.3);
       --rank-1: #d97706;
-      --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-      --header-bg: rgba(247, 248, 250, 0.92);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { color-scheme: dark; }
-    [data-theme="light"] { color-scheme: light; }
     body {
       font-family: var(--font);
       background: var(--bg);
       color: var(--text);
-      line-height: 1.45;
+      line-height: 1.5;
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
-      font-size: 15px;
     }
 
     .app-header {
       position: sticky; top: 0; z-index: 50;
-      background: var(--header-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(12, 14, 18, 0.94);
+      backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 0.65rem 1.25rem;
+      padding: 0.7rem 1.25rem;
     }
     .header-inner {
-      max-width: var(--content); margin: 0 auto;
+      max-width: 1440px; margin: 0 auto;
       display: flex; flex-wrap: wrap; align-items: center;
-      justify-content: space-between; gap: 0.75rem;
+      justify-content: space-between; gap: 1rem;
     }
-    .brand h1 { font-size: 0.95rem; font-weight: 600; letter-spacing: -0.02em; }
-    .brand .meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; }
-    .header-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .brand h1 { font-size: 1.05rem; font-weight: 650; letter-spacing: -0.025em; }
+    .brand .meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.05rem; }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
-      padding: 0.42rem 0.85rem; font-size: 0.8rem; font-weight: 550;
-      font-family: inherit; border-radius: var(--radius-sm);
-      border: 1px solid var(--border); background: var(--surface);
+      display: inline-flex; align-items: center;
+      padding: 0.45rem 0.9rem; font-size: 0.8125rem; font-weight: 500;
+      font-family: inherit; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surface-2);
       color: var(--text); cursor: pointer;
-      transition: background 0.12s, border-color 0.12s, color 0.12s;
-      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .btn:hover { background: var(--surface-2); border-color: var(--text-muted); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn:hover { background: #243040; border-color: #3a4a5c; }
     .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
     .status-pill {
-      font-size: 0.72rem; color: var(--text-secondary);
-      padding: 0.3rem 0.65rem; background: var(--surface);
+      font-size: 0.75rem; color: var(--text-secondary);
+      padding: 0.35rem 0.65rem; background: var(--surface);
       border: 1px solid var(--border-subtle); border-radius: 999px;
-      max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .status-pill.error { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
+    .status-pill.error { color: #f87171; border-color: rgba(248,113,113,0.3); }
 
+    /* Tabs */
     .tabs {
-      max-width: var(--content); margin: 0 auto;
-      padding: 0 1.25rem;
-      display: flex; gap: 0;
+      max-width: 1100px; margin: 0 auto;
+      padding: 0.35rem 1.25rem 0;
+      display: flex; gap: 0.15rem;
       border-bottom: 1px solid var(--border-subtle);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
     }
-    .tabs::-webkit-scrollbar { display: none; }
     .tab {
-      padding: 0.7rem 0.9rem; font-size: 0.8rem; font-weight: 500;
+      padding: 0.65rem 0.85rem; font-size: 0.8rem; font-weight: 550;
       font-family: inherit; background: transparent; border: none;
       color: var(--text-muted); cursor: pointer;
       border-bottom: 2px solid transparent; margin-bottom: -1px;
       transition: color 0.12s, border-color 0.12s;
-      white-space: nowrap;
     }
     .tab:hover { color: var(--text-secondary); }
-    .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab.active { color: var(--text); border-bottom-color: var(--text); }
 
 
     /* Custom tooltips (work on mobile tap) */
@@ -253,8 +224,7 @@
       .fp-power-table th, .fp-power-table td { padding: 0.55rem 0.45rem; }
       .fp-team-sub { font-size: 0.7rem; }
       .fp-detail-grid { gap: 0.65rem; }
-    }
-
+  
     .calc-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -1217,7 +1187,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.55);
-      z-index: 200;
+      z-index: 80;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2833,760 +2803,6 @@
       gap: 0.75rem;
     }
 
-  
-    .week-share-card .ws-section {
-      margin-top: 0.85rem;
-      padding-top: 0.65rem;
-      border-top: 1px solid #2a3140;
-    }
-    .week-share-card .ws-section h4 {
-      margin: 0 0 0.45rem;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #8b9bb4;
-      font-weight: 650;
-    }
-    .week-share-card .ws-game {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 0.35rem;
-      align-items: center;
-      padding: 0.4rem 0;
-      border-bottom: 1px solid #2a3140;
-      font-size: 0.8rem;
-    }
-    .week-share-card .ws-game:last-child { border-bottom: none; }
-    .week-share-card .ws-team { font-weight: 600; line-height: 1.25; }
-    .week-share-card .ws-team.winner { color: #4ade80; }
-    .week-share-card .ws-team.loser { color: #94a3b8; }
-    .week-share-card .ws-score {
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: #e2e8f0;
-    }
-    .week-share-card .ws-sub {
-      font-size: 0.65rem;
-      color: #6b7a90;
-      font-weight: 500;
-    }
-    .week-share-card .ws-stand-row {
-      display: grid;
-      grid-template-columns: 1.4rem 1fr auto auto auto;
-      gap: 0.35rem;
-      align-items: baseline;
-      padding: 0.35rem 0;
-      border-bottom: 1px solid #2a3140;
-      font-size: 0.78rem;
-    }
-    .week-share-card .ws-stand-row:last-child { border-bottom: none; }
-    .week-share-card .ws-rk { font-weight: 700; color: #8b9bb4; font-variant-numeric: tabular-nums; }
-    .week-share-card .ws-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .week-share-card .ws-rec { font-variant-numeric: tabular-nums; color: #cbd5e1; }
-    .week-share-card .ws-med { font-size: 0.7rem; color: #94a3b8; font-variant-numeric: tabular-nums; }
-    .week-share-card .ws-odds { font-weight: 650; font-variant-numeric: tabular-nums; color: #e2e8f0; text-align: right; }
-    .week-share-card .ws-med.win { color: #4ade80; }
-    .week-share-card .ws-med.loss { color: #f87171; }
-    @media print {
-      #week-share-card, #week-share-card * { visibility: visible !important; }
-      #week-share-card {
-        position: absolute; left: 0; top: 0; width: 100%;
-        background: #fff !important; color: #111 !important;
-        box-shadow: none !important; border: none !important;
-      }
-      #week-share-card .ws-team.winner { color: #15803d !important; }
-      #week-share-card .ws-team.loser { color: #64748b !important; }
-      #week-share-card .ws-section { border-color: #ddd !important; }
-      #week-share-card .ws-game, #week-share-card .ws-stand-row { border-color: #eee !important; }
-      #week-share-card .ws-score, #week-share-card .ws-odds, #week-share-card .ws-rec { color: #111 !important; }
-      #week-share-card .ws-sub, #week-share-card .ws-section h4, #week-share-card .ws-rk { color: #555 !important; }
-    }
-
-  
-    /* —— Product polish + full light mode —— */
-    .rankings-wrap, .calc-wrap, .home-wrap {
-      max-width: var(--content);
-      margin: 0 auto;
-      padding: 1.15rem 1.25rem 2.5rem;
-    }
-    .rankings-note, .odds-status, .pr-sub, .home-sub, .home-hint, .pr-modal-note {
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      line-height: 1.45;
-    }
-    .pr-title, .home-title {
-      font-size: 1.15rem;
-      font-weight: 650;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.15rem;
-    }
-    .pr-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin-bottom: 0.85rem;
-    }
-    .pr-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-    .filter-btn {
-      border: 1px solid var(--border-subtle);
-      background: transparent;
-      color: var(--text-muted);
-      border-radius: 999px;
-      padding: 0.28rem 0.7rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-    }
-    .filter-btn:hover { color: var(--text); background: var(--surface-2); }
-    .filter-btn.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-      border-color: transparent;
-      font-weight: 600;
-    }
-    .home-card, .calc-impact-card, .modal-card, .fair-bar-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .home-card { padding: 1.1rem 1.15rem; margin-bottom: 0.85rem; }
-    .home-input, .calc-team-select, select, input[type="text"], input[type="number"] {
-      background: var(--bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 0.875rem;
-    }
-    .home-input:focus, .calc-team-select:focus, select:focus, input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-    .fp-power-table, .odds-table, .roster-table, .waiver-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .fp-power-table th, .odds-table th, .roster-table th, .waiver-table th {
-      color: var(--text-muted);
-      font-weight: 550;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid var(--border-subtle);
-      background: transparent;
-    }
-    .fp-power-table td, .odds-table td {
-      border-bottom: 1px solid var(--border-subtle);
-      vertical-align: middle;
-    }
-    .fp-power-table tr:hover td, .odds-table tr:hover td {
-      background: var(--surface-2);
-    }
-    .calc-impact-result.benefit { color: var(--good); background: var(--good-soft); }
-    .calc-impact-result.hurt { color: var(--bad); background: var(--bad-soft); }
-    .calc-impact-result.neutral { color: var(--text-muted); background: var(--surface-2); }
-    .calc-advice.benefit { color: var(--good); }
-    .calc-advice.hurt { color: var(--bad); }
-    .calc-impact-change.up, .calc-impact-big.up { color: var(--good); }
-    .calc-impact-change.down, .calc-impact-big.down { color: var(--bad); }
-    .panel { display: none; animation: none; }
-    .panel.active { display: block; }
-
-    /* Share / week cards use theme tokens */
-    .pr-share-card {
-      background: var(--surface) !important;
-      color: var(--text) !important;
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 1rem 1.1rem;
-    }
-    .pr-share-card-head .league,
-    .pr-share-meta,
-    .week-label,
-    .pr-share-foot { color: var(--text-muted) !important; }
-    .pr-share-row, .week-share-card .ws-game, .week-share-card .ws-stand-row {
-      border-color: var(--border-subtle) !important;
-    }
-    .week-share-card .ws-section { border-color: var(--border-subtle) !important; }
-    .week-share-card .ws-section h4,
-    .week-share-card .ws-sub,
-    .week-share-card .ws-rk { color: var(--text-muted) !important; }
-    .week-share-card .ws-score,
-    .week-share-card .ws-odds,
-    .week-share-card .ws-rec { color: var(--text) !important; }
-    .week-share-card .ws-team.winner { color: var(--good) !important; }
-    .week-share-card .ws-team.loser { color: var(--text-muted) !important; }
-    .week-share-card .ws-med.win { color: var(--good) !important; }
-    .week-share-card .ws-med.loss { color: var(--bad) !important; }
-
-    [data-theme="light"] .app-header {
-      background: var(--header-bg);
-    }
-    [data-theme="light"] .btn:hover {
-      background: var(--surface-2);
-      border-color: var(--border);
-    }
-    [data-theme="light"] .modal-backdrop {
-      background: rgba(15, 23, 42, 0.4);
-    }
-    [data-theme="light"] .pr-share-card,
-    [data-theme="light"] .pr-dnd-list,
-    [data-theme="light"] .pr-dnd-item {
-      background: var(--surface);
-      color: var(--text);
-    }
-    [data-theme="light"] .calc-trade-summary {
-      background: var(--surface-2);
-      border-color: var(--border-subtle);
-    }
-    [data-theme="light"] .matchup-side,
-    [data-theme="light"] .matchup-advice {
-      background: var(--surface);
-      border-color: var(--border-subtle);
-      color: var(--text);
-    }
-
-    @media (max-width: 720px) {
-      .rankings-wrap, .calc-wrap, .home-wrap { padding: 0.85rem 0.85rem 2rem; }
-      .pr-top { flex-direction: column; }
-      .pr-actions { width: 100%; }
-      .pr-actions .btn { flex: 1; }
-      .status-pill { display: none; }
-      .tab { padding: 0.65rem 0.75rem; font-size: 0.78rem; }
-    }
-
-  
-    /* —— Larger product UI pass —— */
-    body { letter-spacing: -0.01em; }
-    .app-header { padding: 0.55rem 1.1rem; }
-    .brand h1 { font-size: 0.9rem; font-weight: 600; opacity: 0.95; }
-    .tabs { max-width: var(--content); }
-    .tab { font-size: 0.78rem; padding: 0.62rem 0.8rem; }
-    .tab.active { border-bottom-width: 2px; }
-
-    .page-head {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 0.75rem; margin-bottom: 1rem;
-    }
-    .page-head h2 {
-      font-size: 1.2rem; font-weight: 650; letter-spacing: -0.03em; margin: 0;
-    }
-    .page-head p {
-      margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--text-muted);
-    }
-
-    .power-filters, .power-mode-row {
-      display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;
-      margin-bottom: 0.65rem;
-    }
-    .power-filter-group {
-      display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center;
-      margin-right: 0.5rem;
-    }
-    .power-filter-label {
-      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--text-muted); margin-right: 0.15rem; font-weight: 600;
-    }
-
-    .fp-power-table { font-size: 0.9rem; }
-    .fp-power-table th { padding: 0.45rem 0.5rem; }
-    .fp-power-table td { padding: 0.7rem 0.5rem; }
-    .fp-score-col { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.05rem; }
-    .fp-team-name { font-weight: 650; letter-spacing: -0.02em; }
-    .fp-team-sub { color: var(--text-muted); font-size: 0.72rem; margin-top: 0.15rem; }
-
-    .fair-bar-wrap {
-      padding: 0.85rem 1rem 0.95rem;
-      margin-bottom: 0.85rem;
-    }
-    .fair-bar-status { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.45rem; text-align: center; }
-    .fair-bar-status.fair { color: var(--good); }
-    .fair-bar-status.unfair { color: var(--bad); }
-    .fair-bar-status.close { color: var(--warn); }
-    .fair-bar-thumb.fair { border-color: var(--good); background: var(--good-soft); }
-    .fair-bar-thumb.unfair { border-color: var(--bad); background: var(--bad-soft); }
-    .fair-bar-thumb.close { border-color: var(--warn); background: rgba(234, 179, 8, 0.12); }
-
-    .calc-toolbar {
-      display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem;
-      justify-content: flex-start;
-    }
-    .calc-toolbar .btn { min-width: 0; }
-
-    .calc-sides {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin-bottom: 0.85rem;
-    }
-    .calc-side {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 0.75rem;
-      box-shadow: var(--shadow);
-    }
-    .calc-side-header { margin-bottom: 0.55rem; }
-    .calc-side-badge {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 1.4rem; height: 1.4rem; border-radius: 6px;
-      background: var(--accent-soft); color: var(--accent);
-      font-size: 0.72rem; font-weight: 700;
-    }
-    .calc-side-badge.b { background: var(--surface-2); color: var(--text-secondary); }
-    .calc-side-total-row {
-      display: flex; justify-content: space-between; align-items: baseline;
-      padding: 0.45rem 0; border-top: 1px solid var(--border-subtle);
-      margin-top: 0.45rem; font-size: 0.8rem; color: var(--text-muted);
-    }
-    .calc-side-total-row strong {
-      font-size: 1.05rem; color: var(--text); font-variant-numeric: tabular-nums;
-    }
-
-    .calc-impact {
-      margin-top: 0.5rem;
-      padding-top: 0.25rem;
-    }
-    .calc-impact-title {
-      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--text-muted); font-weight: 650; margin-bottom: 0.55rem;
-    }
-    .calc-impact-grid, .calc-impact-simple {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;
-    }
-    .calc-impact-card {
-      padding: 0.85rem 0.9rem;
-    }
-    .calc-impact-card h4 {
-      font-size: 0.88rem; font-weight: 650; margin: 0 0 0.35rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-    }
-    .calc-impact-result {
-      font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.45rem;
-      border-radius: 999px; white-space: nowrap;
-    }
-    .calc-trade-summary {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-    }
-    .calc-trade-summary-title { font-size: 0.95rem; }
-
-    .home-wrap { max-width: 440px; }
-    .home-title { font-size: 1.35rem; margin-bottom: 0.25rem; }
-    .home-card {
-      border-radius: 12px;
-      padding: 1.15rem 1.2rem;
-    }
-    .home-label {
-      display: block; font-size: 0.75rem; font-weight: 600;
-      color: var(--text-secondary); margin-bottom: 0.65rem;
-    }
-    .home-input {
-      display: block; width: 100%; margin-top: 0.3rem;
-      padding: 0.55rem 0.65rem;
-    }
-    .home-go { width: 100%; margin-top: 0.35rem; padding: 0.6rem; font-weight: 600; }
-    .home-platform { margin-bottom: 0.75rem; }
-
-    .odds-table th, .odds-table td { padding: 0.55rem 0.45rem; font-size: 0.82rem; }
-    .odds-status {
-      padding: 0.55rem 0.7rem; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border-subtle);
-      margin-bottom: 0.75rem;
-    }
-
-    .matchup-scoreboard {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 1rem;
-      box-shadow: var(--shadow);
-    }
-
-    @media (max-width: 800px) {
-      .calc-sides, .calc-impact-grid, .calc-impact-simple { grid-template-columns: 1fr; }
-    }
-
-  
-    /* Trade calculator — compact, cleaner */
-    .calc-wrap { padding-top: 0.85rem; }
-    .calc-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-bottom: 0.65rem;
-      align-items: center;
-    }
-    .calc-toolbar .btn {
-      min-width: 0 !important;
-      flex: 0 0 auto !important;
-      padding: 0.32rem 0.65rem !important;
-      font-size: 0.75rem !important;
-      font-weight: 550;
-      min-height: 0 !important;
-      height: auto;
-      border-radius: 6px;
-    }
-    .calc-toolbar .btn-primary {
-      padding: 0.32rem 0.75rem !important;
-    }
-    .calc-btn-muted {
-      opacity: 0.85;
-      margin-left: auto;
-    }
-    .fair-bar-wrap {
-      padding: 0.65rem 0.85rem 0.7rem !important;
-      margin-bottom: 0.65rem !important;
-      border-radius: 10px;
-    }
-    .fair-bar-status {
-      font-size: 0.78rem !important;
-      margin-bottom: 0.35rem !important;
-    }
-    .fair-bar-track {
-      height: 8px !important;
-      border-radius: 999px;
-    }
-    .fair-bar-thumb {
-      width: 14px !important;
-      height: 14px !important;
-    }
-    .fair-bar-labels {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      margin-top: 0.3rem;
-    }
-    .calc-sides {
-      gap: 0.6rem !important;
-    }
-    .calc-side {
-      padding: 0.6rem 0.65rem !important;
-      border-radius: 10px !important;
-    }
-    .calc-side-title-row {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .calc-team-select {
-      flex: 1;
-      min-width: 0;
-      padding: 0.3rem 0.4rem !important;
-      font-size: 0.8rem !important;
-      height: auto !important;
-    }
-    .calc-side-badge {
-      width: 1.2rem !important;
-      height: 1.2rem !important;
-      font-size: 0.65rem !important;
-      border-radius: 5px !important;
-    }
-    .calc-side-meta, .calc-side-needs {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-top: 0.25rem;
-    }
-    .calc-players {
-      max-height: 340px;
-      overflow: auto;
-      margin-top: 0.4rem;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      background: var(--bg);
-    }
-    .calc-player-row, .calc-players label, .calc-players .player-row {
-      font-size: 0.78rem;
-    }
-    .calc-side-total-row {
-      margin-top: 0.4rem !important;
-      padding: 0.35rem 0 !important;
-      font-size: 0.75rem !important;
-    }
-    .calc-side-total-row strong {
-      font-size: 0.95rem !important;
-    }
-    .calc-impact-title {
-      margin-top: 0.75rem;
-    }
-    .calc-chain-hint {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      margin: 0 0 0.5rem;
-      min-height: 0;
-    }
-    .calc-illegal {
-      font-size: 0.75rem;
-      padding: 0.4rem 0.55rem;
-      border-radius: 6px;
-      margin-bottom: 0.5rem;
-    }
-    @media (max-width: 720px) {
-      .calc-toolbar .btn {
-        flex: 0 0 auto !important;
-        min-width: 0 !important;
-      }
-      .calc-btn-muted { margin-left: 0; }
-    }
-
-  
-    /* Trade calculator — restored clearer UI */
-    #panel-calc .calc-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    #panel-calc .fair-bar-wrap {
-      padding: 0.85rem 1rem;
-      margin: 0;
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-    }
-    #panel-calc .fair-bar-status {
-      font-size: 0.85rem;
-      font-weight: 650;
-      text-align: center;
-      margin-bottom: 0.4rem;
-    }
-    #panel-calc .calc-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-      align-items: center;
-    }
-    #panel-calc .calc-toolbar .btn {
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8rem;
-      min-height: 2.15rem;
-      border-radius: 6px;
-    }
-    #panel-calc .calc-btn-muted {
-      margin-left: auto;
-    }
-    #panel-calc .calc-sides {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.85rem;
-    }
-    #panel-calc .calc-side {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 0.75rem;
-    }
-    #panel-calc .calc-side-header {
-      margin-bottom: 0.5rem;
-      background: transparent;
-      border: none;
-      padding: 0;
-    }
-    #panel-calc .calc-team-select {
-      flex: 1;
-      padding: 0.4rem 0.5rem;
-      font-size: 0.85rem;
-    }
-    #panel-calc .calc-players {
-      max-height: 380px;
-      overflow: auto;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      background: var(--bg);
-      margin-top: 0.35rem;
-    }
-    #panel-calc .calc-player {
-      display: grid;
-      grid-template-columns: 1.1rem 2.2rem 1fr auto;
-      gap: 0.4rem;
-      align-items: center;
-      padding: 0.45rem 0.6rem;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
-    #panel-calc .calc-player:hover { background: var(--surface-2); }
-    #panel-calc .calc-player.selected { background: var(--accent-soft); }
-    #panel-calc .calc-player-pos {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: var(--text-muted);
-    }
-    #panel-calc .calc-player-name { font-weight: 550; color: var(--text); }
-    #panel-calc .calc-player-val {
-      font-variant-numeric: tabular-nums;
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      font-weight: 600;
-    }
-    #panel-calc .calc-side-total-row {
-      display: flex;
-      justify-content: space-between;
-      padding-top: 0.5rem;
-      margin-top: 0.45rem;
-      border-top: 1px solid var(--border-subtle);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    #panel-calc .calc-side-total-row strong {
-      color: var(--text);
-      font-size: 1rem;
-      font-variant-numeric: tabular-nums;
-    }
-    #panel-calc .calc-impact-card {
-      padding: 0.85rem 1rem;
-    }
-    @media (max-width: 800px) {
-      #panel-calc .calc-sides { grid-template-columns: 1fr; }
-      #panel-calc .calc-btn-muted { margin-left: 0; }
-    }
-
-    /* Light mode: kill leftover dark hardcodes */
-    [data-theme="light"] body {
-      background: var(--bg);
-      color: var(--text);
-    }
-    [data-theme="light"] .app-header {
-      background: var(--header-bg) !important;
-      border-color: var(--border-subtle);
-    }
-    [data-theme="light"] .calc-player:hover {
-      background: var(--surface-2) !important;
-    }
-    [data-theme="light"] .calc-player.selected {
-      background: var(--accent-soft) !important;
-    }
-    [data-theme="light"] .fp-power-table tr:hover td,
-    [data-theme="light"] .odds-table tr:hover td {
-      background: var(--surface-2);
-    }
-    [data-theme="light"] .status-pill {
-      background: var(--surface);
-      color: var(--text-secondary);
-    }
-    [data-theme="light"] .pr-share-card {
-      background: #fff !important;
-      color: var(--text) !important;
-      border-color: var(--border);
-    }
-    [data-theme="light"] .week-share-card .ws-score,
-    [data-theme="light"] .week-share-card .ws-odds,
-    [data-theme="light"] .week-share-card .ws-rec {
-      color: var(--text) !important;
-    }
-    [data-theme="light"] #panel-calc .calc-side-header,
-    [data-theme="light"] #panel-calc .calc-side-total-row {
-      background: var(--surface-2);
-    }
-    [data-theme="light"] .modal-card {
-      background: var(--surface);
-      color: var(--text);
-    }
-    [data-theme="light"] .btn {
-      background: var(--surface);
-      color: var(--text);
-      border-color: var(--border);
-    }
-    [data-theme="light"] .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    [data-theme="light"] .tabs {
-      border-color: var(--border-subtle);
-    }
-
-    @media (max-width: 800px) {
-      #panel-calc .calc-sides {
-        grid-template-columns: 1fr !important;
-      }
-      #panel-calc .calc-players {
-        max-height: 240px;
-      }
-      #panel-calc .calc-btn-muted {
-        margin-left: 0;
-      }
-    }
-
-  
-    .calc-outcome-gate {
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-    .calc-outcome-gate .calc-impact {
-      width: 100%;
-    }
-    .calc-impact-locked {
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 0.85rem 1rem 1rem;
-    }
-    .calc-lock-panel {
-      width: 100%;
-      padding: 1.5rem 1rem;
-      text-align: center;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      background: var(--bg);
-    }
-    .calc-lock-msg {
-      font-size: 0.95rem;
-      font-weight: 650;
-      margin-bottom: 0.3rem;
-    }
-    .calc-lock-sub {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 0.85rem;
-    }
-    .calc-paywall-row {
-      display: flex;
-      gap: 0.45rem;
-      align-items: center;
-      justify-content: center;
-      max-width: 360px;
-      margin: 0 auto;
-    }
-    .calc-paywall-row .home-input {
-      flex: 1;
-      margin: 0;
-      padding: 0.45rem 0.55rem;
-    }
-    .calc-paywall-err {
-      font-size: 0.72rem;
-      color: var(--bad);
-      margin-top: 0.45rem;
-    }
-    .calc-outcome-gate.is-unlocked .calc-impact-locked { display: none; }
-    .calc-outcome-gate.is-unlocked #calc-impact { display: block; }
-
-  
-    .fp-score-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.15rem;
-    }
-    .fp-delta {
-      font-size: 0.68rem;
-      font-weight: 650;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.01em;
-    }
-    .fp-delta.up { color: var(--good, #22c55e); }
-    .fp-delta.down { color: var(--bad, #ef4444); }
-    .fp-delta.flat { color: var(--text-muted); }
-    .fp-delta .rk {
-      margin-left: 0.25rem;
-      opacity: 0.9;
-    }
-
   </style>
 </head>
 <body>
@@ -3598,29 +2814,43 @@
       </div>
       <div class="header-actions">
         <span class="status-pill" id="status" title="Live load status: team count, players on the block, and current ESPN week">Loading…</span>
-        <button class="btn theme-toggle" id="themeBtn" type="button" title="Switch to light mode" aria-label="Switch to light mode">☀</button>
+        <button class="btn theme-toggle" id="themeBtn" type="button" title="Switch between dark and light theme" aria-label="Toggle theme">◐</button>
         <button class="btn btn-primary has-tip" id="refreshBtn" type="button" data-tip="Reload rosters, trade blocks, and FantasyCalc values from the live APIs." title="Reload rosters, trade blocks, and FantasyCalc values from the live APIs.">Refresh</button>
       </div>
     </div>
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-panel="home" type="button">Home</button>
-    <button class="tab" data-panel="power" type="button">Rankings</button>
-    <button class="tab" data-panel="calc" type="button">Trades</button>
-    <button class="tab" data-panel="odds" type="button">Odds</button>
+    <button class="tab active" data-panel="home" type="button" title="Choose or switch ESPN league">Home</button>
+    <button class="tab" data-panel="power" type="button" title="Rank teams by trade-value roster strength and PPG once games are scored">Power Rankings</button>
+    <button class="tab" data-panel="calc" type="button" title="Compare trade values and chain multi-step trades">Trade Calculator</button>
+    <button class="tab" data-panel="odds" type="button" title="Simulate the remaining schedule and estimate postseason odds">Playoff Odds</button>
+    <button class="tab" data-panel="matchup" type="button" title="This week matchup, win odds, and lineup advice">Matchup</button>
   </nav>
+
+  <!-- TRADE BOARD -->
+
+  <div class="panel" id="panel-matchup">
+    <div class="calc-wrap">
+      <p class="rankings-note">
+        Floor/ceiling use team variance (not every player busting together). Strategy tips follow the projected margin.
+      </p>
+      <div class="matchup-controls">
+        <label>Your team
+          <select id="matchup-team" class="calc-team-select"></select>
+        </label>
+        <span class="matchup-week-label" id="matchup-week-label"></span>
+      </div>
+      <div id="matchup-status" class="odds-status">Select Matchup to load this week.</div>
+      <div id="matchup-root"></div>
+    </div>
+  </div>
 
   <div class="panel" id="panel-odds">
     <div class="rankings-wrap">
-      <div class="pr-top">
-        <div>
-          <p class="rankings-note" style="margin:0">Projected records and playoff odds. Tap a team for week-by-week detail.</p>
-        </div>
-        <div class="pr-actions">
-          <button type="button" class="btn btn-primary" id="week-share-btn" title="Printable weekly summary card" onclick="try{openWeekShareCard()}catch(e){console.error(e);alert(e.message||e)}">Weekly card</button>
-        </div>
-      </div>
+      <p class="rankings-note">
+        Tap a team for weekly detail. SOS is remaining opponents’ avg proj PPG vs the league average (+ harder / red, − easier / green).
+      </p>
       <div class="odds-status" id="odds-status">Select Playoff Odds to load ESPN settings and run simulations.</div>
       <div class="odds-table-wrap">
         <table class="odds-table">
@@ -3646,7 +2876,7 @@
   <div class="panel active" id="panel-home">
     <div class="home-wrap">
       <h2 class="home-title">League Tools</h2>
-      <p class="home-sub">Load an ESPN or Sleeper league.</p>
+      <p class="home-sub">Connect an ESPN or Sleeper league for power rankings, trade calc, matchups, and playoff odds.</p>
       <div class="home-card">
         <div class="home-platform" id="home-platform">
           <button type="button" class="filter-btn active" data-platform="espn">ESPN</button>
@@ -3677,30 +2907,31 @@
       <div class="pr-top">
         <div>
           <h2 class="pr-title">Power rankings</h2>
-          <p class="pr-sub" id="pr-sub">Tap a team for detail</p>
+          <p class="pr-sub" id="pr-sub">Site model · tap a row for detail</p>
         </div>
         <div class="pr-actions">
           <button type="button" class="btn" id="pr-sources-btn" title="Add rankings from other sites">Sources</button>
           <button type="button" class="btn btn-primary" id="pr-share-btn" title="Open shareable ranking card">Share card</button>
         </div>
       </div>
+      <div class="power-mode-row" id="power-mode-row">
+        <button type="button" class="filter-btn active" data-power-mode="site">This site</button>
+        <button type="button" class="filter-btn" data-power-mode="hybrid">Hybrid avg</button>
+      </div>
       <div class="power-filters" id="power-filters">
-        <div class="power-filter-group" id="power-mode-row">
-          <span class="power-filter-label">Mode</span>
-          <button type="button" class="filter-btn active" data-power-mode="site">Site</button>
-          <button type="button" class="filter-btn" data-power-mode="hybrid">Hybrid</button>
-        </div>
         <div class="power-filter-group">
           <span class="power-filter-label">Sort</span>
           <button type="button" class="filter-btn active" data-power-sort="overall">Overall</button>
-          <button type="button" class="filter-btn" data-power-sort="proj">PPG</button>
+          <button type="button" class="filter-btn" data-power-sort="proj">Proj</button>
           <button type="button" class="filter-btn" data-power-sort="QB">QB</button>
           <button type="button" class="filter-btn" data-power-sort="RB">RB</button>
           <button type="button" class="filter-btn" data-power-sort="WR">WR</button>
           <button type="button" class="filter-btn" data-power-sort="TE">TE</button>
+          <button type="button" class="filter-btn" data-power-sort="depth">Depth</button>
+          <button type="button" class="filter-btn" data-power-sort="market">Market</button>
         </div>
         <div class="power-filter-group">
-          <span class="power-filter-label">Need</span>
+          <span class="power-filter-label">Needs</span>
           <button type="button" class="filter-btn active" data-power-need="all">All</button>
           <button type="button" class="filter-btn" data-power-need="QB">QB</button>
           <button type="button" class="filter-btn" data-power-need="RB">RB</button>
@@ -3744,7 +2975,6 @@
         <div id="pr-share-card" class="pr-share-card"></div>
       </div>
     </div>
-
   </div>
 
   <div class="panel" id="panel-calc">
@@ -3763,11 +2993,13 @@
       </div>
 
       <div class="calc-toolbar">
-        <button type="button" class="btn btn-primary" id="calc-suggest-open" title="Browse suggested fair trades">Suggest</button>
+        <button type="button" class="btn btn-primary" id="calc-apply" title="Apply this trade to the chain">Apply</button>
+        <button type="button" class="btn" id="calc-suggest-open" title="Browse suggested fair trades">Suggest</button>
         <button type="button" class="btn" id="calc-complete" title="Auto-fill a fair package">Auto-fill</button>
-        <button type="button" class="btn" id="calc-share" title="Copy shareable link">Copy link</button>
+        <button type="button" class="btn" id="calc-share" title="Copy shareable link">Share</button>
         <button type="button" class="btn calc-btn-muted" id="calc-clear" title="Clear selection">Clear</button>
       </div>
+      <div id="calc-chain-hint" class="calc-chain-hint"></div>
 
       <div class="modal-backdrop" id="suggest-modal" hidden>
         <div class="modal-card" role="dialog" aria-label="Suggested trades">
@@ -3842,6 +3074,11 @@
       </div>
       <div class="calc-illegal" id="calc-illegal" hidden></div>
 
+      <div class="calc-chain" id="calc-chain" hidden>
+        <div class="calc-chain-title">Trade chain</div>
+        <ol class="calc-chain-list" id="calc-chain-list"></ol>
+      </div>
+
       <div class="calc-sides">
         <div class="calc-side" id="calc-side-a">
           <div class="calc-side-header">
@@ -3877,75 +3114,34 @@
         </div>
       </div>
 
-      <div class="calc-outcome-gate" id="calc-outcome-gate">
-        <div class="calc-impact calc-impact-locked" id="calc-outcome-paywall">
-          <div class="calc-impact-title">Outcome</div>
-          <div class="calc-lock-panel">
-            <div class="calc-lock-msg">This feature is locked</div>
-            <div class="calc-lock-sub">Enter the access code to view trade outcomes for both teams.</div>
-            <div class="calc-paywall-row">
-              <input type="password" id="calc-outcome-pw" class="home-input" placeholder="Access code" autocomplete="off" />
-              <button type="button" class="btn btn-primary" id="calc-outcome-unlock">Unlock</button>
-            </div>
-            <div class="calc-paywall-err" id="calc-outcome-pw-err" hidden>Invalid code</div>
-          </div>
-        </div>
-        <div class="calc-impact" id="calc-impact" hidden>
-          <div class="calc-impact-title">Outcome</div>
-          <div class="calc-impact-grid calc-impact-simple" id="calc-impact-grid"></div>
-        </div>
+      <div class="calc-impact" id="calc-impact">
+        <div class="calc-impact-title">Outcome</div>
+        <div class="calc-impact-grid calc-impact-simple" id="calc-impact-grid"></div>
       </div>
     </div>
   </div>
 
 
 
-  
-    <div class="modal-backdrop" id="week-share-modal" hidden>
-      <div class="modal-card pr-share-modal" role="dialog" aria-label="Weekly summary card">
-        <div class="modal-header">
-          <strong>Weekly summary</strong>
-          <button type="button" class="btn" id="week-share-close">Close</button>
-        </div>
-        <div class="pr-share-toolbar">
-          <label class="pr-share-label">Week
-            <input type="number" id="week-share-week" class="home-input" min="1" max="18" />
-          </label>
-          <button type="button" class="btn" id="week-share-refresh">Refresh</button>
-          <button type="button" class="btn btn-primary" id="week-share-print">Print / Save PDF</button>
-        </div>
-        <div id="week-share-card" class="pr-share-card week-share-card"></div>
-      </div>
-    </div>
-
   <script>
-
-    function applyTheme(theme) {
-      const t = theme === "light" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", t);
-      document.documentElement.style.colorScheme = t;
-      try { localStorage.setItem("leagueToolsTheme", t); } catch (e) {}
-      const tb = document.getElementById("themeBtn");
-      if (tb) {
-        // Icon only: shows current mode (sun = light active, moon = dark active)
-        tb.textContent = t === "light" ? "☾" : "☀";
-        tb.setAttribute("aria-label", t === "light" ? "Switch to dark mode" : "Switch to light mode");
-        tb.title = tb.getAttribute("aria-label");
-      }
-    }
 
     (function initTheme() {
       try {
         const saved = localStorage.getItem("leagueToolsTheme");
-        applyTheme(saved === "light" || saved === "dark" ? saved : "dark");
+        const theme = saved === "light" || saved === "dark" ? saved : "dark";
+        document.documentElement.setAttribute("data-theme", theme);
       } catch (e) {
-        applyTheme("dark");
+        document.documentElement.setAttribute("data-theme", "dark");
       }
     })();
 
     function toggleTheme() {
-      const cur = document.documentElement.getAttribute("data-theme") || "dark";
-      applyTheme(cur === "light" ? "dark" : "light");
+      try {
+        const cur = document.documentElement.getAttribute("data-theme") || "dark";
+        const next = cur === "light" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem("leagueToolsTheme", next); } catch (e) {}
+      } catch (e) {}
     }
 
     let LEAGUE_ID = "2039212076";
@@ -4032,8 +3228,6 @@
     let waiverSort = "value";
     let waiverLoaded = false;
     let playoffOddsLoaded = false;
-    let lastPlayoffSimulation = null;
-
 
     async function fetchWaiverPool() {
       const status = document.getElementById("waiver-status");
@@ -4459,7 +3653,6 @@
       SEASON = seasonNum;
       refreshApiUrls();
       playoffOddsLoaded = false;
-      lastPlayoffSimulation = null;
       historyLoaded = false;
       leagueData = null;
       updateHeaderMeta();
@@ -4715,14 +3908,10 @@
 
     async function fetchLeague() {
       const statusEl = document.getElementById("status");
-      if (statusEl) {
-        statusEl.textContent = "Loading…";
-        statusEl.classList.remove("error");
-      }
+      statusEl.textContent = "Loading…";
+      statusEl.classList.remove("error");
       try {
         playoffOddsLoaded = false;
-        lastPlayoffSimulation = null;
-        refreshApiUrls();
         fcByEspnId = {};
         fcByName = {};
         try {
@@ -4733,68 +3922,52 @@
         }
 
         if (PLATFORM === "sleeper") {
-          if (statusEl) statusEl.textContent = "Loading Sleeper league…";
+          statusEl.textContent = "Loading Sleeper league…";
           leagueData = await fetchSleeperLeagueData(LEAGUE_ID);
+          // Bye weeks from Sleeper player dump
           byeByProTeam = {};
           try {
             await applySleeperProjectionProxies(leagueData);
           } catch (e) { console.warn(e); }
         } else {
-          if (statusEl) statusEl.textContent = "Loading ESPN league…";
           const espnRes = await fetchWithTimeout(
             API_URL,
             { credentials: "omit", headers: { Accept: "application/json" } },
-            25000
+            20000
           );
           if (!espnRes.ok) throw new Error("ESPN HTTP " + espnRes.status);
           leagueData = await espnRes.json();
-          if (!leagueData || !Array.isArray(leagueData.teams)) {
-            throw new Error("ESPN returned no teams (private league or bad ID)");
-          }
-          // Ensure members array exists for downstream code
-          if (!leagueData.members) leagueData.members = [];
-          try { await fetchByeWeeks(); } catch (e) { console.warn(e); }
-          // Projections: don't block UI forever — race with timeout
+          await fetchByeWeeks();
           try {
-            await Promise.race([
-              enrichEspnProjections(leagueData),
-              new Promise((_, rej) => setTimeout(() => rej(new Error("projection timeout")), 28000))
-            ]);
+            await enrichEspnProjections(leagueData);
           } catch (projErr) {
-            console.warn("ESPN projection enrich failed/timed out", projErr);
+            console.warn("ESPN projection enrich failed", projErr);
           }
         }
 
-        if (!leagueData || !leagueData.teams) throw new Error("No league data");
         const counts = countStatuses(leagueData);
-        if (statusEl) {
-          statusEl.textContent =
-            leagueData.teams.length + " teams · " +
-            counts.definitely + " on block · Week " +
-            (leagueData.scoringPeriodId || "—") +
-            " · " + (PLATFORM === "sleeper" ? "Sleeper" : valueSourceLabel);
-        }
+        statusEl.textContent =
+          leagueData.teams.length + " teams · " +
+          counts.definitely + " on block · Week " +
+          (leagueData.scoringPeriodId || "—") +
+          " · " + (PLATFORM === "sleeper" ? "Sleeper" : valueSourceLabel);
 
         try {
           renderAll(leagueData);
-          try { fillWaiverTeamSelect(); } catch (e) {}
+          fillWaiverTeamSelect();
           const name = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
           saveLeagueEntry(LEAGUE_ID, SEASON, name, PLATFORM);
           updateHeaderMeta();
           renderHomeScreen();
         } catch (renderErr) {
           console.error(renderErr);
-          if (statusEl) {
-            statusEl.textContent = "Data loaded but display failed (see console)";
-            statusEl.classList.add("error");
-          }
+          statusEl.textContent = "Data loaded but display failed (see console)";
+          statusEl.classList.add("error");
         }
       } catch (err) {
         console.error(err);
-        if (statusEl) {
-          statusEl.textContent = "Failed to load: " + (err.message || "check league ID / platform");
-          statusEl.classList.add("error");
-        }
+        statusEl.textContent = "Failed to load: " + (err.message || "check league ID / platform");
+        statusEl.classList.add("error");
       }
     }
 
@@ -4980,125 +4153,62 @@
      * mMatchup rosterForCurrentScoringPeriod includes appliedTotalCeiling + variance,
      * which plain mRoster often omits.
      */
-    /**
-     * Fetch ESPN projections for many scoring periods so each week has its own player μ.
-     * Stores player._projByWeek[w] = { proj, ceil, floor } and sets current-week _projEnrich.
-     */
     async function enrichEspnProjections(data) {
-      const current = Number(data.scoringPeriodId || 1) || 1;
-      // Current + next few weeks only (reliable load). Synthetic variation fills other weeks.
-      const weeks = [];
-      const start = Math.max(1, current);
-      const end = Math.min(18, current + 5);
-      for (let w = start; w <= end; w++) weeks.push(w);
-      if (current > 1) weeks.unshift(Math.max(1, current - 1));
+      const week = data.scoringPeriodId || 1;
+      const url = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mMatchup&view=mRoster&scoringPeriodId=${week}`;
+      const res = await fetchWithTimeout(url, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+      if (!res.ok) throw new Error("projection HTTP " + res.status);
+      const matchupData = await res.json();
+      const byId = {};
 
-      const byPlayerWeek = {}; // id -> { week: {proj,ceil,floor,variance} }
-      const latestById = {};
+      function ingestEntry(entry) {
+        const ppe = entry.playerPoolEntry || {};
+        const player = ppe.player;
+        if (!player || player.id == null) return;
+        const id = String(player.id);
+        const weekly = readWeeklyProjStat(player.stats);
+        if (!weekly) return;
+        const prev = byId[id];
+        if (prev && prev.scoringPeriodId > weekly.scoringPeriodId) return;
+        byId[id] = {
+          scoringPeriodId: weekly.scoringPeriodId,
+          appliedTotal: weekly.appliedTotal || 0,
+          appliedTotalCeiling: weekly.appliedTotalCeiling,
+          variance: weekly.variance || null,
+          stats: player.stats
+        };
+      }
 
-      async function fetchWeek(week) {
-        const url =
-          "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/" +
-          SEASON + "/segments/0/leagues/" + LEAGUE_ID +
-          "?view=mMatchup&view=mRoster&scoringPeriodId=" + week;
-        const res = await fetchWithTimeout(
-          url,
-          { credentials: "omit", headers: { Accept: "application/json" } },
-          18000
-        );
-        if (!res.ok) return;
-        const matchupData = await res.json();
-
-        function ingestEntry(entry) {
-          const player = (entry.playerPoolEntry || {}).player;
-          if (!player || player.id == null) return;
-          const id = String(player.id);
-          // Prefer stats for THIS scoring period
-          let weekly = null;
-          for (const s of player.stats || []) {
-            if (s.statSourceId === 1 && s.statSplitTypeId === 1 && Number(s.scoringPeriodId) === Number(week)) {
-              weekly = s;
-              break;
-            }
-          }
-          if (!weekly) weekly = readWeeklyProjStat(player.stats);
-          if (!weekly || weekly.appliedTotal == null) return;
-          const proj = Number(weekly.appliedTotal) || 0;
-          let ceil = weekly.appliedTotalCeiling != null ? Number(weekly.appliedTotalCeiling) : null;
-          let floor = null;
-          if (ceil != null && ceil > proj) {
-            floor = Math.max(0, 2 * proj - ceil);
-          }
-          if (!byPlayerWeek[id]) byPlayerWeek[id] = {};
-          byPlayerWeek[id][week] = {
-            proj,
-            ceil: ceil != null ? ceil : proj * 1.28,
-            floor: floor != null ? floor : proj * 0.72,
-            variance: weekly.variance || null
-          };
-          if (!latestById[id] || Number(week) >= Number(latestById[id].week)) {
-            latestById[id] = {
-              week,
-              appliedTotal: proj,
-              appliedTotalCeiling: ceil,
-              variance: weekly.variance || null,
-              stats: player.stats
-            };
-          }
-        }
-
-        for (const team of matchupData.teams || []) {
-          for (const entry of team.roster?.entries || []) ingestEntry(entry);
-        }
-        for (const game of matchupData.schedule || []) {
-          for (const side of ["home", "away"]) {
-            const block = game[side];
-            if (!block) continue;
-            if (Number(game.matchupPeriodId || game.scoringPeriodId || 0) !== Number(week) &&
-                game.matchupPeriodId != null && Number(game.matchupPeriodId) !== Number(week)) {
-              // still ingest roster blocks when present for this response week
-            }
-            const roster = block.rosterForCurrentScoringPeriod || block.rosterForMatchupPeriod || {};
-            for (const entry of roster.entries || []) ingestEntry(entry);
-          }
+      for (const team of matchupData.teams || []) {
+        for (const entry of team.roster?.entries || []) ingestEntry(entry);
+      }
+      for (const game of matchupData.schedule || []) {
+        for (const side of ["home", "away"]) {
+          const block = game[side];
+          if (!block) continue;
+          const roster = block.rosterForCurrentScoringPeriod || block.rosterForMatchupPeriod || {};
+          for (const entry of roster.entries || []) ingestEntry(entry);
         }
       }
 
-      // Parallel in small batches to avoid hammering ESPN
-      const batchSize = 4;
-      for (let i = 0; i < weeks.length; i += batchSize) {
-        const batch = weeks.slice(i, i + batchSize);
-        await Promise.all(batch.map((w) => fetchWeek(w).catch((e) => console.warn("proj week " + w, e))));
-      }
-
-      let count = 0;
+      // Merge richer stats onto leagueData roster players
       for (const team of data.teams || []) {
         for (const entry of team.roster?.entries || []) {
           const player = entry.playerPoolEntry && entry.playerPoolEntry.player;
           if (!player) continue;
-          const id = String(player.id);
-          const map = byPlayerWeek[id];
-          if (map && Object.keys(map).length) {
-            player._projByWeek = map;
-            count++;
-          }
-          const enriched = latestById[id];
-          if (enriched) {
-            player.stats = enriched.stats || player.stats;
-            player._projEnrich = {
-              appliedTotal: enriched.appliedTotal,
-              appliedTotalCeiling: enriched.appliedTotalCeiling,
-              variance: enriched.variance,
-              scoringPeriodId: enriched.week
-            };
-          }
+          const enriched = byId[String(player.id)];
+          if (!enriched) continue;
+          player.stats = enriched.stats || player.stats;
+          player._projEnrich = {
+            appliedTotal: enriched.appliedTotal,
+            appliedTotalCeiling: enriched.appliedTotalCeiling,
+            variance: enriched.variance,
+            scoringPeriodId: enriched.scoringPeriodId
+          };
         }
       }
       data._projEnriched = true;
-      data._projByWeek = true;
-      data._projCount = count;
-      data._projWeeks = weeks;
-      console.info("Weekly projections loaded for weeks", weeks.join(","), "·", count, "players with curves");
+      data._projCount = Object.keys(byId).length;
     }
 
     /**
@@ -5184,44 +4294,7 @@
       };
     }
 
-
-    /** Fill / repair weekly proj from FantasyCalc when ESPN proj is missing or absurdly low for the value. */
-    function ensureEntryProjection(entry) {
-      if (!entry) return entry;
-      const pos = entry.pos || "WR";
-      const base = { QB: 17.5, RB: 11.5, WR: 10.8, TE: 7.8, K: 7, "D/ST": 7 }[pos] || 9;
-      const val = Number(entry.val) || 0;
-      const rank = entry.rank != null ? Number(entry.rank) : null;
-      let proj = Number(entry.proj) || 0;
-
-      let fromFc = base * 0.55;
-      if (rank != null && rank > 0) {
-        fromFc = base * Math.max(0.42, Math.min(1.35, 1.22 - rank / 200));
-      } else if (val > 0) {
-        fromFc = base * (0.48 + Math.min(0.85, val / 4200));
-      }
-
-      if (proj < 1.5) {
-        proj = fromFc;
-      } else if (val >= 1800 && proj < fromFc * 0.55) {
-        proj = 0.25 * proj + 0.75 * fromFc;
-      } else if (val >= 900 && proj < fromFc * 0.4) {
-        proj = 0.4 * proj + 0.6 * fromFc;
-      }
-
-      entry.proj = proj;
-      if (!(Number(entry.projCeil) > proj)) entry.projCeil = proj * 1.28;
-      if (!(Number(entry.projFloor) > 0) || entry.projFloor > proj) entry.projFloor = proj * 0.72;
-      return entry;
-    }
-
-    function ensureEntriesProjections(entries) {
-      (entries || []).forEach(ensureEntryProjection);
-      return entries;
-    }
-
     function buildTeamModels(data) {
-      if (!data) return [];
       const members = data.members || [];
       const scoringPeriod = data.scoringPeriodId || 1;
 
@@ -5256,16 +4329,8 @@
             proj: proj.proj,
             projCeil: proj.ceil,
             projFloor: proj.floor,
-            seasonAvg: proj.seasonAvg,
-            projByWeek: player._projByWeek ? Object.assign({}, player._projByWeek) : null
+            seasonAvg: proj.seasonAvg
           };
-          ensureEntryProjection(row);
-          // Fill missing weeks from baseline so curve always varies / uses real data when present
-          if (!row.projByWeek) row.projByWeek = {};
-          for (let ww = 1; ww <= 18; ww++) {
-            if (row.projByWeek[ww]) continue;
-            // leave empty — entryFieldForWeek synthesizes from baseline when absent
-          }
           entries.push(row);
           if (byPos[pos]) byPos[pos].push(row);
         }
@@ -5331,39 +4396,6 @@
      * Optimal lineup for a specific NFL week: players on bye that week are unavailable.
      * field: "proj" | "projCeil" | "projFloor" | "val"
      */
-    /** Per-week player points for lineup engine (true weekly curve, not flat season avg). */
-    function entryFieldForWeek(entry, field, week) {
-      if (!entry) return 0;
-      const w = Number(week);
-      if (field === "val") return Number(entry.val) || 0;
-
-      const by = entry.projByWeek;
-      if (by && by[w]) {
-        if (field === "proj") return Number(by[w].proj) || 0;
-        if (field === "projCeil") return Number(by[w].ceil != null ? by[w].ceil : by[w].proj) || 0;
-        if (field === "projFloor") return Number(by[w].floor != null ? by[w].floor : by[w].proj) || 0;
-      }
-
-      // Synthetic week variation when ESPN only gave a single baseline (bye already handled upstream)
-      let base = Number(entry[field]) || 0;
-      if (field === "proj" || field === "projCeil" || field === "projFloor") {
-        if (!(base > 0) && entry.proj) base = Number(entry.proj) || 0;
-        if (field === "projCeil" && !(base > 0)) base = (Number(entry.proj) || 0) * 1.28;
-        if (field === "projFloor" && !(base > 0)) base = (Number(entry.proj) || 0) * 0.72;
-        if (base > 0 && !(by && by[w])) {
-          // Deterministic jitter so weeks differ without inventing random luck each refresh
-          const idNum = parseInt(String(entry.id).replace(/\D/g, "").slice(-6), 10) || 7;
-          const wave = Math.sin((idNum * 0.37) + w * 1.17) * 0.07
-            + Math.sin((idNum * 0.11) + w * 0.53) * 0.05;
-          const mult = 1 + wave;
-          if (field === "proj") return base * mult;
-          if (field === "projCeil") return base * mult * 1.02;
-          if (field === "projFloor") return base * mult * 0.98;
-        }
-      }
-      return base;
-    }
-
     function optimalLineupTotalForWeek(entryList, field, week) {
       const remaining = (entryList || [])
         .filter((entry) => {
@@ -5372,8 +4404,8 @@
           if (bye != null && Number(bye) === Number(week)) return false;
           return true;
         })
-        .map((entry) => Object.assign({}, entry, { _weekPts: entryFieldForWeek(entry, field, week) }))
-        .sort((a, b) => (b._weekPts || 0) - (a._weekPts || 0));
+        .slice()
+        .sort((a, b) => (b[field] || 0) - (a[field] || 0));
       const takePosition = (pos, count) => {
         const picked = remaining.filter((entry) => entry.pos === pos).slice(0, count);
         picked.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
@@ -5390,7 +4422,7 @@
           remaining.splice(remaining.indexOf(e), 1);
         });
       if (remaining.length) used.push(remaining[0]);
-      const total = used.reduce((s, e) => s + (e._weekPts || 0), 0);
+      const total = used.reduce((s, e) => s + (e[field] || 0), 0);
       return { total, used, count: used.length };
     }
 
@@ -5437,25 +4469,15 @@
         weeklyCeil.push(ce.total);
       }
 
-      const mean = (arr) => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
-      // Remaining-season focus when we know current week (future weeks matter more for odds/SOS)
-      const curWeek = (typeof leagueData !== "undefined" && leagueData && leagueData.scoringPeriodId)
-        ? Number(leagueData.scoringPeriodId) : 1;
-      const remainingIdx = [];
-      for (let i = 0; i < weeklyExp.length; i++) {
-        if ((i + 1) >= curWeek) remainingIdx.push(i);
-      }
-      const focusExp = remainingIdx.length ? remainingIdx.map((i) => weeklyExp[i]) : weeklyExp;
-      const focusFloor = remainingIdx.length ? remainingIdx.map((i) => weeklyFloor[i]) : weeklyFloor;
-      const focusCeil = remainingIdx.length ? remainingIdx.map((i) => weeklyCeil[i]) : weeklyCeil;
-      const sorted = focusExp.slice().sort((a, b) => a - b);
+      const mean = (arr) => arr.reduce((s, x) => s + x, 0) / Math.max(arr.length, 1);
+      const sorted = weeklyExp.slice().sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
-      const medianExp = sorted.length % 2 ? sorted[mid] : (sorted.length ? (sorted[mid - 1] + sorted[mid]) / 2 : 0);
-      const meanExp = mean(focusExp);
-      const worstExp = focusExp.length ? Math.min(...focusExp) : 0;
-      const bestExp = focusExp.length ? Math.max(...focusExp) : 0;
-      const meanFloor = mean(focusFloor);
-      const meanCeil = mean(focusCeil);
+      const medianExp = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      const meanExp = mean(weeklyExp);
+      const worstExp = Math.min(...weeklyExp);
+      const bestExp = Math.max(...weeklyExp);
+      const meanFloor = mean(weeklyFloor);
+      const meanCeil = mean(weeklyCeil);
       // sample SD of weekly means
       let variance = 0;
       weeklyExp.forEach((x) => { variance += (x - meanExp) * (x - meanExp); });
@@ -5829,7 +4851,7 @@
             (w.consistency || 0) * m.consistencyScore
           ) / secondaryW;
         // 78% core / 22% secondary → bench-only moves barely move the needle
-        m.rawPower = 0.86 * core + 0.14 * secondary;
+        m.rawPower = 0.78 * core + 0.22 * secondary;
 
         m.weights = w;
         m.projShare = w.starter;
@@ -5900,31 +4922,11 @@
     let calcSelected = { a: new Set(), b: new Set(), dropA: new Set(), dropB: new Set() };
 
 
-    /** Absolute roster strength for trade impact (comparable before vs after). */
-    function absoluteRosterStrength(m) {
-      const exp = Number(m.expectedPts) || 0;
-      const starter = Number(m.starterValue) || 0;
-      const roster = Number(m.rosterValue) || 0;
-      // FC scale: ~2000 value ≈ 5–6 PPG impact so AJB→Egbuka clearly hurts
-      const starterPts = starter / 380;
-      const rosterPts = roster / 1100;
-      return 0.50 * exp + 0.40 * starterPts + 0.10 * rosterPts;
-    }
-
     function computeRankMaps(models) {
       const scored = finalizePowerScores(models);
-      // Prefer absolute strength order so big FC/proj losses cannot "rank up"
-      const byPower = scored.slice().sort((a, b) => {
-        const sa = absoluteRosterStrength(a);
-        const sb = absoluteRosterStrength(b);
-        if (Math.abs(sb - sa) > 0.15) return sb - sa;
-        return (b.rawPower || b.totalScore || 0) - (a.rawPower || a.totalScore || 0);
-      });
+      const byPower = scored.slice().sort((a, b) => (b.rawPower || b.totalScore || 0) - (a.rawPower || a.totalScore || 0));
       const powerRank = {};
-      byPower.forEach((t, i) => {
-        powerRank[t.id] = i + 1;
-        t.absoluteStrength = absoluteRosterStrength(t);
-      });
+      byPower.forEach((t, i) => { powerRank[t.id] = i + 1; });
       const posRank = {};
       for (const pos of POSITIONS) {
         const order = scored.slice().sort((a, b) => (b.posScores[pos] || 0) - (a.posScores[pos] || 0));
@@ -6024,43 +5026,6 @@
       return "";
     }
 
-
-    const OUTCOME_PW = "17ja17";
-    function isOutcomeUnlocked() {
-      try { return localStorage.getItem("leagueToolsOutcomeUnlock") === "1"; } catch (e) { return false; }
-    }
-    function setOutcomeUnlocked(on) {
-      try { localStorage.setItem("leagueToolsOutcomeUnlock", on ? "1" : "0"); } catch (e) {}
-      const gate = document.getElementById("calc-outcome-gate");
-      const impact = document.getElementById("calc-impact");
-      const wall = document.getElementById("calc-outcome-paywall");
-      if (gate) gate.classList.toggle("is-unlocked", !!on);
-      if (impact) impact.hidden = !on;
-      if (wall) wall.hidden = !!on;
-    }
-    function setupOutcomePaywall() {
-      setOutcomeUnlocked(isOutcomeUnlocked());
-      const btn = document.getElementById("calc-outcome-unlock");
-      const input = document.getElementById("calc-outcome-pw");
-      const err = document.getElementById("calc-outcome-pw-err");
-      function tryUnlock() {
-        const v = (input && input.value || "").trim();
-        if (v === OUTCOME_PW) {
-          if (err) err.hidden = true;
-          setOutcomeUnlocked(true);
-          if (typeof updateCalcTotals === "function") {
-            try { /* impact refreshes on next selection */ } catch (e) {}
-          }
-        } else {
-          if (err) err.hidden = false;
-        }
-      }
-      if (btn) btn.onclick = tryUnlock;
-      if (input) input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") tryUnlock();
-      });
-    }
-
     function setupTradeCalculator(data) {
       const members = data.members || [];
       const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
@@ -6145,7 +5110,7 @@
       function modelsFromRosters(rosterMap) {
         return baseModels.map((m) => {
           const tid = String(m.id);
-          const entries = (rosterMap[tid] || []).map((e) => ensureEntryProjection(Object.assign({}, e)));
+          const entries = (rosterMap[tid] || []).map((e) => Object.assign({}, e));
           const byPos = {};
           POSITIONS.forEach((p) => (byPos[p] = []));
           let rosterValue = 0;
@@ -6315,7 +5280,30 @@
         return list;
       }
 
-      function renderChain() { /* chain removed */ }
+      function renderChain() {
+        const box = document.getElementById("calc-chain");
+        const list = document.getElementById("calc-chain-list");
+        const hint = document.getElementById("calc-chain-hint");
+        if (!chainSteps.length) {
+          box.hidden = true;
+          list.innerHTML = "";
+          if (hint) hint.textContent = "";
+          return;
+        }
+        box.hidden = false;
+        list.innerHTML = chainSteps.map((s, i) => {
+          const aNames = s.giveANames.join(", ") || "—";
+          const bNames = s.giveBNames.join(", ") || "—";
+          let extra = "";
+          if (s.dropANames && s.dropANames.length) extra += " · " + escapeHtml(s.teamAName) + " drops " + escapeHtml(s.dropANames.join(", "));
+          if (s.dropBNames && s.dropBNames.length) extra += " · " + escapeHtml(s.teamBName) + " drops " + escapeHtml(s.dropBNames.join(", "));
+          return "<li><strong>" + (i + 1) + ".</strong> " +
+            escapeHtml(s.teamAName) + " sends " + escapeHtml(aNames) +
+            " ↔ " + escapeHtml(s.teamBName) + " sends " + escapeHtml(bNames) +
+            extra + "</li>";
+        }).join("");
+        if (hint) hint.textContent = chainSteps.length + " trade" + (chainSteps.length === 1 ? "" : "s") + " in chain";
+      }
 
       function renderSide(side) {
         const sel = document.getElementById("calc-team-" + side);
@@ -6447,7 +5435,7 @@
         const needB = renderDrops("b");
         const legal = rosterLegal();
         const illegalEl = document.getElementById("calc-illegal");
-        const applyBtn = null;
+        const applyBtn = document.getElementById("calc-apply");
         if (!legal.legal && (needA > 0 || needB > 0 || calcSelected.a.size || calcSelected.b.size)) {
           let msg = [];
           if (!legal.okA) msg.push("A must drop " + legal.needA);
@@ -6471,10 +5459,10 @@
         const teamAId = selA.value;
         const teamBId = selB.value;
         const hasPicks = calcSelected.a.size > 0 || calcSelected.b.size > 0;
-        const hasChain = false;
+        const hasChain = chainSteps.length > 0;
 
-        if (!hasPicks) {
-          grid.innerHTML = '<div class="calc-impact-empty">Select players to see who benefits.</div>';
+        if (!hasPicks && !hasChain) {
+          grid.innerHTML = '<div class="calc-impact-empty">Pick players on both sides to see rank and projection changes.</div>';
           return;
         }
 
@@ -6489,6 +5477,10 @@
         const afterRanks = computeRankMaps(modelsFromRosters(pendingMap));
 
         const involved = new Set();
+        for (const s of chainSteps) {
+          involved.add(String(s.teamAId));
+          involved.add(String(s.teamBId));
+        }
         if (hasPicks) {
           involved.add(String(teamAId));
           involved.add(String(teamBId));
@@ -6521,7 +5513,7 @@
           const afterTeam = teamObj(afterRanks, teamId);
           const rankBefore = pr(originalRanks.powerRank, teamId);
           const rankAfter = pr(afterRanks.powerRank, teamId);
-          let power = formatRankDelta(rankBefore, rankAfter);
+          const power = formatRankDelta(rankBefore, rankAfter);
 
           // Absolute metrics only (relative rawPower is not comparable across two finalize() runs)
           const projCh = projDelta(beforeTeam.expectedPts, afterTeam.expectedPts);
@@ -6532,18 +5524,6 @@
           const valCls = valD > 25 ? "up" : valD < -25 ? "down" : "same";
           const valText = (valAfter != null ? Math.round(valAfter).toLocaleString() : "—") +
             (valD ? " (" + (valD > 0 ? "+" : "") + valD.toLocaleString() + ")" : "");
-
-          // Guardrail: clear roster downgrade cannot show as power-rank improvement
-          const strengthBefore = absoluteRosterStrength(beforeTeam);
-          const strengthAfter = absoluteRosterStrength(afterTeam);
-          const strengthD = Math.round((strengthAfter - strengthBefore) * 10) / 10;
-          if (power.d > 0 && (valD < -80 || (projCh.d < -0.5 && valD < 0))) {
-            // Never show rank "up" on a clear roster downgrade
-            const forcedAfter = (rankBefore != null) ? rankBefore + Math.max(1, Math.round(Math.abs(valD) / 800)) : rankAfter;
-            power = formatRankDelta(rankBefore, forcedAfter);
-            power.cls = "down";
-            power.d = Math.min(-1, power.d);
-          }
 
           const beforeNs = needsSurplusForTeam(originalRanks.posRank, teamId, teams.length || 10, beforeTeam);
           const afterNs = needsSurplusForTeam(afterRanks.posRank, teamId, teams.length || 10, afterTeam);
@@ -6562,22 +5542,21 @@
             );
           }
 
-          // Benefit score — less sensitive. Positional upgrades can offset moderate value loss.
+          // Benefit score for this team (not the same as "fair value")
           let fitPts = 0;
           const reasons = [];
-          if (projCh.d > 1.0) { fitPts += 3; reasons.push("starters +" + projCh.d.toFixed(1) + " PPG"); }
-          else if (projCh.d > 0.4) { fitPts += 2; reasons.push("starters +" + projCh.d.toFixed(1) + " PPG"); }
-          else if (projCh.d > 0.15) { fitPts += 1; reasons.push("slight starter bump"); }
-          else if (projCh.d < -1.0) { fitPts -= 3; reasons.push("starters " + projCh.d.toFixed(1) + " PPG"); }
-          else if (projCh.d < -0.4) { fitPts -= 2; reasons.push("starters " + projCh.d.toFixed(1) + " PPG"); }
-          else if (projCh.d < -0.15) { fitPts -= 1; reasons.push("slight starter drop"); }
+          if (projCh.d > 1.2) { fitPts += 3; reasons.push("starters score +" + projCh.d.toFixed(1) + " PPG"); }
+          else if (projCh.d > 0.4) { fitPts += 1; reasons.push("slight starter bump"); }
+          else if (projCh.d < -1.2) { fitPts -= 3; reasons.push("starters score " + projCh.d.toFixed(1) + " PPG"); }
+          else if (projCh.d < -0.4) { fitPts -= 1; reasons.push("slight starter drop"); }
 
-          // Power rank is noisy/zero-sum — ignore ±1
-          if (power.d >= 3) { fitPts += 1; reasons.push("power rank up"); }
-          else if (power.d <= -3) { fitPts -= 1; reasons.push("power rank down"); }
+          if (power.d >= 2) { fitPts += 2; reasons.push("power rank jumps"); }
+          else if (power.d === 1) { fitPts += 1; reasons.push("power rank +1"); }
+          else if (power.d <= -2) { fitPts -= 2; reasons.push("power rank falls"); }
+          else if (power.d === -1) { fitPts -= 1; reasons.push("power rank −1"); }
 
           if (filledNeeds.length) {
-            fitPts += 3;
+            fitPts += 2;
             reasons.push("fills " + filledNeeds.join("/"));
           }
           if (newNeeds.length) {
@@ -6591,61 +5570,27 @@
             const b = posr(originalRanks.posRank, teamId, pos);
             const a = posr(afterRanks.posRank, teamId, pos);
             if (b == null || a == null || b === a) continue;
-            // Meaningful rank move only (2+ spots)
-            if (a <= b - 2) posUp.push(pos);
-            else if (a >= b + 2) posDown.push(pos);
-            else if (a < b) posUp.push(pos);
-            else if (a > b) posDown.push(pos);
+            if (a < b) posUp.push(pos);
+            else posDown.push(pos);
           }
-          if (posUp.length) {
-            fitPts += posUp.length >= 2 ? 3 : 2;
-            reasons.push(posUp.join("/") + " improves");
-          }
-          if (posDown.length && posDown.length > posUp.length) {
-            fitPts -= 1;
-            reasons.push(posDown.join("/") + " weaker");
-          }
+          if (posUp.length) { fitPts += 1; reasons.push(posUp.join("/") + " room improves"); }
+          if (posDown.length) { fitPts -= 1; reasons.push(posDown.join("/") + " room weaker"); }
 
-          // Value: only large gaps swing the verdict. Pos upgrades offset mid-size losses.
-          const hasUpgrade = posUp.length > 0 || filledNeeds.length > 0 || projCh.d > 0.15;
-          if (valD > 500) { fitPts += 3; reasons.push("big value gain"); }
-          else if (valD > 180) { fitPts += 2; reasons.push("gains trade value"); }
-          else if (valD > 60) { fitPts += 1; }
-          else if (valD < -700) {
-            fitPts -= hasUpgrade ? 2 : 3;
-            reasons.push("big value loss");
-          } else if (valD < -250) {
-            // ~900-point gap with a real upgrade → only a soft ding
-            fitPts -= hasUpgrade ? 1 : 2;
-            if (!hasUpgrade) reasons.push("loses trade value");
-            else reasons.push("value down (offset by upgrade)");
-          } else if (valD < -100) {
-            if (!hasUpgrade) { fitPts -= 1; reasons.push("slight value loss"); }
-          }
-
-          if (strengthD >= 1.2) { fitPts += 2; reasons.push("roster strength up"); }
-          else if (strengthD >= 0.4) { fitPts += 1; }
-          else if (strengthD <= -1.8) {
-            fitPts -= hasUpgrade ? 1 : 2;
-            if (!hasUpgrade) reasons.push("roster strength down");
-          } else if (strengthD <= -0.8 && !hasUpgrade) {
-            fitPts -= 1;
-            reasons.push("roster strength down");
-          }
+          // FC value delta is secondary for *fit* (fairness is separate)
+          if (valD > 80) { fitPts += 1; reasons.push("gains trade value"); }
+          else if (valD < -80) { fitPts -= 1; reasons.push("loses trade value"); }
 
           let verdict, verdictCls, advice;
           if (fitPts >= 4) {
             verdict = "Strong yes"; verdictCls = "benefit"; advice = "Definitely accept";
           } else if (fitPts >= 2) {
             verdict = "Helps you"; verdictCls = "benefit"; advice = "Lean accept";
-          } else if (fitPts >= 0) {
-            // 0–1: neutral (QB upgrade + moderate value loss lands here)
-            verdict = "Neutral fit"; verdictCls = "neutral"; advice = "Up to you";
           } else if (fitPts <= -4) {
             verdict = "Hurts you"; verdictCls = "hurt"; advice = "Definitely decline";
-          } else {
-            // -1 to -3
+          } else if (fitPts <= -2) {
             verdict = "Hurts a bit"; verdictCls = "hurt"; advice = "Lean decline";
+          } else {
+            verdict = "Neutral fit"; verdictCls = "neutral"; advice = "Up to you";
           }
 
           const depthBefore = depthLabel(beforeTeam.depthNorm || 0);
@@ -6788,7 +5733,76 @@
         renderSide("b");
       }
 
-      function applyCurrentToChain() { /* chain removed */ }
+      function applyCurrentToChain() {
+        const teamAId = selA.value;
+        const teamBId = selB.value;
+        if (String(teamAId) === String(teamBId)) {
+          alert("Pick two different teams.");
+          return;
+        }
+        if (!calcSelected.a.size && !calcSelected.b.size) {
+          alert("Select players to include in this trade step.");
+          return;
+        }
+        const legal = rosterLegal();
+        if (!legal.legal) {
+          alert("Select the required roster drops so both teams stay at " + MAX_ROSTER + " players or fewer.");
+          return;
+        }
+        const beforeModels = modelsFromRosters(workingRosters);
+        const previewMap = applySwap(
+          workingRosters, teamAId, teamBId,
+          calcSelected.a, calcSelected.b,
+          calcSelected.dropA, calcSelected.dropB
+        );
+        const fairnessMessage = tradeFairnessMessage(
+          beforeModels,
+          modelsFromRosters(previewMap),
+          teamAId,
+          teamBId
+        );
+        if (fairnessMessage) {
+          alert(fairnessMessage);
+          return;
+        }
+        const rosterA = workingRosters[String(teamAId)] || [];
+        const rosterB = workingRosters[String(teamBId)] || [];
+        const nameOf = (rows, id) => {
+          const r = rows.find((x) => x.id === id);
+          return r ? r.name : id;
+        };
+        // Names for drops may be on either roster after conceptual swap - look both
+        const allRows = rosterA.concat(rosterB);
+        const giveANames = [...calcSelected.a].map((id) => nameOf(rosterA, id));
+        const giveBNames = [...calcSelected.b].map((id) => nameOf(rosterB, id));
+        const dropANames = [...calcSelected.dropA].map((id) => nameOf(allRows, id));
+        const dropBNames = [...calcSelected.dropB].map((id) => nameOf(allRows, id));
+
+        workingRosters = applySwap(
+          workingRosters, teamAId, teamBId,
+          calcSelected.a, calcSelected.b,
+          calcSelected.dropA, calcSelected.dropB
+        );
+        chainSteps.push({
+          teamAId,
+          teamBId,
+          teamAName: teamName(teamAId),
+          teamBName: teamName(teamBId),
+          giveA: [...calcSelected.a],
+          giveB: [...calcSelected.b],
+          giveANames,
+          giveBNames,
+          dropANames,
+          dropBNames
+        });
+        calcSelected.a.clear();
+        calcSelected.b.clear();
+        calcSelected.dropA.clear();
+        calcSelected.dropB.clear();
+        renderChain();
+        renderSide("a");
+        renderSide("b");
+      }
 
       selA.onchange = () => {
         calcSelected.a.clear();
@@ -6849,7 +5863,8 @@
       document.getElementById("calc-drops-list-a").onclick = onDropClick;
       document.getElementById("calc-drops-list-b").onclick = onDropClick;
 
-            document.getElementById("calc-complete").onclick = completeFairTrade;
+      document.getElementById("calc-apply").onclick = applyCurrentToChain;
+      document.getElementById("calc-complete").onclick = completeFairTrade;
 
       document.getElementById("calc-clear").onclick = () => {
         calcSelected.a.clear();
@@ -6857,7 +5872,8 @@
         calcSelected.dropA.clear();
         calcSelected.dropB.clear();
         workingRosters = snapshotFromEspn();
-                renderChain();
+        chainSteps = [];
+        renderChain();
         renderSide("a");
         renderSide("b");
         const u = new URL(window.location.href);
@@ -6868,7 +5884,7 @@
       document.getElementById("calc-share").onclick = async () => {
         const teamA = selA.value;
         const teamB = selB.value;
-        if (!calcSelected.a.size && !calcSelected.b.size ) {
+        if (!calcSelected.a.size && !calcSelected.b.size && !chainSteps.length) {
           alert("Select players or build a chain to share.");
           return;
         }
@@ -7443,8 +6459,8 @@
             if (outVal < 20) continue;
             const gap = Math.abs(inVal - outVal);
             const ratio = Math.max(inVal, outVal) / Math.max(1, Math.min(inVal, outVal));
-            const maxGap = 140 + 60 * Math.min(incoming.length, outgoing.length);
-            if (gap > maxGap && ratio > 1.35) continue;
+            const maxGap = 100 + 50 * Math.min(incoming.length, outgoing.length);
+            if (gap > maxGap && ratio > 1.28) continue;
 
             // Position upgrade analysis (val + proj) — need-fill only counts if room actually improves
             function posTop(entries, pos) {
@@ -7523,69 +6539,45 @@
             // Cap position downgrades: don't tank QB (#1→#10) just to fix WR
             // Reject if any position drops hard without an even larger gain elsewhere
             function tankedTooMuch(up) {
-              if (up.worstProjDrop <= -7.5) return true;
-              if (up.worstValDrop <= -450) return true;
-              if (up.worstProjDrop <= -3.5 && up.bestProjGain < Math.abs(up.worstProjDrop) * 1.05) return true;
-              if (up.worstValDrop <= -180 && up.bestValGain < Math.abs(up.worstValDrop) * 0.85) return true;
-              if (up.worstProjDrop <= -4 && up.totalProjGain < -0.5) return true;
-              if (up.worstValDrop <= -220 && up.totalValGain < 0) return true;
+              // Absolute caps
+              if (up.worstProjDrop <= -6) return true;   // ~full starter lost
+              if (up.worstValDrop <= -350) return true;
+              // Relative: drop can't exceed ~70% of the best gain (proj or val scale)
+              if (up.worstProjDrop <= -2.5 && up.bestProjGain < Math.abs(up.worstProjDrop) * 1.15) return true;
+              if (up.worstValDrop <= -100 && up.bestValGain < Math.abs(up.worstValDrop) * 0.9) return true;
+              // Net must not be clearly negative if something was tanked
+              if (up.worstProjDrop <= -3 && up.totalProjGain < 0) return true;
+              if (up.worstValDrop <= -150 && up.totalValGain < 0) return true;
               return false;
             }
             if (tankedTooMuch(myUp) || tankedTooMuch(theirUp)) continue;
 
-            // Roster strength after trade (same lens as trade impact analysis)
-            function quickStrength(entries) {
-              const exp = optimalLineupTotalForWeek(entries, "proj", -999).total || 0;
-              const sVal = starterValue(entries);
-              const rVal = (entries || []).reduce((s, e) => s + (e.val || 0), 0);
-              return 0.50 * exp + 0.40 * (sVal / 380) + 0.10 * (rVal / 1100);
-            }
-            const myAfterEntries = rosterAfter(mine.entries, outgoing, incoming);
-            const theirAfterEntries = rosterAfter(partner.entries, incoming, outgoing);
-            const myDelta = quickStrength(myAfterEntries) - quickStrength(mine.entries);
-            const theirDelta = quickStrength(theirAfterEntries) - quickStrength(partner.entries);
-
-            // A side "benefits" if analysis improves in a real way — not only raw strength.
-            // Fair need-swaps often leave overall strength ~flat while fixing a position.
-            function sideBenefits(up, strDelta) {
-              if (strDelta >= 0.06) return true;
-              if (up.realNeedFills >= 1 && strDelta >= -0.45 && up.totalProjGain >= -0.5) return true;
-              if (up.totalProjGain >= 1.0 && strDelta >= -0.35) return true;
-              if (up.totalValGain >= 80 && up.totalProjGain >= 0.3 && strDelta >= -0.3) return true;
-              if (up.bestProjGain >= 2.0 && up.totalProjGain >= 0.4 && strDelta >= -0.4) return true;
-              return false;
-            }
-            function sideClearlyHurt(up, strDelta) {
-              if (strDelta <= -0.7) return true;
-              if (up.totalProjGain <= -2.5 && up.realNeedFills === 0) return true;
-              if (up.totalValGain <= -200 && up.totalProjGain < 0) return true;
-              return false;
-            }
-            if (!sideBenefits(myUp, myDelta) || !sideBenefits(theirUp, theirDelta)) continue;
-            if (sideClearlyHurt(myUp, myDelta) || sideClearlyHurt(theirUp, theirDelta)) continue;
-            // Pure laterals (same-pos swap, no real gain) still out
             if (myUp.lateralPenalty >= 70 && theirUp.lateralPenalty >= 70 &&
-                myUp.totalProjGain < 1.2 && theirUp.totalProjGain < 1.2 &&
-                myDelta < 0.15 && theirDelta < 0.15) continue;
+                myUp.totalProjGain < 1 && theirUp.totalProjGain < 1) {
+              continue;
+            }
+            if (myUp.totalProjGain < 0.5 && myUp.totalValGain < 40 &&
+                theirUp.totalProjGain < 0.5 && theirUp.totalValGain < 40) {
+              continue;
+            }
 
             const fillsMine = myUp.realNeedFills > 0;
             const fillsThem = theirUp.realNeedFills > 0;
-            // Lower score = better
-            let score = gap * 0.4;
-            score -= myDelta * 22;
-            score -= theirDelta * 22;
-            score -= Math.min(myDelta, theirDelta) * 12;
-            score += myUp.lateralPenalty * 0.5 + theirUp.lateralPenalty * 0.5;
-            score += Math.max(0, -myUp.worstProjDrop) * 6;
-            score += Math.max(0, -theirUp.worstProjDrop) * 6;
-            if (fillsMine) score -= 22 * myUp.realNeedFills;
-            else score += 8;
-            if (fillsThem) score -= 22 * theirUp.realNeedFills;
-            else score += 8;
+            let score = gap;
+            score += myUp.lateralPenalty + theirUp.lateralPenalty;
+            // Penalize remaining downgrades that passed the hard filter
+            score += Math.max(0, -myUp.worstProjDrop) * 8;
+            score += Math.max(0, -myUp.worstValDrop) / 25;
+            if (!fillsMine) score += 35;
+            else score -= 15 * myUp.realNeedFills;
+            if (!fillsThem) score += 35;
+            else score -= 15 * theirUp.realNeedFills;
             score -= myUp.totalProjGain * 4;
-            score -= theirUp.totalProjGain * 4;
-            if (wantPositions.length && incoming.some((e) => wantPositions.indexOf(e.pos) >= 0)) score -= 20;
-            if (getForce.length || giveForce.length) score -= 25;
+            score -= theirUp.totalProjGain * 3;
+            score -= Math.max(0, myUp.totalValGain) / 40;
+            if (wantPositions.length && incoming.some((e) => wantPositions.indexOf(e.pos) >= 0)) score -= 25;
+            if (getForce.length || giveForce.length) score -= 30;
+            if (incoming.length >= 2 || outgoing.length >= 2) score -= 5;
 
             ideas.push({
               incoming,
@@ -7600,8 +6592,6 @@
               myDownNotes: myUp.downNotes,
               myProjGain: myUp.totalProjGain,
               theirProjGain: theirUp.totalProjGain,
-              myDelta,
-              theirDelta,
               shape: userShape
             });
           }
@@ -7626,28 +6616,25 @@
           "</div>"
         ).join("");
       }
-      if (!visible.length) {
-        list.innerHTML = '<div class="suggestion-meta">No mutual-fit trades found. Try clearing filters — suggestions need each side to gain (need fill, starter proj, or strength) without clearly getting worse.</div>';
-        return;
-      }
-      list.innerHTML = visible.map((idea, idx) => {
+      list.innerHTML = visible.length ? visible.map((idea, idx) => {
         const gap = Math.abs(Math.round(idea.gain));
         const fair = gap <= 80;
         const tags = [];
         tags.push(idea.incoming.length + " for " + idea.outgoing.length);
-        tags.push("helps both");
-        if (idea.fillsMine) tags.push("your need");
-        if (idea.fillsThem) tags.push("their need");
-        const upCls = (idea.myDelta || 0) >= 0.4 ? "" : " weak";
-        let upText = "<strong>You:</strong> strength +" + (idea.myDelta || 0).toFixed(1);
-        if (idea.myNotes && idea.myNotes.length) upText += " · " + idea.myNotes.join(", ");
-        else if ((idea.myProjGain || 0) >= 0.5) upText += " · +" + idea.myProjGain.toFixed(1) + " proj";
+        if (idea.fillsMine) tags.push("upgrades your need");
+        if (idea.fillsThem) tags.push("upgrades their need");
+        const upCls = (idea.myProjGain || 0) >= 1.5 ? "" : " weak";
+        let upText = (idea.myNotes && idea.myNotes.length)
+          ? "<strong>You:</strong> " + idea.myNotes.join(", ")
+          : ((idea.myProjGain || 0) >= 0.5
+            ? "<strong>You:</strong> +" + idea.myProjGain.toFixed(1) + " starter proj"
+            : "");
         if (idea.myDownNotes && idea.myDownNotes.length) {
-          upText += " · <strong>Cost:</strong> " + idea.myDownNotes.join(", ");
+          upText += (upText ? " · " : "") + "<strong>Cost:</strong> " + idea.myDownNotes.join(", ");
         }
-        let themText = " · <strong>Them:</strong> strength +" + (idea.theirDelta || 0).toFixed(1);
-        if (idea.theirNotes && idea.theirNotes.length) themText += " · " + idea.theirNotes.join(", ");
-        else if ((idea.theirProjGain || 0) >= 0.5) themText += " · +" + idea.theirProjGain.toFixed(1) + " proj";
+        const themText = (idea.theirNotes && idea.theirNotes.length)
+          ? " · <strong>Them:</strong> " + idea.theirNotes.join(", ")
+          : "";
         return (
           '<div class="suggestion">' +
             '<div class="suggestion-top">' +
@@ -7677,7 +6664,7 @@
             "</div>" +
           "</div>"
         );
-      }).join("");
+      }).join("") : '<div class="suggestion-meta" style="text-align:center;padding:1.25rem 0.5rem">No strong upgrades match these filters.<br><span style="font-size:0.7rem">Lateral same-position swaps are filtered out. Try different teams or players.</span></div>';
 
       list.onclick = (event) => {
         const button = event.target.closest("[data-suggestion]");
@@ -8230,83 +7217,6 @@
       });
     }
 
-
-    function powerSnapStorageKey() {
-      return "ltPowerSnap_v1_" + (PLATFORM || "espn") + "_" + LEAGUE_ID + "_" + SEASON;
-    }
-
-    function loadPowerHistory() {
-      try {
-        const raw = localStorage.getItem(powerSnapStorageKey());
-        if (!raw) return { weeks: {} };
-        const o = JSON.parse(raw);
-        if (!o || typeof o !== "object") return { weeks: {} };
-        if (!o.weeks) o.weeks = {};
-        return o;
-      } catch (e) {
-        return { weeks: {} };
-      }
-    }
-
-    function savePowerWeekSnapshot(week, rankedRows) {
-      // rankedRows: [{ id, score, rank }]
-      if (!week || !rankedRows || !rankedRows.length) return;
-      const hist = loadPowerHistory();
-      const byId = {};
-      rankedRows.forEach((r) => {
-        byId[String(r.id)] = {
-          score: Math.round(Number(r.score) * 10) / 10,
-          rank: r.rank
-        };
-      });
-      hist.weeks[String(week)] = { byId: byId, savedAt: Date.now() };
-      hist.latestWeek = week;
-      // prune old weeks (keep 10)
-      const keys = Object.keys(hist.weeks).map(Number).sort((a, b) => a - b);
-      while (keys.length > 10) {
-        delete hist.weeks[String(keys.shift())];
-      }
-      try {
-        localStorage.setItem(powerSnapStorageKey(), JSON.stringify(hist));
-      } catch (e) {}
-    }
-
-    /** Score/rank change vs previous scoring week snapshot (if we stored one). */
-    function powerWeekDelta(teamId, week, score, rank) {
-      const hist = loadPowerHistory();
-      const w = Number(week) || 0;
-      let prev = hist.weeks[String(w - 1)];
-      let prevWeek = w - 1;
-      // Fall back to nearest older snapshot if exact prior week missing
-      if (!prev || !prev.byId) {
-        const older = Object.keys(hist.weeks).map(Number).filter((x) => x < w).sort((a, b) => b - a);
-        if (older.length) {
-          prevWeek = older[0];
-          prev = hist.weeks[String(prevWeek)];
-        }
-      }
-      if (!prev || !prev.byId) return null;
-      const p = prev.byId[String(teamId)];
-      if (!p) return null;
-      const scoreD = Math.round((Number(score) - Number(p.score)) * 10) / 10;
-      const rankD = Number(p.rank) - Number(rank); // + = rose in rankings
-      return { scoreD: scoreD, rankD: rankD, prevScore: p.score, prevRank: p.rank, prevWeek: prevWeek };
-    }
-
-    function formatPowerDelta(d) {
-      if (!d) return "";
-      const scoreBit = d.scoreD > 0.05
-        ? '<span class="fp-delta up">+' + d.scoreD.toFixed(1) + "</span>"
-        : d.scoreD < -0.05
-          ? '<span class="fp-delta down">' + d.scoreD.toFixed(1) + "</span>"
-          : '<span class="fp-delta flat">0.0</span>';
-      let rankBit = "";
-      if (d.rankD > 0) rankBit = '<span class="fp-delta up rk">↑' + d.rankD + "</span>";
-      else if (d.rankD < 0) rankBit = '<span class="fp-delta down rk">↓' + Math.abs(d.rankD) + "</span>";
-      else rankBit = '<span class="fp-delta flat rk">—</span>';
-      return scoreBit + rankBit;
-    }
-
     function renderPowerRankings(models) {
       if (!models || !models.length) {
         const list = document.getElementById("power-list");
@@ -8397,30 +7307,9 @@
         ('<div class="rankings-note" style="margin-bottom:0.5rem">Sorted by ' +
          (sortMode === "proj" ? "projected PPG" : sortMode) +
          (powerNeedFilter !== "all" ? " · need " + powerNeedFilter : "") + "</div>");
-      const currentWeek = (typeof leagueData !== "undefined" && leagueData && leagueData.scoringPeriodId)
-        ? Number(leagueData.scoringPeriodId) : 1;
-      // Snapshot overall ranks/scores for week-over-week (only in overall site mode)
-      const snapshotRows = [];
-      if (sortMode === "overall" && powerMode !== "hybrid") {
-        const overallOrder = models.slice().sort((a, b) => {
-          const d = (b.rawPower || 0) - (a.rawPower || 0);
-          if (Math.abs(d) > 1e-9) return d;
-          return (b.totalScore || 0) - (a.totalScore || 0);
-        });
-        overallOrder.forEach((t, i) => {
-          snapshotRows.push({
-            id: t.id,
-            score: t.totalScore != null ? t.totalScore : 0,
-            rank: i + 1
-          });
-        });
-        if (snapshotRows.length) savePowerWeekSnapshot(currentWeek, snapshotRows);
-      }
-
       sorted.forEach((t, i) => {
         const rank = i + 1;
         let score;
-        let scoreNum = null;
         if (sortMode === "proj") score = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         else if (sortMode === "depth") score = t.depthScore != null ? (t.depthScore * 100).toFixed(0) : "—";
         else if (sortMode === "market") score = t.marketScore != null ? (t.marketScore * 100).toFixed(0) : "—";
@@ -8428,18 +7317,9 @@
           const pr = (posRankByTeam[t.id] || {})[sortMode];
           score = pr != null ? ("#" + pr) : "—";
         } else if (powerMode === "hybrid" && t.hybridAvgRank != null) {
-          scoreNum = Math.round(t.hybridAvgRank * 10) / 10;
-          score = scoreNum.toFixed(1).replace(/\.0$/, "");
+          score = (Math.round(t.hybridAvgRank * 10) / 10).toFixed(1).replace(/\.0$/, "");
         } else {
-          scoreNum = t.totalScore != null ? t.totalScore : 0;
-          score = scoreNum.toFixed(1);
-        }
-        let deltaHtml = "";
-        if (sortMode === "overall" && powerMode !== "hybrid" && scoreNum != null) {
-          // Rank in overall table for delta (use snapshot overall rank)
-          const overallRank = (snapshotRows.find((r) => String(r.id) === String(t.id)) || {}).rank || rank;
-          const d = powerWeekDelta(t.id, currentWeek, scoreNum, overallRank);
-          deltaHtml = formatPowerDelta(d);
+          score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
         }
         const recordStr = t.gamesPlayed > 0
           ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
@@ -8556,22 +7436,14 @@
               " · Proj " + exp + "</div>" +
               '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
               " · Depth " + depthTxt + "</div></td>" +
-            '<td class="fp-score-col"><div class="fp-score-wrap"><span class="fp-score">' + score + "</span>" +
-              (deltaHtml ? '<div class="fp-delta-row">' + deltaHtml + "</div>" : "") +
-              "</div></td>" +
+            '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
           "</tr>" +
           '<tr class="fp-detail-row" hidden data-detail-for="' + t.id + '">' +
             '<td colspan="3">' + detail + "</td>" +
           "</tr>";
       });
 
-      const hasAnyDelta = body.indexOf("fp-delta") >= 0;
       list.innerHTML =
-        (hasAnyDelta
-          ? '<p class="rankings-note" style="margin-bottom:0.45rem">Δ vs last week: score change and rank movement (↑ rose).</p>'
-          : (currentWeek > 1
-            ? '<p class="rankings-note" style="margin-bottom:0.45rem">Week-over-week Δ appears after this week is saved and you return next week.</p>'
-            : "")) +
         '<table class="fp-power-table">' +
           "<thead><tr><th>RK</th><th>Team</th><th class=\"fp-score-col\">Score</th></tr></thead>" +
           "<tbody>" + body + "</tbody>" +
@@ -8613,12 +7485,8 @@
     }
 
     function runPlayoffSimulations(data, scheduleData) {
-      if (!data || !Array.isArray(data.teams)) {
-        throw new Error("League data not loaded");
-      }
-      scheduleData = scheduleData || data;
       const models = finalizePowerScores(buildTeamModels(data));
-      const settingsRoot = (scheduleData && scheduleData.settings) || data.settings || {};
+      const settingsRoot = scheduleData.settings || data.settings || {};
       const settings = settingsRoot.scheduleSettings || settingsRoot;
       const playoffCount = Number(settings.playoffTeamCount || settings.playoffTeams || settings.numPlayoffTeams || 6);
       const hasPlayedGames = models.some((team) => team.gamesPlayed > 0);
@@ -9605,176 +8473,180 @@
     let matchupTimer = null;
 
     async function setupMatchup() {
-      // Matchup feature removed
-      return;
-    }
+      const data = leagueData;
+      const status = document.getElementById("matchup-status");
+      const root = document.getElementById("matchup-root");
+      const sel = document.getElementById("matchup-team");
+      const weekLabel = document.getElementById("matchup-week-label");
+      if (!data || !sel || !root) return;
 
+      const teams = (data.teams || []).slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+      const prev = sel.value;
+      sel.innerHTML = teams.map((t) =>
+        '<option value="' + t.id + '">' + escapeHtml(t.name || t.abbrev || "Team " + t.id) + "</option>"
+      ).join("");
+      if (teams.some((t) => String(t.id) === String(prev))) sel.value = prev;
 
-    function openWeekShareCard(weekOverride) {
-      const modal = document.getElementById("week-share-modal");
-      const card = document.getElementById("week-share-card");
-      const weekInput = document.getElementById("week-share-week");
-      if (!modal || !card) {
-        alert("Weekly card UI missing");
-        return;
-      }
-      if (!leagueData || !leagueData.teams) {
-        alert("Load a league first");
-        return;
-      }
-      const week = Number(weekOverride || (weekInput && weekInput.value) || leagueData.scoringPeriodId || 1) || 1;
-      if (weekInput) weekInput.value = String(week);
+      const week = matchupWeekNumber(data);
+      if (weekLabel) weekLabel.textContent = "Week " + week + " · auto-refreshes while open";
 
-      const models = (() => {
-        try { return finalizePowerScores(buildTeamModels(leagueData)); }
-        catch (e) { return buildTeamModels(leagueData); }
-      })();
-      const byId = {};
-      models.forEach((m) => { byId[String(m.id)] = m; });
-
-      // Schedule games for this week
-      const schedule = leagueData.schedule || [];
-      const games = schedule.filter((g) => Number(g.matchupPeriodId || g.week || 0) === week);
-      const sim = lastPlayoffSimulation;
-      const results = sim && sim.results ? sim.results : {};
-
-      function teamLabel(id) {
-        const m = byId[String(id)];
-        return m ? (m.name || "Team " + id) : ("Team " + id);
-      }
-      function scoreSide(side) {
-        if (!side) return null;
-        if (typeof side === "object") {
-          if (side.totalPoints != null) return Number(side.totalPoints);
-          if (side.score != null) return Number(side.score);
+      async function paint() {
+        const teamId = sel.value;
+        let liveData = data;
+        try {
+          liveData = await fetchLiveMatchupWeek(week);
+        } catch (e) {
+          console.warn("live fetch failed", e);
         }
-        return null;
-      }
+        const myLive = liveMapFromMatchupData(liveData, teamId, week);
+        let entries = teamEntriesFromData(data, teamId);
+        entries = mergeLiveOntoEntries(entries, myLive.map);
 
-      let gameHtml = "";
-      if (games.length) {
-        games.forEach((g) => {
-          const homeId = g.home && typeof g.home === "object" ? g.home.teamId : g.homeTeamId || g.home;
-          const awayId = g.away && typeof g.away === "object" ? g.away.teamId : g.awayTeamId || g.away;
-          const hs = scoreSide(g.home);
-          const as_ = scoreSide(g.away);
-          const played = hs != null && as_ != null && (hs > 0 || as_ > 0);
-          let winner = null;
-          if (played) winner = hs >= as_ ? homeId : awayId;
-          const homeName = teamLabel(homeId);
-          const awayName = teamLabel(awayId);
-          // Win % from sim if available
-          let wp = "";
-          const hr = results[String(homeId)];
-          if (hr && hr.weeks && hr.weeks[week] && hr.weeks[week].h2h != null) {
-            const pct = Math.round(100 * hr.weeks[week].h2h / (sim.simulations || 1));
-            wp = pct + "% home";
-          }
-          gameHtml +=
-            '<div class="ws-game">' +
-              '<div class="ws-team' + (winner != null && String(winner) === String(homeId) ? " winner" : (played ? " loser" : "")) + '">' +
-                escapeHtml(homeName) + "</div>" +
-              '<div class="ws-score">' + (played ? hs.toFixed(1) + " – " + as_.toFixed(1) : "vs") + "</div>" +
-              '<div class="ws-team' + (winner != null && String(winner) === String(awayId) ? " winner" : (played ? " loser" : "")) + '">' +
-                escapeHtml(awayName) + "</div>" +
-              (wp ? '<div class="ws-sub">' + wp + "</div>" : "") +
-            "</div>";
+        // Optimal among remaining: treat played starters as locked in by using actual as proj for them when scoring optimal
+        // Simpler: optimal from pre-game projections on full roster, then late swaps only among unplayed
+        const baseProj = lineupProjection(entries.map((e) => Object.assign({}, e, {
+          proj: e.hasPlayed ? (e.actual || 0) : e.proj,
+          projFloor: e.hasPlayed ? (e.actual || 0) : e.projFloor,
+          projCeil: e.hasPlayed ? (e.actual || 0) : e.projCeil
+        })), week);
+
+        const oppInfo = findOpponent(liveData.schedule ? liveData : data, teamId, week) ||
+          findOpponent(data, teamId, week);
+        let oppName = "No opponent found";
+        let oppProj = { mu: 0, floor: 0, ceil: 0, sigma: 20 };
+        let oppEntries = [];
+        if (oppInfo && oppInfo.oppId != null) {
+          const oppLive = liveMapFromMatchupData(liveData, oppInfo.oppId, week);
+          oppEntries = mergeLiveOntoEntries(teamEntriesFromData(data, oppInfo.oppId), oppLive.map);
+          oppProj = lineupProjection(oppEntries.map((e) => Object.assign({}, e, {
+            proj: e.hasPlayed ? (e.actual || 0) : e.proj,
+            projFloor: e.hasPlayed ? (e.actual || 0) : e.projFloor,
+            projCeil: e.hasPlayed ? (e.actual || 0) : e.projCeil
+          })), week);
+          const ot = teams.find((t) => String(t.id) === String(oppInfo.oppId));
+          oppName = ot ? (ot.name || ot.abbrev) : ("Team " + oppInfo.oppId);
+        }
+
+        const liveTotals = liveLineupTotals(entries, baseProj.usedIds);
+        const myMu = liveTotals.current.total;
+        const myLocked = liveTotals.current.locked;
+        const myRemain = liveTotals.current.remain;
+        // Opponent current slots estimate
+        const oppOpt = lineupProjection(oppEntries.map((e) => Object.assign({}, e, {
+          proj: e.hasPlayed ? (e.actual || 0) : e.proj,
+          projFloor: e.hasPlayed ? (e.actual || 0) : e.projFloor,
+          projCeil: e.hasPlayed ? (e.actual || 0) : e.projCeil
+        })), week);
+        const oppLiveTotals = liveLineupTotals(oppEntries, oppOpt.usedIds);
+        const oppMu = oppLiveTotals.current.total;
+
+        const margin = myMu - oppMu;
+        const gp = leagueGamesPlayed(leagueData || data);
+        const preseason = gp < 0.5;
+        let winPct = winProbFromProj(myMu, baseProj.sigma, oppMu, oppProj.sigma || baseProj.sigma, { preseason, sims: 5000 });
+        winPct = curveWinProbability(winPct, gp);
+        // Optimal lineups for both sides (same live locked points + optimal remaining)
+        const myOptMu = liveTotals.optimal.total;
+        const oppOptMu = oppLiveTotals.optimal.total;
+        const optMargin = myOptMu - oppOptMu;
+        let optWinPct = winProbFromProj(myOptMu, baseProj.sigma, oppOptMu, oppOpt.sigma || baseProj.sigma, { preseason, sims: 5000 });
+        optWinPct = curveWinProbability(optWinPct, gp);
+        const liveMeta = {
+          active: entries.some((e) => e.hasPlayed),
+          myLocked,
+          myRemain
+        };
+        const tips = buildMatchupAdvice(winPct, margin, liveMeta)
+          .concat(lateSwapAdvice(entries, winPct, margin));
+
+        const me = teams.find((t) => String(t.id) === String(teamId));
+        const myName = me ? (me.name || me.abbrev) : "You";
+
+        const toStart = (baseProj.used || []).filter((e) => {
+          const row = entries.find((x) => String(x.id) === String(e.id));
+          return row && !isStarterSlot(row.slot) && !row.hasPlayed;
         });
-      } else {
-        gameHtml = '<div class="ws-sub">No matchup data for week ' + week + " yet.</div>";
+        const toBench = entries.filter((e) => isStarterSlot(e.slot) && !baseProj.usedIds.has(String(e.id)) && !e.hasPlayed);
+
+        let moves = "";
+        if (toStart.length || toBench.length) {
+          moves = "<div style=\"margin-top:0.45rem;font-size:0.8rem\">";
+          if (toStart.length) moves += "<div><strong>Start:</strong> " + toStart.map((e) => escapeHtml(e.name)).join(", ") + "</div>";
+          if (toBench.length) moves += "<div><strong>Bench:</strong> " + toBench.map((e) => escapeHtml(e.name)).join(", ") + "</div>";
+          moves += "</div>";
+        }
+
+        status.textContent = (oppInfo
+          ? ("Week " + week + " · " + (oppInfo.isHome ? "Home" : "Away") + " vs " + oppName)
+          : ("Week " + week)) +
+          (liveMeta.active ? " · LIVE" : " · Pre-game") +
+          " · updated " + new Date().toLocaleTimeString();
+
+        const chanceCls = winPct >= 0.58 ? "" : winPct <= 0.42 ? "lose" : "even";
+        root.innerHTML =
+          '<div class="matchup-scoreboard">' +
+            '<div class="matchup-side">' +
+              "<h3>" + escapeHtml(myName) + "</h3>" +
+              '<div class="matchup-proj-label">Projected</div>' +
+              '<div class="big">' + myMu.toFixed(1) + "</div>" +
+              '<div class="sub">Scored ' + myLocked.toFixed(1) + " · Left " + myRemain.toFixed(1) + "</div>" +
+              '<div class="sub tip" data-tip="Team floor/ceiling = projected total ± realistic SD. Not every player floor added up.">Floor ' +
+                (myLocked + Math.max(0, baseProj.floor - baseProj.mu + myRemain)).toFixed(1) +
+                " · Ceiling " + (myLocked + Math.max(0, baseProj.ceil - baseProj.mu + myRemain)).toFixed(1) + "</div>" +
+            "</div>" +
+            '<div class="matchup-vs">' +
+              '<div class="matchup-proj-label">Proj margin</div>' +
+              '<div style="font-size:1.1rem;font-weight:700">' + (margin >= 0 ? "+" : "") + margin.toFixed(1) + "</div>" +
+              '<div class="sub">Opt margin ' + (optMargin >= 0 ? "+" : "") + optMargin.toFixed(1) + "</div>" +
+              '<div class="matchup-chance-block">' +
+                '<div class="matchup-proj-label tip" data-tip="Each team is simulated on its own, then compared. Early season odds are pulled toward 50% and capped until more games are played.">Win chance</div>' +
+                '<div class="winpct ' + chanceCls + '">' + (winPct * 100).toFixed(0) + "%</div>" +
+                '<div class="sub">Optimal lineups ' + (optWinPct * 100).toFixed(0) + "%</div>" +
+              "</div>" +
+            "</div>" +
+            '<div class="matchup-side" style="text-align:right">' +
+              "<h3>" + escapeHtml(oppName) + "</h3>" +
+              '<div class="matchup-proj-label">Projected</div>' +
+              '<div class="big">' + oppMu.toFixed(1) + "</div>" +
+              '<div class="sub">Scored ' + oppLiveTotals.current.locked.toFixed(1) +
+                " · Left " + oppLiveTotals.current.remain.toFixed(1) + "</div>" +
+              '<div class="sub">Floor ' + oppProj.floor.toFixed(1) + " · Ceiling " + oppProj.ceil.toFixed(1) + "</div>" +
+            "</div>" +
+          "</div>" +
+          '<div class="matchup-advice"><strong>Strategy</strong><ul style="margin:0.35rem 0 0 1.1rem">' +
+            tips.map((t) => "<li>" + t + "</li>").join("") +
+          "</ul>" + moves +
+          '<div style="margin-top:0.5rem;font-size:0.72rem;color:var(--text-muted)">Floor/ceiling = lineup projection ± team variance (players don’t all boom/bust at once).</div>' +
+          "</div>" +
+          "<h3 style=\"font-size:0.85rem;margin:0 0 0.5rem\">Your roster · Week " + week + "</h3>" +
+          renderMatchupLineup(entries, week, baseProj.usedIds);
       }
 
-      // Standings-ish from models
-      const sorted = models.slice().sort((a, b) => {
-        if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
-        return (b.ppg || 0) - (a.ppg || 0);
-      });
-      let standHtml = sorted.map((m, i) => {
-        const rec = (m.wins || 0) + "-" + (m.losses || 0);
-        const po = results[String(m.id)] && sim
-          ? Math.round(100 * results[String(m.id)].playoff / (sim.simulations || 1)) + "%"
-          : "—";
-        return (
-          '<div class="ws-stand-row">' +
-            '<span class="ws-rk">' + (i + 1) + "</span>" +
-            '<span class="ws-name">' + escapeHtml(m.name) + "</span>" +
-            '<span class="ws-rec">' + rec + "</span>" +
-            '<span class="ws-odds">' + po + "</span>" +
-          "</div>"
-        );
-      }).join("");
-
-      const leagueName = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
-      card.innerHTML =
-        '<div class="pr-share-card-head">' +
-          '<div class="league">' + escapeHtml(leagueName) + "</div>" +
-          "<h3>Week " + week + " summary</h3>" +
-          '<div class="week-label">Matchups · records · playoff odds</div>' +
-        "</div>" +
-        '<div class="ws-section"><h4>Matchups</h4>' + gameHtml + "</div>" +
-        '<div class="ws-section"><h4>Standings / playoff odds</h4>' +
-          '<div class="ws-sub">Rk · Team · Record · Playoff%</div>' +
-          standHtml +
-        "</div>";
-
-      modal.hidden = false;
+      sel.onchange = () => { paint(); };
+      paint();
+      if (matchupTimer) clearInterval(matchupTimer);
+      matchupTimer = setInterval(() => {
+        const panel = document.getElementById("panel-matchup");
+        if (panel && panel.classList.contains("active")) paint();
+      }, 60000);
     }
 
-    function closeWeekShareCard() {
-      const modal = document.getElementById("week-share-modal");
-      if (modal) modal.hidden = true;
-    }
-
-    function wireWeekShareCard() {
-      if (window.__weekShareWired) return;
-      window.__weekShareWired = true;
-      const modal = document.getElementById("week-share-modal");
-      const close = document.getElementById("week-share-close");
-      const printBtn = document.getElementById("week-share-print");
-      const refresh = document.getElementById("week-share-refresh");
-      const weekInput = document.getElementById("week-share-week");
-      const btn = document.getElementById("week-share-btn");
-      if (btn) btn.addEventListener("click", () => {
-        try { openWeekShareCard(); } catch (e) { console.error(e); alert(e.message || e); }
-      });
-      if (close) close.addEventListener("click", closeWeekShareCard);
-      if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) closeWeekShareCard(); });
-      if (printBtn) printBtn.addEventListener("click", () => window.print());
-      if (refresh) refresh.addEventListener("click", () => openWeekShareCard());
-      if (weekInput) weekInput.addEventListener("change", () => openWeekShareCard(weekInput.value));
-    }
 
     async function setupPlayoffOdds() {
       const status = document.getElementById("odds-status");
       const body = document.getElementById("odds-body");
-      if (!status) return;
-      if (!leagueData || !leagueData.teams) {
-        status.textContent = "Load a league first (Home tab).";
-        return;
-      }
       if (playoffOddsLoaded) return;
-      status.textContent = "Fetching schedule and running simulations…";
+      status.textContent = "Fetching ESPN schedule and running simulations…";
       try {
         let scheduleData = leagueData;
         try {
-          refreshApiUrls();
           const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
-          if (response.ok) {
-            const extra = await response.json();
-            // Merge schedule/settings onto league data; never replace members/teams with null
-            scheduleData = Object.assign({}, leagueData, {
-              schedule: extra.schedule || leagueData.schedule || [],
-              settings: extra.settings || leagueData.settings || {}
-            });
-            if (extra.teams && extra.teams.length) {
-              // keep rostered leagueData.teams as source of truth
-            }
-          } else console.warn("Optional ESPN schedule view unavailable", response.status);
+          if (response.ok) scheduleData = await response.json();
+          else console.warn("Optional ESPN schedule view unavailable", response.status);
         } catch (scheduleError) {
           console.warn("Optional ESPN schedule view unavailable", scheduleError);
         }
-        const simulation = runPlayoffSimulations(leagueData, scheduleData || leagueData);
-        lastPlayoffSimulation = simulation;
+        const simulation = runPlayoffSimulations(leagueData, scheduleData);
         const total = simulation.simulations;
         const gpOdds = leagueGamesPlayed(leagueData);
         const nTeamsOdds = Math.max(1, (simulation.teams || []).length);
@@ -9981,16 +8853,14 @@
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
         if (btn.dataset.panel === "odds") setupPlayoffOdds();
+        if (btn.dataset.panel === "matchup") setupMatchup();
         if (btn.dataset.panel === "home") renderHomeScreen();
       });
 
       const refreshBtn = document.getElementById("refreshBtn");
       if (refreshBtn) refreshBtn.addEventListener("click", fetchLeague);
       const themeBtn = document.getElementById("themeBtn");
-      if (themeBtn) {
-        applyTheme(document.documentElement.getAttribute("data-theme") || "dark");
-        themeBtn.addEventListener("click", toggleTheme);
-      }
+      if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
 
       const filters = document.getElementById("filters");
       if (filters) filters.addEventListener("click", (e) => {
@@ -10100,8 +8970,6 @@
     }
 
     setupHomeScreen();
-    setupOutcomePaywall();
-    wireWeekShare();
     (function boot() {
       const active = getActiveLeague();
       if (active && active.id) {
@@ -10122,6 +8990,6 @@
       fetchLeague();
     })();
   </script>
-<div id="app-tooltip" role="tooltip"></div>
+  <div id="app-tooltip" role="tooltip"></div>
 </body>
 </html>
