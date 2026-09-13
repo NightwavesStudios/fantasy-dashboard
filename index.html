@@ -3002,6 +3002,10 @@
     .snapshot-list { display: grid; gap: 0.45rem; }
     .snapshot-row { display: grid; grid-template-columns: 1.5rem 1fr auto; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
     .snapshot-rank { color: var(--rank-1); font-weight: 700; }
+    .rank-movement { font-size: 0.68rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rank-movement.up { color: #4ade80; }
+    .rank-movement.down { color: #f87171; }
+    .rank-movement.flat { color: var(--text-muted); }
     .snapshot-row small { display: block; color: var(--text-muted); font-size: 0.68rem; }
     .snapshot-value { color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .snapshot-empty { color: var(--text-muted); font-size: 0.8rem; }
@@ -3058,6 +3062,7 @@
     <button class="tab" data-panel="power" type="button" title="Rank teams by roster strength and projected points">Rankings</button>
     <button class="tab" data-panel="calc" type="button" title="Compare players and evaluate a trade">Trade desk</button>
     <button class="tab" data-panel="snapshots" type="button" title="Open screenshot-ready league summaries">Snapshots</button>
+    <button class="tab" data-panel="odds" type="button" title="Run live postseason simulations">Playoffs</button>
   </nav>
 
   <!-- LEAGUE DASHBOARD -->
@@ -3086,11 +3091,24 @@
         </section>
         <section class="snapshot-card" aria-label="Playoff predictions snapshot">
           <div class="snapshot-card-head"><div><h3>Playoff predictions</h3><div class="snapshot-card-note">Simulation results and postseason odds</div></div></div>
-          <div class="snapshot-card-body"><div id="snapshot-playoff-summary" class="snapshot-list"></div><div class="odds-status" id="odds-status">Running playoff simulations…</div></div>
+          <div class="snapshot-card-body"><div id="snapshot-playoff-summary" class="snapshot-list"></div><div class="snapshot-card-note">Detailed live table is in Playoffs.</div></div>
         </section>
-        <section class="snapshot-card snapshot-card-wide" aria-label="Detailed playoff predictions">
-          <div class="snapshot-card-body"><div class="odds-table-wrap">
-            <table class="odds-table">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-odds">
+    <div class="rankings-wrap">
+      <div class="pr-top">
+        <div>
+          <h2 class="pr-title">Playoff odds</h2>
+          <p class="pr-sub">Live scores update the current race before the next simulation run.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="odds-refresh" title="Refresh live scores and rerun simulations">Refresh odds</button>
+      </div>
+      <div class="odds-status" id="odds-status">Open Playoffs to load live ESPN odds.</div>
+      <div class="odds-table-wrap">
+        <table class="odds-table">
           <thead>
             <tr>
               <th>Team</th>
@@ -3104,9 +3122,6 @@
           </thead>
           <tbody id="odds-body"></tbody>
         </table>
-      </div>
-      </div>
-        </section>
       </div>
     </div>
   </div>
@@ -3467,6 +3482,7 @@
     let waiverSort = "value";
     let waiverLoaded = false;
     let playoffOddsLoaded = false;
+    let oddsTimer = null;
 
     async function fetchWaiverPool() {
       const status = document.getElementById("waiver-status");
@@ -5157,6 +5173,26 @@
     let powerModelsCache = null;
     let powerSortMode = "overall";
     let powerNeedFilter = "all";
+    let powerMovementById = {};
+
+    function powerRankStorageKey() {
+      return "leagueToolsPowerRanks_" + PLATFORM + "_" + LEAGUE_ID + "_" + SEASON;
+    }
+
+    function updatePowerRankMovement(models) {
+      const ordered = models.slice().sort((a, b) => (b.rawPower || 0) - (a.rawPower || 0));
+      let previous = {};
+      try { previous = JSON.parse(localStorage.getItem(powerRankStorageKey()) || "{}"); } catch (e) {}
+      powerMovementById = {};
+      ordered.forEach((team, index) => {
+        const current = index + 1;
+        const old = Number(previous[String(team.id)]);
+        powerMovementById[String(team.id)] = old ? old - current : 0;
+      });
+      const next = {};
+      ordered.forEach((team, index) => { next[String(team.id)] = index + 1; });
+      try { localStorage.setItem(powerRankStorageKey(), JSON.stringify(next)); } catch (e) {}
+    }
 
     function renderAll(data) {
       renderTradeBoard(data);
@@ -7505,6 +7541,7 @@
       }
       loadExternalRankSources();
       models = applyHybridRanks(models);
+      updatePowerRankMovement(models);
       const teamCount = models.length || 10;
       const sub = document.getElementById("pr-sub");
       const nSrc = externalRankSources.filter((s) => {
@@ -7589,6 +7626,12 @@
          (powerNeedFilter !== "all" ? " · need " + powerNeedFilter : "") + "</div>");
       sorted.forEach((t, i) => {
         const rank = i + 1;
+        const movement = powerMovementById[String(t.id)] || 0;
+        const movementHtml = movement > 0
+          ? '<span class="rank-movement up">↑' + movement + '</span>'
+          : movement < 0
+          ? '<span class="rank-movement down">↓' + Math.abs(movement) + '</span>'
+          : '<span class="rank-movement flat">—</span>';
         let score;
         if (sortMode === "proj") score = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         else if (sortMode === "depth") score = t.depthScore != null ? (t.depthScore * 100).toFixed(0) : "—";
@@ -7710,7 +7753,7 @@
 
         body +=
           '<tr class="fp-expandable" data-team-id="' + t.id + '">' +
-            '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".</td>" +
+            '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".<div>" + movementHtml + "</div></td>" +
             '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
               '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr +
               " · Proj " + exp + "</div>" +
@@ -8502,7 +8545,60 @@
     let snapshotTimer = null;
     let snapshotRefreshInFlight = false;
 
-    async function renderSnapshotDeck() {
+    function applyLiveDataToLeague(liveData) {
+      if (!leagueData || !liveData) return;
+      if (Array.isArray(liveData.schedule)) leagueData.schedule = liveData.schedule;
+      for (const liveTeam of liveData.teams || []) {
+        const team = (leagueData.teams || []).find((item) => String(item.id) === String(liveTeam.id));
+        if (!team) continue;
+        const targetEntries = team.roster?.entries || [];
+        for (const liveEntry of liveTeam.roster?.entries || []) {
+          const target = targetEntries.find((entry) => String(entry.playerId) === String(liveEntry.playerId));
+          const player = liveEntry.playerPoolEntry?.player;
+          if (!target || !player) continue;
+          const targetPlayer = target.playerPoolEntry?.player;
+          if (targetPlayer) targetPlayer.stats = player.stats || targetPlayer.stats;
+          if (target.playerPoolEntry && liveEntry.playerPoolEntry) {
+            target.playerPoolEntry.appliedStatTotal = liveEntry.playerPoolEntry.appliedStatTotal;
+            target.playerPoolEntry.lineupLocked = liveEntry.playerPoolEntry.lineupLocked;
+            target.playerPoolEntry.rosterLocked = liveEntry.playerPoolEntry.rosterLocked;
+          }
+        }
+      }
+    }
+
+    function applyLiveCurrentResults(liveData) {
+      if (!leagueData || !liveData) return;
+      const week = matchupWeekNumber(leagueData);
+      for (const game of liveData.schedule || []) {
+        if (Number(game.matchupPeriodId || game.week || 0) !== week) continue;
+        const home = game.home && typeof game.home === "object" ? game.home : { teamId: game.home };
+        const away = game.away && typeof game.away === "object" ? game.away : { teamId: game.away };
+        const homeScore = Number(home.totalPointsLive != null ? home.totalPointsLive : home.totalPoints);
+        const awayScore = Number(away.totalPointsLive != null ? away.totalPointsLive : away.totalPoints);
+        if (!isFinite(homeScore) || !isFinite(awayScore) || (homeScore === 0 && awayScore === 0)) continue;
+        const homeTeam = (leagueData.teams || []).find((team) => String(team.id) === String(home.teamId));
+        const awayTeam = (leagueData.teams || []).find((team) => String(team.id) === String(away.teamId));
+        if (!homeTeam || !awayTeam) continue;
+        for (const team of [homeTeam, awayTeam]) {
+          if (!team._liveRecordBase) {
+            const overall = team.record?.overall || {};
+            team._liveRecordBase = { wins: overall.wins || 0, losses: overall.losses || 0, ties: overall.ties || 0 };
+          }
+          team.record = team.record || {};
+          team.record.overall = Object.assign({}, team._liveRecordBase);
+        }
+        if (homeScore > awayScore) {
+          homeTeam.record.overall.wins++;
+          awayTeam.record.overall.losses++;
+        } else if (awayScore > homeScore) {
+          awayTeam.record.overall.wins++;
+          homeTeam.record.overall.losses++;
+        }
+      }
+    }
+
+    async function renderSnapshotDeck(liveDataOverride) {
       const powerList = document.getElementById("snapshot-power-list");
       const medianList = document.getElementById("snapshot-median-list");
       const matchups = document.getElementById("snapshot-matchups");
@@ -8516,12 +8612,14 @@
       const label = document.getElementById("snapshot-power-note");
       if (label) label.textContent = "Week " + week + " · site model · projected points";
 
-      powerList.innerHTML = ranked.slice(0, 5).map((team, index) =>
-        '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
+      powerList.innerHTML = ranked.slice(0, 5).map((team, index) => {
+        const movement = powerMovementById[String(team.id)] || 0;
+        const movementHtml = movement > 0 ? '<span class="rank-movement up">↑' + movement + '</span>' : movement < 0 ? '<span class="rank-movement down">↓' + Math.abs(movement) + '</span>' : '<span class="rank-movement flat">—</span>';
+        return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
         escapeHtml(team.name) + '</strong><small>' + (team.wins || 0) + '-' + (team.losses || 0) +
         ' · ' + (team.expectedPts != null ? team.expectedPts.toFixed(1) : "—") + ' projected</small></span><span class="snapshot-value">' +
-        (team.totalScore != null ? team.totalScore.toFixed(1) : "—") + '</span></div>'
-      ).join("") || '<span class="snapshot-empty">No teams loaded.</span>';
+        (team.totalScore != null ? team.totalScore.toFixed(1) : "—") + ' ' + movementHtml + '</span></div>';
+      }).join("") || '<span class="snapshot-empty">No teams loaded.</span>';
 
       const projections = models.map((team) => Number(team.expectedPts) || 0).sort((a, b) => a - b);
       const median = projections.length ? medianOf(projections) : 0;
@@ -8535,13 +8633,15 @@
       }).join("");
       medianList.innerHTML = medianRows("Top 5", top) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom);
 
-      let liveData = leagueData;
+      let liveData = liveDataOverride || leagueData;
       let liveUpdated = false;
-      try {
-        liveData = await fetchLiveMatchupWeek(week);
-        liveUpdated = true;
-      } catch (error) {
-        console.warn("Snapshot live refresh failed", error);
+      if (!liveDataOverride) {
+        try {
+          liveData = await fetchLiveMatchupWeek(week);
+          liveUpdated = true;
+        } catch (error) {
+          console.warn("Snapshot live refresh failed", error);
+        }
       }
       const games = (liveData.schedule || leagueData.schedule || []).filter((game) => Number(game.matchupPeriodId || game.week || 0) === week);
       const matchupRows = games.map((game) => {
@@ -8584,6 +8684,13 @@
       if (snapshotRefreshInFlight || !leagueData || !powerModelsCache) return;
       snapshotRefreshInFlight = true;
       try {
+        const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
+        applyLiveDataToLeague(liveData);
+        powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
+        renderPowerRankings(powerModelsCache);
+        await renderSnapshotDeck(liveData);
+      } catch (error) {
+        console.warn("Snapshot live refresh failed", error);
         await renderSnapshotDeck();
       } finally {
         snapshotRefreshInFlight = false;
@@ -9016,15 +9123,29 @@
     }
 
 
-    async function setupPlayoffOdds() {
+    async function setupPlayoffOdds(force) {
       const status = document.getElementById("odds-status");
       const body = document.getElementById("odds-body");
-      if (playoffOddsLoaded) return;
+      if (!status || !body || !leagueData || (playoffOddsLoaded && !force)) return;
       status.textContent = "Fetching ESPN schedule and running simulations…";
       try {
         let scheduleData = leagueData;
         try {
-          const response = await fetchWithTimeout(PLAYOFF_API_URL, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+          const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
+          applyLiveDataToLeague(liveData);
+          applyLiveCurrentResults(liveData);
+          powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
+          renderPowerRankings(powerModelsCache);
+          scheduleData = liveData;
+        } catch (liveError) {
+          console.warn("Live playoff refresh unavailable", liveError);
+        }
+        try {
+          const response = await fetchWithTimeout(PLAYOFF_API_URL + "&_live=" + Date.now(), {
+            credentials: "omit",
+            cache: "no-store",
+            headers: { Accept: "application/json", "Cache-Control": "no-cache" }
+          }, 20000);
           if (response.ok) scheduleData = await response.json();
           else console.warn("Optional ESPN schedule view unavailable", response.status);
         } catch (scheduleError) {
@@ -9252,10 +9373,24 @@
             const snapshotPanel = document.getElementById("panel-snapshots");
             if (snapshotPanel && snapshotPanel.classList.contains("active")) refreshSnapshotDeck();
           }, 60000);
+        } else if (btn.dataset.panel === "odds") {
+          if (snapshotTimer) {
+            clearInterval(snapshotTimer);
+            snapshotTimer = null;
+          }
           setupPlayoffOdds();
+          if (oddsTimer) clearInterval(oddsTimer);
+          oddsTimer = setInterval(() => {
+            const oddsPanel = document.getElementById("panel-odds");
+            if (oddsPanel && oddsPanel.classList.contains("active")) setupPlayoffOdds(true);
+          }, 60000);
         } else if (snapshotTimer) {
           clearInterval(snapshotTimer);
           snapshotTimer = null;
+        }
+        if (btn.dataset.panel !== "odds" && oddsTimer) {
+          clearInterval(oddsTimer);
+          oddsTimer = null;
         }
         if (btn.dataset.panel === "matchup") setupMatchup();
         if (btn.dataset.panel === "home") renderHomeScreen();
@@ -9267,6 +9402,8 @@
       if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
       const snapshotPrint = document.getElementById("snapshot-print");
       if (snapshotPrint) snapshotPrint.addEventListener("click", () => window.print());
+      const oddsRefresh = document.getElementById("odds-refresh");
+      if (oddsRefresh) oddsRefresh.addEventListener("click", () => setupPlayoffOdds(true));
 
       const filters = document.getElementById("filters");
       if (filters) filters.addEventListener("click", (e) => {
