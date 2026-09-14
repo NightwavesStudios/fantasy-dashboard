@@ -3784,8 +3784,25 @@
       });
     }
 
+    function applyFantasyCalcValueAdjustments(entries) {
+      return (entries || []).map((entry) => {
+        const name = String(entry && entry.name ? entry.name : "");
+        const normalized = normalizeName(name);
+        let value = Number(entry && entry.value != null ? entry.value : 0) || 0;
+
+        if (normalized === "ajbrown" || normalized === "ajbrownjr") {
+          value -= 1000;
+        }
+        if (normalized === "zayflowers" || normalized === "zayflower") {
+          value += 2000;
+        }
+
+        return Object.assign({}, entry, { value });
+      });
+    }
+
     async function loadTradeValues() {
-      const entries = await fetchFantasyCalcEntries();
+      const entries = applyFantasyCalcValueAdjustments(await fetchFantasyCalcEntries());
       const maps = ingestEntries(entries);
       setValueMaps(maps.byEspn, maps.byName, "FantasyCalc", entries.length + " players");
     }
