@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>League HQ — Fantasy Football Dashboard</title>
+  <title>Fantasy Football Dashboard</title>
   <style>
     :root {
       --bg: #0c0e12;
@@ -4641,6 +4641,7 @@
         const gamesPlayed = wins + losses + ties;
         const pointsFor = overall.pointsFor != null ? overall.pointsFor : (team.points || 0);
         const ppg = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
+        const livePoints = Number.isFinite(Number(team._livePoints)) ? Number(team._livePoints) : null;
 
         const expectedPts = optimalLineupTotal(entries, "proj");
         const ceilingPts = optimalLineupTotal(entries, "projCeil");
@@ -4654,6 +4655,8 @@
           owner,
           rosterValue,
           ppg,
+          actualPoints: pointsFor,
+          livePoints,
           gamesPlayed,
           pointsFor,
           wins,
@@ -5097,11 +5100,16 @@
         let consistencyScore = percentileScore(volVals, m.weeklyVol || 0, false);
         consistencyScore = soften(consistencyScore, 0.30);
 
-        const conf = actualConfidence(m.gamesPlayed || 0);
+        const hasLivePoints = m.livePoints != null;
+        const observedGames = (m.gamesPlayed || 0) + (hasLivePoints ? 1 : 0);
+        const conf = actualConfidence(observedGames);
         const projectedPpg = m.expectedPts || avgExp;
-        const actualPpg = m.ppg || 0;
+        const actualPpg = hasLivePoints
+          ? (((m.ppg || 0) * (m.gamesPlayed || 0)) + m.livePoints) / Math.max(observedGames, 1)
+          : (m.ppg || 0);
         const adjustedPpg = actualPpg * conf + projectedPpg * (1 - conf);
         m.adjustedPpg = adjustedPpg;
+        m.actualPpg = actualPpg;
         m.actualConf = conf;
         m.weeklyStrength = weeklyStrength;
 
@@ -7640,8 +7648,11 @@
         } else {
           score = t.totalScore != null ? t.totalScore.toFixed(1) : "0.0";
         }
+        const actualPts = t.actualPoints != null ? t.actualPoints.toFixed(1) : "—";
+        const actualPpg = t.actualPpg != null ? t.actualPpg.toFixed(1) : "—";
+        const livePts = t.livePoints != null ? " · " + t.livePoints.toFixed(1) + " live" : "";
         const recordStr = t.gamesPlayed > 0
-          ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + t.ppg.toFixed(1) + " PPG")
+          ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + actualPpg + " actual PPG" + livePts)
           : "Preseason";
         const exp = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         const ranks = posRankByTeam[t.id] || {};
@@ -7752,7 +7763,7 @@
             '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".<div>" + movementHtml + "</div></td>" +
             '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
               '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr +
-              " · Proj " + exp + "</div>" +
+              " · Actual " + actualPts + " pts · Proj " + exp + " pts</div>" +
               '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
               " · Depth " + depthTxt + "</div></td>" +
             '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
@@ -8540,10 +8551,12 @@
 
     let snapshotTimer = null;
     let snapshotRefreshInFlight = false;
+    let powerLiveRefreshInFlight = false;
 
     function applyLiveDataToLeague(liveData) {
       if (!leagueData || !liveData) return;
       if (Array.isArray(liveData.schedule)) leagueData.schedule = liveData.schedule;
+      const week = matchupWeekNumber(leagueData);
       for (const liveTeam of liveData.teams || []) {
         const team = (leagueData.teams || []).find((item) => String(item.id) === String(liveTeam.id));
         if (!team) continue;
@@ -8560,6 +8573,13 @@
             target.playerPoolEntry.rosterLocked = liveEntry.playerPoolEntry.rosterLocked;
           }
         }
+      }
+      for (const team of leagueData.teams || []) {
+        const live = liveMapFromMatchupData(liveData, team.id, week);
+        const fallbackLivePoints = Object.values(live.map || {})
+          .filter((entry) => entry.hasPlayed && isStarterSlot(entry.slot))
+          .reduce((sum, entry) => sum + (Number(entry.actual) || 0), 0);
+        team._livePoints = live.totalLive != null ? Number(live.totalLive) : fallbackLivePoints;
       }
     }
 
@@ -8673,6 +8693,21 @@
         await renderSnapshotDeck();
       } finally {
         snapshotRefreshInFlight = false;
+      }
+    }
+
+    async function refreshPowerRankingsLive() {
+      if (powerLiveRefreshInFlight || !leagueData || !powerModelsCache) return;
+      powerLiveRefreshInFlight = true;
+      try {
+        const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
+        applyLiveDataToLeague(liveData);
+        powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
+        renderPowerRankings(powerModelsCache);
+      } catch (error) {
+        console.warn("Power rankings live refresh failed", error);
+      } finally {
+        powerLiveRefreshInFlight = false;
       }
     }
 
@@ -9344,7 +9379,9 @@
         btn.classList.add("active");
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
-        if (btn.dataset.panel === "snapshots") {
+        if (btn.dataset.panel === "power") {
+          refreshPowerRankingsLive();
+        } else if (btn.dataset.panel === "snapshots") {
           refreshSnapshotDeck();
           if (snapshotTimer) clearInterval(snapshotTimer);
           snapshotTimer = setInterval(() => {
