@@ -3787,9 +3787,6 @@
         const normalized = normalizeName(name);
         let value = Number(entry && entry.value != null ? entry.value : 0) || 0;
 
-        if (normalized === "ajbrown" || normalized === "ajbrownjr") {
-          value -= 1000;
-        }
         if (normalized === "zayflowers" || normalized === "zayflower") {
           value += 2000;
         }
