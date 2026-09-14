@@ -3370,6 +3370,7 @@
 
 
 
+  <script src="./player-value-adjustments.js"></script>
   <script>
 
     (function initTheme() {
@@ -3782,13 +3783,18 @@
     }
 
     function applyFantasyCalcValueAdjustments(entries) {
+      const adjustments = (window.PLAYER_VALUE_ADJUSTMENTS && typeof window.PLAYER_VALUE_ADJUSTMENTS === "object")
+        ? window.PLAYER_VALUE_ADJUSTMENTS
+        : {};
+
       return (entries || []).map((entry) => {
         const name = String(entry && entry.name ? entry.name : "");
         const normalized = normalizeName(name);
         let value = Number(entry && entry.value != null ? entry.value : 0) || 0;
 
-        if (normalized === "zayflowers" || normalized === "zayflower") {
-          value += 2000;
+        const adjustmentKey = Object.keys(adjustments).find((key) => normalizeName(key) === normalized);
+        if (adjustmentKey != null) {
+          value += Number(adjustments[adjustmentKey]) || 0;
         }
 
         return Object.assign({}, entry, { value });
