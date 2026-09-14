@@ -4419,15 +4419,20 @@
       const weeklyFloor = {};
       const weeklyCeil = {};
       for (let week = 1; week <= 17; week++) {
-        if (actuals[week] != null && week <= Number(currentWeek || 0)) {
+        const fetched = player._weeklyProjections && player._weeklyProjections[week];
+        if (fetched && fetched.appliedTotal != null) {
+          weeklyProj[week] = Number(fetched.appliedTotal) || 0;
+        } else if (actuals[week] != null && week <= Number(currentWeek || 0)) {
           weeklyProj[week] = actuals[week];
         } else {
           const rhythm = 1 + 0.045 * Math.sin((week + Number(player.id || 0)) * 1.7);
           weeklyProj[week] = baseline * (0.72 + 0.28 * form) * rhythm;
         }
         const ratio = baseline > 0 ? weeklyProj[week] / baseline : 1;
-        weeklyFloor[week] = Math.max(0, (fields.floor || 0) * ratio);
-        weeklyCeil[week] = Math.max(weeklyProj[week], (fields.ceil || 0) * ratio);
+        const fetchedFloor = fetched && fetched.appliedTotalFloor != null ? Number(fetched.appliedTotalFloor) : null;
+        const fetchedCeil = fetched && fetched.appliedTotalCeiling != null ? Number(fetched.appliedTotalCeiling) : null;
+        weeklyFloor[week] = Math.max(0, fetchedFloor != null ? fetchedFloor : (fields.floor || 0) * ratio);
+        weeklyCeil[week] = Math.max(weeklyProj[week], fetchedCeil != null ? fetchedCeil : (fields.ceil || 0) * ratio);
       }
       return { weeklyProj, weeklyFloor, weeklyCeil };
     }
@@ -4438,40 +4443,47 @@
      * which plain mRoster often omits.
      */
     async function enrichEspnProjections(data) {
-      const week = data.scoringPeriodId || 1;
-      const url = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mMatchup&view=mRoster&scoringPeriodId=${week}`;
-      const res = await fetchWithTimeout(url, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
-      if (!res.ok) throw new Error("projection HTTP " + res.status);
-      const matchupData = await res.json();
+      const weeks = Array.from({ length: 17 }, (_, index) => index + 1);
+      const requests = await Promise.allSettled(weeks.map(async (week) => {
+        const url = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/${LEAGUE_ID}?view=mMatchup&view=mRoster&scoringPeriodId=${week}`;
+        const res = await fetchWithTimeout(url, { credentials: "omit", headers: { Accept: "application/json" } }, 20000);
+        if (!res.ok) throw new Error("projection week " + week + " HTTP " + res.status);
+        return { week, data: await res.json() };
+      }));
+      const payloads = requests.filter((result) => result.status === "fulfilled").map((result) => result.value);
+      if (!payloads.length) throw new Error("No weekly ESPN projections available");
       const byId = {};
 
-      function ingestEntry(entry) {
+      function ingestEntry(entry, week) {
         const ppe = entry.playerPoolEntry || {};
         const player = ppe.player;
         if (!player || player.id == null) return;
         const id = String(player.id);
-        const weekly = readWeeklyProjStat(player.stats);
-        if (!weekly) return;
-        const prev = byId[id];
-        if (prev && prev.scoringPeriodId > weekly.scoringPeriodId) return;
-        byId[id] = {
-          scoringPeriodId: weekly.scoringPeriodId,
-          appliedTotal: weekly.appliedTotal || 0,
-          appliedTotalCeiling: weekly.appliedTotalCeiling,
-          variance: weekly.variance || null,
-          stats: player.stats
-        };
+        const weekly = (player.stats || []).find((stat) =>
+          Number(stat.statSourceId) === 1 && Number(stat.statSplitTypeId) === 1 && Number(stat.scoringPeriodId) === week
+        );
+        if (!byId[id]) byId[id] = { weekly: {} };
+        if (weekly) {
+          byId[id].weekly[week] = {
+            appliedTotal: weekly.appliedTotal || 0,
+            appliedTotalFloor: weekly.appliedTotalFloor,
+            appliedTotalCeiling: weekly.appliedTotalCeiling,
+            variance: weekly.variance || null
+          };
+        }
       }
 
-      for (const team of matchupData.teams || []) {
-        for (const entry of team.roster?.entries || []) ingestEntry(entry);
-      }
-      for (const game of matchupData.schedule || []) {
-        for (const side of ["home", "away"]) {
-          const block = game[side];
-          if (!block) continue;
-          const roster = block.rosterForCurrentScoringPeriod || block.rosterForMatchupPeriod || {};
-          for (const entry of roster.entries || []) ingestEntry(entry);
+      for (const payload of payloads) {
+        for (const team of payload.data.teams || []) {
+          for (const entry of team.roster?.entries || []) ingestEntry(entry, payload.week);
+        }
+        for (const game of payload.data.schedule || []) {
+          for (const side of ["home", "away"]) {
+            const block = game[side];
+            if (!block) continue;
+            const roster = block.rosterForCurrentScoringPeriod || block.rosterForMatchupPeriod || {};
+            for (const entry of roster.entries || []) ingestEntry(entry, payload.week);
+          }
         }
       }
 
@@ -4482,17 +4494,19 @@
           if (!player) continue;
           const enriched = byId[String(player.id)];
           if (!enriched) continue;
-          player.stats = enriched.stats || player.stats;
+          player._weeklyProjections = enriched.weekly;
+          const current = enriched.weekly[Number(data.scoringPeriodId || 1)];
           player._projEnrich = {
-            appliedTotal: enriched.appliedTotal,
-            appliedTotalCeiling: enriched.appliedTotalCeiling,
-            variance: enriched.variance,
-            scoringPeriodId: enriched.scoringPeriodId
+            appliedTotal: current ? current.appliedTotal : null,
+            appliedTotalCeiling: current ? current.appliedTotalCeiling : null,
+            variance: current ? current.variance : null,
+            scoringPeriodId: Number(data.scoringPeriodId || 1)
           };
         }
       }
       data._projEnriched = true;
       data._projCount = Object.keys(byId).length;
+      data._projWeeksFetched = payloads.map((payload) => payload.week);
     }
 
     /**
@@ -4672,6 +4686,7 @@
           ceilingPts: hasProj ? ceilingPts : null,
           floorPts: hasProj ? floorPts : null,
           depthValue: benchValue(entries),
+          currentWeek: scoringPeriod,
           entries,
           tradePlayers
         };
@@ -4913,138 +4928,97 @@
 
     function finalizePowerScores(models) {
       const n = Math.max(models.length, 1);
-      const avgGames = models.reduce((s, m) => s + (m.gamesPlayed || 0), 0) / n;
-      const repl = computeReplacementLevels(models);
-      const actualWeightForGames = (games) => {
-        const g = Math.max(0, Number(games) || 0);
-        const table = [[0, 0], [1, 0.15], [2, 0.25], [3, 0.35], [4, 0.45], [5, 0.55], [6, 0.65], [8, 0.75], [10, 0.85]];
-        if (g >= 10) return 0.85;
-        for (let i = 0; i < table.length - 1; i++) {
-          if (g >= table[i][0] && g <= table[i + 1][0]) {
-            const span = table[i + 1][0] - table[i][0];
-            const t = span ? (g - table[i][0]) / span : 0;
-            return table[i][1] + (table[i + 1][1] - table[i][1]) * t;
-          }
-        }
-        return 0;
+      const actualWeightByWeek = [0, 0.10, 0.18, 0.26, 0.34, 0.42, 0.49, 0.55, 0.61, 0.66, 0.71, 0.75, 0.79, 0.82, 0.85, 0.88, 0.90, 0.92];
+      const percentile = (values, p) => {
+        const sorted = values.slice().sort((a, b) => a - b);
+        if (!sorted.length) return 0;
+        const index = (sorted.length - 1) * p;
+        const lower = Math.floor(index);
+        const upper = Math.ceil(index);
+        if (lower === upper) return sorted[lower];
+        return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower);
       };
+      const scorePercentile = (values, value) => percentile(values, 0.5) ? percentileScore(values, value, true) : 0.5;
 
-      // Attach shared weekly models
       models.forEach((m) => {
         const wm = buildWeeklyTeamModel(m.entries || []);
-        if (wm.meanExp > 1) {
-          Object.assign(m, {
-            weeklyModel: wm,
-            expectedPts: wm.meanExp,
-            medianExp: wm.medianExp,
-            floorPts: wm.meanFloor,
-            ceilingPts: wm.meanCeil,
-            worstByeWeekPts: wm.worstExp,
-            bestWeekPts: wm.bestExp,
-            weeklyExp: wm.weeklyExp,
-            weeklyVol: wm.volatility,
-            projFallback: false
-          });
-        } else {
-          const base = 0;
-          m.expectedPts = base;
-          m.medianExp = base;
-          m.ceilingPts = base * 1.28;
-          m.floorPts = base * 0.78;
-          m.worstByeWeekPts = base * 0.88;
-          m.bestWeekPts = base * 1.10;
-          m.weeklyExp = [];
-          m.weeklyVol = 8;
-          m.weeklyModel = null;
-          m.projFallback = true;
-        }
-
-        const baseLineup = optimalLineupTotalForWeek(m.entries || [], "proj", -999);
-        let vorpSum = 0;
-        (baseLineup.used || []).forEach((e) => { vorpSum += playerVorp(e, repl); });
-        m.starterVorp = vorpSum;
-
-        const depth = computeDepthScore(m.entries || []);
-        m.depthPts = depth.depthPts;
-        m.depthVorp = 0;
-        m.compRaw = 0;
-
-        const exp = Math.max(m.expectedPts, 1e-6);
-        m.stabilityRatio = Math.min(1.2, Math.max(0, (m.floorPts || 0) / exp));
-        m.upsideRatio = Math.min(2.0, Math.max(0, (m.ceilingPts || 0) / exp));
+        Object.assign(m, {
+          weeklyModel: wm,
+          expectedPts: wm.meanExp,
+          medianExp: wm.medianExp,
+          floorPts: wm.meanFloor,
+          ceilingPts: wm.meanCeil,
+          worstByeWeekPts: wm.worstExp,
+          bestWeekPts: wm.bestExp,
+          weeklyExp: wm.weeklyExp,
+          weeklyVol: wm.volatility,
+          projFallback: wm.meanExp <= 1
+        });
+        const starters = optimalLineupTotalForWeek(m.entries || [], "proj", -999).used || [];
+        const bench = getBenchPlayers(m.entries || []);
+        m.starterVorp = starters.reduce((sum, e) => sum + (e.val || 0), 0);
+        m.benchValue = bench.reduce((sum, e) => sum + (e.val || 0), 0);
+        m.depthPts = bench.reduce((sum, e) => sum + (e.proj || 0), 0);
+        m.benchUpside = bench.reduce((sum, e) => sum + Math.max(0, (e.projCeil || 0) - (e.proj || 0)), 0);
       });
 
-      const leagueActualPpg = median(models.map((m) => m.ppg || 0));
-      const normalize = (values, value) => {
-        const max = Math.max(...values, 0);
-        return max > 0 ? Math.max(0, value || 0) / max : 0;
-      };
-      const projectedStrengths = models.map((m) =>
-        0.60 * (m.medianExp || 0) +
-        0.25 * (m.expectedPts || 0) +
-        0.10 * (m.bestWeekPts || 0) +
-        0.05 * (m.worstByeWeekPts || 0)
-      );
-      const vorps = models.map((m) => m.starterVorp || 0);
-      const depths = models.map((m) => m.depthPts || 0);
-      const upsides = models.map((m) => Math.max(0, (m.ceilingPts || 0) - (m.medianExp || 0)));
-      const strengthWeight = avgGames >= 10 ? 0.70 : avgGames >= 5 ? 0.60 : 0.65;
-      const vorpWeight = avgGames >= 10 ? 0.15 : 0.20;
-      const depthWeight = 0.10;
-      const upsideWeight = avgGames >= 10 ? 0.05 : 0.05;
-
-      const scored = models.map((m) => {
-        const projectedStrength = projectedStrengths[models.indexOf(m)];
-        const hasLivePoints = m.livePoints != null;
-        const observedGames = (m.gamesPlayed || 0) + (hasLivePoints ? 1 : 0);
-        const actualPpg = hasLivePoints
+      const projectedValues = models.map((m) => m.expectedPts || 0);
+      const leagueAverageProjected = projectedValues.reduce((sum, value) => sum + value, 0) / n;
+      const currentWeek = Math.max(0, Math.min(17, Number(models[0]?.currentWeek || 0)));
+      const hasPlayed = models.some((m) => (m.gamesPlayed || 0) > 0 || m.livePoints != null);
+      const actualWeight = !hasPlayed ? 0 : actualWeightByWeek[currentWeek];
+      const projectedStrengths = models.map((m) => {
+        const weekly = m.weeklyExp || [];
+        return 0.55 * (m.medianExp || 0) + 0.30 * (m.expectedPts || 0) +
+          0.10 * percentile(weekly, 0.90) + 0.05 * percentile(weekly, 0.10);
+      });
+      const scored = models.map((m, index) => {
+        const observedGames = (m.gamesPlayed || 0) + (m.livePoints != null ? 1 : 0);
+        const actualPpg = m.livePoints != null
           ? (((m.ppg || 0) * (m.gamesPlayed || 0)) + m.livePoints) / Math.max(observedGames, 1)
-          : m.ppg || 0;
-        const actualStrength = 0.70 * actualPpg + 0.30 * leagueActualPpg;
-        const actualWeight = actualWeightForGames(observedGames);
-        const strength = projectedStrength * (1 - actualWeight) + actualStrength * actualWeight;
-        const strengthScore = normalize(projectedStrengths, strength);
-        const vorpScore = normalize(vorps, m.starterVorp);
-        const depthScore = normalize(depths, m.depthPts);
-        const upside = Math.max(0, (m.ceilingPts || 0) - (m.medianExp || 0));
-        const upsideScore = normalize(upsides, upside);
-        const weeklyStrength = projectedStrength;
-        const adjustedPpg = strength;
-        m.adjustedPpg = adjustedPpg;
+          : (m.ppg || 0);
+        const projectedPpg = Math.max(m.expectedPts || 0, 0.01);
+        const actualStrength = 0.70 * actualPpg + 0.30 * (actualPpg / projectedPpg) * leagueAverageProjected;
+        const combinedStrength = (1 - actualWeight) * projectedStrengths[index] + actualWeight * actualStrength;
         m.actualPpg = actualPpg;
         m.actualConf = actualWeight;
         m.observedWeight = actualWeight;
-        m.liveStatus = hasLivePoints ? "live" : ((m.gamesPlayed || 0) > 0 ? "completed" : "projected");
-        m.weeklyStrength = weeklyStrength;
-
-        return Object.assign({}, m, {
-          starterScore: strengthScore,
-          depthScore,
-          marketScore: 0,
-          stabilityScore: 0,
-          upsideScore,
-          scarcityScore: vorpScore,
-          consistencyScore: 0,
-          projectedStrength,
-          actualStrength,
-          strength,
-          positionalAdvantage: m.starterVorp,
-          adjustedPpg,
-          _stabSorted: []
-        });
+        m.liveStatus = m.livePoints != null ? "live" : ((m.gamesPlayed || 0) > 0 ? "completed" : "projected");
+        m.projectedStrength = projectedStrengths[index];
+        m.actualStrength = actualStrength;
+        m.combinedStrength = combinedStrength;
+        m.adjustedPpg = combinedStrength;
+        m.weeklyStrength = combinedStrength;
+        return m;
       });
 
+      const starterValues = scored.map((m) => m.starterVorp || 0);
+      const benchValues = scored.map((m) => m.benchValue || 0);
+      const depthValues = scored.map((m) => m.depthPts || 0);
+      const benchUpsides = scored.map((m) => m.benchUpside || 0);
+      const combinedValues = scored.map((m) => m.combinedStrength || 0);
       scored.forEach((m) => {
-        m.actualScore = normalize(scored.map((x) => x.actualStrength || 0), m.actualStrength);
-        m.scheduleScore = 0; // folded into weekly strength curve
-        m.rawPower = strengthWeight * normalize(scored.map((x) => x.strength || 0), m.strength) +
-          vorpWeight * normalize(vorps, m.starterVorp) +
-          depthWeight * normalize(depths, m.depthPts) +
-          upsideWeight * normalize(upsides, Math.max(0, (m.ceilingPts || 0) - (m.medianExp || 0)));
-        m.weights = { strength: strengthWeight, positionalAdvantage: vorpWeight, depth: depthWeight, upside: upsideWeight, actual: m.actualConf };
-        m.projShare = strengthWeight * (1 - m.actualConf);
+        m.fantasyCalcScore = 0.75 * scorePercentile(starterValues, m.starterVorp || 0) +
+          0.25 * scorePercentile(benchValues, m.benchValue || 0);
+        m.depthScore = 0.50 * scorePercentile(depthValues, m.depthPts || 0) +
+          0.30 * scorePercentile(benchValues, m.benchValue || 0) +
+          0.20 * scorePercentile(benchUpsides, m.benchUpside || 0);
+        m.combinedStrengthPercentile = scorePercentile(combinedValues, m.combinedStrength || 0);
+        m.rawPower = 0.70 * m.combinedStrengthPercentile + 0.20 * m.fantasyCalcScore + 0.10 * m.depthScore;
+        m.starterScore = m.combinedStrengthPercentile;
+        m.scarcityScore = m.fantasyCalcScore;
+        m.depthNorm = m.depthScore;
+        m.upsideScore = scorePercentile(benchUpsides, m.benchUpside || 0);
+        m.actualScore = scorePercentile(scored.map((x) => x.actualStrength || 0), m.actualStrength || 0);
+        m.scheduleScore = 0;
+        m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
+        m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
+        m.weights = { combinedStrength: 0.70, fantasyCalc: 0.20, depth: 0.10, actual: actualWeight };
+        m.projShare = 1 - actualWeight;
+        m.actualShare = actualWeight;
         m.compShare = 0;
-        m.actualShare = strengthWeight * m.actualConf;
+        m.positionalAdvantage = m.starterVorp;
+        m._stabSorted = [];
       });
 
       const maxRaw = Math.max(...scored.map((m) => m.rawPower || 0), 1e-9);
