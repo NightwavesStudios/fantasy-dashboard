@@ -3089,10 +3089,6 @@
           <div class="snapshot-card-head"><div><h3>Against the median</h3><div class="snapshot-card-note">Top 5 and bottom 5 by current projection</div></div></div>
           <div class="snapshot-card-body"><div class="snapshot-list" id="snapshot-median-list"></div></div>
         </section>
-        <section class="snapshot-card" aria-label="Playoff predictions snapshot">
-          <div class="snapshot-card-head"><div><h3>Playoff predictions</h3><div class="snapshot-card-note">Simulation results and postseason odds</div></div></div>
-          <div class="snapshot-card-body"><div id="snapshot-playoff-summary" class="snapshot-list"></div><div class="snapshot-card-note">Detailed live table is in Playoffs.</div></div>
-        </section>
       </div>
     </div>
   </div>
@@ -8581,7 +8577,7 @@
       const label = document.getElementById("snapshot-power-note");
       if (label) label.textContent = "Week " + week + " · site model · projected points";
 
-      powerList.innerHTML = ranked.slice(0, 5).map((team, index) => {
+      powerList.innerHTML = ranked.map((team, index) => {
         const movement = powerMovementById[String(team.id)] || 0;
         const movementHtml = movement > 0 ? '<span class="rank-movement up">↑' + movement + '</span>' : movement < 0 ? '<span class="rank-movement down">↓' + Math.abs(movement) + '</span>' : '<span class="rank-movement flat">—</span>';
         return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
@@ -8617,15 +8613,15 @@
       const projections = models.map(projectionValue).sort((a, b) => a - b);
       const median = projections.length ? medianOf(projections) : 0;
       const top = models.slice().sort((a, b) => projectionValue(b) - projectionValue(a)).slice(0, 5);
-      const bottom = models.slice().sort((a, b) => projectionValue(a) - projectionValue(b)).slice(0, 5);
-      const medianRows = (title, rows) => '<div class="snapshot-card-note" style="margin:0.2rem 0 0.35rem">' + title + '</div>' + rows.map((team, index) => {
+      const bottom = models.slice().sort((a, b) => projectionValue(b) - projectionValue(a)).slice(5, 10);
+      const medianRows = (title, rows, rankOffset) => '<div class="snapshot-card-note" style="margin:0.2rem 0 0.35rem">' + title + '</div>' + rows.map((team, index) => {
         const liveProjection = projectionValue(team);
         const delta = liveProjection - median;
-        return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
+        return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + rankOffset) + '</span><span><strong>' +
           escapeHtml(team.name) + '</strong><small>' + liveProjection.toFixed(1) + ' live proj · median ' + median.toFixed(1) + '</small></span><span class="snapshot-value" style="color:' +
           (delta >= 0 ? '#4ade80' : '#f87171') + '">' + (delta >= 0 ? '+' : '') + delta.toFixed(1) + '</span></div>';
       }).join("");
-      medianList.innerHTML = medianRows("Top 5", top) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom);
+      medianList.innerHTML = medianRows("Top 5", top, 1) + '<div style="height:0.4rem"></div>' + medianRows("Bottom 5", bottom, 6);
       const games = (liveData.schedule || leagueData.schedule || []).filter((game) => Number(game.matchupPeriodId || game.week || 0) === week);
       const matchupRows = games.map((game) => {
         const home = game.home && typeof game.home === "object" ? game.home : { teamId: game.home };
