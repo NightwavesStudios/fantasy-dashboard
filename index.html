@@ -5665,6 +5665,8 @@
 
       function renderRankingImpact() {
         const grid = document.getElementById("calc-impact-grid");
+        if (!grid) return;
+
         const teamAId = selA.value;
         const teamBId = selB.value;
         const hasPicks = calcSelected.a.size > 0 || calcSelected.b.size > 0;
