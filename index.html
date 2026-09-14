@@ -4801,6 +4801,7 @@
       const bestExp = Math.max(...weeklyExp);
       const meanFloor = mean(weeklyFloor);
       const meanCeil = mean(weeklyCeil);
+      const seasonProjectedPts = weeklyExp.reduce((sum, value) => sum + value, 0);
       // sample SD of weekly means
       let variance = 0;
       weeklyExp.forEach((x) => { variance += (x - meanExp) * (x - meanExp); });
@@ -4815,6 +4816,7 @@
         bestExp,
         meanFloor,
         meanCeil,
+        seasonProjectedPts,
         volatility: vol,
         // aliases used elsewhere
         expectedPts: meanExp,
@@ -4965,6 +4967,9 @@
           bestWeekPts: wm.bestExp,
           weeklyExp: wm.weeklyExp,
           weeklyVol: wm.volatility,
+          seasonProjectedPts: wm.seasonProjectedPts,
+          seasonActualPts: wm.weeklyExp.slice(0, Math.max(0, Number(m.currentWeek || 0))).reduce((sum, value) => sum + value, 0),
+          seasonRemainingPts: wm.seasonProjectedPts - wm.weeklyExp.slice(0, Math.max(0, Number(m.currentWeek || 0))).reduce((sum, value) => sum + value, 0),
           projFallback: wm.meanExp <= 1
         });
         const starters = optimalLineupTotalForWeek(m.entries || [], "proj", -999).used || [];
@@ -5016,7 +5021,7 @@
         m.depthScore = 0.60 * scorePercentile(depthValues, m.depthPts || 0) +
           0.40 * scorePercentile(benchValues, m.benchValue || 0);
         m.combinedStrengthPercentile = scorePercentile(combinedValues, m.combinedStrength || 0);
-        m.rawPower = 0.65 * m.combinedStrengthPercentile + 0.20 * m.fantasyCalcScore + 0.15 * m.depthScore;
+        m.rawPower = 0.55 * m.combinedStrengthPercentile + 0.35 * m.fantasyCalcScore + 0.10 * m.depthScore;
         m.starterScore = m.combinedStrengthPercentile;
         m.scarcityScore = m.fantasyCalcScore;
         m.depthNorm = m.depthScore;
@@ -5025,7 +5030,7 @@
         m.scheduleScore = 0;
         m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
         m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
-        m.weights = { combinedStrength: 0.65, fantasyCalc: 0.20, depth: 0.15, actual: actualWeight };
+        m.weights = { combinedStrength: 0.55, fantasyCalc: 0.35, depth: 0.10, actual: actualWeight };
         m.projShare = 1 - actualWeight;
         m.actualShare = actualWeight;
         m.compShare = 0;
@@ -7496,7 +7501,7 @@
       let body = "";
       const sortLabel = sortMode === "overall" ? "" :
         ('<div class="rankings-note" style="margin-bottom:0.5rem">Sorted by ' +
-         (sortMode === "proj" ? "projected PPG" : sortMode) +
+         (sortMode === "proj" ? "season projected points" : sortMode) +
          (powerNeedFilter !== "all" ? " · need " + powerNeedFilter : "") + "</div>");
       sorted.forEach((t, i) => {
         const rank = i + 1;
@@ -7507,7 +7512,7 @@
           ? '<span class="rank-movement down">↓' + Math.abs(movement) + '</span>'
           : '<span class="rank-movement flat">—</span>';
         let score;
-        if (sortMode === "proj") score = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
+        if (sortMode === "proj") score = t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—";
         else if (sortMode === "depth") score = t.depthScore != null ? (t.depthScore * 100).toFixed(0) : "—";
         else if (sortMode === "vorp") score = t.starterVorp != null ? t.starterVorp.toFixed(1) : "—";
         else if (["QB", "RB", "WR", "TE"].indexOf(sortMode) >= 0) {
@@ -7590,14 +7595,15 @@
           '<div class="fp-detail-grid">' +
             '<div class="fp-detail-block">' +
               "<h5>Score breakdown</h5>" +
-              weightRow("Weekly strength", t.starterScore, rankStarter, "starter", tips.starter) +
-              weightRow("Positional advantage", t.scarcityScore, rankVorp, "positionalAdvantage", tips.positionalAdvantage) +
-              weightRow("Depth", t.depthScore, rankDepth, "depth", tips.depth) +
-              weightRow("Upside", t.upsideScore, rankUps, "upside", tips.upside) +
-              weightRow("Strength", t.starterScore, componentRank("starterScore"), "strength", tips.actual) +
+              weightRow("Combined strength", t.combinedStrengthPercentile, rankStarter, "combinedStrength", tips.starter) +
+              weightRow("FantasyCalc roster value", t.fantasyCalcScore, rankVorp, "fantasyCalc", "Optimal starters 75% + useful bench 25%.") +
+              weightRow("Depth", t.depthScore, rankDepth, "depth", "Projected bench points 60% + bench FantasyCalc value 40%.") +
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Lineup projections</h5>" +
+              metric("Season projected", t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—", "Season-to-date actual points plus projected points for the remaining weeks.") +
+              metric("Already scored", t.seasonActualPts != null ? t.seasonActualPts.toFixed(1) : "—", "Actual optimal-lineup points from completed weeks.") +
+              metric("Remaining projection", t.seasonRemainingPts != null ? t.seasonRemainingPts.toFixed(1) : "—", "Projected optimal-lineup points for the remaining weeks.") +
               metric("Mean week", exp, "Average optimal-lineup projection across weeks 1–17.") +
               metric("Median week", t.medianExp != null ? t.medianExp.toFixed(1) : exp, "Middle week of the projection curve — less skewed by one huge or tiny week.") +
               metric("Best week", t.bestWeekPts != null ? t.bestWeekPts.toFixed(1) : "—", "Highest single-week optimal lineup projection.") +
@@ -7626,7 +7632,7 @@
             '<td class="fp-rk" style="color:' + rankColor(rank, teamCount) + '">' + rank + ".<div>" + movementHtml + "</div></td>" +
             '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
               '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr +
-              " · Actual " + actualPts + " pts · Proj " + exp + " pts</div>" +
+              " · Actual " + actualPts + " pts · Season proj " + (t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—") + " pts</div>" +
               '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
               " · Depth " + depthTxt + "</div></td>" +
             '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
@@ -8465,7 +8471,7 @@
         const movementHtml = movement > 0 ? '<span class="rank-movement up">↑' + movement + '</span>' : movement < 0 ? '<span class="rank-movement down">↓' + Math.abs(movement) + '</span>' : '<span class="rank-movement flat">—</span>';
         return '<div class="snapshot-row"><span class="snapshot-rank">' + (index + 1) + '</span><span><strong>' +
         escapeHtml(team.name) + '</strong><small>' + (team.wins || 0) + '-' + (team.losses || 0) +
-        ' · ' + (team.expectedPts != null ? team.expectedPts.toFixed(1) : "—") + ' projected</small></span><span class="snapshot-value">' +
+        ' · ' + (team.seasonProjectedPts != null ? team.seasonProjectedPts.toFixed(1) : "—") + ' season proj</small></span><span class="snapshot-value">' +
         (team.totalScore != null ? team.totalScore.toFixed(1) : "—") + ' ' + movementHtml + '</span></div>';
       }).join("") || '<span class="snapshot-empty">No teams loaded.</span>';
 
