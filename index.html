@@ -4205,6 +4205,7 @@
 
         try {
           renderAll(leagueData);
+          if (PLATFORM === "espn") refreshPowerRankingsLive();
           fillWaiverTeamSelect();
           const name = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
           saveLeagueEntry(LEAGUE_ID, SEASON, name, PLATFORM);
@@ -4935,6 +4936,13 @@
       return w;
     }
 
+    function observedPowerWeight(games, hasLiveWeek) {
+      const completed = Math.max(0, Math.min(17, games || 0));
+      if (!hasLiveWeek && completed === 0) return 0;
+      if (hasLiveWeek) return Math.min(0.72, 0.34 + completed * 0.035);
+      return Math.min(0.82, 0.46 + completed * 0.035);
+    }
+
     /** Confidence that actual PPG is trustworthy. */
     function actualConfidence(games) {
       const table = [
@@ -5108,9 +5116,12 @@
           ? (((m.ppg || 0) * (m.gamesPlayed || 0)) + m.livePoints) / Math.max(observedGames, 1)
           : (m.ppg || 0);
         const adjustedPpg = actualPpg * conf + projectedPpg * (1 - conf);
+        const observedWeight = observedPowerWeight(m.gamesPlayed, hasLivePoints);
         m.adjustedPpg = adjustedPpg;
         m.actualPpg = actualPpg;
         m.actualConf = conf;
+        m.observedWeight = observedWeight;
+        m.liveStatus = hasLivePoints ? "live" : ((m.gamesPlayed || 0) > 0 ? "completed" : "projected");
         m.weeklyStrength = weeklyStrength;
 
         return Object.assign({}, m, {
@@ -5133,11 +5144,12 @@
         m.scheduleScore = 0; // folded into weekly strength curve
 
         // Core = starters + scarcity (what you put on the field). Secondary metrics can't dominate.
-        const coreW = (w.starter || 0) + (w.scarcity || 0) + (w.actual || 0);
+        const actualWeight = Math.max(w.actual || 0, m.observedWeight || 0);
+        const coreW = (w.starter || 0) + (w.scarcity || 0) + actualWeight;
         const core =
           ((w.starter || 0) * m.starterScore +
            (w.scarcity || 0) * m.scarcityScore +
-           (w.actual || 0) * m.actualScore) / Math.max(coreW, 1e-6);
+           actualWeight * m.actualScore) / Math.max(coreW, 1e-6);
         const secondaryW =
           (w.depth || 0) + (w.market || 0) + (w.stability || 0) +
           (w.upside || 0) + (w.consistency || 0);
@@ -5153,6 +5165,7 @@
         m.rawPower = 0.78 * core + 0.22 * secondary;
 
         m.weights = w;
+        m.weights.actual = actualWeight;
         m.projShare = w.starter;
         m.compShare = w.market;
         m.actualShare = w.actual;
@@ -7650,10 +7663,11 @@
         }
         const actualPts = t.actualPoints != null ? t.actualPoints.toFixed(1) : "—";
         const actualPpg = t.actualPpg != null ? t.actualPpg.toFixed(1) : "—";
-        const livePts = t.livePoints != null ? " · " + t.livePoints.toFixed(1) + " live" : "";
-        const recordStr = t.gamesPlayed > 0
-          ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + actualPpg + " actual PPG" + livePts)
-          : "Preseason";
+        const recordStr = t.liveStatus === "live"
+          ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + actualPpg + " actual PPG · " + t.livePoints.toFixed(1) + " live now")
+          : t.liveStatus === "completed"
+          ? (t.wins + "-" + t.losses + (t.ties ? "-" + t.ties : "") + " · " + actualPpg + " actual PPG · completed")
+          : "Projected · no games played";
         const exp = t.expectedPts != null ? t.expectedPts.toFixed(1) : "—";
         const ranks = posRankByTeam[t.id] || {};
         const qbG = posGradeLabel(ranks.QB, teamCount);
