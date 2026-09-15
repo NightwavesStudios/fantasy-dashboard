@@ -4222,7 +4222,6 @@
 
         try {
           renderAll(leagueData);
-          if (PLATFORM === "espn") refreshPowerRankingsLive();
           fillWaiverTeamSelect();
           const name = (leagueData.settings && leagueData.settings.name) || ("League " + LEAGUE_ID);
           saveLeagueEntry(LEAGUE_ID, SEASON, name, PLATFORM);
@@ -4686,8 +4685,6 @@
         const gamesPlayed = wins + losses + ties;
         const pointsFor = overall.pointsFor != null ? overall.pointsFor : (team.points || 0);
         const ppg = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
-        const livePoints = Number.isFinite(Number(team._livePoints)) ? Number(team._livePoints) : null;
-
         const expectedPts = optimalLineupTotal(entries, "proj");
         const ceilingPts = optimalLineupTotal(entries, "projCeil");
         const floorPts = optimalLineupTotal(entries, "projFloor");
@@ -4701,7 +4698,6 @@
           rosterValue,
           ppg,
           actualPoints: pointsFor,
-          livePoints,
           gamesPlayed,
           pointsFor,
           wins,
@@ -4985,8 +4981,8 @@
           weeklyExp: wm.weeklyExp,
           weeklyVol: wm.volatility,
           seasonProjectedPts: wm.seasonProjectedPts,
-          seasonActualPts: wm.weeklyExp.slice(0, Math.max(0, Number(m.currentWeek || 0))).reduce((sum, value) => sum + value, 0),
-          seasonRemainingPts: wm.seasonProjectedPts - wm.weeklyExp.slice(0, Math.max(0, Number(m.currentWeek || 0))).reduce((sum, value) => sum + value, 0),
+          seasonActualPts: m.pointsFor || 0,
+          seasonRemainingPts: Math.max(0, wm.seasonProjectedPts - (m.pointsFor || 0)),
           projFallback: wm.meanExp <= 1
         });
         const starters = optimalLineupTotalForWeek(m.entries || [], "proj", -999).used || [];
@@ -5000,7 +4996,7 @@
       const projectedValues = models.map((m) => m.expectedPts || 0);
       const leagueAverageProjected = projectedValues.reduce((sum, value) => sum + value, 0) / n;
       const currentWeek = Math.max(0, Math.min(17, Number(models[0]?.currentWeek || 0)));
-      const hasPlayed = models.some((m) => (m.gamesPlayed || 0) > 0 || m.livePoints != null);
+      const hasPlayed = models.some((m) => (m.gamesPlayed || 0) > 0);
       const actualWeight = !hasPlayed ? 0 : actualWeightByWeek[currentWeek];
       const projectedStrengths = models.map((m) => {
         const weekly = m.weeklyExp || [];
@@ -5008,17 +5004,15 @@
           0.10 * percentile(weekly, 0.90) + 0.10 * percentile(weekly, 0.10);
       });
       const scored = models.map((m, index) => {
-        const observedGames = (m.gamesPlayed || 0) + (m.livePoints != null ? 1 : 0);
-        const actualPpg = m.livePoints != null
-          ? (((m.ppg || 0) * (m.gamesPlayed || 0)) + m.livePoints) / Math.max(observedGames, 1)
-          : (m.ppg || 0);
+        const observedGames = m.gamesPlayed || 0;
+        const actualPpg = m.ppg || 0;
         const projectedPpg = Math.max(m.expectedPts || 0, 0.01);
         const actualStrength = 0.70 * actualPpg + 0.30 * (actualPpg / projectedPpg) * leagueAverageProjected;
         const combinedStrength = (1 - actualWeight) * projectedStrengths[index] + actualWeight * actualStrength;
         m.actualPpg = actualPpg;
         m.actualConf = actualWeight;
         m.observedWeight = actualWeight;
-        m.liveStatus = m.livePoints != null ? "live" : ((m.gamesPlayed || 0) > 0 ? "completed" : "projected");
+        m.liveStatus = (m.gamesPlayed || 0) > 0 ? "completed" : "projected";
         m.projectedStrength = projectedStrengths[index];
         m.actualStrength = actualStrength;
         m.combinedStrength = combinedStrength;
@@ -5032,13 +5026,20 @@
       const depthValues = scored.map((m) => m.depthPts || 0);
       const benchUpsides = scored.map((m) => m.benchUpside || 0);
       const combinedValues = scored.map((m) => m.combinedStrength || 0);
+      const recordValues = scored.map((m) => {
+        const games = (m.wins || 0) + (m.losses || 0) + (m.ties || 0);
+        return games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
+      });
       scored.forEach((m) => {
         m.fantasyCalcScore = 0.75 * scorePercentile(starterValues, m.starterVorp || 0) +
           0.25 * scorePercentile(benchValues, m.benchValue || 0);
         m.depthScore = 0.60 * scorePercentile(depthValues, m.depthPts || 0) +
           0.40 * scorePercentile(benchValues, m.benchValue || 0);
         m.combinedStrengthPercentile = scorePercentile(combinedValues, m.combinedStrength || 0);
-        m.rawPower = 0.55 * m.combinedStrengthPercentile + 0.35 * m.fantasyCalcScore + 0.10 * m.depthScore;
+        const games = (m.wins || 0) + (m.losses || 0) + (m.ties || 0);
+        m.recordWinRate = games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
+        m.recordScore = scorePercentile(recordValues, m.recordWinRate);
+        m.rawPower = 0.50 * m.combinedStrengthPercentile + 0.25 * m.fantasyCalcScore + 0.10 * m.depthScore + 0.15 * m.recordScore;
         m.starterScore = m.combinedStrengthPercentile;
         m.scarcityScore = m.fantasyCalcScore;
         m.depthNorm = m.depthScore;
@@ -5047,7 +5048,7 @@
         m.scheduleScore = 0;
         m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
         m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
-        m.weights = { combinedStrength: 0.55, fantasyCalc: 0.35, depth: 0.10, actual: actualWeight };
+        m.weights = { combinedStrength: 0.50, fantasyCalc: 0.25, depth: 0.10, record: 0.15, actual: actualWeight };
         m.projShare = 1 - actualWeight;
         m.actualShare = actualWeight;
         m.compShare = 0;
@@ -7620,8 +7621,8 @@
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Lineup projections</h5>" +
-              metric("Season projected", t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—", "Season-to-date actual points plus projected points for the remaining weeks.") +
-              metric("Already scored", t.seasonActualPts != null ? t.seasonActualPts.toFixed(1) : "—", "Actual optimal-lineup points from completed weeks.") +
+              metric("Season projected", t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—", "Full-season projected points based on the roster's weekly optimal lineups.") +
+              metric("Already scored", t.seasonActualPts != null ? t.seasonActualPts.toFixed(1) : "—", "Finalized team points-for from completed games.") +
               metric("Remaining projection", t.seasonRemainingPts != null ? t.seasonRemainingPts.toFixed(1) : "—", "Projected optimal-lineup points for the remaining weeks.") +
               metric("Mean week", exp, "Average optimal-lineup projection across weeks 1–17.") +
               metric("Median week", t.medianExp != null ? t.medianExp.toFixed(1) : exp, "Middle week of the projection curve — less skewed by one huge or tiny week.") +
@@ -8439,7 +8440,6 @@
 
     let snapshotTimer = null;
     let snapshotRefreshInFlight = false;
-    let powerLiveRefreshInFlight = false;
 
     function applyLiveDataToLeague(liveData) {
       if (!leagueData || !liveData) return;
@@ -8572,30 +8572,12 @@
       snapshotRefreshInFlight = true;
       try {
         const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
-        applyLiveDataToLeague(liveData);
-        powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
-        renderPowerRankings(powerModelsCache);
         await renderSnapshotDeck(liveData);
       } catch (error) {
         console.warn("Snapshot live refresh failed", error);
         await renderSnapshotDeck();
       } finally {
         snapshotRefreshInFlight = false;
-      }
-    }
-
-    async function refreshPowerRankingsLive() {
-      if (powerLiveRefreshInFlight || !leagueData || !powerModelsCache) return;
-      powerLiveRefreshInFlight = true;
-      try {
-        const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
-        applyLiveDataToLeague(liveData);
-        powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
-        renderPowerRankings(powerModelsCache);
-      } catch (error) {
-        console.warn("Power rankings live refresh failed", error);
-      } finally {
-        powerLiveRefreshInFlight = false;
       }
     }
 
@@ -9034,9 +9016,6 @@
         let scheduleData = leagueData;
         try {
           const liveData = await fetchLiveMatchupWeek(matchupWeekNumber(leagueData));
-          applyLiveDataToLeague(liveData);
-          powerModelsCache = finalizePowerScores(buildTeamModels(leagueData));
-          renderPowerRankings(powerModelsCache);
           scheduleData = liveData;
         } catch (liveError) {
           console.warn("Live playoff refresh unavailable", liveError);
@@ -9267,9 +9246,7 @@
         btn.classList.add("active");
         const panel = document.getElementById("panel-" + btn.dataset.panel);
         if (panel) panel.classList.add("active");
-        if (btn.dataset.panel === "power") {
-          refreshPowerRankingsLive();
-        } else if (btn.dataset.panel === "snapshots") {
+        if (btn.dataset.panel === "snapshots") {
           refreshSnapshotDeck();
           if (snapshotTimer) clearInterval(snapshotTimer);
           snapshotTimer = setInterval(() => {
