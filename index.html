@@ -5027,9 +5027,8 @@
           seasonRemainingPts: Math.max(0, wm.seasonProjectedPts - (m.pointsFor || 0)),
           projFallback: wm.meanExp <= 1
         });
-        const starters = optimalLineupTotalForWeek(m.entries || [], "proj", -999).used || [];
         const bench = getBenchPlayers(m.entries || []);
-        m.starterVorp = starters.reduce((sum, e) => sum + (e.val || 0), 0);
+        m.starterVorp = starterValue(m.entries || []);
         m.benchValue = bench.reduce((sum, e) => sum + (e.val || 0), 0);
         m.depthPts = bench.reduce((sum, e) => sum + (e.proj || 0), 0);
         m.benchUpside = bench.reduce((sum, e) => sum + Math.max(0, (e.projCeil || 0) - (e.proj || 0)), 0);
@@ -5074,8 +5073,8 @@
         return games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
       });
       scored.forEach((m) => {
-        m.fantasyCalcScore = 0.75 * scorePercentile(starterValues, m.starterVorp || 0) +
-          0.25 * scorePercentile(benchValues, m.benchValue || 0);
+        m.fantasyCalcScore = 0.85 * scorePercentile(starterValues, m.starterVorp || 0) +
+          0.15 * scorePercentile(benchValues, m.benchValue || 0);
         m.depthScore = 0.60 * scorePercentile(depthValues, m.depthPts || 0) +
           0.40 * scorePercentile(benchValues, m.benchValue || 0);
         m.combinedStrengthPercentile = scorePercentile(combinedValues, m.combinedStrength || 0);
@@ -7694,7 +7693,7 @@
               "<h5>Score breakdown</h5>" +
               weightRow("Combined strength", t.combinedStrengthPercentile, rankStarter, "combinedStrength", tips.starter) +
               weightRow("Projected scoring", t.scoringScore, componentRank("scoringScore"), "scoring", "Relative rank of projected optimal-lineup points per week. Higher scoring teams rank higher.") +
-              weightRow("FantasyCalc roster value", t.fantasyCalcScore, rankVorp, "fantasyCalc", "Optimal starters 75% + useful bench 25%.") +
+              weightRow("FantasyCalc roster value", t.fantasyCalcScore, rankVorp, "fantasyCalc", "Top-value starters by position and flex slots 85% + useful bench 15%.") +
               weightRow("Depth", t.depthScore, rankDepth, "depth", "Projected bench points 60% + bench FantasyCalc value 40%.") +
               '<h5 style="margin-top:0.8rem">Composite percentage</h5>' +
               breakdownHtml(t) +
