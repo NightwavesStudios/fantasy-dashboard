@@ -4665,8 +4665,32 @@
       const members = data.members || [];
       const scoringPeriod = data.scoringPeriodId || 1;
 
+      function completedTeamPerformance(team) {
+        const overall = (team.record && team.record.overall) || {};
+        const currentWeek = Math.max(1, Number(scoringPeriod) || 1);
+        const completedGames = Math.max(0, currentWeek - 1);
+        const seasonPoints = team._directEspnPointsFor != null
+          ? Number(team._directEspnPointsFor)
+          : Number(overall.pointsFor != null ? overall.pointsFor : (team.points || 0));
+        let currentWeekPoints = 0;
+        for (const entry of team.roster?.entries || []) {
+          if (!isStarterSlot(entry.lineupSlotId)) continue;
+          const player = entry.playerPoolEntry?.player;
+          for (const stat of player?.stats || []) {
+            if (Number(stat.statSourceId) === 0 && Number(stat.statSplitTypeId) === 1 &&
+                Number(stat.scoringPeriodId) === currentWeek && stat.appliedTotal != null) {
+              currentWeekPoints += Number(stat.appliedTotal) || 0;
+            }
+          }
+        }
+        const pointsFor = completedGames > 0
+          ? Math.max(0, seasonPoints - currentWeekPoints)
+          : 0;
+        return { completedGames, pointsFor };
+      }
+
       // Games completed = weeks fully scored. Before week 1 finishes, PPG weight is 0.
-      // ESPN pointsFor accumulates after games; use overall record.
+      // Exclude the active scoring period from both the numerator and denominator.
       return (data.teams || []).map((team) => {
         const name = team.name || team.abbrev || "Team " + team.id;
         const owner = memberName(members, team.primaryOwner);
@@ -4722,10 +4746,11 @@
         const wins = overall.wins || 0;
         const losses = overall.losses || 0;
         const ties = overall.ties || 0;
-        const gamesPlayed = team._directEspnGamesPlayed || wins + losses + ties;
-        const pointsFor = team._directEspnPointsFor != null
-          ? team._directEspnPointsFor
-          : (overall.pointsFor != null ? overall.pointsFor : (team.points || 0));
+        const completed = completedTeamPerformance(team);
+        const gamesPlayed = team._directEspnGamesPlayed != null
+          ? Math.min(Number(team._directEspnGamesPlayed) || 0, completed.completedGames)
+          : completed.completedGames;
+        const pointsFor = completed.pointsFor;
         const ppg = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
         const expectedPts = optimalLineupTotal(entries, "proj");
         const ceilingPts = optimalLineupTotal(entries, "projCeil");
@@ -5008,7 +5033,11 @@
         if (lower === upper) return sorted[lower];
         return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower);
       };
-      const scorePercentile = (values, value) => percentile(values, 0.5) ? percentileScore(values, value, true) : 0.5;
+      const scorePercentile = (values, value) => {
+        if (!values.length) return 0.5;
+        const max = Math.max(...values);
+        return value >= max ? 1 : percentileScore(values, value, true);
+      };
 
       models.forEach((m) => {
         const wm = buildWeeklyTeamModel(m.entries || []);
@@ -5066,6 +5095,7 @@
       const benchValues = scored.map((m) => m.benchValue || 0);
       const depthValues = scored.map((m) => m.depthPts || 0);
       const benchUpsides = scored.map((m) => m.benchUpside || 0);
+      const stabilityValues = scored.map((m) => m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0);
       const combinedValues = scored.map((m) => m.combinedStrength || 0);
       const scoringValues = scored.map((m) => m.expectedPts || 0);
       const recordValues = scored.map((m) => {
@@ -5082,17 +5112,19 @@
         const games = (m.wins || 0) + (m.losses || 0) + (m.ties || 0);
         m.recordWinRate = games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
         m.recordScore = scorePercentile(recordValues, m.recordWinRate);
-        m.rawPower = 0.15 * m.combinedStrengthPercentile + 0.25 * m.scoringScore +
-          0.50 * m.fantasyCalcScore + 0.02 * m.depthScore + 0.08 * m.recordScore;
+        m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
+        m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
+        m.upsideScore = scorePercentile(benchUpsides, m.benchUpside || 0);
+        m.stabilityScore = scorePercentile(stabilityValues, m.stabilityRatio || 0);
         m.starterScore = m.combinedStrengthPercentile;
         m.scarcityScore = m.fantasyCalcScore;
         m.depthNorm = m.depthScore;
-        m.upsideScore = scorePercentile(benchUpsides, m.benchUpside || 0);
         m.actualScore = scorePercentile(scored.map((x) => x.actualStrength || 0), m.actualStrength || 0);
         m.scheduleScore = 0;
-        m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
-        m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
-        m.weights = { combinedStrength: 0.15, scoring: 0.25, fantasyCalc: 0.50, depth: 0.02, record: 0.08, actual: actualWeight };
+        m.rawPower = 0.15 * m.combinedStrengthPercentile + 0.22 * m.scoringScore +
+          0.38 * m.fantasyCalcScore + 0.08 * m.depthScore + 0.07 * m.stabilityScore +
+          0.05 * m.upsideScore + 0.05 * m.recordScore;
+        m.weights = { combinedStrength: 0.15, scoring: 0.22, fantasyCalc: 0.38, depth: 0.08, stability: 0.07, upside: 0.05, record: 0.05, actual: actualWeight };
         m.projShare = 1 - actualWeight;
         m.actualShare = actualWeight;
         m.compShare = 0;
@@ -7553,10 +7585,12 @@
       function breakdownPercentages(team) {
         const components = [
           ["Strength", 0.15, team.combinedStrengthPercentile],
-          ["Scoring", 0.25, team.scoringScore],
-          ["Roster", 0.50, team.fantasyCalcScore],
-          ["Depth", 0.02, team.depthScore],
-          ["Record", 0.08, team.recordScore]
+          ["Scoring", 0.22, team.scoringScore],
+          ["Roster", 0.38, team.fantasyCalcScore],
+          ["Depth", 0.08, team.depthScore],
+          ["Stability", 0.07, team.stabilityScore],
+          ["Upside", 0.05, team.upsideScore],
+          ["Record", 0.05, team.recordScore]
         ];
         const total = components.reduce((sum, item) => sum + item[1] * (Number(item[2]) || 0), 0);
         return components.map((item) => ({
