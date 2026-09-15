@@ -5083,8 +5083,8 @@
         const games = (m.wins || 0) + (m.losses || 0) + (m.ties || 0);
         m.recordWinRate = games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
         m.recordScore = scorePercentile(recordValues, m.recordWinRate);
-        m.rawPower = 0.35 * m.combinedStrengthPercentile + 0.30 * m.scoringScore +
-          0.15 * m.fantasyCalcScore + 0.05 * m.depthScore + 0.15 * m.recordScore;
+        m.rawPower = 0.30 * m.combinedStrengthPercentile + 0.30 * m.scoringScore +
+          0.30 * m.fantasyCalcScore + 0.02 * m.depthScore + 0.08 * m.recordScore;
         m.starterScore = m.combinedStrengthPercentile;
         m.scarcityScore = m.fantasyCalcScore;
         m.depthNorm = m.depthScore;
@@ -5093,7 +5093,7 @@
         m.scheduleScore = 0;
         m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
         m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
-        m.weights = { combinedStrength: 0.35, scoring: 0.30, fantasyCalc: 0.15, depth: 0.05, record: 0.15, actual: actualWeight };
+        m.weights = { combinedStrength: 0.30, scoring: 0.30, fantasyCalc: 0.30, depth: 0.02, record: 0.08, actual: actualWeight };
         m.projShare = 1 - actualWeight;
         m.actualShare = actualWeight;
         m.compShare = 0;
@@ -7553,11 +7553,11 @@
       });
       function breakdownPercentages(team) {
         const components = [
-          ["Strength", 0.35, team.combinedStrengthPercentile],
+          ["Strength", 0.30, team.combinedStrengthPercentile],
           ["Scoring", 0.30, team.scoringScore],
-          ["Roster", 0.15, team.fantasyCalcScore],
-          ["Depth", 0.05, team.depthScore],
-          ["Record", 0.15, team.recordScore]
+          ["Roster", 0.30, team.fantasyCalcScore],
+          ["Depth", 0.02, team.depthScore],
+          ["Record", 0.08, team.recordScore]
         ];
         const total = components.reduce((sum, item) => sum + item[1] * (Number(item[2]) || 0), 0);
         return components.map((item) => ({
