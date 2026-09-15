@@ -7726,6 +7726,8 @@
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Lineup projections</h5>" +
+              metric("Starter roster value", Math.round(t.starterValue || 0).toLocaleString(), "Raw FantasyCalc value for the 2 QB, 2 RB, 2 WR, and 2 RB/WR flex starters.") +
+              metric("Bench roster value", Math.round(t.benchValue || 0).toLocaleString(), "Raw FantasyCalc value for every player left outside the eight selected starters.") +
               metric("Season projected", t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—", "Full-season projected points based on the roster's weekly optimal lineups.") +
               metric("Already scored", t.seasonActualPts != null ? t.seasonActualPts.toFixed(1) : "—", "Finalized team points-for from completed games.") +
               metric("Remaining projection", t.seasonRemainingPts != null ? t.seasonRemainingPts.toFixed(1) : "—", "Projected optimal-lineup points for the remaining weeks.") +
@@ -7758,6 +7760,8 @@
             '<td><div class="fp-team-name">' + escapeHtml(t.name) + "</div>" +
               '<div class="fp-team-sub">' + escapeHtml(t.owner) + " · " + recordStr +
               " · Actual " + actualPts + " pts · Season proj " + (t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—") + " pts</div>" +
+              '<div class="fp-team-sub">FC starters ' + Math.round(t.starterValue || 0).toLocaleString() +
+              " · FC bench " + Math.round(t.benchValue || 0).toLocaleString() + "</div>" +
               '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
               " · Depth " + depthTxt + "</div></td>" +
             '<td>' + breakdownHtml(t) + '</td>' +
@@ -9478,94 +9482,6 @@
         }
       }
       syncSettingsUI();
-
-      const applySettings = document.getElementById("settings-apply");
-      if (applySettings) applySettings.addEventListener("click", async () => {
-        applySettings.disabled = true;
-        const status = document.getElementById("settings-source-status");
-        if (status) status.textContent = "Loading FantasyCalc…";
-        try {
-          await loadTradeValues();
-          if (leagueData) renderAll(leagueData);
-          if (status) status.textContent = "FantasyCalc · " + (valueLoadNote || "loaded");
-        } catch (err) {
-          console.error(err);
-          if (status) status.textContent = "Failed: " + (err.message || "error");
-        }
-        applySettings.disabled = false;
-      });
-    } catch (bootErr) {
-      console.error(bootErr);
-    }
-
-    setupHomeScreen();
-    (function boot() {
-      const active = getActiveLeague();
-      if (active && active.id) {
-        LEAGUE_ID = String(active.id);
-        SEASON = Number(active.season) || 2026;
-        PLATFORM = active.platform || "espn";
-        refreshApiUrls();
-        // Sync platform toggle UI
-        const platRow = document.getElementById("home-platform");
-        if (platRow) {
-          platRow.querySelectorAll("[data-platform]").forEach((b) => {
-            b.classList.toggle("active", b.getAttribute("data-platform") === PLATFORM);
-          });
-        }
-      }
-      updateHeaderMeta();
-      renderHomeScreen();
-      fetchLeague();
-    })();
-  </script>
-  <div id="app-tooltip" role="tooltip"></div>
-</body>
-</html>
-
-      const applySettings = document.getElementById("settings-apply");
-      if (applySettings) applySettings.addEventListener("click", async () => {
-        applySettings.disabled = true;
-        const status = document.getElementById("settings-source-status");
-        if (status) status.textContent = "Loading FantasyCalc…";
-        try {
-          await loadTradeValues();
-          if (leagueData) renderAll(leagueData);
-          if (status) status.textContent = "FantasyCalc · " + (valueLoadNote || "loaded");
-        } catch (err) {
-          console.error(err);
-          if (status) status.textContent = "Failed: " + (err.message || "error");
-        }
-        applySettings.disabled = false;
-      });
-    } catch (bootErr) {
-      console.error(bootErr);
-    }
-
-    setupHomeScreen();
-    (function boot() {
-      const active = getActiveLeague();
-      if (active && active.id) {
-        LEAGUE_ID = String(active.id);
-        SEASON = Number(active.season) || 2026;
-        PLATFORM = active.platform || "espn";
-        refreshApiUrls();
-        // Sync platform toggle UI
-        const platRow = document.getElementById("home-platform");
-        if (platRow) {
-          platRow.querySelectorAll("[data-platform]").forEach((b) => {
-            b.classList.toggle("active", b.getAttribute("data-platform") === PLATFORM);
-          });
-        }
-      }
-      updateHeaderMeta();
-      renderHomeScreen();
-      fetchLeague();
-    })();
-  </script>
-  <div id="app-tooltip" role="tooltip"></div>
-</body>
-</html>
 
       const applySettings = document.getElementById("settings-apply");
       if (applySettings) applySettings.addEventListener("click", async () => {
