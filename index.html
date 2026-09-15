@@ -4383,7 +4383,13 @@
 
     function starterScores(entryList) {
       const starters = getStarterPlayers(entryList);
-      return { starters: starters.reduce((sum, entry) => sum + (entry.val || 0), 0) };
+      const total = (entries) => entries.reduce((sum, entry) => sum + (entry.val || 0), 0);
+      return {
+        QB: total(starters.slice(0, 2)),
+        RB: total(starters.slice(2, 4)),
+        WR: total(starters.slice(4, 6)),
+        FLEX: total(starters.slice(6, 8))
+      };
     }
 
     function starterValue(entryList) {
