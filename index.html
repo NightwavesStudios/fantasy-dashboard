@@ -4722,8 +4722,10 @@
         const wins = overall.wins || 0;
         const losses = overall.losses || 0;
         const ties = overall.ties || 0;
-        const gamesPlayed = wins + losses + ties;
-        const pointsFor = overall.pointsFor != null ? overall.pointsFor : (team.points || 0);
+        const gamesPlayed = team._directEspnGamesPlayed || wins + losses + ties;
+        const pointsFor = team._directEspnPointsFor != null
+          ? team._directEspnPointsFor
+          : (overall.pointsFor != null ? overall.pointsFor : (team.points || 0));
         const ppg = gamesPlayed > 0 ? pointsFor / gamesPlayed : 0;
         const expectedPts = optimalLineupTotal(entries, "proj");
         const ceilingPts = optimalLineupTotal(entries, "projCeil");
@@ -5066,6 +5068,7 @@
       const depthValues = scored.map((m) => m.depthPts || 0);
       const benchUpsides = scored.map((m) => m.benchUpside || 0);
       const combinedValues = scored.map((m) => m.combinedStrength || 0);
+      const scoringValues = scored.map((m) => m.expectedPts || 0);
       const recordValues = scored.map((m) => {
         const games = (m.wins || 0) + (m.losses || 0) + (m.ties || 0);
         return games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
@@ -5076,10 +5079,12 @@
         m.depthScore = 0.60 * scorePercentile(depthValues, m.depthPts || 0) +
           0.40 * scorePercentile(benchValues, m.benchValue || 0);
         m.combinedStrengthPercentile = scorePercentile(combinedValues, m.combinedStrength || 0);
+        m.scoringScore = scorePercentile(scoringValues, m.expectedPts || 0);
         const games = (m.wins || 0) + (m.losses || 0) + (m.ties || 0);
         m.recordWinRate = games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
         m.recordScore = scorePercentile(recordValues, m.recordWinRate);
-        m.rawPower = 0.50 * m.combinedStrengthPercentile + 0.25 * m.fantasyCalcScore + 0.10 * m.depthScore + 0.15 * m.recordScore;
+        m.rawPower = 0.35 * m.combinedStrengthPercentile + 0.30 * m.scoringScore +
+          0.15 * m.fantasyCalcScore + 0.05 * m.depthScore + 0.15 * m.recordScore;
         m.starterScore = m.combinedStrengthPercentile;
         m.scarcityScore = m.fantasyCalcScore;
         m.depthNorm = m.depthScore;
@@ -5088,7 +5093,7 @@
         m.scheduleScore = 0;
         m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
         m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
-        m.weights = { combinedStrength: 0.50, fantasyCalc: 0.25, depth: 0.10, record: 0.15, actual: actualWeight };
+        m.weights = { combinedStrength: 0.35, scoring: 0.30, fantasyCalc: 0.15, depth: 0.05, record: 0.15, actual: actualWeight };
         m.projShare = 1 - actualWeight;
         m.actualShare = actualWeight;
         m.compShare = 0;
@@ -5100,7 +5105,7 @@
       return scored.map((m) => {
         const ratio = (m.rawPower || 0) / maxRaw;
         return Object.assign({}, m, {
-          totalScore: Math.round(ratio * 1000) / 10,
+          totalScore: Math.round((50 + ratio * 50) * 10) / 10,
           depthNorm: m.depthScore,
           upside: Math.max(0, (m.ceilingPts || 0) - (m.medianExp || 0))
         });
@@ -7548,9 +7553,10 @@
       });
       function breakdownPercentages(team) {
         const components = [
-          ["Strength", 0.50, team.combinedStrengthPercentile],
-          ["Roster", 0.25, team.fantasyCalcScore],
-          ["Depth", 0.10, team.depthScore],
+          ["Strength", 0.35, team.combinedStrengthPercentile],
+          ["Scoring", 0.30, team.scoringScore],
+          ["Roster", 0.15, team.fantasyCalcScore],
+          ["Depth", 0.05, team.depthScore],
           ["Record", 0.15, team.recordScore]
         ];
         const total = components.reduce((sum, item) => sum + item[1] * (Number(item[2]) || 0), 0);
@@ -7687,6 +7693,7 @@
             '<div class="fp-detail-block">' +
               "<h5>Score breakdown</h5>" +
               weightRow("Combined strength", t.combinedStrengthPercentile, rankStarter, "combinedStrength", tips.starter) +
+              weightRow("Projected scoring", t.scoringScore, componentRank("scoringScore"), "scoring", "Relative rank of projected optimal-lineup points per week. Higher scoring teams rank higher.") +
               weightRow("FantasyCalc roster value", t.fantasyCalcScore, rankVorp, "fantasyCalc", "Optimal starters 75% + useful bench 25%.") +
               weightRow("Depth", t.depthScore, rankDepth, "depth", "Projected bench points 60% + bench FantasyCalc value 40%.") +
               '<h5 style="margin-top:0.8rem">Composite percentage</h5>' +
@@ -9446,6 +9453,50 @@
         }
       }
       syncSettingsUI();
+
+      const applySettings = document.getElementById("settings-apply");
+      if (applySettings) applySettings.addEventListener("click", async () => {
+        applySettings.disabled = true;
+        const status = document.getElementById("settings-source-status");
+        if (status) status.textContent = "Loading FantasyCalc…";
+        try {
+          await loadTradeValues();
+          if (leagueData) renderAll(leagueData);
+          if (status) status.textContent = "FantasyCalc · " + (valueLoadNote || "loaded");
+        } catch (err) {
+          console.error(err);
+          if (status) status.textContent = "Failed: " + (err.message || "error");
+        }
+        applySettings.disabled = false;
+      });
+    } catch (bootErr) {
+      console.error(bootErr);
+    }
+
+    setupHomeScreen();
+    (function boot() {
+      const active = getActiveLeague();
+      if (active && active.id) {
+        LEAGUE_ID = String(active.id);
+        SEASON = Number(active.season) || 2026;
+        PLATFORM = active.platform || "espn";
+        refreshApiUrls();
+        // Sync platform toggle UI
+        const platRow = document.getElementById("home-platform");
+        if (platRow) {
+          platRow.querySelectorAll("[data-platform]").forEach((b) => {
+            b.classList.toggle("active", b.getAttribute("data-platform") === PLATFORM);
+          });
+        }
+      }
+      updateHeaderMeta();
+      renderHomeScreen();
+      fetchLeague();
+    })();
+  </script>
+  <div id="app-tooltip" role="tooltip"></div>
+</body>
+</html>
 
       const applySettings = document.getElementById("settings-apply");
       if (applySettings) applySettings.addEventListener("click", async () => {
