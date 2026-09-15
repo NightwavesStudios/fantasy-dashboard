@@ -4348,30 +4348,12 @@
 
 
     /**
-     * Bench = 6 lowest FantasyCalc values on the roster.
-     * Roster is 8 starters + 6 bench (+ up to 2 IR).
-     * If roster has 15 or 16 players, drop the 1 or 2 lowest as IR first, then take the next 6 as bench.
+     * Bench = every player left after the FantasyCalc starter split.
+     * Starters are 2 QB, 2 RB, 2 WR, and 2 RB/WR flex players.
      */
-    function getBenchPlayers(entryList) {
-      const pool = (entryList || [])
-        .filter((e) => e && e.id != null)
-        .slice()
-        .sort((a, b) => (a.val || 0) - (b.val || 0)); // worst first
-
-      const n = pool.length;
-      // 8 starters + 6 bench = 14 active spots; extras are IR
-      const irExtras = Math.max(0, Math.min(2, n - 14));
-      const afterIR = pool.slice(irExtras);
-      return afterIR.slice(0, 6);
-    }
-
-    function benchValue(entryList) {
-      return getBenchPlayers(entryList).reduce((s, p) => s + (p.val || 0), 0);
-    }
-
     function getStarterPlayers(entryList) {
       const remaining = (entryList || [])
-        .filter((entry) => ["QB", "RB", "WR", "TE"].indexOf(entry.pos) >= 0)
+        .filter((entry) => ["QB", "RB", "WR"].indexOf(entry.pos) >= 0)
         .slice()
         .sort((a, b) => b.val - a.val);
       const takePosition = (pos, count) => {
@@ -4379,26 +4361,29 @@
         picked.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
         return picked;
       };
-      const starters = {
-        QB: takePosition("QB", 1),
-        RB: takePosition("RB", 2),
-        WR: takePosition("WR", 2),
-        TE: takePosition("TE", 1)
-      };
-      const flexEligible = remaining.filter((entry) => ["RB", "WR", "TE"].indexOf(entry.pos) >= 0);
-      starters.FLEX = flexEligible.slice(0, 2);
-      starters.FLEX.forEach((entry) => remaining.splice(remaining.indexOf(entry), 1));
-      // Superflex is the best remaining eligible player, usually the second QB.
-      starters.SF = remaining.splice(0, 1);
-      return starters;
+      const starters = [
+        ...takePosition("QB", 2),
+        ...takePosition("RB", 2),
+        ...takePosition("WR", 2)
+      ];
+      const flex = remaining
+        .filter((entry) => ["RB", "WR"].indexOf(entry.pos) >= 0)
+        .slice(0, 2);
+      return starters.concat(flex);
+    }
+
+    function getBenchPlayers(entryList) {
+      const starterIds = new Set(getStarterPlayers(entryList).map((entry) => entry.id));
+      return (entryList || []).filter((entry) => entry && entry.id != null && !starterIds.has(entry.id));
+    }
+
+    function benchValue(entryList) {
+      return getBenchPlayers(entryList).reduce((s, p) => s + (p.val || 0), 0);
     }
 
     function starterScores(entryList) {
       const starters = getStarterPlayers(entryList);
-      return Object.fromEntries(Object.entries(starters).map(([slot, entries]) => [
-        slot,
-        entries.reduce((sum, entry) => sum + (entry.val || 0), 0)
-      ]));
+      return { starters: starters.reduce((sum, entry) => sum + (entry.val || 0), 0) };
     }
 
     function starterValue(entryList) {
@@ -5036,7 +5021,8 @@
       const scorePercentile = (values, value) => {
         if (!values.length) return 0.5;
         const max = Math.max(...values);
-        return value >= max ? 1 : percentileScore(values, value, true);
+        if (max <= 0) return 0.5;
+        return Math.max(0, Math.min(1, value / max));
       };
 
       models.forEach((m) => {
@@ -5136,7 +5122,7 @@
       return scored.map((m) => {
         const ratio = (m.rawPower || 0) / maxRaw;
         return Object.assign({}, m, {
-          totalScore: Math.round((50 + ratio * 50) * 10) / 10,
+          totalScore: Math.round(ratio * 100 * 10) / 10,
           depthNorm: m.depthScore,
           upside: Math.max(0, (m.ceilingPts || 0) - (m.medianExp || 0))
         });
