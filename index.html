@@ -4873,6 +4873,9 @@
       const meanFloor = mean(weeklyFloor);
       const meanCeil = mean(weeklyCeil);
       const seasonProjectedPts = weeklyExp.reduce((sum, value) => sum + value, 0);
+      const currentWeek = Math.max(0, Math.min(17, Number(options && options.currentWeek) || 0));
+      const rosWeeks = weeklyExp.filter((value, index) => index + 1 > currentWeek);
+      const nextThreeWeeks = weeklyExp.filter((value, index) => index + 1 > currentWeek && index + 1 <= currentWeek + 3);
       // sample SD of weekly means
       let variance = 0;
       weeklyExp.forEach((x) => { variance += (x - meanExp) * (x - meanExp); });
@@ -4888,6 +4891,9 @@
         meanFloor,
         meanCeil,
         seasonProjectedPts,
+        rosMeanExp: mean(rosWeeks.length ? rosWeeks : weeklyExp),
+        nextThreeMeanExp: mean(nextThreeWeeks.length ? nextThreeWeeks : (rosWeeks.length ? rosWeeks : weeklyExp)),
+        currentWeek,
         volatility: vol,
         // aliases used elsewhere
         expectedPts: meanExp,
@@ -5026,13 +5032,14 @@
       };
       const scorePercentile = (values, value) => {
         if (!values.length) return 0.5;
-        const max = Math.max(...values);
-        if (max <= 0) return 0.5;
-        return Math.max(0, Math.min(1, value / max));
+        const below = values.filter((candidate) => candidate < value).length;
+        const equal = values.filter((candidate) => candidate === value).length;
+        if (values.every((candidate) => candidate === values[0])) return 0.5;
+        return Math.max(0, Math.min(1, (below + equal * 0.5) / (values.length - 1)));
       };
 
       models.forEach((m) => {
-        const wm = buildWeeklyTeamModel(m.entries || []);
+        const wm = buildWeeklyTeamModel(m.entries || [], { currentWeek: m.currentWeek });
         Object.assign(m, {
           weeklyModel: wm,
           expectedPts: wm.meanExp,
@@ -5044,6 +5051,8 @@
           weeklyExp: wm.weeklyExp,
           weeklyVol: wm.volatility,
           seasonProjectedPts: wm.seasonProjectedPts,
+          rosMeanExp: wm.rosMeanExp,
+          nextThreeMeanExp: wm.nextThreeMeanExp,
           seasonActualPts: m.pointsFor || 0,
           seasonRemainingPts: Math.max(0, wm.seasonProjectedPts - (m.pointsFor || 0)),
           projFallback: wm.meanExp <= 1
@@ -5063,7 +5072,7 @@
       const projectedStrengths = models.map((m) => {
         const weekly = m.weeklyExp || [];
         return 0.50 * (m.medianExp || 0) + 0.30 * (m.expectedPts || 0) +
-          0.10 * percentile(weekly, 0.90) + 0.10 * percentile(weekly, 0.10);
+          0.15 * percentile(weekly, 0.75) + 0.05 * percentile(weekly, 0.25);
       });
       const scored = models.map((m, index) => {
         const observedGames = m.gamesPlayed || 0;
@@ -5083,11 +5092,31 @@
         return m;
       });
 
+      const replacement = computeReplacementLevels(scored);
       const starterValues = scored.map((m) => m.starterVorp || 0);
       const benchValues = scored.map((m) => m.benchValue || 0);
       const depthValues = scored.map((m) => m.depthPts || 0);
       const benchUpsides = scored.map((m) => m.benchUpside || 0);
-      const stabilityValues = scored.map((m) => m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0);
+      const currentValues = scored.map((m) => (m.weeklyModel.byWeek[m.currentWeek] || {}).mu || m.expectedPts || 0);
+      const rosValues = scored.map((m) => m.rosMeanExp || m.expectedPts || 0);
+      const actualValues = scored.map((m) => m.actualStrength || 0);
+      const qbValues = scored.map((m) => {
+        const qbs = (m.entries || []).filter((entry) => entry.pos === "QB").sort((a, b) => b.proj - a.proj);
+        return (qbs[0]?.proj || 0) + (qbs[1]?.proj || 0) * 0.85 + (qbs[2]?.proj || 0) * 0.35;
+      });
+      const advantageValues = scored.map((m) => {
+        const weekly = m.weeklyModel.byWeek;
+        let total = 0;
+        for (let week = 1; week <= 17; week++) {
+          total += (weekly[week]?.used || []).reduce((sum, entry) =>
+            sum + Math.max(0, (entry.proj || 0) - (replacement[entry.pos] || 0)), 0);
+        }
+        return total / 17;
+      });
+      const reliabilityValues = scored.map((m) => {
+        const floorRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
+        return floorRatio * 0.7 + (m.expectedPts ? 1 - Math.min(1, (m.weeklyVol || 0) / m.expectedPts) : 0) * 0.3;
+      });
       const combinedValues = scored.map((m) => m.combinedStrength || 0);
       const scoringValues = scored.map((m) => m.expectedPts || 0);
       const recordValues = scored.map((m) => {
@@ -5095,8 +5124,14 @@
         return games ? ((m.wins || 0) + 0.5 * (m.ties || 0)) / games : 0.5;
       });
       scored.forEach((m) => {
-        m.fantasyCalcScore = 0.85 * scorePercentile(starterValues, m.starterVorp || 0) +
-          0.15 * scorePercentile(benchValues, m.benchValue || 0);
+        m.currentPowerScore = scorePercentile(currentValues, (m.weeklyModel.byWeek[m.currentWeek] || {}).mu || m.expectedPts || 0);
+        m.rosScore = scorePercentile(rosValues, m.rosMeanExp || m.expectedPts || 0);
+        m.actualPerformanceScore = scorePercentile(actualValues, m.actualStrength || 0);
+        m.qbSecurityScore = scorePercentile(qbValues, ((m.entries || []).filter((entry) => entry.pos === "QB").sort((a, b) => b.proj - a.proj).slice(0, 3)).reduce((sum, entry, index) => sum + (entry.proj || 0) * [1, 0.85, 0.35][index], 0));
+        m.rosterAdvantageScore = scorePercentile(advantageValues, advantageValues[scored.indexOf(m)] || 0);
+        m.reliabilityScore = scorePercentile(reliabilityValues, reliabilityValues[scored.indexOf(m)] || 0);
+        m.fantasyCalcScore = 0.90 * scorePercentile(starterValues, m.starterVorp || 0) +
+          0.10 * scorePercentile(benchValues, m.benchValue || 0);
         m.depthScore = 0.60 * scorePercentile(depthValues, m.depthPts || 0) +
           0.40 * scorePercentile(benchValues, m.benchValue || 0);
         m.combinedStrengthPercentile = scorePercentile(combinedValues, m.combinedStrength || 0);
@@ -5107,16 +5142,17 @@
         m.stabilityRatio = m.expectedPts ? (m.floorPts || 0) / m.expectedPts : 0;
         m.upsideRatio = m.expectedPts ? (m.ceilingPts || 0) / m.expectedPts : 0;
         m.upsideScore = scorePercentile(benchUpsides, m.benchUpside || 0);
-        m.stabilityScore = scorePercentile(stabilityValues, m.stabilityRatio || 0);
+        m.stabilityScore = m.reliabilityScore;
         m.starterScore = m.combinedStrengthPercentile;
         m.scarcityScore = m.fantasyCalcScore;
         m.depthNorm = m.depthScore;
         m.actualScore = scorePercentile(scored.map((x) => x.actualStrength || 0), m.actualStrength || 0);
         m.scheduleScore = 0;
-        m.rawPower = 0.15 * m.combinedStrengthPercentile + 0.22 * m.scoringScore +
-          0.38 * m.fantasyCalcScore + 0.08 * m.depthScore + 0.07 * m.stabilityScore +
-          0.05 * m.upsideScore + 0.05 * m.recordScore;
-        m.weights = { combinedStrength: 0.15, scoring: 0.22, fantasyCalc: 0.38, depth: 0.08, stability: 0.07, upside: 0.05, record: 0.05, actual: actualWeight };
+        m.rawPower = 0.30 * m.currentPowerScore + 0.20 * m.rosterAdvantageScore +
+          0.15 * m.rosScore + 0.12 * m.actualPerformanceScore + 0.08 * m.qbSecurityScore +
+          0.05 * m.depthScore + 0.05 * m.reliabilityScore + 0.03 * m.upsideScore +
+          0.02 * m.recordScore;
+        m.weights = { current: 0.30, rosterAdvantage: 0.20, ros: 0.15, actual: 0.12, qbSecurity: 0.08, depth: 0.05, reliability: 0.05, upside: 0.03, record: 0.02 };
         m.projShare = 1 - actualWeight;
         m.actualShare = actualWeight;
         m.compShare = 0;
@@ -7564,25 +7600,29 @@
         order.forEach((t, i) => { map[t.id] = i + 1; });
         return map;
       }
-      const rankStarter = componentRank("starterScore");
-      const rankVorp = componentRank("scarcityScore");
+      const rankCurrent = componentRank("currentPowerScore");
+      const rankAdvantage = componentRank("rosterAdvantageScore");
+      const rankRos = componentRank("rosScore");
+      const rankActual = componentRank("actualPerformanceScore");
+      const rankQb = componentRank("qbSecurityScore");
       const rankDepth = componentRank("depthScore");
-      const rankStab = componentRank("stabilityScore");
+      const rankReliability = componentRank("reliabilityScore");
       const rankUps = componentRank("upsideScore");
-      const rankSched = componentRank("scheduleScore");
       const maxPositionScores = {};
       ["QB", "RB", "WR", "TE"].forEach((pos) => {
         maxPositionScores[pos] = Math.max(...models.map((team) => Number(team.posScores && team.posScores[pos]) || 0), 0);
       });
       function breakdownPercentages(team) {
         const components = [
-          ["Strength", 0.15, team.combinedStrengthPercentile],
-          ["Scoring", 0.22, team.scoringScore],
-          ["Roster", 0.38, team.fantasyCalcScore],
-          ["Depth", 0.08, team.depthScore],
-          ["Stability", 0.07, team.stabilityScore],
-          ["Upside", 0.05, team.upsideScore],
-          ["Record", 0.05, team.recordScore]
+          ["Current lineup", 0.30, team.currentPowerScore],
+          ["Roster advantage", 0.20, team.rosterAdvantageScore],
+          ["ROS projection", 0.15, team.rosScore],
+          ["Actual performance", 0.12, team.actualPerformanceScore],
+          ["QB security", 0.08, team.qbSecurityScore],
+          ["Depth", 0.05, team.depthScore],
+          ["Reliability", 0.05, team.reliabilityScore],
+          ["Upside", 0.03, team.upsideScore],
+          ["Record", 0.02, team.recordScore]
         ];
         const total = components.reduce((sum, item) => sum + item[1] * (Number(item[2]) || 0), 0);
         return components.map((item) => ({
@@ -7717,10 +7757,15 @@
           '<div class="fp-detail-grid">' +
             '<div class="fp-detail-block">' +
               "<h5>Score breakdown</h5>" +
-              weightRow("Combined strength", t.combinedStrengthPercentile, rankStarter, "combinedStrength", tips.starter) +
-              weightRow("Projected scoring", t.scoringScore, componentRank("scoringScore"), "scoring", "Relative rank of projected optimal-lineup points per week. Higher scoring teams rank higher.") +
-              weightRow("FantasyCalc roster value", t.fantasyCalcScore, rankVorp, "fantasyCalc", "Top-value starters by position and flex slots 85% + useful bench 15%.") +
+              weightRow("Current lineup", t.currentPowerScore, rankCurrent, "current", "Current-week legal lineup projection.") +
+              weightRow("Roster advantage", t.rosterAdvantageScore, rankAdvantage, "rosterAdvantage", "Weekly starter projection above league-specific positional replacement.") +
+              weightRow("ROS projection", t.rosScore, rankRos, "ros", "Rest-of-season projection, with the next three weeks included in the rolling outlook.") +
+              weightRow("Actual performance", t.actualPerformanceScore, rankActual, "actual", "Completed-week actual performance, regressed toward projected league strength.") +
+              weightRow("QB security", t.qbSecurityScore, rankQb, "qbSecurity", "Superflex QB strength: QB1, QB2, and a smaller QB3/backup contribution.") +
               weightRow("Depth", t.depthScore, rankDepth, "depth", "Projected bench points 60% + bench FantasyCalc value 40%.") +
+              weightRow("Reliability", t.reliabilityScore, rankReliability, "reliability", "Floor-to-expectation stability combined with lower week-to-week volatility.") +
+              weightRow("Upside", t.upsideScore, rankUps, "upside", "Bench ceiling surplus and boom potential.") +
+              weightRow("Record", t.recordScore, componentRank("recordScore"), "record", "Current win rate; kept as a small outcome signal.") +
               '<h5 style="margin-top:0.8rem">Composite percentage</h5>' +
               breakdownHtml(t) +
             "</div>" +
@@ -7728,6 +7773,10 @@
               "<h5>Lineup projections</h5>" +
               metric("Starter roster value", Math.round(t.starterValue || 0).toLocaleString(), "Raw FantasyCalc value for the 2 QB, 2 RB, 2 WR, and 2 RB/WR flex starters.") +
               metric("Bench roster value", Math.round(t.benchValue || 0).toLocaleString(), "Raw FantasyCalc value for every player left outside the eight selected starters.") +
+              metric("Current lineup", t.currentPowerScore != null ? (t.currentPowerScore * 100).toFixed(0) + "/100" : "—", "Current-week legal lineup strength relative to the league distribution.") +
+              metric("ROS projection", t.rosMeanExp != null ? t.rosMeanExp.toFixed(1) : "—", "Average projected lineup points for the remaining season.") +
+              metric("Lineup advantage", t.rosterAdvantageScore != null ? (t.rosterAdvantageScore * 100).toFixed(0) + "/100" : "—", "Starting lineup projection above positional replacement, including Superflex QB scarcity.") +
+              metric("QB security", t.qbSecurityScore != null ? (t.qbSecurityScore * 100).toFixed(0) + "/100" : "—", "Superflex QB strength using QB1, QB2, and a smaller QB3 contribution.") +
               metric("Season projected", t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—", "Full-season projected points based on the roster's weekly optimal lineups.") +
               metric("Already scored", t.seasonActualPts != null ? t.seasonActualPts.toFixed(1) : "—", "Finalized team points-for from completed games.") +
               metric("Remaining projection", t.seasonRemainingPts != null ? t.seasonRemainingPts.toFixed(1) : "—", "Projected optimal-lineup points for the remaining weeks.") +
