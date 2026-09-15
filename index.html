@@ -954,6 +954,46 @@
       font-weight: 700;
       font-size: 1rem;
     }
+    .fp-breakdown {
+      min-width: 13rem;
+    }
+    .fp-breakdown-line {
+      display: grid;
+      grid-template-columns: 4.2rem 1fr 2.5rem;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.2rem;
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+    }
+    .fp-breakdown-line:first-child { margin-top: 0; }
+    .fp-breakdown-label { white-space: nowrap; }
+    .fp-breakdown-bar {
+      height: 0.28rem;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--border-subtle);
+    }
+    .fp-breakdown-bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+    .fp-breakdown-pct {
+      text-align: right;
+      color: var(--text);
+      font-weight: 650;
+    }
+    .fp-breakdown-note {
+      margin-top: 0.35rem;
+      font-size: 0.64rem;
+      color: var(--text-muted);
+    }
+    @media (max-width: 720px) {
+      .fp-breakdown { min-width: 10rem; }
+      .fp-breakdown-line { grid-template-columns: 3.6rem 1fr 2.3rem; }
+    }
     .fp-power-table tr.fp-expandable { cursor: pointer; }
     .fp-power-table tr.fp-expandable:hover td { background: var(--surface-2); }
 
@@ -7502,6 +7542,37 @@
       const rankStab = componentRank("stabilityScore");
       const rankUps = componentRank("upsideScore");
       const rankSched = componentRank("scheduleScore");
+      const maxPositionScores = {};
+      ["QB", "RB", "WR", "TE"].forEach((pos) => {
+        maxPositionScores[pos] = Math.max(...models.map((team) => Number(team.posScores && team.posScores[pos]) || 0), 0);
+      });
+      function breakdownPercentages(team) {
+        const components = [
+          ["Strength", 0.50, team.combinedStrengthPercentile],
+          ["Roster", 0.25, team.fantasyCalcScore],
+          ["Depth", 0.10, team.depthScore],
+          ["Record", 0.15, team.recordScore]
+        ];
+        const total = components.reduce((sum, item) => sum + item[1] * (Number(item[2]) || 0), 0);
+        return components.map((item) => ({
+          label: item[0],
+          value: total ? (item[1] * (Number(item[2]) || 0) / total) * 100 : 0
+        }));
+      }
+      function breakdownHtml(team) {
+        const lines = breakdownPercentages(team).map((item) =>
+          '<div class="fp-breakdown-line"><span class="fp-breakdown-label">' + item.label +
+          '</span><span class="fp-breakdown-bar"><i style="width:' + Math.max(0, Math.min(100, item.value)) + '%"></i></span>' +
+          '<span class="fp-breakdown-pct">' + item.value.toFixed(0) + '%</span></div>'
+        ).join("");
+        return '<div class="fp-breakdown">' + lines +
+          '<div class="fp-breakdown-note">Share of this team\'s composite power score</div></div>';
+      }
+      function positionPercent(team, pos) {
+        const best = maxPositionScores[pos] || 0;
+        const value = Number(team.posScores && team.posScores[pos]) || 0;
+        return best ? Math.round((value / best) * 100) : 0;
+      }
 
       function optimalStarterNames(entries) {
         const result = optimalLineupTotalForWeek(entries || [], "proj", -999);
@@ -7618,6 +7689,8 @@
               weightRow("Combined strength", t.combinedStrengthPercentile, rankStarter, "combinedStrength", tips.starter) +
               weightRow("FantasyCalc roster value", t.fantasyCalcScore, rankVorp, "fantasyCalc", "Optimal starters 75% + useful bench 25%.") +
               weightRow("Depth", t.depthScore, rankDepth, "depth", "Projected bench points 60% + bench FantasyCalc value 40%.") +
+              '<h5 style="margin-top:0.8rem">Composite percentage</h5>' +
+              breakdownHtml(t) +
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Lineup projections</h5>" +
@@ -7636,10 +7709,10 @@
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Position ranks</h5>" +
-              metric("QB", "#" + (ranks.QB || "—") + " · " + qbG, "Rank of QB room trade/projection strength among teams.", rankColor(ranks.QB, teamCount)) +
-              metric("RB", "#" + (ranks.RB || "—") + " · " + rbG, "Rank of RB room strength among teams.", rankColor(ranks.RB, teamCount)) +
-              metric("WR", "#" + (ranks.WR || "—") + " · " + wrG, "Rank of WR room strength among teams.", rankColor(ranks.WR, teamCount)) +
-              metric("TE", "#" + (ranks.TE || "—") + " · " + teG, "Rank of TE room strength among teams.", rankColor(ranks.TE, teamCount)) +
+              metric("QB", "#" + (ranks.QB || "—") + " · " + qbG + " · " + positionPercent(t, "QB") + "% of best", "Rank and relative QB room strength among teams.", rankColor(ranks.QB, teamCount)) +
+              metric("RB", "#" + (ranks.RB || "—") + " · " + rbG + " · " + positionPercent(t, "RB") + "% of best", "Rank and relative RB room strength among teams.", rankColor(ranks.RB, teamCount)) +
+              metric("WR", "#" + (ranks.WR || "—") + " · " + wrG + " · " + positionPercent(t, "WR") + "% of best", "Rank and relative WR room strength among teams.", rankColor(ranks.WR, teamCount)) +
+              metric("TE", "#" + (ranks.TE || "—") + " · " + teG + " · " + positionPercent(t, "TE") + "% of best", "Rank and relative TE room strength among teams.", rankColor(ranks.TE, teamCount)) +
             "</div>" +
             '<div class="fp-detail-block">' +
               "<h5>Optimal starters (no bye)</h5>" +
@@ -7655,16 +7728,17 @@
               " · Actual " + actualPts + " pts · Season proj " + (t.seasonProjectedPts != null ? t.seasonProjectedPts.toFixed(1) : "—") + " pts</div>" +
               '<div class="fp-team-sub">QB ' + qbG + " · RB " + rbG + " · WR " + wrG + " · TE " + teG +
               " · Depth " + depthTxt + "</div></td>" +
+            '<td>' + breakdownHtml(t) + '</td>' +
             '<td class="fp-score-col"><span class="fp-score">' + score + "</span></td>" +
           "</tr>" +
           '<tr class="fp-detail-row" hidden data-detail-for="' + t.id + '">' +
-            '<td colspan="3">' + detail + "</td>" +
+            '<td colspan="4">' + detail + "</td>" +
           "</tr>";
       });
 
       list.innerHTML =
         '<table class="fp-power-table">' +
-          "<thead><tr><th>RK</th><th>Team</th><th class=\"fp-score-col\">Score</th></tr></thead>" +
+          "<thead><tr><th>RK</th><th>Team</th><th>Power breakdown</th><th class=\"fp-score-col\">Score</th></tr></thead>" +
           "<tbody>" + body + "</tbody>" +
         "</table>";
 
