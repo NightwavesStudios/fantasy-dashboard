@@ -468,16 +468,19 @@
   const CORS_ATTEMPTS = [
     url => ({ url, credsOk:true }),
     url => ({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false }),
+    url => ({ url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), credsOk:false }),
     url => ({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), credsOk:false })
   ];
 
-  async function robustFetch(url, {credentials}={}){
+  // Tries a single URL directly, then through a chain of public CORS relays.
+  // Returns the first successful response; throws the most informative error otherwise.
+  async function robustFetch(url, {credentials, timeoutMs=15000}={}){
     let lastErr;
     for(const build of CORS_ATTEMPTS){
       const { url: finalUrl, credsOk } = build(url);
       try{
         const controller = new AbortController();
-        const timer = setTimeout(()=>controller.abort(), 12000);
+        const timer = setTimeout(()=>controller.abort(), timeoutMs);
         const res = await fetch(finalUrl, {
           signal: controller.signal,
           credentials: (credsOk && credentials) ? credentials : 'omit'
@@ -485,11 +488,24 @@
         clearTimeout(timer);
         if(res.ok) return res;
         lastErr = new Error('HTTP ' + res.status);
+        lastErr.status = res.status;
         if(res.status === 401 || res.status === 403 || res.status === 404){
-          lastErr.status = res.status;
-          break; // don't retry through proxies on a definitive auth/not-found response
+          break; // definitive auth/not-found response — retrying through a proxy won't help
         }
       }catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error('Failed to fetch');
+  }
+
+  // Tries several candidate URLs (e.g. alternate API hosts), each through the full robustFetch chain.
+  async function robustFetchAny(urls, opts={}){
+    let lastErr;
+    for(const url of urls){
+      try{ return await robustFetch(url, opts); }
+      catch(e){
+        lastErr = e;
+        if(e.status === 401 || e.status === 403) break; // auth failure is definitive regardless of host
+      }
     }
     throw lastErr || new Error('Failed to fetch');
   }
@@ -546,10 +562,16 @@
 
   /* ================= ESPN fetch/parse ================= */
   async function fetchEspnLeague(leagueId, year, swid, espnS2){
-    const url = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${leagueId}?view=mTeam&view=mRoster&view=mSettings`;
+    const path = `/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${leagueId}?view=mTeam&view=mRoster&view=mSettings`;
+    // lm-api-reads is ESPN's read-only API host and sends proper CORS headers for public leagues,
+    // unlike fantasy.espn.com which is kept here only as a fallback.
+    const candidates = [
+      `https://lm-api-reads.fantasy.espn.com${path}`,
+      `https://fantasy.espn.com${path}`
+    ];
     const useCreds = !!(swid && espnS2);
     try{
-      const res = await robustFetch(url, { credentials: useCreds ? 'include' : 'omit' });
+      const res = await robustFetchAny(candidates, { credentials: useCreds ? 'include' : 'omit' });
       return await res.json();
     }catch(err){
       if(err.status === 401 || err.status === 403){
@@ -558,7 +580,7 @@
       if(err.status === 404){
         throw new Error('League not found — double check the League ID and season.');
       }
-      throw new Error('Could not reach ESPN (network/CORS issue). Try again, or switch to Sleeper if this is a Sleeper league.');
+      throw new Error('Could not reach ESPN (' + (err.message || 'network/CORS issue') + '). Try again, or switch to Sleeper if this is a Sleeper league.');
     }
   }
   function detectPpr(league){
@@ -662,15 +684,18 @@
     const params = new URLSearchParams({
       isDynasty: isDynasty ? 'true' : 'false',
       numQBs: String(numQBs),
+      numQbs: String(numQBs), // FantasyCalc's docs and live usage disagree on casing — send both
       numTeams: String(numTeams || 12),
       ppr: String(ppr)
     });
     const url = `https://api.fantasycalc.com/values/current?${params.toString()}`;
     try{
-      const res = await robustFetch(url);
-      return await res.json();
+      const res = await robustFetch(url, { timeoutMs: 15000 });
+      const data = await res.json();
+      if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
+      return data;
     }catch(e){
-      throw new Error('Could not reach FantasyCalc for player values. Try again in a moment.');
+      throw new Error('Could not reach FantasyCalc for player values (' + (e.status ? 'HTTP ' + e.status : (e.message || 'network error')) + '). Try again in a moment.');
     }
   }
   function buildFcIndex(fcValues){
