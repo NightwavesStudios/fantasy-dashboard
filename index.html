@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gridlock — Fantasy Trade Analyzer</title>
+<title>Fantasy Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,18 +21,19 @@
     --gold:#e3b94a;
     --red:#e1584a;
     --radius:10px;
-    --shadow:0 12px 30px rgba(0,0,0,.35);
+    --shadow:0 16px 34px rgba(0,0,0,.4);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:
-      repeating-linear-gradient(180deg, rgba(255,255,255,.018) 0px, rgba(255,255,255,.018) 1px, transparent 1px, transparent 84px),
+      repeating-linear-gradient(180deg, rgba(255,255,255,.014) 0px, rgba(255,255,255,.014) 1px, transparent 1px, transparent 84px),
       var(--bg);
     color:var(--text);
     font-family:'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     min-height:100vh;
     line-height:1.45;
+    -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3,.display{
     font-family:'Barlow Condensed', 'Barlow', sans-serif;
@@ -53,25 +54,24 @@
   }
   .hero-card{
     width:100%;
-    max-width:460px;
+    max-width:440px;
     background:linear-gradient(180deg, var(--panel-2), var(--panel));
     border:1px solid var(--line);
     border-radius:16px;
-    padding:36px 32px 30px;
+    padding:34px 32px 30px;
     box-shadow:var(--shadow);
   }
-  .hero-mark{
-    display:flex;
-    align-items:baseline;
-    gap:10px;
-    margin-bottom:4px;
+  .hero-title{font-size:32px;line-height:1;margin:0 0 8px;}
+  .hero-sub{color:var(--muted);font-size:14.5px;margin:0 0 24px;max-width:38ch;}
+
+  .platform-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:4px;margin-bottom:20px;}
+  .platform-toggle button{
+    flex:1;background:transparent;border:none;color:var(--muted);padding:9px 10px;border-radius:6px;
+    font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s;
   }
-  .hero-mark .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);}
-  .hero-title{font-size:38px;line-height:1;margin:0;}
-  .hero-sub{color:var(--muted);font-size:15px;margin:8px 0 26px;max-width:36ch;}
-  .field-label{
-    font-size:13px;color:var(--muted);margin-bottom:6px;display:block;
-  }
+  .platform-toggle button.active{background:var(--panel-2);color:var(--text);}
+
+  .field-label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block;}
   .field{margin-bottom:16px;}
   input[type=text],input[type=number],input[type=password],select{
     width:100%;
@@ -106,10 +106,10 @@
   }
   .link-btn:hover{color:var(--text);}
 
-  .advanced-toggle{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  .advanced-toggle{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
   .advanced-body{display:none;margin-top:14px;}
   .advanced-body.open{display:block;}
-  .hint{font-size:12.5px;color:var(--muted-2);margin-top:6px;line-height:1.5;}
+  .hint{font-size:12.5px;color:var(--muted-2);margin-top:6px;line-height:1.55;}
   .error-box{
     background:rgba(225,88,74,.1);border:1px solid rgba(225,88,74,.35);
     color:#f3a49b;padding:10px 12px;border-radius:8px;font-size:13.5px;margin-top:14px;display:none;
@@ -120,7 +120,7 @@
   .spinner{
     width:14px;height:14px;border-radius:50%;
     border:2px solid var(--line);border-top-color:var(--green);
-    animation:spin .7s linear infinite;
+    animation:spin .7s linear infinite;flex-shrink:0;
   }
   @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -132,13 +132,12 @@
     background:rgba(12,19,16,.92);backdrop-filter:blur(8px);
     border-bottom:1px solid var(--line);
     padding:14px 24px;
-    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
   }
-  .appbar-left{display:flex;align-items:center;gap:14px;}
-  .appbar-title{font-size:22px;margin:0;display:flex;align-items:center;gap:8px;}
-  .appbar-title .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .appbar-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .appbar-title{font-size:20px;margin:0;font-weight:700;}
   .league-chip{
-    font-size:12.5px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);
+    font-size:12px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);
     padding:5px 10px;border-radius:20px;
   }
   nav.tabs{display:flex;gap:4px;}
@@ -167,7 +166,7 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
   @media(max-width:860px){.grid2{grid-template-columns:1fr;}}
 
-  .section-title{font-size:13px;text-transform:none;color:var(--muted);margin:0 0 12px;font-weight:600;letter-spacing:.2px;}
+  .section-title{font-size:13px;color:var(--muted);margin:0 0 12px;font-weight:600;letter-spacing:.2px;}
   .team-select{width:100%;margin-bottom:14px;}
 
   .side-total{
@@ -177,7 +176,7 @@
   .side-total .num{font-family:'Barlow Condensed';font-weight:800;font-size:26px;color:var(--gold);}
   .side-total .lbl{font-size:12.5px;color:var(--muted);}
 
-  .asset-list{min-height:64px;border:1px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:14px;}
+  .asset-list{min-height:52px;border:1px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:14px;}
   .asset-list:empty::before{content:"Add players or picks below";color:var(--muted-2);font-size:13px;padding:10px;display:block;}
   .asset-chip{
     display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -220,22 +219,17 @@
     background:var(--panel);border:1px solid var(--line);
   }
   .verdict-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
-  .verdict-score{font-family:'Barlow Condensed';font-weight:800;font-size:30px;}
+  .verdict-score{font-family:'Barlow Condensed';font-weight:800;font-size:28px;}
   .fair-bar{height:8px;border-radius:5px;background:var(--panel-2);overflow:hidden;position:relative;margin:10px 0 16px;}
   .fair-bar .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted-2);}
   .fair-bar .fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));}
   .insights{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
-  .insights li{
-    font-size:13.5px;color:var(--muted);padding-left:18px;position:relative;
-  }
-  .insights li::before{content:"—";position:absolute;left:0;color:var(--muted-2);}
+  .insights li{font-size:13.5px;color:var(--muted);padding-left:16px;position:relative;}
+  .insights li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--muted-2);}
 
   /* rankings */
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  th{
-    text-align:left;color:var(--muted);font-weight:600;font-size:12px;
-    padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;
-  }
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;}
   th:hover{color:var(--text);}
   td{padding:10px 12px;border-bottom:1px solid var(--line);}
   tr:last-child td{border-bottom:none;}
@@ -247,7 +241,7 @@
 
   /* needs */
   .needs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-  .needs-card h3{font-size:16px;margin:0 0 10px;}
+  .needs-card h3{font-size:16px;margin:0 0 10px;font-weight:700;font-family:'Barlow';}
   .pos-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--line);}
   .pos-row:last-child{border-bottom:none;}
   .tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;}
@@ -256,9 +250,7 @@
   .tag-even{background:var(--panel-2);color:var(--muted);}
 
   /* settings drawer */
-  #overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:29;display:none;
-  }
+  #overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:29;display:none;}
   #overlay.show{display:block;}
   #drawer{
     position:fixed;top:0;right:-360px;width:340px;height:100%;background:var(--panel);
@@ -266,7 +258,7 @@
     overflow-y:auto;
   }
   #drawer.show{right:0;}
-  #drawer h2{font-size:20px;margin:0 0 18px;}
+  #drawer h2{font-size:19px;margin:0 0 18px;font-weight:700;}
   .drawer-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .drawer-row .field-label{margin:0;}
   .switch{position:relative;width:40px;height:22px;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;cursor:pointer;flex-shrink:0;}
@@ -287,15 +279,19 @@
 <!-- ================= SETUP SCREEN ================= -->
 <div id="setup-screen">
   <div class="hero-card">
-    <div class="hero-mark"><span class="dot"></span><span style="color:var(--muted);font-size:12.5px;letter-spacing:.3px;">FANTASY TRADE ANALYZER</span></div>
-    <h1 class="hero-title">Gridlock</h1>
-    <p class="hero-sub">Pull your ESPN league, price every roster with live FantasyCalc values, and see if a trade actually makes sense.</p>
+    <h1 class="hero-title">Fantasy Dashboard</h1>
+    <p class="hero-sub">Connect your league to price every roster and run trades against live market values.</p>
+
+    <div class="platform-toggle">
+      <button type="button" id="btn-platform-espn" class="active">ESPN</button>
+      <button type="button" id="btn-platform-sleeper">Sleeper</button>
+    </div>
 
     <div class="field">
-      <label class="field-label">ESPN League ID</label>
+      <label class="field-label" id="label-leagueid">ESPN League ID</label>
       <input type="text" id="in-leagueid" placeholder="e.g. 123456789" inputmode="numeric">
     </div>
-    <div class="row2">
+    <div class="row2" id="espn-only-row">
       <div class="field">
         <label class="field-label">Season</label>
         <select id="in-year"></select>
@@ -309,28 +305,25 @@
       </div>
     </div>
 
-    <button class="btn btn-primary" id="btn-load">Load League</button>
+    <button class="btn btn-primary" id="btn-load">Load league</button>
     <div class="status-line" id="status-line"><span class="spinner"></span><span id="status-text">Fetching league…</span></div>
     <div class="error-box" id="error-box"></div>
 
-    <div class="advanced-toggle">
-      <button class="link-btn" id="toggle-advanced">Private league or need more options?</button>
+    <div class="advanced-toggle" id="espn-advanced-wrap">
+      <button class="link-btn" id="toggle-advanced">Private league?</button>
       <div class="advanced-body" id="advanced-body">
         <div class="field">
-          <label class="field-label">SWID cookie (private leagues only)</label>
+          <label class="field-label">SWID cookie</label>
           <input type="text" id="in-swid" placeholder="{XXXXXXXX-XXXX-...}">
         </div>
         <div class="field">
-          <label class="field-label">espn_s2 cookie (private leagues only)</label>
-          <input type="password" id="in-espns2" placeholder="Long token from your espn.com cookies">
+          <label class="field-label">espn_s2 cookie</label>
+          <input type="password" id="in-espns2" placeholder="Long token from espn.com cookies">
         </div>
-        <p class="hint">Private leagues need these two cookie values from a browser where you're logged into ESPN (DevTools → Application → Cookies → fantasy.espn.com). Cross‑origin browser restrictions mean this only works if ESPN accepts the request from this page — if it fails, open your league's public visibility setting or run this file from your own server on the espn.com domain isn't required, but results may vary by browser.</p>
-        <div class="field" style="margin-top:14px;">
-          <label class="field-label">Number of teams (only if auto-detect fails)</label>
-          <input type="number" id="in-numteams" placeholder="12" min="4" max="32">
-        </div>
+        <p class="hint">Get both from a browser where you're signed into ESPN: DevTools → Application → Cookies → fantasy.espn.com. If this still fails, ESPN's cross-origin rules are blocking it — try setting your league to public instead.</p>
       </div>
     </div>
+    <p class="hint" id="sleeper-note" style="display:none;">Sleeper's API is public read-only, so private leagues load automatically — no login needed.</p>
   </div>
 </div>
 
@@ -338,13 +331,13 @@
 <div id="app">
   <header class="appbar">
     <div class="appbar-left">
-      <h1 class="appbar-title"><span class="dot"></span>Gridlock</h1>
+      <h1 class="appbar-title">Fantasy Dashboard</h1>
       <span class="league-chip" id="league-chip">—</span>
     </div>
     <nav class="tabs">
-      <button class="tab-btn active" data-panel="panel-trade">Trade Calculator</button>
+      <button class="tab-btn active" data-panel="panel-trade">Trade calculator</button>
       <button class="tab-btn" data-panel="panel-rankings">Rankings</button>
-      <button class="tab-btn" data-panel="panel-needs">Team Needs</button>
+      <button class="tab-btn" data-panel="panel-needs">Team needs</button>
     </nav>
     <div class="appbar-right">
       <button class="icon-btn" id="btn-refresh" title="Refresh values">⟳</button>
@@ -420,12 +413,12 @@
     <!-- ---------- NEEDS ---------- -->
     <section class="panel" id="panel-needs">
       <div class="card" style="margin-bottom:16px;">
-        <p class="hint" style="font-size:13px;">Need is relative: we compare each team's starter‑tier value at a position against the league's median starter at that same depth. Thin means an upgrade there would help more than at other spots.</p>
+        <p class="hint" style="font-size:13px;">Need is relative: each team's starter-tier value at a position is compared against the league median at that same depth. Thin means an upgrade there would help more than at other spots.</p>
       </div>
       <div class="needs-grid" id="needs-grid"></div>
     </section>
 
-    <div class="footer-note">Player values courtesy of FantasyCalc · roster data from your ESPN league · nothing here is financial advice, it's just fantasy football.</div>
+    <div class="footer-note">Player values from FantasyCalc · roster data from your league host · nothing here is financial advice, it's just fantasy football.</div>
   </main>
 </div>
 
@@ -437,17 +430,18 @@
     <div class="switch" id="sw-dynasty"><div class="knob"></div></div>
   </div>
   <div class="drawer-row">
-    <span class="field-label">Superflex (auto‑detected)</span>
+    <span class="field-label">Superflex</span>
     <div class="switch" id="sw-superflex"><div class="knob"></div></div>
   </div>
   <div class="field">
-    <label class="field-label">PPR (auto‑detected, adjust if wrong)</label>
+    <label class="field-label">PPR</label>
     <select id="sel-ppr">
       <option value="1">Full PPR</option>
       <option value="0.5">Half PPR</option>
       <option value="0">Standard</option>
     </select>
   </div>
+  <p class="hint" id="drawer-detected-note">Detected automatically from your league settings — override if it's wrong.</p>
   <hr class="drawer-divider">
   <div class="field">
     <span class="field-label">League</span>
@@ -466,8 +460,39 @@
 
   /* ================= constants ================= */
   const POS_MAP = {1:'QB',2:'RB',3:'WR',4:'TE',5:'K',16:'DST'};
-  const STARTER_SLOTS = {QB:[0,7], RB:[2], WR:[4], TE:[6], FLEX:[23], SUPERFLEX:[7], DST:[16], K:[17]};
-  const CACHE_KEY = 'gridlock_cache_v1';
+  const ESPN_TEAM_ABBR = {1:'ATL',2:'BUF',3:'CHI',4:'CIN',5:'CLE',6:'DAL',7:'DEN',8:'DET',9:'GB',10:'TEN',11:'IND',12:'KC',13:'LV',14:'LAR',15:'MIA',16:'MIN',17:'NE',18:'NO',19:'NYG',20:'NYJ',21:'PHI',22:'ARI',23:'PIT',24:'LAC',25:'SF',26:'SEA',27:'TB',28:'WSH',29:'CAR',30:'JAX',33:'BAL',34:'HOU'};
+  const STARTER_SLOTS = {QB:[0,7], RB:[2], WR:[4], TE:[6], DST:[16], K:[17]};
+  const SLEEPER_PLAYERS_CACHE_KEY = 'fd_sleeper_players_v1';
+  const SLEEPER_PLAYERS_TTL = 1000*60*60*24*7;
+
+  const CORS_ATTEMPTS = [
+    url => ({ url, credsOk:true }),
+    url => ({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false }),
+    url => ({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), credsOk:false })
+  ];
+
+  async function robustFetch(url, {credentials}={}){
+    let lastErr;
+    for(const build of CORS_ATTEMPTS){
+      const { url: finalUrl, credsOk } = build(url);
+      try{
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(), 12000);
+        const res = await fetch(finalUrl, {
+          signal: controller.signal,
+          credentials: (credsOk && credentials) ? credentials : 'omit'
+        });
+        clearTimeout(timer);
+        if(res.ok) return res;
+        lastErr = new Error('HTTP ' + res.status);
+        if(res.status === 401 || res.status === 403 || res.status === 404){
+          lastErr.status = res.status;
+          break; // don't retry through proxies on a definitive auth/not-found response
+        }
+      }catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error('Failed to fetch');
+  }
 
   const yearSel = document.getElementById('in-year');
   const thisYear = new Date().getFullYear();
@@ -477,12 +502,12 @@
 
   /* ================= state ================= */
   let state = {
+    platform:'espn',
     leagueId:null, year:null, isDynasty:false, numQBs:1, ppr:1,
-    league:null,          // raw ESPN league json
-    teams:[],             // [{id,name,owner,roster:[playerObj]}]
-    fcValues:null,        // raw fantasycalc array
-    fcIndex:null,         // normalized-name -> fc entry
-    picksAvailable:[],    // fc entries with position PICK
+    numTeams:12,
+    detectedLabel:'',
+    teams:[],
+    fcValues:null, fcIndex:null, picksAvailable:[],
     tradeA:[], tradeB:[],
     selectedTeamA:null, selectedTeamB:null
   };
@@ -498,55 +523,50 @@
       .replace(/\s+/g,' ')
       .trim();
   }
-  function fmt(n){ return Math.round(n).toLocaleString(); }
+  function fmt(n){ return Math.round(n||0).toLocaleString(); }
   function el(id){ return document.getElementById(id); }
-  function showError(msg){
-    const box = el('error-box'); box.textContent = msg; box.classList.add('show');
-  }
+  function showError(msg){ const box = el('error-box'); box.textContent = msg; box.classList.add('show'); }
   function clearError(){ el('error-box').classList.remove('show'); }
-  function setStatus(msg){
-    const s = el('status-line'); s.classList.add('show'); el('status-text').textContent = msg;
-  }
+  function setStatus(msg){ const s = el('status-line'); s.classList.add('show'); el('status-text').textContent = msg; }
   function hideStatus(){ el('status-line').classList.remove('show'); }
 
-  /* ================= fetchers ================= */
+  /* ================= platform toggle ================= */
+  el('btn-platform-espn').addEventListener('click', () => setPlatform('espn'));
+  el('btn-platform-sleeper').addEventListener('click', () => setPlatform('sleeper'));
+  function setPlatform(p){
+    state.platform = p;
+    el('btn-platform-espn').classList.toggle('active', p==='espn');
+    el('btn-platform-sleeper').classList.toggle('active', p==='sleeper');
+    el('label-leagueid').textContent = p==='espn' ? 'ESPN League ID' : 'Sleeper League ID';
+    el('espn-only-row').style.display = p==='espn' ? 'grid' : 'none';
+    el('espn-advanced-wrap').style.display = p==='espn' ? 'block' : 'none';
+    el('sleeper-note').style.display = p==='sleeper' ? 'block' : 'none';
+    clearError();
+  }
+
+  /* ================= ESPN fetch/parse ================= */
   async function fetchEspnLeague(leagueId, year, swid, espnS2){
     const url = `https://fantasy.espn.com/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${leagueId}?view=mTeam&view=mRoster&view=mSettings`;
     const useCreds = !!(swid && espnS2);
-    const opts = { credentials: useCreds ? 'include' : 'omit' };
-    const res = await fetch(url, opts);
-    if(!res.ok){
-      if(res.status === 401 || res.status === 403){
-        throw new Error('This league looks private, or ESPN rejected the request. Set your league to public temporarily, or add SWID / espn_s2 under advanced options.');
+    try{
+      const res = await robustFetch(url, { credentials: useCreds ? 'include' : 'omit' });
+      return await res.json();
+    }catch(err){
+      if(err.status === 401 || err.status === 403){
+        throw new Error('This league looks private, or ESPN rejected the request. Set the league to public temporarily, or add SWID / espn_s2 under "Private league?".');
       }
-      if(res.status === 404){
+      if(err.status === 404){
         throw new Error('League not found — double check the League ID and season.');
       }
-      throw new Error('ESPN returned an error (' + res.status + '). Try again in a moment.');
+      throw new Error('Could not reach ESPN (network/CORS issue). Try again, or switch to Sleeper if this is a Sleeper league.');
     }
-    return res.json();
   }
-
-  async function fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams}){
-    const params = new URLSearchParams({
-      isDynasty: isDynasty ? 'true' : 'false',
-      numQBs: String(numQBs),
-      numTeams: String(numTeams || 12),
-      ppr: String(ppr)
-    });
-    const url = `https://api.fantasycalc.com/values/current?${params.toString()}`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('FantasyCalc values could not be loaded right now.');
-    return res.json();
-  }
-
-  /* ================= parsing ESPN ================= */
   function detectPpr(league){
     try{
       const items = league.settings.scoringSettings.scoringItems;
       const rec = items.find(i => i.statId === 53);
-      if(rec && typeof rec.pointsOverrides !== 'undefined'){
-        const vals = Object.values(rec.pointsOverrides || {});
+      if(rec && rec.pointsOverrides){
+        const vals = Object.values(rec.pointsOverrides);
         if(vals.length) return vals[0];
       }
       if(rec && typeof rec.points === 'number') return rec.points;
@@ -556,12 +576,12 @@
   function detectSuperflex(league){
     try{
       const counts = league.settings.rosterSettings.lineupSlotCounts;
-      return (counts['7'] && counts['7'] > 0);
+      return !!(counts['7'] && counts['7'] > 0);
     }catch(e){ return false; }
   }
-  function buildTeams(league){
+  function buildEspnTeams(league){
     const members = {};
-    (league.members||[]).forEach(m => members[m.id] = (m.firstName||'') + ' ' + (m.lastName||''));
+    (league.members||[]).forEach(m => members[m.id] = ((m.firstName||'') + ' ' + (m.lastName||'')).trim());
     return league.teams.map(t => {
       const name = t.name || ((t.location||'') + ' ' + (t.nickname||'')).trim() || ('Team ' + t.id);
       const ownerId = (t.owners||[])[0];
@@ -571,81 +591,174 @@
           id: p.id,
           fullName: p.fullName,
           position: POS_MAP[p.defaultPositionId] || '—',
-          proTeam: p.proTeamId
+          teamAbbr: ESPN_TEAM_ABBR[p.proTeamId] || null
         };
       });
-      return { id: t.id, name, owner: (members[ownerId]||'').trim(), roster };
+      return { id: t.id, name, owner: members[ownerId] || '', roster };
     });
   }
 
+  /* ================= Sleeper fetch/parse ================= */
+  async function fetchSleeperLeague(leagueId){
+    try{
+      const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}`);
+      const data = await res.json();
+      if(!data) throw new Error();
+      return data;
+    }catch(e){ throw new Error('League not found — double check the Sleeper League ID.'); }
+  }
+  async function fetchSleeperRosters(leagueId){
+    const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`);
+    return res.json();
+  }
+  async function fetchSleeperUsers(leagueId){
+    const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}/users`);
+    return res.json();
+  }
+  async function fetchSleeperPlayers(){
+    try{
+      const cached = localStorage.getItem(SLEEPER_PLAYERS_CACHE_KEY);
+      if(cached){
+        const parsed = JSON.parse(cached);
+        if(Date.now() - parsed.ts < SLEEPER_PLAYERS_TTL) return parsed.data;
+      }
+    }catch(e){}
+    const res = await robustFetch('https://api.sleeper.app/v1/players/nfl');
+    const data = await res.json();
+    try{ localStorage.setItem(SLEEPER_PLAYERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); }catch(e){}
+    return data;
+  }
+  function sleeperDetectPpr(league){
+    try{ return league.scoring_settings.rec || 0; }catch(e){ return 1; }
+  }
+  function sleeperDetectSuperflex(league){
+    try{ return (league.roster_positions||[]).includes('SUPER_FLEX'); }catch(e){ return false; }
+  }
+  function sleeperDetectDynasty(league){
+    try{ return league.settings && league.settings.type === 2; }catch(e){ return false; }
+  }
+  function buildSleeperTeams(rosters, users, playersMap){
+    const userById = {}; users.forEach(u => userById[u.user_id] = u);
+    return rosters.map(r => {
+      const u = userById[r.owner_id];
+      const name = (u && u.metadata && u.metadata.team_name) || (u && u.display_name) || ('Team ' + r.roster_id);
+      const roster = (r.players||[]).map(pid => {
+        const p = playersMap[pid];
+        if(!p) return null;
+        const isDef = p.position === 'DEF';
+        return {
+          id: pid,
+          fullName: isDef ? (p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid) : (p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim()),
+          position: isDef ? 'DST' : (p.position || '—'),
+          teamAbbr: isDef ? pid : (p.team || null)
+        };
+      }).filter(Boolean);
+      return { id: r.roster_id, name, owner: u ? u.display_name : '', roster };
+    });
+  }
+
+  /* ================= FantasyCalc ================= */
+  async function fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams}){
+    const params = new URLSearchParams({
+      isDynasty: isDynasty ? 'true' : 'false',
+      numQBs: String(numQBs),
+      numTeams: String(numTeams || 12),
+      ppr: String(ppr)
+    });
+    const url = `https://api.fantasycalc.com/values/current?${params.toString()}`;
+    try{
+      const res = await robustFetch(url);
+      return await res.json();
+    }catch(e){
+      throw new Error('Could not reach FantasyCalc for player values. Try again in a moment.');
+    }
+  }
   function buildFcIndex(fcValues){
     const idx = {};
     const picks = [];
+    const dstList = [];
     fcValues.forEach(entry => {
       const p = entry.player;
       if(!p) return;
       if(p.position === 'PICK'){ picks.push(entry); return; }
-      const key = normalizeName(p.name);
-      idx[key] = entry;
+      if(p.position === 'DST'){ dstList.push(entry); }
+      idx[normalizeName(p.name)] = entry;
     });
-    return { idx, picks };
+    return { idx, picks, dstList };
   }
-
-  function matchPlayer(fullName, position, fcIdx){
-    const key = normalizeName(fullName);
-    if(fcIdx[key]) return fcIdx[key];
-    if(position === 'DST'){
-      // try matching by last word (team nickname) among DST entries
+  function matchPlayer(player, fc){
+    if(player.position === 'DST' && player.teamAbbr){
+      const byAbbr = fc.dstList.find(e => (e.player.maybeTeam||'').toUpperCase() === player.teamAbbr.toUpperCase());
+      if(byAbbr) return byAbbr;
+    }
+    const key = normalizeName(player.fullName);
+    if(fc.idx[key]) return fc.idx[key];
+    if(player.position === 'DST'){
       const words = key.split(' ');
       const last = words[words.length-1];
-      const cand = Object.keys(fcIdx).find(k => fcIdx[k].player.position === 'DST' && k.includes(last));
-      if(cand) return fcIdx[cand];
+      const cand = fc.dstList.find(e => normalizeName(e.player.name).includes(last));
+      if(cand) return cand;
     }
     return null;
   }
 
   /* ================= main load flow ================= */
   el('btn-load').addEventListener('click', loadLeague);
-  el('toggle-advanced').addEventListener('click', () => {
-    el('advanced-body').classList.toggle('open');
-  });
+  el('toggle-advanced').addEventListener('click', () => el('advanced-body').classList.toggle('open'));
 
   async function loadLeague(){
     clearError();
     const leagueId = el('in-leagueid').value.trim();
-    const year = yearSel.value;
-    const isDynasty = el('in-dynasty').value === '1';
-    const swid = el('in-swid').value.trim();
-    const espnS2 = el('in-espns2').value.trim();
-    const numTeamsOverride = parseInt(el('in-numteams').value, 10);
-
-    if(!leagueId){ showError('Enter your ESPN league ID first.'); return; }
+    if(!leagueId){ showError('Enter your league ID first.'); return; }
 
     el('btn-load').disabled = true;
-    setStatus('Fetching league from ESPN…');
 
     try{
-      const league = await fetchEspnLeague(leagueId, year, swid, espnS2);
-      const teams = buildTeams(league);
-      const ppr = detectPpr(league);
-      const superflex = detectSuperflex(league);
-      const numQBs = superflex ? 2 : 1;
-      const numTeams = numTeamsOverride || teams.length || 12;
+      let teams, ppr, numQBs, isDynasty, numTeams, leagueName;
+
+      if(state.platform === 'espn'){
+        const year = yearSel.value;
+        const swid = el('in-swid').value.trim();
+        const espnS2 = el('in-espns2').value.trim();
+        isDynasty = el('in-dynasty').value === '1';
+
+        setStatus('Fetching league from ESPN…');
+        const league = await fetchEspnLeague(leagueId, year, swid, espnS2);
+        teams = buildEspnTeams(league);
+        ppr = detectPpr(league);
+        numQBs = detectSuperflex(league) ? 2 : 1;
+        numTeams = teams.length || 12;
+        leagueName = league.settings.name || 'League';
+        state.year = year;
+      }else{
+        setStatus('Fetching league from Sleeper…');
+        const league = await fetchSleeperLeague(leagueId);
+        const [rosters, users] = await Promise.all([fetchSleeperRosters(leagueId), fetchSleeperUsers(leagueId)]);
+        setStatus('Loading player database (cached after first time)…');
+        const playersMap = await fetchSleeperPlayers();
+        teams = buildSleeperTeams(rosters, users, playersMap);
+        ppr = sleeperDetectPpr(league);
+        numQBs = sleeperDetectSuperflex(league) ? 2 : 1;
+        isDynasty = sleeperDetectDynasty(league);
+        numTeams = league.total_rosters || teams.length || 12;
+        leagueName = league.name || 'League';
+        state.year = league.season;
+      }
 
       setStatus('Pricing rosters with FantasyCalc…');
       const fcValues = await fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams});
-      const { idx, picks } = buildFcIndex(fcValues);
+      const fc = buildFcIndex(fcValues);
 
-      state.leagueId = leagueId; state.year = year; state.isDynasty = isDynasty;
-      state.numQBs = numQBs; state.ppr = ppr;
-      state.league = league; state.teams = teams;
-      state.fcValues = fcValues; state.fcIndex = idx; state.picksAvailable = picks;
+      state.leagueId = leagueId; state.isDynasty = isDynasty;
+      state.numQBs = numQBs; state.ppr = ppr; state.numTeams = numTeams;
+      state.leagueName = leagueName;
+      state.teams = teams;
+      state.fcValues = fcValues; state.fcIndex = fc.idx; state.picksAvailable = fc.picks; state.fcDst = fc.dstList;
       state.selectedTeamA = teams[0] ? teams[0].id : null;
       state.selectedTeamB = teams[1] ? teams[1].id : (teams[0] ? teams[0].id : null);
       state.tradeA = []; state.tradeB = [];
 
       attachValues();
-      cacheState();
       renderAll();
       hideStatus();
       el('setup-screen').style.display = 'none';
@@ -659,29 +772,21 @@
   }
 
   function attachValues(){
+    const fc = { idx: state.fcIndex, dstList: state.fcDst };
     state.teams.forEach(team => {
       team.roster.forEach(p => {
-        const m = matchPlayer(p.fullName, p.position, state.fcIndex);
+        const m = matchPlayer(p, fc);
         p.value = m ? m.value : 0;
         p.matched = !!m;
-        p.redraftValue = m ? (m.redraftValue || m.value) : 0;
       });
     });
   }
 
-  function cacheState(){
-    try{
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        leagueId: state.leagueId, year: state.year, isDynasty: state.isDynasty,
-        numQBs: state.numQBs, ppr: state.ppr
-      }));
-    }catch(e){}
-  }
-
   /* ================= rendering: shared ================= */
   function renderAll(){
-    el('league-chip').textContent = (state.league.settings.name || 'League') + ' · ' + state.year + (state.isDynasty ? ' · Dynasty' : ' · Redraft');
-    el('drawer-league-info').textContent = (state.league.settings.name || 'League') + ' (ID ' + state.leagueId + '), ' + state.teams.length + ' teams.';
+    const fmtParts = [state.numTeams + ' teams', state.numQBs===2 ? 'Superflex' : '1QB', state.isDynasty ? 'Dynasty' : 'Redraft', pprLabel(state.ppr)];
+    el('league-chip').textContent = state.leagueName + ' · ' + fmtParts.join(' · ');
+    el('drawer-league-info').textContent = state.leagueName + ' (ID ' + state.leagueId + '), ' + state.teams.length + ' teams, via ' + (state.platform==='espn'?'ESPN':'Sleeper') + '.';
     el('sw-dynasty').classList.toggle('on', state.isDynasty);
     el('sw-superflex').classList.toggle('on', state.numQBs === 2);
     el('sel-ppr').value = String(state.ppr);
@@ -693,6 +798,7 @@
     renderRankings();
     renderNeeds();
   }
+  function pprLabel(v){ return v>=1 ? 'Full PPR' : v>0 ? 'Half PPR' : 'Standard'; }
 
   function populateTeamSelectors(){
     ['a','b'].forEach(side => {
@@ -706,8 +812,9 @@
       sel.value = side === 'a' ? state.selectedTeamA : state.selectedTeamB;
     });
   }
-  el('select-team-a').addEventListener('change', e => { state.selectedTeamA = parseInt(e.target.value,10); state.tradeA=[]; renderTradeSide('a'); renderVerdict(); });
-  el('select-team-b').addEventListener('change', e => { state.selectedTeamB = parseInt(e.target.value,10); state.tradeB=[]; renderTradeSide('b'); renderVerdict(); });
+  el('select-team-a').addEventListener('change', e => { state.selectedTeamA = parseIdVal(e.target.value); state.tradeA=[]; renderTradeSide('a'); renderVerdict(); });
+  el('select-team-b').addEventListener('change', e => { state.selectedTeamB = parseIdVal(e.target.value); state.tradeB=[]; renderTradeSide('b'); renderVerdict(); });
+  function parseIdVal(v){ const n = Number(v); return isNaN(n) ? v : n; }
 
   function populatePickSelectors(){
     ['a','b'].forEach(side => {
@@ -725,7 +832,7 @@
   el('add-pick-b').addEventListener('click', () => addPickToTrade('b'));
   function addPickToTrade(side){
     const sel = el('picks-select-' + side);
-    const id = parseInt(sel.value, 10);
+    const id = parseIdVal(sel.value);
     const pickEntry = state.picksAvailable.find(p => p.player.id === id);
     if(!pickEntry) return;
     const list = side === 'a' ? state.tradeA : state.tradeB;
@@ -794,6 +901,7 @@
 
     if(state.tradeA.length === 0 && state.tradeB.length === 0){
       scoreEl.textContent = 'Add assets to both sides';
+      scoreEl.style.color = 'var(--text)';
       fill.style.width = '50%';
       return;
     }
@@ -819,7 +927,6 @@
     const insights = [];
     insights.push(`Team A sends ${fmt(totalA)}, Team B sends ${fmt(totalB)} — a gap of ${fmt(Math.abs(diff))} (${pctDiff.toFixed(0)}%).`);
 
-    // positional shift insight
     ['a','b'].forEach(side => {
       const list = side === 'a' ? state.tradeA : state.tradeB;
       const other = side === 'a' ? state.tradeB : state.tradeA;
@@ -860,7 +967,6 @@
     });
     return { total, ...groups };
   }
-
   let rankSortKey = 'total', rankSortDir = -1;
   function renderRankings(){
     const rows = state.teams.map(t => ({ team:t, ...teamValueBreakdown(t) }));
@@ -888,8 +994,7 @@
   document.querySelectorAll('th[data-sort]').forEach(th => {
     th.addEventListener('click', () => {
       const key = th.dataset.sort;
-      if(key === 'rank' || key === 'team'){ rankSortKey='total'; }
-      else rankSortKey = key;
+      rankSortKey = (key === 'rank' || key === 'team') ? 'total' : key;
       rankSortDir = rankSortDir === -1 ? 1 : -1;
       renderRankings();
     });
@@ -897,10 +1002,16 @@
 
   /* ================= needs ================= */
   function starterCount(pos){
+    if(state.platform === 'sleeper'){
+      // fall back to sane defaults; Sleeper roster_positions parsing kept simple on purpose
+      const defaults = {QB:1,RB:2,WR:2,TE:1};
+      return defaults[pos] || 1;
+    }
     try{
-      const counts = state.league.settings.rosterSettings.lineupSlotCounts;
+      const counts = state.league?.settings?.rosterSettings?.lineupSlotCounts;
       const slots = STARTER_SLOTS[pos] || [];
-      return slots.reduce((s,slotId)=> s + (counts[String(slotId)]||0), 0);
+      const c = slots.reduce((s,slotId)=> s + (counts[String(slotId)]||0), 0);
+      return c || (pos==='QB'?1:pos==='RB'?2:pos==='WR'?2:pos==='TE'?1:0);
     }catch(e){ return pos==='QB'?1:pos==='RB'?2:pos==='WR'?2:pos==='TE'?1:0; }
   }
 
@@ -908,7 +1019,6 @@
     const positions = ['QB','RB','WR','TE'];
     const starters = {}; positions.forEach(p => starters[p] = Math.max(starterCount(p),1));
 
-    // build league-wide starter-tier arrays per position, e.g. RB1..RBn value across teams
     const tierValues = {};
     positions.forEach(pos => { tierValues[pos] = []; });
     state.teams.forEach(team => {
@@ -971,12 +1081,11 @@
     closeDrawer();
     setStatus('Re-pricing rosters…');
     try{
-      const fcValues = await fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams: state.teams.length});
-      const { idx, picks } = buildFcIndex(fcValues);
+      const fcValues = await fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams: state.numTeams});
+      const fc = buildFcIndex(fcValues);
       state.isDynasty = isDynasty; state.numQBs = numQBs; state.ppr = ppr;
-      state.fcValues = fcValues; state.fcIndex = idx; state.picksAvailable = picks;
+      state.fcValues = fcValues; state.fcIndex = fc.idx; state.picksAvailable = fc.picks; state.fcDst = fc.dstList;
       attachValues();
-      cacheState();
       renderAll();
     }catch(err){
       showError(err.message);
