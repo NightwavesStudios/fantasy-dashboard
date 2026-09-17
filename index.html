@@ -1162,16 +1162,21 @@
       <!-- ---------- RANKINGS ---------- -->
       <section class="panel" id="panel-rankings">
         <div class="card">
-          <div class="section-title">Power rankings — total, starters &amp; bench</div>
+          <div class="section-title">Power rankings — VOR, value &amp; scoring</div>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
                   <th data-sort="rank">#</th>
                   <th data-sort="team">Team</th>
-                  <th data-sort="total">Total</th>
+                  <th data-sort="record">Record</th>
+                  <th data-sort="vor">VOR</th>
+                  <th data-sort="total">Total value</th>
                   <th data-sort="starters">Starters</th>
                   <th data-sort="bench">Bench</th>
+                  <th data-sort="avgPts">Avg scored</th>
+                  <th data-sort="maxPts">Most scored</th>
+                  <th data-sort="minPts">Least scored</th>
                   <th data-sort="qb">QB</th>
                   <th data-sort="rb">RB</th>
                   <th data-sort="wr">WR</th>
@@ -1526,7 +1531,24 @@
           teamAbbr: ESPN_TEAM_ABBR[p.proTeamId] || null
         };
       });
-      return { id: t.id, name, owner: members[ownerId] || '', roster };
+      const overall = (t.record && t.record.overall) || {};
+      const wins = overall.wins || 0;
+      const losses = overall.losses || 0;
+      const ties = overall.ties || 0;
+      const pointsFor = typeof overall.pointsFor === 'number' ? overall.pointsFor : 0;
+      const games = wins + losses + ties;
+      return {
+        id: t.id,
+        name,
+        owner: members[ownerId] || '',
+        roster,
+        wins, losses, ties,
+        pointsFor,
+        avgPts: games > 0 ? pointsFor / games : 0,
+        maxPts: null,
+        minPts: null,
+        weeklyScores: []
+      };
     });
   }
 
@@ -1585,8 +1607,114 @@
           teamAbbr: isDef ? pid : (p.team || null)
         };
       }).filter(Boolean);
-      return { id: r.roster_id, name, owner: u ? u.display_name : '', roster };
+      const s = r.settings || {};
+      const wins = s.wins || 0;
+      const losses = s.losses || 0;
+      const ties = s.ties || 0;
+      // Sleeper: fpts is whole points, fpts_decimal is fractional (often already 0–99)
+      let pf = 0;
+      if(typeof s.fpts === 'number'){
+        pf = s.fpts;
+        if(typeof s.fpts_decimal === 'number' && s.fpts_decimal > 0){
+          pf += s.fpts_decimal >= 1 ? s.fpts_decimal / 100 : s.fpts_decimal;
+        }
+      }
+      const games = wins + losses + ties;
+      return {
+        id: r.roster_id,
+        name,
+        owner: u ? u.display_name : '',
+        roster,
+        wins, losses, ties,
+        pointsFor: pf,
+        avgPts: games > 0 ? pf / games : 0,
+        maxPts: null,
+        minPts: null,
+        weeklyScores: []
+      };
     });
+  }
+
+  async function attachWeeklyScores(){
+    try{
+      if(state.platform === 'sleeper'){
+        const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+        const nflState = await stateRes.json();
+        const week = Math.min(Math.max(1, nflState.leg || nflState.week || 1), 18);
+        const scoresByRoster = {};
+        state.teams.forEach(t => { scoresByRoster[t.id] = []; });
+        const weeks = [];
+        for(let w = 1; w <= week; w++) weeks.push(w);
+        // fetch in batches of 4
+        for(let i = 0; i < weeks.length; i += 4){
+          const batch = weeks.slice(i, i + 4);
+          const results = await Promise.all(batch.map(w =>
+            robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${w}`)
+              .then(r => r.json())
+              .catch(() => [])
+          ));
+          results.forEach(matchups => {
+            (matchups || []).forEach(m => {
+              if(m.roster_id != null && typeof m.points === 'number' && m.points > 0){
+                if(!scoresByRoster[m.roster_id]) scoresByRoster[m.roster_id] = [];
+                scoresByRoster[m.roster_id].push(m.points);
+              }
+            });
+          });
+        }
+        state.teams.forEach(t => {
+          const scores = scoresByRoster[t.id] || [];
+          t.weeklyScores = scores;
+          if(scores.length){
+            t.maxPts = Math.max(...scores);
+            t.minPts = Math.min(...scores);
+            t.avgPts = scores.reduce((a,b) => a + b, 0) / scores.length;
+            t.pointsFor = scores.reduce((a,b) => a + b, 0);
+          }
+        });
+      } else if(state.platform === 'espn' && state.year){
+        // One schedule payload includes the season; key by matchupPeriodId to avoid dupes
+        const scoresByTeam = {};
+        const seen = {};
+        state.teams.forEach(t => { scoresByTeam[t.id] = []; });
+        const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore`;
+        const urls = [
+          `https://lm-api-reads.fantasy.espn.com${path}`,
+          `https://fantasy.espn.com${path}`
+        ];
+        try{
+          const res = await robustFetchAny(urls, { timeoutMs: 12000 });
+          const data = await res.json();
+          (data.schedule || []).forEach(game => {
+            const period = game.matchupPeriodId || game.scoringPeriodId || 0;
+            if(game.winner === 'UNDECIDED' && !(game.home && game.home.totalPoints)) return;
+            ['home','away'].forEach(side => {
+              const entry = game[side];
+              if(!entry || entry.teamId == null) return;
+              const pts = entry.totalPoints;
+              if(typeof pts !== 'number' || pts <= 0) return;
+              const key = entry.teamId + ':' + period;
+              if(seen[key]) return;
+              seen[key] = true;
+              if(!scoresByTeam[entry.teamId]) scoresByTeam[entry.teamId] = [];
+              scoresByTeam[entry.teamId].push(pts);
+            });
+          });
+        }catch(e){ /* ignore */ }
+        state.teams.forEach(t => {
+          const scores = scoresByTeam[t.id] || [];
+          t.weeklyScores = scores;
+          if(scores.length){
+            t.maxPts = Math.max(...scores);
+            t.minPts = Math.min(...scores);
+            t.avgPts = scores.reduce((a,b) => a + b, 0) / scores.length;
+            t.pointsFor = scores.reduce((a,b) => a + b, 0);
+          }
+        });
+      }
+    }catch(e){
+      // non-fatal — rankings still work without weekly highs/lows
+    }
   }
 
   /* ---------- FantasyCalc + cache ---------- */
@@ -1843,6 +1971,11 @@
       hideStatus();
       el('setup-screen').style.display = 'none';
       el('app').classList.add('show');
+
+      // Weekly high/low scores — non-blocking
+      attachWeeklyScores().then(() => {
+        if(el('app').classList.contains('show')) renderRankings();
+      });
     }catch(err){
       hideStatus();
       showError(err.message || 'Something went wrong loading your league.');
@@ -2191,97 +2324,151 @@
     }
   }
 
-  /* ---------- rankings with starters/bench ---------- */
-  function teamValueBreakdown(team){
+  /* ---------- rankings: VOR, value, scoring ---------- */
+  function computeReplacementLevels(){
+    // Replacement = value of the last starting-caliber player league-wide at each position
+    // (starter slots × number of teams), among all rostered players.
+    const counts = getStarterCounts();
+    const byPos = { QB:[], RB:[], WR:[], TE:[], DST:[], K:[] };
+    state.teams.forEach(team => {
+      team.roster.forEach(p => {
+        if(byPos[p.position]) byPos[p.position].push(p.value || 0);
+      });
+    });
+    const replacement = {};
+    Object.keys(byPos).forEach(pos => {
+      const vals = byPos[pos].slice().sort((a,b) => b - a);
+      const slots = Math.max(counts[pos] || 0, 0);
+      const idx = Math.max(0, Math.min(vals.length - 1, state.numTeams * Math.max(slots, 1) - 1));
+      replacement[pos] = vals.length ? (vals[idx] || 0) : 0;
+    });
+    // Flex replacement ≈ lowest of RB/WR/TE replacement
+    const flexCandidates = [replacement.RB, replacement.WR, replacement.TE].filter(v => v > 0);
+    replacement.FLEX = flexCandidates.length ? Math.min(...flexCandidates) : 0;
+    return replacement;
+  }
+
+  function teamValueBreakdown(team, replacement){
     const groups = { QB:0, RB:0, WR:0, TE:0 };
     let total = 0;
+    let vor = 0;
     const byPos = { QB:[], RB:[], WR:[], TE:[], DST:[], K:[] };
 
     team.roster.forEach(p => {
-      total += p.value || 0;
-      if(groups.hasOwnProperty(p.position)) groups[p.position] += p.value || 0;
-      if(byPos[p.position]) byPos[p.position].push(p.value || 0);
+      const v = p.value || 0;
+      total += v;
+      if(groups.hasOwnProperty(p.position)) groups[p.position] += v;
+      if(byPos[p.position]) byPos[p.position].push(v);
+      const rep = replacement[p.position] != null ? replacement[p.position] : 0;
+      vor += Math.max(0, v - rep);
     });
 
-    // Sort each position by value desc for starter assignment
     Object.keys(byPos).forEach(pos => byPos[pos].sort((a,b) => b - a));
 
     const counts = getStarterCounts();
     let startersVal = 0;
-    // Assign starters: fill positional slots then flex from remaining RB/WR/TE
-    const used = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0 };
     const remaining = { RB:[], WR:[], TE:[] };
 
-    // Positional starters
     ['QB','RB','WR','TE','DST','K'].forEach(pos => {
       const n = counts[pos] || 0;
       for(let i = 0; i < n && i < byPos[pos].length; i++){
         startersVal += byPos[pos][i];
-        used[pos]++;
       }
-      // leftovers for flex (skill only)
       if(pos === 'RB' || pos === 'WR' || pos === 'TE'){
-        for(let i = n; i < byPos[pos].length; i++){
-          remaining[pos].push(byPos[pos][i]);
-        }
+        for(let i = n; i < byPos[pos].length; i++) remaining[pos].push(byPos[pos][i]);
       }
     });
 
-    // Flex: take best remaining RB/WR/TE
     const flexPool = [...remaining.RB, ...remaining.WR, ...remaining.TE].sort((a,b) => b - a);
     const flexN = counts.FLEX || 0;
-    for(let i = 0; i < flexN && i < flexPool.length; i++){
-      startersVal += flexPool[i];
-    }
+    for(let i = 0; i < flexN && i < flexPool.length; i++) startersVal += flexPool[i];
 
     const benchVal = Math.max(0, total - startersVal);
-    return { total, starters: startersVal, bench: benchVal, ...groups };
+    const wins = team.wins || 0;
+    const losses = team.losses || 0;
+    const ties = team.ties || 0;
+    const winPct = (wins + losses + ties) > 0 ? (wins + 0.5 * ties) / (wins + losses + ties) : 0;
+
+    return {
+      total,
+      vor,
+      starters: startersVal,
+      bench: benchVal,
+      avgPts: team.avgPts || 0,
+      maxPts: team.maxPts != null ? team.maxPts : null,
+      minPts: team.minPts != null ? team.minPts : null,
+      pointsFor: team.pointsFor || 0,
+      wins, losses, ties,
+      winPct,
+      recordStr: ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`,
+      ...groups
+    };
   }
 
   const SORT_KEY_MAP = {
-    rank: 'total', team: 'team', total: 'total', starters: 'starters', bench: 'bench',
+    rank: 'vor', team: 'team', record: 'winPct',
+    vor: 'vor', total: 'total', starters: 'starters', bench: 'bench',
+    avgPts: 'avgPts', maxPts: 'maxPts', minPts: 'minPts',
     qb: 'QB', rb: 'RB', wr: 'WR', te: 'TE'
   };
-  let rankSortKey = 'total', rankSortDir = -1;
+  let rankSortKey = 'vor', rankSortDir = -1;
 
-  function avgOf(rows, key){
-    if(!rows.length) return 0;
-    return rows.reduce((s,r) => s + (r[key]||0), 0) / rows.length;
+  function medianOf(arr){
+    const s = arr.filter(v => v != null && !isNaN(v)).slice().sort((a,b) => a - b);
+    if(!s.length) return 0;
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
   }
-  function pctFromAvg(val, avg){
-    if(!avg) return val > 0 ? 100 : 0;
-    return ((val / avg) - 1) * 100;
+  function pctFromMedian(val, med){
+    if(val == null || isNaN(val)) return null;
+    if(!med) return val > 0 ? 100 : 0;
+    return ((val / med) - 1) * 100;
   }
   function fmtPct(p){
-    const s = (p >= 0 ? '+' : '') + p.toFixed(0) + '%';
-    return s;
+    if(p == null || isNaN(p)) return '—';
+    return (p >= 0 ? '+' : '') + p.toFixed(0) + '%';
+  }
+  function fmtPts(n){
+    if(n == null || isNaN(n)) return '—';
+    return (Math.round(n * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
   }
 
   function renderRankings(){
-    const rows = state.teams.map(t => ({ team:t, ...teamValueBreakdown(t) }));
-    const maxTotal = Math.max(...rows.map(r => r.total), 1);
-    const avgs = {
-      total: avgOf(rows, 'total'),
-      starters: avgOf(rows, 'starters'),
-      bench: avgOf(rows, 'bench'),
-      QB: avgOf(rows, 'QB'),
-      RB: avgOf(rows, 'RB'),
-      WR: avgOf(rows, 'WR'),
-      TE: avgOf(rows, 'TE')
+    const replacement = computeReplacementLevels();
+    const rows = state.teams.map(t => ({ team: t, ...teamValueBreakdown(t, replacement) }));
+    const maxVor = Math.max(...rows.map(r => r.vor), 1);
+
+    const medians = {
+      vor: medianOf(rows.map(r => r.vor)),
+      total: medianOf(rows.map(r => r.total)),
+      starters: medianOf(rows.map(r => r.starters)),
+      bench: medianOf(rows.map(r => r.bench)),
+      avgPts: medianOf(rows.map(r => r.avgPts).filter(v => v > 0)),
+      maxPts: medianOf(rows.map(r => r.maxPts).filter(v => v != null)),
+      minPts: medianOf(rows.map(r => r.minPts).filter(v => v != null)),
+      QB: medianOf(rows.map(r => r.QB)),
+      RB: medianOf(rows.map(r => r.RB)),
+      WR: medianOf(rows.map(r => r.WR)),
+      TE: medianOf(rows.map(r => r.TE))
     };
 
     rows.sort((a,b) => {
       if(rankSortKey === 'team'){
         return rankSortDir * String(a.team.name).localeCompare(String(b.team.name));
       }
-      const av = a[rankSortKey] || 0;
-      const bv = b[rankSortKey] || 0;
+      if(rankSortKey === 'record' || rankSortKey === 'winPct'){
+        const av = a.winPct || 0, bv = b.winPct || 0;
+        if(av !== bv) return rankSortDir * (av - bv);
+        return rankSortDir * ((a.wins||0) - (b.wins||0));
+      }
+      const av = a[rankSortKey] != null ? a[rankSortKey] : -Infinity;
+      const bv = b[rankSortKey] != null ? b[rankSortKey] : -Infinity;
       return rankSortDir * (av - bv);
     });
 
     document.querySelectorAll('#panel-rankings th[data-sort]').forEach(th => {
       const mapped = SORT_KEY_MAP[th.dataset.sort] || th.dataset.sort;
-      const active = mapped === rankSortKey;
+      const active = mapped === rankSortKey || (th.dataset.sort === 'rank' && rankSortKey === 'vor');
       th.classList.toggle('sorted', active);
       let ind = th.querySelector('.sort-ind');
       if(!ind){
@@ -2296,28 +2483,37 @@
     tbody.innerHTML = '';
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      const barPct = (r.total / maxTotal) * 100;
-      const cell = (key) => {
-        const p = pctFromAvg(r[key], avgs[key]);
-        const cls = p > 2 ? 'up' : p < -2 ? 'down' : '';
-        return `<td class="val-cell">${fmt(r[key])}<div class="pct-cell ${cls}">${fmtPct(p)}</div></td>`;
+      const barPct = (r.vor / maxVor) * 100;
+      const cellVal = (key, formatter) => {
+        const raw = r[key];
+        const p = pctFromMedian(raw, medians[key]);
+        const cls = p == null ? '' : p > 2 ? 'up' : p < -2 ? 'down' : '';
+        const display = formatter ? formatter(raw) : fmt(raw);
+        return `<td class="val-cell">${display}<div class="pct-cell ${cls}">${fmtPct(p)}</div></td>`;
       };
+      const vorP = pctFromMedian(r.vor, medians.vor);
+      const vorCls = vorP > 2 ? 'up' : vorP < -2 ? 'down' : '';
       tr.innerHTML = `
         <td><span class="rank-num">${i+1}</span></td>
         <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
+        <td class="val-cell">${escapeHtml(r.recordStr)}</td>
         <td class="val-cell">
           <div class="mini-bar-wrap">
-            <span style="min-width:48px;display:inline-block;font-variant-numeric:tabular-nums;">${fmt(r.total)}</span>
+            <span style="min-width:48px;display:inline-block;font-variant-numeric:tabular-nums;font-weight:600;">${fmt(r.vor)}</span>
             <div class="mini-bar-track"><div class="mini-bar" style="width:${barPct}%"></div></div>
           </div>
-          <div class="pct-cell ${pctFromAvg(r.total, avgs.total) > 2 ? 'up' : pctFromAvg(r.total, avgs.total) < -2 ? 'down' : ''}">${fmtPct(pctFromAvg(r.total, avgs.total))} vs avg</div>
+          <div class="pct-cell ${vorCls}">${fmtPct(vorP)} vs med</div>
         </td>
-        ${cell('starters')}
-        ${cell('bench')}
-        ${cell('QB')}
-        ${cell('RB')}
-        ${cell('WR')}
-        ${cell('TE')}`;
+        ${cellVal('total')}
+        ${cellVal('starters')}
+        ${cellVal('bench')}
+        ${cellVal('avgPts', fmtPts)}
+        ${cellVal('maxPts', fmtPts)}
+        ${cellVal('minPts', fmtPts)}
+        ${cellVal('QB')}
+        ${cellVal('RB')}
+        ${cellVal('WR')}
+        ${cellVal('TE')}`;
       tbody.appendChild(tr);
     });
   }
