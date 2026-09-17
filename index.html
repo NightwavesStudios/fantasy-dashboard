@@ -938,6 +938,115 @@
     margin-top: 24px;
   }
 
+  .section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .section-title-row .section-title { margin: 0; }
+
+  .info-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .info-btn:hover {
+    color: var(--text);
+    border-color: #3a423d;
+  }
+  .info-btn .icon { width: 13px; height: 13px; }
+
+  #info-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+  }
+  #info-modal.show { display: flex; }
+
+  .info-panel {
+    width: 100%;
+    max-width: 520px;
+    max-height: min(80vh, 640px);
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px 26px;
+  }
+  .info-panel h2 {
+    font-size: 17px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .info-panel .info-sub {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .info-panel h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin: 16px 0 6px;
+  }
+  .info-panel h3:first-of-type { margin-top: 0; }
+  .info-panel p, .info-panel li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+  .info-panel p { margin: 0 0 8px; }
+  .info-panel ul {
+    margin: 0 0 8px;
+    padding-left: 18px;
+  }
+  .info-panel li { margin-bottom: 4px; }
+  .info-panel strong { color: var(--text); font-weight: 600; }
+  .info-panel code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11.5px;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--text);
+  }
+  .info-weights {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 14px;
+    font-size: 12.5px;
+    margin: 8px 0 4px;
+  }
+  .info-weights span:nth-child(odd) { color: var(--text-secondary); }
+  .info-weights span:nth-child(even) {
+    color: var(--text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .info-close {
+    margin-top: 18px;
+    width: 100%;
+  }
+
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-thumb { background: #2e342f; border-radius: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -1162,25 +1271,31 @@
       <!-- ---------- RANKINGS ---------- -->
       <section class="panel" id="panel-rankings">
         <div class="card">
-          <div class="section-title">Power rankings — VOR, value &amp; scoring</div>
+          <div class="section-title-row">
+            <div class="section-title">Power rankings — FantasyPulse formula</div>
+            <button type="button" class="info-btn" id="btn-rankings-info" title="How rankings work">
+              <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+              How it works
+            </button>
+          </div>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
                   <th data-sort="rank">#</th>
                   <th data-sort="team">Team</th>
+                  <th data-sort="power">Power</th>
                   <th data-sort="record">Record</th>
-                  <th data-sort="vor">VOR</th>
-                  <th data-sort="total">Total value</th>
-                  <th data-sort="starters">Starters</th>
-                  <th data-sort="bench">Bench</th>
+                  <th data-sort="starterVor">Starter VOR</th>
+                  <th data-sort="depthVor">Depth VOR</th>
                   <th data-sort="avgPts">Avg scored</th>
+                  <th data-sort="medPts">Med scored</th>
                   <th data-sort="maxPts">Most scored</th>
                   <th data-sort="minPts">Least scored</th>
-                  <th data-sort="qb">QB</th>
-                  <th data-sort="rb">RB</th>
-                  <th data-sort="wr">WR</th>
-                  <th data-sort="te">TE</th>
+                  <th data-sort="qb">QB VOR</th>
+                  <th data-sort="rb">RB VOR</th>
+                  <th data-sort="wr">WR VOR</th>
+                  <th data-sort="te">TE VOR</th>
                 </tr>
               </thead>
               <tbody id="rankings-body"></tbody>
@@ -1233,6 +1348,55 @@
 </div>
 
 <div class="share-toast" id="share-toast">Link copied</div>
+
+<div id="info-modal" role="dialog" aria-labelledby="info-modal-title" aria-modal="true">
+  <div class="info-panel">
+    <h2 id="info-modal-title">How power rankings work</h2>
+    <p class="info-sub">Everything is computed from your league’s roster settings and live FantasyCalc values — nothing is hard-coded to a specific league size or lineup.</p>
+
+    <h3>What is VOR?</h3>
+    <p><strong>Value Over Replacement</strong> measures how much better a player is than a “replacement-level” player at the same position — the last player who would still start in this league.</p>
+    <p>Replacement level is set from <strong>positional demand</strong>: team count × starting slots at that position, including how FLEX and Superflex are actually filled from the player pool. A player’s VOR is:</p>
+    <p><code>VOR = max(0, player value − replacement value at their position)</code></p>
+    <p>Only surplus value counts. A player at or below replacement contributes <strong>0</strong> VOR.</p>
+
+    <h3>Starter VOR</h3>
+    <p>For each team we build the <strong>legal starting lineup that maximizes total VOR</strong> — respecting your league’s QB / RB / WR / TE / FLEX / Superflex rules. That sum is <strong>Starter VOR</strong>: the strength of the team’s optimal starters.</p>
+
+    <h3>Depth VOR</h3>
+    <p>Everyone left after that optimal lineup contributes to <strong>Depth VOR</strong>, with <strong>diminishing returns</strong> as you stack more extras at one position. Stockpiling the same spot helps less and less, so depth is rewarded without letting one position dominate.</p>
+
+    <h3>Positional VOR (QB / RB / WR / TE)</h3>
+    <p>Sum of VOR for all players at that position on the roster. Useful for seeing where a team is truly strong or thin in surplus value.</p>
+
+    <h3>Scoring &amp; record</h3>
+    <ul>
+      <li><strong>Avg / Med / Most / Least scored</strong> — from weekly scores when available (otherwise season averages).</li>
+      <li><strong>Record</strong> — win–loss (and ties). For the power formula we use a smoothed win rate <code>(wins + 1) / (games + 2)</code> so early-season records don’t swing wildly.</li>
+    </ul>
+
+    <h3>Percentages under each number</h3>
+    <p>Those are <strong>vs the league median</strong>, not the average. <code>+12%</code> means 12% above the middle team; <code>−8%</code> means 8% below. Green / red tints highlight meaningful gaps.</p>
+
+    <h3>Power score (0–100)</h3>
+    <p>Every ingredient is first turned into a <strong>league-relative percentile</strong> (best team ≈ 100, worst ≈ 0; ties share the average rank). Then:</p>
+    <div class="info-weights">
+      <span>Starter VOR</span><span>35%</span>
+      <span>Depth VOR</span><span>20%</span>
+      <span>Average scored</span><span>12%</span>
+      <span>Median scored</span><span>8%</span>
+      <span>Highest score</span><span>3%</span>
+      <span>Lowest score</span><span>2%</span>
+      <span>Record</span><span>20%</span>
+    </div>
+    <p>Teams are ranked by this <strong>Power</strong> score. Raw market totals are not used — only VOR and on-field results.</p>
+
+    <h3>Player values</h3>
+    <p>Market values come from <strong>FantasyCalc</strong> (redraft / dynasty, 1QB / Superflex, PPR matching your league). Roster, record, and scores come from ESPN or Sleeper.</p>
+
+    <button type="button" class="btn btn-primary info-close" id="btn-info-close">Got it</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -1844,45 +2008,53 @@
 
   /* ---------- starter counts from league settings ---------- */
   function getStarterCounts(){
-    const defaults = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, DST: 1, K: 1 };
+    // Pure positional slots + FLEX + Superflex tracked separately (league-settings driven)
+    const defaults = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, SF: 0, DST: 0, K: 0,
+      flexEligible: ['RB','WR','TE'], sfEligible: ['QB','RB','WR','TE'] };
     if(state.platform === 'sleeper'){
       try{
         const positions = state.league?.roster_positions || [];
-        const counts = { QB:0, RB:0, WR:0, TE:0, FLEX:0, DST:0, K:0 };
+        const counts = { QB:0, RB:0, WR:0, TE:0, FLEX:0, SF:0, DST:0, K:0,
+          flexEligible: ['RB','WR','TE'], sfEligible: ['QB','RB','WR','TE'] };
         positions.forEach(p => {
           if(p === 'QB') counts.QB++;
           else if(p === 'RB') counts.RB++;
           else if(p === 'WR') counts.WR++;
           else if(p === 'TE') counts.TE++;
-          else if(p === 'FLEX' || p === 'WRRB_FLEX' || p === 'REC_FLEX') counts.FLEX++;
-          else if(p === 'SUPER_FLEX') counts.QB++; // SF adds QB-eligible starter
+          else if(p === 'FLEX') { counts.FLEX++; counts.flexEligible = ['RB','WR','TE']; }
+          else if(p === 'WRRB_FLEX') { counts.FLEX++; counts.flexEligible = ['RB','WR']; }
+          else if(p === 'REC_FLEX') { counts.FLEX++; counts.flexEligible = ['WR','TE']; }
+          else if(p === 'SUPER_FLEX') { counts.SF++; counts.sfEligible = ['QB','RB','WR','TE']; }
           else if(p === 'DEF') counts.DST++;
           else if(p === 'K') counts.K++;
         });
-        // if nothing detected, use defaults
-        const total = Object.values(counts).reduce((a,b)=>a+b,0);
+        const total = counts.QB + counts.RB + counts.WR + counts.TE + counts.FLEX + counts.SF;
         if(total === 0) return defaults;
         return counts;
       }catch(e){ return defaults; }
     }
-    // ESPN
+    // ESPN lineupSlotCounts: 0=QB, 2=RB, 4=WR, 6=TE, 23=FLEX, 7=Superflex, 16=DST, 17=K
     try{
       const counts = state.league?.settings?.rosterSettings?.lineupSlotCounts || {};
       return {
-        QB: (counts['0']||0) + (counts['7']||0), // QB + Superflex
-        RB: counts['2']||0,
-        WR: counts['4']||0,
-        TE: counts['6']||0,
-        FLEX: counts['23']||0,
-        DST: counts['16']||0,
-        K: counts['17']||0
+        QB: counts['0'] || 0,
+        RB: counts['2'] || 0,
+        WR: counts['4'] || 0,
+        TE: counts['6'] || 0,
+        FLEX: counts['23'] || 0,
+        SF: counts['7'] || 0,
+        DST: counts['16'] || 0,
+        K: counts['17'] || 0,
+        flexEligible: ['RB','WR','TE'],
+        sfEligible: ['QB','RB','WR','TE']
       };
     }catch(e){ return defaults; }
   }
 
   function starterCount(pos){
     const c = getStarterCounts();
-    return Math.max(c[pos] || 0, pos === 'QB' ? 1 : pos === 'RB' || pos === 'WR' ? 2 : 1);
+    if(pos === 'QB') return Math.max((c.QB || 0) + (c.SF || 0), 1);
+    return Math.max(c[pos] || 0, pos === 'RB' || pos === 'WR' ? 2 : 1);
   }
 
   /* ---------- load flow ---------- */
@@ -2324,11 +2496,74 @@
     }
   }
 
-  /* ---------- rankings: VOR, value, scoring ---------- */
+  /* ---------- FantasyPulse power rankings ---------- */
+  function computePositionalDemand(){
+    const N = state.numTeams || state.teams.length || 12;
+    const c = getStarterCounts();
+    const Q = c.QB || 0, R = c.RB || 0, W = c.WR || 0, T = c.TE || 0;
+    const F = c.FLEX || 0, SF = c.SF || 0;
+    const flexElig = c.flexEligible || ['RB','WR','TE'];
+    const sfElig = c.sfEligible || ['QB','RB','WR','TE'];
+
+    // Base demand from pure slots
+    const demand = {
+      QB: N * Q,
+      RB: N * R,
+      WR: N * W,
+      TE: N * T,
+      DST: N * (c.DST || 0),
+      K: N * (c.K || 0)
+    };
+
+    // Allocate Superflex demand: primarily to QB when eligible (typical SF usage)
+    if(SF > 0 && sfElig.includes('QB')){
+      demand.QB += N * SF;
+    } else if(SF > 0){
+      // split across eligible if QB not allowed
+      const share = (N * SF) / sfElig.length;
+      sfElig.forEach(p => { demand[p] = (demand[p] || 0) + share; });
+    }
+
+    // Allocate FLEX demand from the actual skill-player pool:
+    // after filling pure positional starters, the next-best remaining players
+    // across flex-eligible positions determine how FLEX slots are filled league-wide.
+    if(F > 0){
+      const byPos = {};
+      flexElig.forEach(p => { byPos[p] = []; });
+      state.teams.forEach(team => {
+        team.roster.forEach(pl => {
+          if(byPos[pl.position]) byPos[pl.position].push(pl.value || 0);
+        });
+      });
+      // Remaining after pure starter demand at each flex-eligible pos
+      const remaining = [];
+      flexElig.forEach(p => {
+        const sorted = byPos[p].slice().sort((a,b) => b - a);
+        const pureDemand = Math.floor(demand[p] || 0);
+        for(let i = pureDemand; i < sorted.length; i++){
+          remaining.push({ pos: p, val: sorted[i] });
+        }
+      });
+      remaining.sort((a,b) => b.val - a.val);
+      const flexSlots = N * F;
+      const allocated = { RB:0, WR:0, TE:0 };
+      for(let i = 0; i < flexSlots && i < remaining.length; i++){
+        allocated[remaining[i].pos] = (allocated[remaining[i].pos] || 0) + 1;
+      }
+      // If not enough players, spread residual evenly
+      let used = Object.values(allocated).reduce((s,v) => s + v, 0);
+      if(used < flexSlots){
+        const extra = (flexSlots - used) / flexElig.length;
+        flexElig.forEach(p => { allocated[p] = (allocated[p] || 0) + extra; });
+      }
+      flexElig.forEach(p => { demand[p] = (demand[p] || 0) + (allocated[p] || 0); });
+    }
+
+    return { demand, counts: c, N, flexElig, sfElig };
+  }
+
   function computeReplacementLevels(){
-    // Replacement = value of the last starting-caliber player league-wide at each position
-    // (starter slots × number of teams), among all rostered players.
-    const counts = getStarterCounts();
+    const { demand } = computePositionalDemand();
     const byPos = { QB:[], RB:[], WR:[], TE:[], DST:[], K:[] };
     state.teams.forEach(team => {
       team.roster.forEach(p => {
@@ -2338,80 +2573,214 @@
     const replacement = {};
     Object.keys(byPos).forEach(pos => {
       const vals = byPos[pos].slice().sort((a,b) => b - a);
-      const slots = Math.max(counts[pos] || 0, 0);
-      const idx = Math.max(0, Math.min(vals.length - 1, state.numTeams * Math.max(slots, 1) - 1));
+      const d = Math.max(1, Math.round(demand[pos] || 0));
+      const idx = Math.max(0, Math.min(vals.length - 1, d - 1));
       replacement[pos] = vals.length ? (vals[idx] || 0) : 0;
     });
-    // Flex replacement ≈ lowest of RB/WR/TE replacement
-    const flexCandidates = [replacement.RB, replacement.WR, replacement.TE].filter(v => v > 0);
-    replacement.FLEX = flexCandidates.length ? Math.min(...flexCandidates) : 0;
     return replacement;
   }
 
-  function teamValueBreakdown(team, replacement){
-    const groups = { QB:0, RB:0, WR:0, TE:0 };
-    let total = 0;
-    let vor = 0;
-    const byPos = { QB:[], RB:[], WR:[], TE:[], DST:[], K:[] };
+  function playerVor(p, replacement){
+    const rep = replacement[p.position] != null ? replacement[p.position] : 0;
+    return Math.max(0, (p.value || 0) - rep);
+  }
 
-    team.roster.forEach(p => {
-      const v = p.value || 0;
-      total += v;
-      if(groups.hasOwnProperty(p.position)) groups[p.position] += v;
-      if(byPos[p.position]) byPos[p.position].push(v);
-      const rep = replacement[p.position] != null ? replacement[p.position] : 0;
-      vor += Math.max(0, v - rep);
-    });
+  // Greedy optimal lineup maximizing VOR given league slot rules
+  function optimalStarterVor(team, replacement, counts, flexElig, sfElig){
+    const players = team.roster.map(p => ({
+      id: p.id,
+      position: p.position,
+      vor: playerVor(p, replacement),
+      value: p.value || 0
+    })).sort((a,b) => b.vor - a.vor);
 
-    Object.keys(byPos).forEach(pos => byPos[pos].sort((a,b) => b - a));
+    const used = new Set();
+    let starterVor = 0;
+    const starterIds = new Set();
 
-    const counts = getStarterCounts();
-    let startersVal = 0;
-    const remaining = { RB:[], WR:[], TE:[] };
+    function takeBest(eligiblePositions, n){
+      let taken = 0;
+      for(const pl of players){
+        if(taken >= n) break;
+        if(used.has(pl.id)) continue;
+        if(!eligiblePositions.includes(pl.position)) continue;
+        used.add(pl.id);
+        starterIds.add(pl.id);
+        starterVor += pl.vor;
+        taken++;
+      }
+      return taken;
+    }
 
+    // 1) Pure positional slots
+    takeBest(['QB'], counts.QB || 0);
+    takeBest(['RB'], counts.RB || 0);
+    takeBest(['WR'], counts.WR || 0);
+    takeBest(['TE'], counts.TE || 0);
+    takeBest(['DST'], counts.DST || 0);
+    takeBest(['K'], counts.K || 0);
+
+    // 2) Superflex
+    takeBest(sfElig || ['QB','RB','WR','TE'], counts.SF || 0);
+
+    // 3) FLEX
+    takeBest(flexElig || ['RB','WR','TE'], counts.FLEX || 0);
+
+    return { starterVor, starterIds };
+  }
+
+  // Depth VOR with diminishing returns by positional excess
+  function computeDepthVor(team, replacement, starterIds, demand, N){
+    const DEPTH_CURVE = [1.0, 0.70, 0.50, 0.35, 0.25, 0.18, 0.12, 0.08];
+    // Count how many non-starters already counted per position for curve index
+    const extrasAtPos = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0 };
+    // Expected bench depth at pos relative to demand
+    const demandPerTeam = {};
     ['QB','RB','WR','TE','DST','K'].forEach(pos => {
-      const n = counts[pos] || 0;
-      for(let i = 0; i < n && i < byPos[pos].length; i++){
-        startersVal += byPos[pos][i];
-      }
-      if(pos === 'RB' || pos === 'WR' || pos === 'TE'){
-        for(let i = n; i < byPos[pos].length; i++) remaining[pos].push(byPos[pos][i]);
-      }
+      demandPerTeam[pos] = (demand[pos] || 0) / Math.max(N, 1);
     });
 
-    const flexPool = [...remaining.RB, ...remaining.WR, ...remaining.TE].sort((a,b) => b - a);
-    const flexN = counts.FLEX || 0;
-    for(let i = 0; i < flexN && i < flexPool.length; i++) startersVal += flexPool[i];
+    let depthVor = 0;
+    const leftovers = team.roster
+      .filter(p => !starterIds.has(p.id))
+      .map(p => ({ pos: p.position, vor: playerVor(p, replacement) }))
+      .sort((a,b) => b.vor - a.vor);
 
-    const benchVal = Math.max(0, total - startersVal);
-    const wins = team.wins || 0;
-    const losses = team.losses || 0;
-    const ties = team.ties || 0;
-    const winPct = (wins + losses + ties) > 0 ? (wins + 0.5 * ties) / (wins + losses + ties) : 0;
+    leftovers.forEach(pl => {
+      const pos = pl.pos;
+      if(!extrasAtPos.hasOwnProperty(pos)) extrasAtPos[pos] = 0;
+      const idx = extrasAtPos[pos];
+      // Scale curve index if team is already deep relative to league demand
+      let curveIdx = idx;
+      const expectedStarters = Math.max(1, demandPerTeam[pos] || 1);
+      // If this is the 3rd+ extra beyond a full starter share, accelerate diminishing
+      if(idx >= expectedStarters) curveIdx = Math.min(DEPTH_CURVE.length - 1, idx + 1);
+      const mult = DEPTH_CURVE[Math.min(curveIdx, DEPTH_CURVE.length - 1)];
+      depthVor += pl.vor * mult;
+      extrasAtPos[pos]++;
+    });
 
-    return {
-      total,
-      vor,
-      starters: startersVal,
-      bench: benchVal,
-      avgPts: team.avgPts || 0,
-      maxPts: team.maxPts != null ? team.maxPts : null,
-      minPts: team.minPts != null ? team.minPts : null,
-      pointsFor: team.pointsFor || 0,
-      wins, losses, ties,
-      winPct,
-      recordStr: ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`,
-      ...groups
-    };
+    return depthVor;
+  }
+
+  function positionalVor(team, replacement){
+    const out = { QB:0, RB:0, WR:0, TE:0 };
+    team.roster.forEach(p => {
+      if(out.hasOwnProperty(p.position)){
+        out[p.position] += playerVor(p, replacement);
+      }
+    });
+    return out;
+  }
+
+  // Percentile 0–100, highest = 100, ties get average rank
+  function percentileScores(values){
+    // values: array of { id, val }
+    const N = values.length;
+    if(N <= 1) return Object.fromEntries(values.map(v => [v.id, 50]));
+    const sorted = values.slice().sort((a,b) => {
+      const av = a.val == null || isNaN(a.val) ? -Infinity : a.val;
+      const bv = b.val == null || isNaN(b.val) ? -Infinity : b.val;
+      return bv - av; // descending
+    });
+    // competition ranking with average for ties
+    const result = {};
+    let i = 0;
+    while(i < sorted.length){
+      let j = i;
+      const v = sorted[i].val;
+      while(j < sorted.length && sorted[j].val === v) j++;
+      // ranks i..j-1 (0-based), average rank among them
+      const avgRank = (i + (j - 1)) / 2; // 0-based
+      const pct = 100 * (1 - avgRank / (N - 1)); // rank 0 -> 100, rank N-1 -> 0
+      for(let k = i; k < j; k++) result[sorted[k].id] = pct;
+      i = j;
+    }
+    return result;
+  }
+
+  function teamScoringStats(team){
+    const scores = (team.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+    const avg = scores.length ? scores.reduce((a,b) => a + b, 0) / scores.length : (team.avgPts || 0);
+    const med = scores.length ? medianOf(scores) : avg;
+    const high = scores.length ? Math.max(...scores) : (team.maxPts != null ? team.maxPts : null);
+    const low = scores.length ? Math.min(...scores) : (team.minPts != null ? team.minPts : null);
+    return { avg, med, high, low, hasScores: scores.length > 0 || (team.avgPts || 0) > 0 };
+  }
+
+  function buildPowerRows(){
+    const replacement = computeReplacementLevels();
+    const { demand, counts, N, flexElig, sfElig } = computePositionalDemand();
+
+    const base = state.teams.map(team => {
+      const { starterVor, starterIds } = optimalStarterVor(team, replacement, counts, flexElig, sfElig);
+      const depthVor = computeDepthVor(team, replacement, starterIds, demand, N);
+      const posVor = positionalVor(team, replacement);
+      const scoring = teamScoringStats(team);
+      const wins = team.wins || 0;
+      const losses = team.losses || 0;
+      const ties = team.ties || 0;
+      const games = wins + losses + ties;
+      const adjustedWinPct = (wins + 1) / (games + 2); // early-season regression
+      const winPct = games > 0 ? (wins + 0.5 * ties) / games : 0;
+
+      return {
+        team,
+        starterVor,
+        depthVor,
+        avgPts: scoring.avg,
+        medPts: scoring.med,
+        maxPts: scoring.high,
+        minPts: scoring.low,
+        hasScores: scoring.hasScores,
+        wins, losses, ties, games,
+        adjustedWinPct,
+        winPct,
+        recordStr: ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`,
+        QB: posVor.QB,
+        RB: posVor.RB,
+        WR: posVor.WR,
+        TE: posVor.TE
+      };
+    });
+
+    // League-relative 0–100 percentiles
+    const starterScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.starterVor })));
+    const depthScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.depthVor })));
+    const avgScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.hasScores ? r.avgPts : null })));
+    const medScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.hasScores ? r.medPts : null })));
+    const highScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.maxPts })));
+    const lowScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.minPts })));
+    const recordScore = percentileScores(base.map(r => ({ id: r.team.id, val: r.adjustedWinPct })));
+
+    base.forEach(r => {
+      const id = r.team.id;
+      const S = starterScore[id] ?? 50;
+      const D = depthScore[id] ?? 50;
+      const A = r.hasScores ? (avgScore[id] ?? 50) : 50;
+      const M = r.hasScores ? (medScore[id] ?? 50) : 50;
+      const H = r.maxPts != null ? (highScore[id] ?? 50) : 50;
+      const L = r.minPts != null ? (lowScore[id] ?? 50) : 50;
+      const R = recordScore[id] ?? 50;
+
+      // PowerScore = 0.35S + 0.20D + 0.12A + 0.08M + 0.03H + 0.02L + 0.20R
+      r.power = 0.35 * S + 0.20 * D + 0.12 * A + 0.08 * M + 0.03 * H + 0.02 * L + 0.20 * R;
+      r.starterScore = S;
+      r.depthScore = D;
+      r.scoringComposite = 0.48 * A + 0.32 * M + 0.12 * H + 0.08 * L;
+      r.recordScore = R;
+    });
+
+    return base;
   }
 
   const SORT_KEY_MAP = {
-    rank: 'vor', team: 'team', record: 'winPct',
-    vor: 'vor', total: 'total', starters: 'starters', bench: 'bench',
-    avgPts: 'avgPts', maxPts: 'maxPts', minPts: 'minPts',
+    rank: 'power', team: 'team', power: 'power', record: 'winPct',
+    starterVor: 'starterVor', depthVor: 'depthVor',
+    avgPts: 'avgPts', medPts: 'medPts', maxPts: 'maxPts', minPts: 'minPts',
     qb: 'QB', rb: 'RB', wr: 'WR', te: 'TE'
   };
-  let rankSortKey = 'vor', rankSortDir = -1;
+  let rankSortKey = 'power', rankSortDir = -1;
 
   function medianOf(arr){
     const s = arr.filter(v => v != null && !isNaN(v)).slice().sort((a,b) => a - b);
@@ -2434,16 +2803,15 @@
   }
 
   function renderRankings(){
-    const replacement = computeReplacementLevels();
-    const rows = state.teams.map(t => ({ team: t, ...teamValueBreakdown(t, replacement) }));
-    const maxVor = Math.max(...rows.map(r => r.vor), 1);
+    const rows = buildPowerRows();
+    const maxPower = Math.max(...rows.map(r => r.power), 1);
 
     const medians = {
-      vor: medianOf(rows.map(r => r.vor)),
-      total: medianOf(rows.map(r => r.total)),
-      starters: medianOf(rows.map(r => r.starters)),
-      bench: medianOf(rows.map(r => r.bench)),
+      power: medianOf(rows.map(r => r.power)),
+      starterVor: medianOf(rows.map(r => r.starterVor)),
+      depthVor: medianOf(rows.map(r => r.depthVor)),
       avgPts: medianOf(rows.map(r => r.avgPts).filter(v => v > 0)),
+      medPts: medianOf(rows.map(r => r.medPts).filter(v => v > 0)),
       maxPts: medianOf(rows.map(r => r.maxPts).filter(v => v != null)),
       minPts: medianOf(rows.map(r => r.minPts).filter(v => v != null)),
       QB: medianOf(rows.map(r => r.QB)),
@@ -2468,7 +2836,7 @@
 
     document.querySelectorAll('#panel-rankings th[data-sort]').forEach(th => {
       const mapped = SORT_KEY_MAP[th.dataset.sort] || th.dataset.sort;
-      const active = mapped === rankSortKey || (th.dataset.sort === 'rank' && rankSortKey === 'vor');
+      const active = mapped === rankSortKey || (th.dataset.sort === 'rank' && rankSortKey === 'power');
       th.classList.toggle('sorted', active);
       let ind = th.querySelector('.sort-ind');
       if(!ind){
@@ -2483,7 +2851,7 @@
     tbody.innerHTML = '';
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      const barPct = (r.vor / maxVor) * 100;
+      const barPct = (r.power / maxPower) * 100;
       const cellVal = (key, formatter) => {
         const raw = r[key];
         const p = pctFromMedian(raw, medians[key]);
@@ -2491,23 +2859,23 @@
         const display = formatter ? formatter(raw) : fmt(raw);
         return `<td class="val-cell">${display}<div class="pct-cell ${cls}">${fmtPct(p)}</div></td>`;
       };
-      const vorP = pctFromMedian(r.vor, medians.vor);
-      const vorCls = vorP > 2 ? 'up' : vorP < -2 ? 'down' : '';
+      const powerP = pctFromMedian(r.power, medians.power);
+      const powerCls = powerP > 2 ? 'up' : powerP < -2 ? 'down' : '';
       tr.innerHTML = `
         <td><span class="rank-num">${i+1}</span></td>
         <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
-        <td class="val-cell">${escapeHtml(r.recordStr)}</td>
         <td class="val-cell">
           <div class="mini-bar-wrap">
-            <span style="min-width:48px;display:inline-block;font-variant-numeric:tabular-nums;font-weight:600;">${fmt(r.vor)}</span>
+            <span style="min-width:40px;display:inline-block;font-variant-numeric:tabular-nums;font-weight:700;">${r.power.toFixed(1)}</span>
             <div class="mini-bar-track"><div class="mini-bar" style="width:${barPct}%"></div></div>
           </div>
-          <div class="pct-cell ${vorCls}">${fmtPct(vorP)} vs med</div>
+          <div class="pct-cell ${powerCls}">${fmtPct(powerP)} vs med</div>
         </td>
-        ${cellVal('total')}
-        ${cellVal('starters')}
-        ${cellVal('bench')}
+        <td class="val-cell">${escapeHtml(r.recordStr)}</td>
+        ${cellVal('starterVor')}
+        ${cellVal('depthVor')}
         ${cellVal('avgPts', fmtPts)}
+        ${cellVal('medPts', fmtPts)}
         ${cellVal('maxPts', fmtPts)}
         ${cellVal('minPts', fmtPts)}
         ${cellVal('QB')}
@@ -2611,6 +2979,18 @@
     el('drawer').classList.remove('show');
     el('overlay').classList.remove('show');
   }
+
+  /* ---------- rankings info modal ---------- */
+  function openInfoModal(){ el('info-modal').classList.add('show'); }
+  function closeInfoModal(){ el('info-modal').classList.remove('show'); }
+  el('btn-rankings-info').addEventListener('click', openInfoModal);
+  el('btn-info-close').addEventListener('click', closeInfoModal);
+  el('info-modal').addEventListener('click', e => {
+    if(e.target === el('info-modal')) closeInfoModal();
+  });
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && el('info-modal').classList.contains('show')) closeInfoModal();
+  });
   el('sw-dynasty').addEventListener('click', function(){ this.classList.toggle('on'); });
   el('sw-superflex').addEventListener('click', function(){ this.classList.toggle('on'); });
 
