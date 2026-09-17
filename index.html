@@ -6,1174 +6,1145 @@
 <title>Fantasy Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-  --bg: #0b0d0c;
-  --panel: #111412;
-  --panel-2: #171b18;
-  --line: #252a27;
-
-  --text: #f1f3f1;
-  --muted: #929b95;
-  --muted-2: #626b65;
-
-  --green: #55b879;
-  --green-dim: #244b32;
-  --gold: #d9b65a;
-  --red: #df6559;
-
-  --radius: 7px;
-}
-
-/* ---------- base ---------- */
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-  min-height: 100vh;
-  line-height: 1.45;
-  -webkit-font-smoothing: antialiased;
-}
-
-h1,
-h2,
-h3,
-.display {
-  font-family: inherit;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-}
-
-a {
-  color: inherit;
-}
-
-button {
-  font-family: inherit;
-}
-
-::selection {
-  background: var(--green-dim);
-  color: #fff;
-}
-
-/* ---------- setup ---------- */
-
-#setup-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.hero-card {
-  width: 100%;
-  max-width: 420px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 30px;
-  box-shadow: none;
-}
-
-.hero-title {
-  font-size: 27px;
-  line-height: 1.1;
-  margin: 0 0 7px;
-}
-
-.hero-sub {
-  color: var(--muted);
-  font-size: 14px;
-  margin: 0 0 24px;
-  max-width: 40ch;
-}
-
-/* Platform */
-
-.platform-toggle {
-  display: flex;
-  gap: 2px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 3px;
-  margin-bottom: 20px;
-}
-
-.platform-toggle button {
-  flex: 1;
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-  padding: 8px 10px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.platform-toggle button:hover {
-  color: var(--text);
-}
-
-.platform-toggle button.active {
-  background: var(--panel-2);
-  color: var(--text);
-}
-
-/* Fields */
-
-.field {
-  margin-bottom: 15px;
-}
-
-.field-label {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 6px;
-  display: block;
-}
-
-input[type="text"],
-input[type="number"],
-input[type="password"],
-select {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  color: var(--text);
-  padding: 10px 11px;
-  border-radius: 5px;
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-input:focus,
-select:focus {
-  border-color: var(--green);
-}
-
-input::placeholder {
-  color: var(--muted-2);
-}
-
-.row2 {
-  display: grid;
-  grid-template-columns: 1.4fr 0.8fr;
-  gap: 10px;
-}
-
-/* Buttons */
-
-.btn {
-  appearance: none;
-  border: 0;
-  border-radius: 5px;
-  padding: 10px 15px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    opacity 0.15s,
-    transform 0.1s;
-}
-
-.btn:active {
-  transform: scale(0.985);
-}
-
-.btn-primary {
-  background: var(--green);
-  color: #07100a;
-  width: 100%;
-  font-weight: 700;
-}
-
-.btn-primary:hover {
-  background: #63c486;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--line);
-}
-
-.btn-ghost:hover {
-  color: var(--text);
-  border-color: #3a423d;
-}
-
-.btn-sm {
-  padding: 6px 10px;
-  font-size: 12px;
-  border-radius: 5px;
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
-}
-
-.link-btn:hover {
-  color: var(--text);
-}
-
-/* Advanced */
-
-.advanced-toggle {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-.advanced-body {
-  display: none;
-  margin-top: 14px;
-}
-
-.advanced-body.open {
-  display: block;
-}
-
-.hint {
-  font-size: 12px;
-  color: var(--muted-2);
-  margin-top: 6px;
-  line-height: 1.5;
-}
-
-.error-box {
-  background: rgba(223, 101, 89, 0.08);
-  border: 1px solid rgba(223, 101, 89, 0.28);
-  color: #e99a91;
-  padding: 9px 11px;
-  border-radius: 5px;
-  font-size: 13px;
-  margin-top: 13px;
-  display: none;
-}
-
-.error-box.show {
-  display: block;
-}
-
-.status-line {
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 12.5px;
-  margin-top: 13px;
-  display: none;
-}
-
-.status-line.show {
-  display: flex;
-}
-
-.spinner {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 2px solid var(--line);
-  border-top-color: var(--green);
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ---------- app ---------- */
-
-#app {
-  display: none;
-  min-height: 100vh;
-}
-
-#app.show {
-  display: block;
-}
-
-header.appbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(11, 13, 12, 0.96);
-  border-bottom: 1px solid var(--line);
-  padding: 12px 24px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.appbar-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: max-content;
-}
-
-.appbar-title {
-  font-size: 17px;
-  margin: 0;
-  font-weight: 650;
-}
-
-.league-chip {
-  font-size: 11px;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  padding: 0;
-}
-
-nav.tabs {
-  display: flex;
-  gap: 2px;
-  margin-left: auto;
-}
-
-.tab-btn {
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-  padding: 7px 11px;
-  border-radius: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.tab-btn:hover {
-  color: var(--text);
-}
-
-.tab-btn.active {
-  background: var(--panel-2);
-  color: var(--text);
-}
-
-.appbar-right {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.icon-btn {
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-  width: 31px;
-  height: 31px;
-  border-radius: 5px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  transition: 0.15s;
-}
-
-.icon-btn:hover {
-  background: var(--panel-2);
-  color: var(--text);
-}
-
-/* ---------- main ---------- */
-
-main {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 30px 24px 70px;
-}
-
-.panel {
-  display: none;
-}
-
-.panel.active {
-  display: block;
-}
-
-.card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px;
-}
-
-.grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-@media (max-width: 860px) {
-  .grid2 {
-    grid-template-columns: 1fr;
+    --bg: #0c0e0d;
+    --surface: #121514;
+    --surface-2: #181c19;
+    --surface-3: #1e2320;
+    --border: #2a2f2c;
+    --border-subtle: #222724;
+
+    --text: #e8ebe8;
+    --text-secondary: #8b948e;
+    --text-muted: #5c645e;
+
+    --accent: #4a9b6e;
+    --accent-hover: #58ad7d;
+    --accent-muted: rgba(74, 155, 110, 0.12);
+
+    --gold: #c4a24e;
+    --red: #c45c52;
+    --red-muted: rgba(196, 92, 82, 0.12);
+
+    --sidebar-w: 220px;
+    --radius: 6px;
+    --radius-sm: 4px;
   }
 
-  header.appbar {
-    flex-wrap: wrap;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
   }
 
-  nav.tabs {
-    order: 3;
-    width: 100%;
-    margin-left: 0;
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
   }
 
-  .tab-btn {
-    flex: 1;
+  h1, h2, h3 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
-}
 
-/* ---------- trade calculator ---------- */
+  button { font-family: inherit; }
+  a { color: inherit; }
 
-.section-title {
-  font-size: 11px;
-  color: var(--muted);
-  margin: 0 0 10px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
+  ::selection {
+    background: var(--accent-muted);
+    color: var(--text);
+  }
 
-.team-select {
-  width: 100%;
-  margin-bottom: 12px;
-}
+  /* ---------- setup / home ---------- */
 
-.side-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 12px;
-}
-
-.side-total .num {
-  font-weight: 650;
-  font-size: 20px;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.side-total .lbl {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* Assets */
-
-.asset-list {
-  min-height: 48px;
-  border: 1px dashed #303732;
-  border-radius: 5px;
-  padding: 6px;
-  margin-bottom: 11px;
-}
-
-.asset-list:empty::before {
-  content: "Add players or picks below";
-  color: var(--muted-2);
-  font-size: 12px;
-  padding: 9px;
-  display: block;
-}
-
-.asset-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 7px 9px;
-  margin-bottom: 5px;
-  font-size: 13px;
-}
-
-.asset-chip:last-child {
-  margin-bottom: 0;
-}
-
-.asset-chip .meta {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.asset-chip .val {
-  color: var(--gold);
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
-.asset-chip button {
-  background: none;
-  border: none;
-  color: var(--muted-2);
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-  padding: 2px 4px;
-}
-
-.asset-chip button:hover {
-  color: var(--red);
-}
-
-/* Roster */
-
-.roster-pick {
-  max-height: 240px;
-  overflow-y: auto;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-}
-
-.roster-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  font-size: 13px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--line);
-  transition: background 0.1s;
-}
-
-.roster-row:last-child {
-  border-bottom: 0;
-}
-
-.roster-row:hover {
-  background: var(--panel-2);
-}
-
-.roster-row.added {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-.roster-row .rname {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.pos-badge {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 5px;
-  border-radius: 3px;
-  background: var(--panel-2);
-  color: var(--muted);
-  min-width: 25px;
-  text-align: center;
-}
-
-.pos-QB {
-  color: #d9b65a;
-  background: rgba(217, 182, 90, 0.1);
-}
-
-.pos-RB {
-  color: #65bf86;
-  background: rgba(85, 184, 121, 0.1);
-}
-
-.pos-WR {
-  color: #70a9d5;
-  background: rgba(112, 169, 213, 0.1);
-}
-
-.pos-TE {
-  color: #b487c7;
-  background: rgba(180, 135, 199, 0.1);
-}
-
-.pos-K,
-.pos-DST {
-  color: var(--muted);
-}
-
-.roster-row .rval {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-}
-
-.no-match {
-  color: var(--red);
-  font-size: 10px;
-}
-
-.picks-add {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.picks-add select {
-  flex: 1;
-}
-
-/* ---------- verdict ---------- */
-
-.verdict {
-  grid-column: 1 / -1;
-  margin-top: 0;
-  padding: 18px;
-  border-radius: var(--radius);
-  background: var(--panel);
-  border: 1px solid var(--line);
-}
-
-.verdict-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.verdict-score {
-  font-weight: 650;
-  font-size: 18px;
-}
-
-.fair-bar {
-  height: 5px;
-  border-radius: 3px;
-  background: var(--panel-2);
-  overflow: hidden;
-  position: relative;
-  margin: 9px 0 15px;
-}
-
-.fair-bar .mid {
-  position: absolute;
-  left: 50%;
-  top: -3px;
-  bottom: -3px;
-  width: 1px;
-  background: #737b75;
-  z-index: 2;
-}
-
-.fair-bar .fill {
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--red),
-    var(--gold),
-    var(--green)
-  );
-}
-
-.insights {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.insights li {
-  font-size: 12.5px;
-  color: var(--muted);
-  padding-left: 13px;
-  position: relative;
-}
-
-.insights li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 7px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--muted-2);
-}
-
-/* ---------- rankings ---------- */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-th {
-  text-align: left;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 11px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-  user-select: none;
-}
-
-th:hover {
-  color: var(--text);
-}
-
-td {
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
-}
-
-tr:last-child td {
-  border-bottom: 0;
-}
-
-.rank-num {
-  color: var(--muted-2);
-  font-variant-numeric: tabular-nums;
-  width: 24px;
-  display: inline-block;
-}
-
-.team-name-cell {
-  font-weight: 600;
-}
-
-.mini-bar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mini-bar {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--green);
-}
-
-.mini-bar-track {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--panel-2);
-}
-
-/* ---------- team needs ---------- */
-
-.needs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 10px;
-}
-
-.needs-card h3 {
-  font-size: 14px;
-  margin: 0 0 9px;
-  font-weight: 650;
-}
-
-.pos-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 12.5px;
-  border-bottom: 1px solid var(--line);
-}
-
-.pos-row:last-child {
-  border-bottom: 0;
-}
-
-.tag {
-  font-size: 10px;
-  font-weight: 650;
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-
-.tag-need {
-  background: rgba(223, 101, 89, 0.1);
-  color: #e99a91;
-}
-
-.tag-strong {
-  background: rgba(85, 184, 121, 0.1);
-  color: #7acb98;
-}
-
-.tag-even {
-  background: var(--panel-2);
-  color: var(--muted);
-}
-
-/* ---------- settings drawer ---------- */
-
-#overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 29;
-  display: none;
-}
-
-#overlay.show {
-  display: block;
-}
-
-#drawer {
-  position: fixed;
-  top: 0;
-  right: -360px;
-  width: 340px;
-  height: 100%;
-  background: var(--panel);
-  border-left: 1px solid var(--line);
-  z-index: 30;
-  padding: 22px;
-  transition: right 0.2s ease;
-  overflow-y: auto;
-}
-
-#drawer.show {
-  right: 0;
-}
-
-#drawer h2 {
-  font-size: 18px;
-  margin: 0 0 18px;
-  font-weight: 650;
-}
-
-.drawer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.drawer-row .field-label {
-  margin: 0;
-}
-
-.switch {
-  position: relative;
-  width: 36px;
-  height: 20px;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.switch .knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition: 0.15s;
-}
-
-.switch.on {
-  background: var(--green-dim);
-}
-
-.switch.on .knob {
-  left: 18px;
-  background: var(--green);
-}
-
-.drawer-divider {
-  border: 0;
-  border-top: 1px solid var(--line);
-  margin: 18px 0;
-}
-
-.small-btn-row {
-  display: flex;
-  gap: 7px;
-  margin-top: 10px;
-}
-
-/* ---------- footer ---------- */
-
-.footer-note {
-  text-align: center;
-  color: var(--muted-2);
-  font-size: 11px;
-  margin-top: 28px;
-}
-
-/* ---------- scrollbar ---------- */
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #303632;
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ---------- mobile ---------- */
-
-@media (max-width: 600px) {
   #setup-screen {
-    padding: 16px;
-    align-items: flex-start;
-    padding-top: 40px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
   }
 
-  .hero-card {
-    padding: 24px 20px;
+  .setup-wrap {
+    width: 100%;
+    max-width: 440px;
   }
 
-  main {
-    padding: 20px 14px 60px;
+  .setup-header {
+    margin-bottom: 28px;
   }
 
-  header.appbar {
-    padding: 11px 14px;
+  .setup-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .setup-header p {
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    max-width: 36ch;
+  }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+  }
+
+  .platform-toggle {
+    display: flex;
+    gap: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 18px;
+  }
+
+  .platform-toggle button {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--text-secondary);
+    padding: 7px 10px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .platform-toggle button:hover { color: var(--text); }
+
+  .platform-toggle button.active {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .field { margin-bottom: 14px; }
+
+  .field-label {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    display: block;
+    font-weight: 500;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="password"],
+  select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 11px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  input::placeholder { color: var(--text-muted); }
+
+  .row2 {
+    display: grid;
+    grid-template-columns: 1.3fr 0.9fr;
     gap: 10px;
   }
 
-  .appbar-title {
-    font-size: 16px;
+  .btn {
+    appearance: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 9px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
   }
 
-  .league-chip {
+  .btn:active { opacity: 0.9; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #06100a;
+    width: 100%;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover {
+    color: var(--text);
+    border-color: #3a423d;
+  }
+
+  .btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .link-btn:hover { color: var(--text); }
+
+  .advanced-toggle {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .advanced-body {
+    display: none;
+    margin-top: 12px;
+  }
+
+  .advanced-body.open { display: block; }
+
+  .hint {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    line-height: 1.45;
+  }
+
+  .error-box {
+    background: var(--red-muted);
+    border: 1px solid rgba(196, 92, 82, 0.25);
+    color: #d48a84;
+    padding: 8px 11px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    margin-top: 12px;
     display: none;
   }
 
-  .appbar-right {
-    margin-left: auto;
+  .error-box.show { display: block; }
+
+  .status-line {
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    margin-top: 12px;
+    display: none;
   }
 
+  .status-line.show { display: flex; }
+
+  .spinner {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Recent leagues */
+
+  .recent-section {
+    margin-top: 24px;
+  }
+
+  .recent-section h2 {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+
+  .recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.12s;
+  }
+
+  .recent-item:hover {
+    border-color: #3a423d;
+  }
+
+  .recent-item .ri-name {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .recent-item .ri-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .recent-item .ri-platform {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .recent-empty {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    padding: 8px 0;
+  }
+
+  /* ---------- app shell + sidebar ---------- */
+
+  #app {
+    display: none;
+    min-height: 100vh;
+  }
+
+  #app.show {
+    display: flex;
+  }
+
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 20;
+  }
+
+  .sidebar-brand {
+    padding: 18px 16px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sidebar-brand h1 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .sidebar-brand .league-chip {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.35;
+    display: block;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 0;
+    color: var(--text-secondary);
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+  }
+
+  .nav-item:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+
+  .nav-item.active {
+    background: var(--surface-2);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .nav-item .nav-icon {
+    width: 16px;
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .sidebar-footer {
+    padding: 12px 10px 16px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .content {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    min-width: 0;
+  }
+
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 28px 64px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
   .card {
-    padding: 15px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
   }
 
   .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ---------- trade calculator ---------- */
+
+  .section-title {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .team-select {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .side-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 10px;
+  }
+
+  .side-total .num {
+    font-weight: 600;
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .side-total .lbl {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .asset-list {
+    min-height: 44px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px;
+    margin-bottom: 10px;
+  }
+
+  .asset-list:empty::before {
+    content: "Add players or picks below";
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 8px;
+    display: block;
+  }
+
+  .asset-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    font-size: 12.5px;
+  }
+
+  .asset-chip:last-child { margin-bottom: 0; }
+
+  .asset-chip .meta {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .asset-chip .val {
+    color: var(--gold);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .asset-chip button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 1px 3px;
+  }
+
+  .asset-chip button:hover { color: var(--red); }
+
+  .roster-pick {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .roster-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    font-size: 12.5px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .roster-row:last-child { border-bottom: 0; }
+
+  .roster-row:hover { background: var(--surface-2); }
+
+  .roster-row.added {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .roster-row .rname {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .pos-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    min-width: 24px;
+    text-align: center;
+  }
+
+  .pos-QB { color: var(--gold); background: rgba(196, 162, 78, 0.1); }
+  .pos-RB { color: #5aaf78; background: rgba(74, 155, 110, 0.1); }
+  .pos-WR { color: #6a9bc4; background: rgba(106, 155, 196, 0.1); }
+  .pos-TE { color: #a88bb8; background: rgba(168, 139, 184, 0.1); }
+  .pos-K, .pos-DST { color: var(--text-muted); }
+
+  .roster-row .rval {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+  }
+
+  .no-match {
+    color: var(--red);
+    font-size: 10px;
+  }
+
+  .picks-add {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .picks-add select { flex: 1; }
+
+  /* ---------- verdict ---------- */
+
+  .verdict {
+    grid-column: 1 / -1;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .verdict-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .verdict-score {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .fair-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    overflow: hidden;
+    position: relative;
+    margin: 8px 0 12px;
+  }
+
+  .fair-bar .mid {
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    bottom: -2px;
+    width: 1px;
+    background: var(--text-muted);
+    z-index: 2;
+  }
+
+  .fair-bar .fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.2s ease;
+  }
+
+  .insights {
+    list-style: none;
+    display: grid;
+    gap: 5px;
+  }
+
+  .insights li {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    padding-left: 12px;
+    position: relative;
+  }
+
+  .insights li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  /* ---------- rankings ---------- */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover { color: var(--text); }
+
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  tr:last-child td { border-bottom: 0; }
+
+  .rank-num {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    width: 22px;
+    display: inline-block;
+  }
+
+  .team-name-cell { font-weight: 600; }
+
+  .mini-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mini-bar {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+
+  .mini-bar-track {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--surface-2);
+  }
+
+  /* ---------- team needs ---------- */
+
+  .needs-intro {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    line-height: 1.5;
   }
 
   .needs-grid {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
   }
 
-  table {
-    min-width: 650px;
+  .needs-card h3 {
+    font-size: 13.5px;
+    margin: 0 0 8px;
+    font-weight: 600;
   }
 
-  #panel-rankings .card {
-    overflow-x: auto;
+  .pos-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--border-subtle);
   }
+
+  .pos-row:last-child { border-bottom: 0; }
+
+  .pos-row .pos-val {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-right: 8px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .tag-need {
+    background: var(--red-muted);
+    color: #d48a84;
+  }
+
+  .tag-strong {
+    background: var(--accent-muted);
+    color: #6bbf8a;
+  }
+
+  .tag-even {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+  }
+
+  .pct-badge {
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    font-weight: 600;
+    min-width: 42px;
+    text-align: right;
+    display: inline-block;
+  }
+
+  .pct-pos { color: #6bbf8a; }
+  .pct-neg { color: #d48a84; }
+  .pct-neu { color: var(--text-muted); }
+
+  /* ---------- settings drawer ---------- */
+
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 29;
+    display: none;
+  }
+
+  #overlay.show { display: block; }
 
   #drawer {
-    width: min(340px, 92vw);
+    position: fixed;
+    top: 0;
+    right: -340px;
+    width: 320px;
+    height: 100%;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 30;
+    padding: 20px;
+    transition: right 0.18s ease;
+    overflow-y: auto;
   }
-}
+
+  #drawer.show { right: 0; }
+
+  #drawer h2 {
+    font-size: 16px;
+    margin: 0 0 16px;
+    font-weight: 600;
+  }
+
+  .drawer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .drawer-row .field-label { margin: 0; }
+
+  .switch {
+    position: relative;
+    width: 34px;
+    height: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .switch .knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: 0.15s;
+  }
+
+  .switch.on {
+    background: var(--accent-muted);
+    border-color: var(--accent);
+  }
+
+  .switch.on .knob {
+    left: 18px;
+    background: var(--accent);
+  }
+
+  .drawer-divider {
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+    margin: 16px 0;
+  }
+
+  .small-btn-row {
+    display: flex;
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .footer-note {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 24px;
+  }
+
+  /* ---------- scrollbar ---------- */
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb { background: #2e342f; border-radius: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- mobile ---------- */
+
+  @media (max-width: 860px) {
+    .grid2 { grid-template-columns: 1fr; }
+
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #app.show { flex-direction: column; }
+
+    .content { margin-left: 0; }
+
+    .sidebar-nav {
+      flex-direction: row;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      gap: 4px;
+    }
+
+    .nav-item { width: auto; flex: 1; justify-content: center; }
+
+    .sidebar-footer {
+      flex-direction: row;
+      padding: 8px 10px 12px;
+    }
+
+    .sidebar-brand { padding: 14px 14px 10px; }
+  }
+
+  @media (max-width: 600px) {
+    #setup-screen {
+      padding: 20px 14px;
+      align-items: flex-start;
+      padding-top: 36px;
+    }
+
+    main { padding: 18px 14px 48px; }
+
+    .card { padding: 14px; }
+
+    .needs-grid { grid-template-columns: 1fr; }
+
+    table { min-width: 600px; }
+
+    #panel-rankings .card { overflow-x: auto; }
+
+    #drawer { width: min(320px, 92vw); }
+  }
 </style>
 </head>
 <body>
 
 <!-- ================= SETUP SCREEN ================= -->
 <div id="setup-screen">
-  <div class="hero-card">
-    <h1 class="hero-title">Fantasy Dashboard</h1>
-    <p class="hero-sub">Connect your league to price every roster and run trades against live market values.</p>
-
-    <div class="platform-toggle">
-      <button type="button" id="btn-platform-espn" class="active">ESPN</button>
-      <button type="button" id="btn-platform-sleeper">Sleeper</button>
+  <div class="setup-wrap">
+    <div class="setup-header">
+      <h1>Fantasy Dashboard</h1>
+      <p>Connect your league to price every roster and evaluate trades against live market values.</p>
     </div>
 
-    <div class="field">
-      <label class="field-label" id="label-leagueid">ESPN League ID</label>
-      <input type="text" id="in-leagueid" placeholder="e.g. 123456789" inputmode="numeric">
-    </div>
-    <div class="row2" id="espn-only-row">
-      <div class="field">
-        <label class="field-label">Season</label>
-        <select id="in-year"></select>
+    <div class="setup-card">
+      <div class="platform-toggle">
+        <button type="button" id="btn-platform-espn" class="active">ESPN</button>
+        <button type="button" id="btn-platform-sleeper">Sleeper</button>
       </div>
+
       <div class="field">
-        <label class="field-label">Format</label>
-        <select id="in-dynasty">
-          <option value="0">Redraft</option>
-          <option value="1">Dynasty</option>
-        </select>
+        <label class="field-label" id="label-leagueid">ESPN League ID</label>
+        <input type="text" id="in-leagueid" placeholder="e.g. 123456789" inputmode="numeric">
       </div>
-    </div>
-
-    <button class="btn btn-primary" id="btn-load">Load league</button>
-    <div class="status-line" id="status-line"><span class="spinner"></span><span id="status-text">Fetching league…</span></div>
-    <div class="error-box" id="error-box"></div>
-
-    <div class="advanced-toggle" id="espn-advanced-wrap">
-      <button class="link-btn" id="toggle-advanced">Private league?</button>
-      <div class="advanced-body" id="advanced-body">
+      <div class="row2" id="espn-only-row">
         <div class="field">
-          <label class="field-label">SWID cookie</label>
-          <input type="text" id="in-swid" placeholder="{XXXXXXXX-XXXX-...}">
+          <label class="field-label">Season</label>
+          <select id="in-year"></select>
         </div>
         <div class="field">
-          <label class="field-label">espn_s2 cookie</label>
-          <input type="password" id="in-espns2" placeholder="Long token from espn.com cookies">
+          <label class="field-label">Format</label>
+          <select id="in-dynasty">
+            <option value="0">Redraft</option>
+            <option value="1">Dynasty</option>
+          </select>
         </div>
-        <p class="hint">Get both from a browser where you're signed into ESPN: DevTools → Application → Cookies → fantasy.espn.com. If this still fails, ESPN's cross-origin rules are blocking it — try setting your league to public instead.</p>
       </div>
+
+      <button class="btn btn-primary" id="btn-load">Load league</button>
+      <div class="status-line" id="status-line"><span class="spinner"></span><span id="status-text">Fetching league…</span></div>
+      <div class="error-box" id="error-box"></div>
+
+      <div class="advanced-toggle" id="espn-advanced-wrap">
+        <button class="link-btn" id="toggle-advanced">Private league?</button>
+        <div class="advanced-body" id="advanced-body">
+          <div class="field">
+            <label class="field-label">SWID cookie</label>
+            <input type="text" id="in-swid" placeholder="{XXXXXXXX-XXXX-...}">
+          </div>
+          <div class="field">
+            <label class="field-label">espn_s2 cookie</label>
+            <input type="password" id="in-espns2" placeholder="Long token from espn.com cookies">
+          </div>
+          <p class="hint">Get both from a browser where you're signed into ESPN: DevTools → Application → Cookies → fantasy.espn.com. If this still fails, set the league to public instead.</p>
+        </div>
+      </div>
+      <p class="hint" id="sleeper-note" style="display:none;">Sleeper's API is public read-only — private leagues load without login.</p>
     </div>
-    <p class="hint" id="sleeper-note" style="display:none;">Sleeper's API is public read-only, so private leagues load automatically — no login needed.</p>
+
+    <div class="recent-section" id="recent-section">
+      <h2>Recent leagues</h2>
+      <div class="recent-list" id="recent-list"></div>
+    </div>
   </div>
 </div>
 
 <!-- ================= APP SHELL ================= -->
 <div id="app">
-  <header class="appbar">
-    <div class="appbar-left">
-      <h1 class="appbar-title">Fantasy Dashboard</h1>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1>Fantasy Dashboard</h1>
       <span class="league-chip" id="league-chip">—</span>
     </div>
-    <nav class="tabs">
-      <button class="tab-btn active" data-panel="panel-trade">Trade calculator</button>
-      <button class="tab-btn" data-panel="panel-rankings">Rankings</button>
-      <button class="tab-btn" data-panel="panel-needs">Team needs</button>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-panel="panel-trade">
+        <span class="nav-icon">⇄</span> Trade calculator
+      </button>
+      <button class="nav-item" data-panel="panel-rankings">
+        <span class="nav-icon">#</span> Rankings
+      </button>
+      <button class="nav-item" data-panel="panel-needs">
+        <span class="nav-icon">◎</span> Team needs
+      </button>
     </nav>
-    <div class="appbar-right">
-      <button class="icon-btn" id="btn-refresh" title="Refresh values">⟳</button>
-      <button class="icon-btn" id="btn-settings" title="Settings">⚙</button>
+    <div class="sidebar-footer">
+      <button class="nav-item" id="btn-refresh" title="Refresh values">
+        <span class="nav-icon">⟳</span> Refresh values
+      </button>
+      <button class="nav-item" id="btn-settings" title="Settings">
+        <span class="nav-icon">⚙</span> Settings
+      </button>
     </div>
-  </header>
+  </aside>
 
-  <main>
-    <!-- ---------- TRADE CALCULATOR ---------- -->
-    <section class="panel active" id="panel-trade">
-      <div class="grid2">
-        <div class="card" id="side-a-card">
-          <div class="section-title">Team A</div>
-          <select class="team-select" id="select-team-a"></select>
-          <div class="side-total"><span class="lbl">Total value sent</span><span class="num" id="total-a">0</span></div>
-          <div class="asset-list" id="assets-a"></div>
-          <div class="picks-add">
-            <select id="picks-select-a"></select>
-            <button class="btn btn-ghost btn-sm" id="add-pick-a">Add pick</button>
-          </div>
-          <div class="section-title" style="margin-top:10px;">Roster — click to add</div>
-          <div class="roster-pick" id="roster-a"></div>
-        </div>
-
-        <div class="card" id="side-b-card">
-          <div class="section-title">Team B</div>
-          <select class="team-select" id="select-team-b"></select>
-          <div class="side-total"><span class="lbl">Total value sent</span><span class="num" id="total-b">0</span></div>
-          <div class="asset-list" id="assets-b"></div>
-          <div class="picks-add">
-            <select id="picks-select-b"></select>
-            <button class="btn btn-ghost btn-sm" id="add-pick-b">Add pick</button>
-          </div>
-          <div class="section-title" style="margin-top:10px;">Roster — click to add</div>
-          <div class="roster-pick" id="roster-b"></div>
-        </div>
-
-        <div class="verdict" id="verdict">
-          <div class="verdict-head">
-            <div>
-              <div class="section-title" style="margin-bottom:2px;">Verdict</div>
-              <div class="verdict-score" id="verdict-score">Add assets to both sides</div>
+  <div class="content">
+    <main>
+      <!-- ---------- TRADE CALCULATOR ---------- -->
+      <section class="panel active" id="panel-trade">
+        <div class="grid2">
+          <div class="card" id="side-a-card">
+            <div class="section-title">Team A</div>
+            <select class="team-select" id="select-team-a"></select>
+            <div class="side-total"><span class="lbl">Total value sent</span><span class="num" id="total-a">0</span></div>
+            <div class="asset-list" id="assets-a"></div>
+            <div class="picks-add">
+              <select id="picks-select-a"></select>
+              <button class="btn btn-ghost btn-sm" id="add-pick-a">Add pick</button>
             </div>
-            <button class="link-btn" id="btn-swap">Swap sides ⇄</button>
+            <div class="section-title" style="margin-top:10px;">Roster — click to add</div>
+            <div class="roster-pick" id="roster-a"></div>
           </div>
-          <div class="fair-bar"><div class="mid"></div><div class="fill" id="fair-fill" style="width:50%"></div></div>
-          <ul class="insights" id="insights-list"></ul>
+
+          <div class="card" id="side-b-card">
+            <div class="section-title">Team B</div>
+            <select class="team-select" id="select-team-b"></select>
+            <div class="side-total"><span class="lbl">Total value sent</span><span class="num" id="total-b">0</span></div>
+            <div class="asset-list" id="assets-b"></div>
+            <div class="picks-add">
+              <select id="picks-select-b"></select>
+              <button class="btn btn-ghost btn-sm" id="add-pick-b">Add pick</button>
+            </div>
+            <div class="section-title" style="margin-top:10px;">Roster — click to add</div>
+            <div class="roster-pick" id="roster-b"></div>
+          </div>
+
+          <div class="verdict" id="verdict">
+            <div class="verdict-head">
+              <div>
+                <div class="section-title" style="margin-bottom:2px;">Verdict</div>
+                <div class="verdict-score" id="verdict-score">Add assets to both sides</div>
+              </div>
+              <button class="link-btn" id="btn-swap">Swap sides ⇄</button>
+            </div>
+            <div class="fair-bar"><div class="mid"></div><div class="fill" id="fair-fill" style="width:50%"></div></div>
+            <ul class="insights" id="insights-list"></ul>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ---------- RANKINGS ---------- -->
-    <section class="panel" id="panel-rankings">
-      <div class="card">
-        <div class="section-title">League power rankings, by total roster value</div>
-        <table>
-          <thead>
-            <tr>
-              <th data-sort="rank">#</th>
-              <th data-sort="team">Team</th>
-              <th data-sort="total">Total value</th>
-              <th data-sort="qb">QB</th>
-              <th data-sort="rb">RB</th>
-              <th data-sort="wr">WR</th>
-              <th data-sort="te">TE</th>
-            </tr>
-          </thead>
-          <tbody id="rankings-body"></tbody>
-        </table>
-      </div>
-    </section>
+      <!-- ---------- RANKINGS ---------- -->
+      <section class="panel" id="panel-rankings">
+        <div class="card">
+          <div class="section-title">League power rankings by total roster value</div>
+          <table>
+            <thead>
+              <tr>
+                <th data-sort="rank">#</th>
+                <th data-sort="team">Team</th>
+                <th data-sort="total">Total value</th>
+                <th data-sort="qb">QB</th>
+                <th data-sort="rb">RB</th>
+                <th data-sort="wr">WR</th>
+                <th data-sort="te">TE</th>
+              </tr>
+            </thead>
+            <tbody id="rankings-body"></tbody>
+          </table>
+        </div>
+      </section>
 
-    <!-- ---------- NEEDS ---------- -->
-    <section class="panel" id="panel-needs">
-      <div class="card" style="margin-bottom:16px;">
-        <p class="hint" style="font-size:13px;">Need is relative: each team's starter-tier value at a position is compared against the league median at that same depth. Thin means an upgrade there would help more than at other spots.</p>
-      </div>
-      <div class="needs-grid" id="needs-grid"></div>
-    </section>
+      <!-- ---------- NEEDS ---------- -->
+      <section class="panel" id="panel-needs">
+        <p class="needs-intro">Each team's starter-tier value at a position is compared to the league average at the same depth. Percent shows how far above or below average the unit sits.</p>
+        <div class="needs-grid" id="needs-grid"></div>
+      </section>
 
-    <div class="footer-note">Player values from FantasyCalc · roster data from your league host · nothing here is financial advice, it's just fantasy football.</div>
-  </main>
+      <div class="footer-note">Player values from FantasyCalc - Roster Data from League Connection - This is not an end all be all, just a guideline</div>
+    </main>
+  </div>
 </div>
 
 <div id="overlay"></div>
@@ -1195,7 +1166,7 @@ tr:last-child td {
       <option value="0">Standard</option>
     </select>
   </div>
-  <p class="hint" id="drawer-detected-note">Detected automatically from your league settings — override if it's wrong.</p>
+  <p class="hint" id="drawer-detected-note">Detected from your league settings — override if wrong.</p>
   <hr class="drawer-divider">
   <div class="field">
     <span class="field-label">League</span>
@@ -1212,12 +1183,13 @@ tr:last-child td {
 (function(){
   "use strict";
 
-  /* ================= constants ================= */
   const POS_MAP = {1:'QB',2:'RB',3:'WR',4:'TE',5:'K',16:'DST'};
   const ESPN_TEAM_ABBR = {1:'ATL',2:'BUF',3:'CHI',4:'CIN',5:'CLE',6:'DAL',7:'DEN',8:'DET',9:'GB',10:'TEN',11:'IND',12:'KC',13:'LV',14:'LAR',15:'MIA',16:'MIN',17:'NE',18:'NO',19:'NYG',20:'NYJ',21:'PHI',22:'ARI',23:'PIT',24:'LAC',25:'SF',26:'SEA',27:'TB',28:'WSH',29:'CAR',30:'JAX',33:'BAL',34:'HOU'};
   const STARTER_SLOTS = {QB:[0,7], RB:[2], WR:[4], TE:[6], DST:[16], K:[17]};
   const SLEEPER_PLAYERS_CACHE_KEY = 'fd_sleeper_players_v1';
   const SLEEPER_PLAYERS_TTL = 1000*60*60*24*7;
+  const RECENT_LEAGUES_KEY = 'fd_recent_leagues_v1';
+  const RECENT_MAX = 6;
 
   const CORS_ATTEMPTS = [
     url => ({ url, credsOk:true }),
@@ -1226,8 +1198,6 @@ tr:last-child td {
     url => ({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), credsOk:false })
   ];
 
-  // Tries a single URL directly, then through a chain of public CORS relays.
-  // Returns the first successful response; throws the most informative error otherwise.
   async function robustFetch(url, {credentials, timeoutMs=15000}={}){
     let lastErr;
     for(const build of CORS_ATTEMPTS){
@@ -1243,22 +1213,19 @@ tr:last-child td {
         if(res.ok) return res;
         lastErr = new Error('HTTP ' + res.status);
         lastErr.status = res.status;
-        if(res.status === 401 || res.status === 403 || res.status === 404){
-          break; // definitive auth/not-found response — retrying through a proxy won't help
-        }
+        if(res.status === 401 || res.status === 403 || res.status === 404) break;
       }catch(e){ lastErr = e; }
     }
     throw lastErr || new Error('Failed to fetch');
   }
 
-  // Tries several candidate URLs (e.g. alternate API hosts), each through the full robustFetch chain.
   async function robustFetchAny(urls, opts={}){
     let lastErr;
     for(const url of urls){
       try{ return await robustFetch(url, opts); }
       catch(e){
         lastErr = e;
-        if(e.status === 401 || e.status === 403) break; // auth failure is definitive regardless of host
+        if(e.status === 401 || e.status === 403) break;
       }
     }
     throw lastErr || new Error('Failed to fetch');
@@ -1270,24 +1237,22 @@ tr:last-child td {
     const o = document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o);
   }
 
-  /* ================= state ================= */
   let state = {
     platform:'espn',
     leagueId:null, year:null, isDynasty:false, numQBs:1, ppr:1,
     numTeams:12,
-    detectedLabel:'',
+    leagueName:'',
     teams:[],
     fcValues:null, fcIndex:null, picksAvailable:[],
     tradeA:[], tradeB:[],
     selectedTeamA:null, selectedTeamB:null
   };
 
-  /* ================= helpers ================= */
   function normalizeName(name){
     if(!name) return '';
     return name.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .replace(/[.'’]/g,'')
+      .replace(/[.'']/g,'')
       .replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'')
       .replace(/[^a-z0-9 ]/g,'')
       .replace(/\s+/g,' ')
@@ -1300,7 +1265,66 @@ tr:last-child td {
   function setStatus(msg){ const s = el('status-line'); s.classList.add('show'); el('status-text').textContent = msg; }
   function hideStatus(){ el('status-line').classList.remove('show'); }
 
-  /* ================= platform toggle ================= */
+  /* ---------- recent leagues ---------- */
+
+  function loadRecent(){
+    try{
+      const raw = localStorage.getItem(RECENT_LEAGUES_KEY);
+      if(!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+
+  function saveRecent(entry){
+    let list = loadRecent().filter(r => !(r.platform === entry.platform && r.leagueId === entry.leagueId));
+    list.unshift(entry);
+    list = list.slice(0, RECENT_MAX);
+    try{ localStorage.setItem(RECENT_LEAGUES_KEY, JSON.stringify(list)); }catch(e){}
+    renderRecent();
+  }
+
+  function renderRecent(){
+    const list = loadRecent();
+    const box = el('recent-list');
+    box.innerHTML = '';
+    if(list.length === 0){
+      box.innerHTML = '<div class="recent-empty">No recent leagues yet. Load one above.</div>';
+      return;
+    }
+    list.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'recent-item';
+      const metaParts = [];
+      if(r.year) metaParts.push(r.year);
+      if(r.isDynasty) metaParts.push('Dynasty');
+      else if(r.platform === 'espn') metaParts.push('Redraft');
+      metaParts.push(r.numTeams ? r.numTeams + ' teams' : '');
+      item.innerHTML = `
+        <div>
+          <div class="ri-name">${escapeHtml(r.name || 'League ' + r.leagueId)}</div>
+          <div class="ri-meta">${escapeHtml(metaParts.filter(Boolean).join(' · '))}</div>
+        </div>
+        <span class="ri-platform">${r.platform === 'espn' ? 'ESPN' : 'Sleeper'}</span>`;
+      item.addEventListener('click', () => {
+        setPlatform(r.platform);
+        el('in-leagueid').value = r.leagueId;
+        if(r.platform === 'espn'){
+          if(r.year) el('in-year').value = r.year;
+          el('in-dynasty').value = r.isDynasty ? '1' : '0';
+        }
+        loadLeague();
+      });
+      box.appendChild(item);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ---------- platform toggle ---------- */
+
   el('btn-platform-espn').addEventListener('click', () => setPlatform('espn'));
   el('btn-platform-sleeper').addEventListener('click', () => setPlatform('sleeper'));
   function setPlatform(p){
@@ -1314,11 +1338,10 @@ tr:last-child td {
     clearError();
   }
 
-  /* ================= ESPN fetch/parse ================= */
+  /* ---------- ESPN ---------- */
+
   async function fetchEspnLeague(leagueId, year, swid, espnS2){
     const path = `/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${leagueId}?view=mTeam&view=mRoster&view=mSettings`;
-    // lm-api-reads is ESPN's read-only API host and sends proper CORS headers for public leagues,
-    // unlike fantasy.espn.com which is kept here only as a fallback.
     const candidates = [
       `https://lm-api-reads.fantasy.espn.com${path}`,
       `https://fantasy.espn.com${path}`
@@ -1374,7 +1397,8 @@ tr:last-child td {
     });
   }
 
-  /* ================= Sleeper fetch/parse ================= */
+  /* ---------- Sleeper ---------- */
+
   async function fetchSleeperLeague(leagueId){
     try{
       const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}`);
@@ -1433,12 +1457,13 @@ tr:last-child td {
     });
   }
 
-  /* ================= FantasyCalc ================= */
+  /* ---------- FantasyCalc ---------- */
+
   async function fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams}){
     const params = new URLSearchParams({
       isDynasty: isDynasty ? 'true' : 'false',
       numQBs: String(numQBs),
-      numQbs: String(numQBs), // FantasyCalc's docs and live usage disagree on casing — send both
+      numQbs: String(numQBs),
       numTeams: String(numTeams || 12),
       ppr: String(ppr)
     });
@@ -1481,7 +1506,8 @@ tr:last-child td {
     return null;
   }
 
-  /* ================= main load flow ================= */
+  /* ---------- load flow ---------- */
+
   el('btn-load').addEventListener('click', loadLeague);
   el('toggle-advanced').addEventListener('click', () => el('advanced-body').classList.toggle('open'));
 
@@ -1509,6 +1535,7 @@ tr:last-child td {
         numTeams = teams.length || 12;
         leagueName = league.settings.name || 'League';
         state.year = year;
+        state.league = league;
       }else{
         setStatus('Fetching league from Sleeper…');
         const league = await fetchSleeperLeague(leagueId);
@@ -1522,6 +1549,7 @@ tr:last-child td {
         numTeams = league.total_rosters || teams.length || 12;
         leagueName = league.name || 'League';
         state.year = league.season;
+        state.league = league;
       }
 
       setStatus('Pricing rosters with FantasyCalc…');
@@ -1536,6 +1564,16 @@ tr:last-child td {
       state.selectedTeamA = teams[0] ? teams[0].id : null;
       state.selectedTeamB = teams[1] ? teams[1].id : (teams[0] ? teams[0].id : null);
       state.tradeA = []; state.tradeB = [];
+
+      saveRecent({
+        platform: state.platform,
+        leagueId,
+        name: leagueName,
+        year: state.year,
+        isDynasty,
+        numTeams,
+        ts: Date.now()
+      });
 
       attachValues();
       renderAll();
@@ -1561,7 +1599,8 @@ tr:last-child td {
     });
   }
 
-  /* ================= rendering: shared ================= */
+  /* ---------- rendering ---------- */
+
   function renderAll(){
     const fmtParts = [state.numTeams + ' teams', state.numQBs===2 ? 'Superflex' : '1QB', state.isDynasty ? 'Dynasty' : 'Redraft', pprLabel(state.ppr)];
     el('league-chip').textContent = state.leagueName + ' · ' + fmtParts.join(' · ');
@@ -1694,7 +1733,7 @@ tr:last-child td {
 
     if(Math.abs(diff) < total * 0.04 || total === 0){
       scoreEl.textContent = 'Fair trade';
-      scoreEl.style.color = 'var(--green)';
+      scoreEl.style.color = 'var(--accent)';
     }else if(pctDiff < 15){
       scoreEl.textContent = 'Slightly favors ' + (bigger ? bigger.name : '—');
       scoreEl.style.color = 'var(--gold)';
@@ -1736,7 +1775,8 @@ tr:last-child td {
     });
   }
 
-  /* ================= rankings ================= */
+  /* ---------- rankings ---------- */
+
   function teamValueBreakdown(team){
     const groups = {QB:0, RB:0, WR:0, TE:0};
     let total = 0;
@@ -1779,10 +1819,10 @@ tr:last-child td {
     });
   });
 
-  /* ================= needs ================= */
+  /* ---------- needs: percent from average ---------- */
+
   function starterCount(pos){
     if(state.platform === 'sleeper'){
-      // fall back to sane defaults; Sleeper roster_positions parsing kept simple on purpose
       const defaults = {QB:1,RB:2,WR:2,TE:1};
       return defaults[pos] || 1;
     }
@@ -1796,22 +1836,27 @@ tr:last-child td {
 
   function renderNeeds(){
     const positions = ['QB','RB','WR','TE'];
-    const starters = {}; positions.forEach(p => starters[p] = Math.max(starterCount(p),1));
+    const starters = {};
+    positions.forEach(p => starters[p] = Math.max(starterCount(p), 1));
 
+    // Collect starter-tier values per position across league
     const tierValues = {};
     positions.forEach(pos => { tierValues[pos] = []; });
     state.teams.forEach(team => {
       positions.forEach(pos => {
-        const vals = team.roster.filter(p=>p.position===pos).map(p=>p.value).sort((a,b)=>b-a);
-        for(let i=0;i<starters[pos];i++){
-          if(!tierValues[pos][i]) tierValues[pos][i] = [];
-          tierValues[pos][i].push(vals[i] || 0);
-        }
+        const vals = team.roster.filter(p => p.position === pos).map(p => p.value).sort((a,b) => b - a);
+        let sum = 0;
+        for(let i = 0; i < starters[pos]; i++) sum += vals[i] || 0;
+        tierValues[pos].push(sum);
       });
     });
-    const median = arr => { const s=[...arr].sort((a,b)=>a-b); const m=Math.floor(s.length/2); return s.length%2? s[m] : (s[m-1]+s[m])/2; };
-    const tierMedian = {};
-    positions.forEach(pos => { tierMedian[pos] = tierValues[pos].map(median); });
+
+    // League average starter-tier value per position
+    const avg = {};
+    positions.forEach(pos => {
+      const arr = tierValues[pos];
+      avg[pos] = arr.length ? arr.reduce((s,v) => s + v, 0) / arr.length : 0;
+    });
 
     const grid = el('needs-grid');
     grid.innerHTML = '';
@@ -1820,33 +1865,48 @@ tr:last-child td {
       card.className = 'card needs-card';
       let rowsHtml = '';
       positions.forEach(pos => {
-        const vals = team.roster.filter(p=>p.position===pos).map(p=>p.value).sort((a,b)=>b-a);
-        let teamSum = 0, medSum = 0;
-        for(let i=0;i<starters[pos];i++){ teamSum += vals[i]||0; medSum += tierMedian[pos][i]||0; }
-        let tag = 'tag-even', label = 'Even';
-        if(medSum > 0){
-          const ratio = teamSum / medSum;
-          if(ratio < 0.85){ tag='tag-need'; label='Need'; }
-          else if(ratio > 1.15){ tag='tag-strong'; label='Strong'; }
-        }
-        rowsHtml += `<div class="pos-row"><span>${pos}</span><span><span style="color:var(--muted);margin-right:8px;font-variant-numeric:tabular-nums;">${fmt(teamSum)}</span><span class="tag ${tag}">${label}</span></span></div>`;
+        const vals = team.roster.filter(p => p.position === pos).map(p => p.value).sort((a,b) => b - a);
+        let teamSum = 0;
+        for(let i = 0; i < starters[pos]; i++) teamSum += vals[i] || 0;
+
+        let pct = 0;
+        if(avg[pos] > 0) pct = ((teamSum / avg[pos]) - 1) * 100;
+        else if(teamSum > 0) pct = 100;
+
+        let tag = 'tag-even', label = 'Avg';
+        if(pct < -12){ tag = 'tag-need'; label = 'Need'; }
+        else if(pct > 12){ tag = 'tag-strong'; label = 'Strong'; }
+
+        const pctClass = pct > 2 ? 'pct-pos' : pct < -2 ? 'pct-neg' : 'pct-neu';
+        const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%';
+
+        rowsHtml += `<div class="pos-row">
+          <span>${pos}</span>
+          <span>
+            <span class="pos-val">${fmt(teamSum)}</span>
+            <span class="pct-badge ${pctClass}">${pctStr}</span>
+            <span class="tag ${tag}">${label}</span>
+          </span>
+        </div>`;
       });
       card.innerHTML = `<h3>${team.name}</h3>${rowsHtml}`;
       grid.appendChild(card);
     });
   }
 
-  /* ================= tabs ================= */
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  /* ---------- tabs (sidebar nav) ---------- */
+
+  document.querySelectorAll('.nav-item[data-panel]').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.nav-item[data-panel]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       el(btn.dataset.panel).classList.add('active');
     });
   });
 
-  /* ================= settings drawer ================= */
+  /* ---------- settings drawer ---------- */
+
   el('btn-settings').addEventListener('click', () => { el('drawer').classList.add('show'); el('overlay').classList.add('show'); });
   el('overlay').addEventListener('click', closeDrawer);
   function closeDrawer(){ el('drawer').classList.remove('show'); el('overlay').classList.remove('show'); }
@@ -1859,6 +1919,7 @@ tr:last-child td {
     const ppr = parseFloat(el('sel-ppr').value);
     closeDrawer();
     setStatus('Re-pricing rosters…');
+    // status line is on setup screen; show a temporary message isn't ideal, just proceed
     try{
       const fcValues = await fetchFantasyCalc({isDynasty, numQBs, ppr, numTeams: state.numTeams});
       const fc = buildFcIndex(fcValues);
@@ -1867,9 +1928,7 @@ tr:last-child td {
       attachValues();
       renderAll();
     }catch(err){
-      showError(err.message);
-    }finally{
-      hideStatus();
+      alert(err.message || 'Failed to re-price.');
     }
   });
 
@@ -1878,7 +1937,11 @@ tr:last-child td {
     closeDrawer();
     el('app').classList.remove('show');
     el('setup-screen').style.display = 'flex';
+    renderRecent();
   });
+
+  // Initial recent list
+  renderRecent();
 
 })();
 </script>
