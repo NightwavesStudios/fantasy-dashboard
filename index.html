@@ -1240,7 +1240,7 @@
           <p class="hint">Get both from a browser where you're signed into ESPN: DevTools → Application → Cookies → fantasy.espn.com.</p>
         </div>
       </div>
-      <p class="hint" id="sleeper-note" style="display:none;">Sleeper's API is public read-only — private leagues load without login.</p>
+      <p class="hint" id="sleeper-note" style="display:none;">Sleeper's API is public read-only. Private leagues load without login.</p>
     </div>
 
     <div class="recent-section" id="recent-section">
@@ -1298,7 +1298,7 @@
             How it works
           </button>
         </div>
-        <div class="cache-banner" id="cache-banner">Using cached player values — FantasyCalc was unreachable. Numbers may be outdated.</div>
+        <div class="cache-banner" id="cache-banner">Using cached player values. FantasyCalc was unreachable, so numbers may be outdated.</div>
         <div class="trade-layout">
           <!-- Side A -->
           <div class="card trade-side" id="side-a-card">
@@ -1312,7 +1312,7 @@
             </div>
             <div class="selected-assets" id="assets-a"></div>
 
-            <div class="roster-section-title">Roster — click to add or remove</div>
+            <div class="roster-section-title">Roster (click to add or remove)</div>
             <input type="text" class="roster-search" id="search-a" placeholder="Search name or position…">
             <div class="pos-filters" id="pos-filters-a"></div>
             <div class="roster-pick" id="roster-a"></div>
@@ -1337,7 +1337,7 @@
             </div>
             <div class="selected-assets" id="assets-b"></div>
 
-            <div class="roster-section-title">Roster — click to add or remove</div>
+            <div class="roster-section-title">Roster (click to add or remove)</div>
             <input type="text" class="roster-search" id="search-b" placeholder="Search name or position…">
             <div class="pos-filters" id="pos-filters-b"></div>
             <div class="roster-pick" id="roster-b"></div>
@@ -1376,7 +1376,7 @@
       <section class="panel" id="panel-rankings">
         <div class="card">
           <div class="section-title-row">
-            <div class="section-title">Power rankings — FantasyPulse formula</div>
+            <div class="section-title">Power rankings (FantasyPulse)</div>
             <button type="button" class="info-btn" id="btn-rankings-info" title="How rankings work">
               <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
               How it works
@@ -1430,7 +1430,7 @@
             How it works
           </button>
         </div>
-        <p class="needs-intro">Unrostered FantasyCalc players in this league. Sorted by VORP (scarcity) or value. Approximate — host wire may differ.</p>
+        <p class="needs-intro">Unrostered FantasyCalc players in this league. Sorted by VORP (scarcity) or value. Approximate; the host wire may differ.</p>
         <div id="waiver-top-by-pos" class="waiver-top-grid"></div>
         <div class="waiver-toolbar">
           <div class="pos-filters" id="waiver-pos-filters"></div>
@@ -1447,7 +1447,7 @@
                 <th>Value</th>
                 <th>vs RV</th>
                 <th>Tier</th>
-                <th title="Change in your team's Power score if you added this player and dropped the best-fit roster spot for it (simulated — click &quot;Simulate power impact&quot;)">Δ Power</th>
+                <th title="Change in your team's Power score if you added this player and dropped the best-fit roster spot for it (simulated; click &quot;Simulate power impact&quot;)">Δ Power</th>
                 <th>Suggested drop</th>
               </tr>
             </thead>
@@ -1480,7 +1480,7 @@
       <option value="0">Standard</option>
     </select>
   </div>
-  <p class="hint" id="drawer-detected-note">Detected from your league settings — override if wrong.</p>
+  <p class="hint" id="drawer-detected-note">Detected from your league settings. Override if wrong.</p>
   <hr class="drawer-divider">
   <div class="field">
     <label class="field-label">Value mode</label>
@@ -1514,7 +1514,7 @@
   <div class="info-panel">
     <div id="info-content-trade" style="display:none;">
       <h2>How the trade calculator works</h2>
-      <p class="info-sub">Market fairness first — then use Rankings / Needs for roster fit. Trades always use <strong>raw FantasyCalc</strong> values (not VORP).</p>
+      <p class="info-sub">Market fairness first, then use Rankings / Needs for roster fit. Trades always use <strong>raw FantasyCalc</strong> values (not VORP).</p>
 
       <h3>Why raw market value (not VORP)?</h3>
       <p>Trade markets clear on what managers will accept. FantasyCalc encodes consensus dynasty/redraft prices for your format (1QB/SF, PPR, team count). VORP is better for <em>ranking team strength</em>; summing VORP can undervalue depth pieces people still pay for. Industry trade tools (FantasyCalc, KeepTradeCut-style charts) sum market values and judge fairness by relative gap.</p>
@@ -1522,10 +1522,10 @@
       <h3>Fairness rule</h3>
       <p>Each side is the sum of selected asset values. The meter shifts by the gap as a share of the larger side:</p>
       <ul>
-        <li>Within ~8–10% of the larger side → effectively even (common “fair band” in trade calculators)</li>
+        <li>Within ~8-10% of the larger side → effectively even (common “fair band” in trade calculators)</li>
         <li>Larger gaps → the meter leans toward the side receiving more value</li>
       </ul>
-      <p>There is no hard “winner” stamp — context (needs, schedule, dynasty horizon) still matters.</p>
+      <p>There is no hard winner stamp. Context (needs, schedule, dynasty horizon) still matters.</p>
 
       <h3>Sharing</h3>
       <p>The URL updates live with teams and selected players so anyone pasting it loads the same trade.</p>
@@ -1533,29 +1533,29 @@
 
     <div id="info-content-rankings">
       <h2 id="info-modal-title">How power rankings work</h2>
-      <p class="info-sub">Six separate questions — VOR is only one of them. Bench is <strong>not</strong> measured with VOR.</p>
+      <p class="info-sub">Six separate questions. VOR is only one of them. Bench is <strong>not</strong> measured with VOR.</p>
 
       <h3>1. Starter strength (column vs Power)</h3>
       <p><strong>Column “Starter strength”</strong> = sum of FantasyCalc values on the optimal legal lineup (one slot each; FLEX/SF not triple-counted).</p>
       <p><strong>Power’s starter input</strong> = slot <em>surplus</em> on that same lineup: <code>Σ max(0, V − RV_slot)</code>. Raw total is shown for readability; surplus is what enters Power so near-replacement FLEX fillers do not inflate rank.</p>
 
       <h3>2. Bench strength</h3>
-      <p>Everyone <em>not</em> in the optimal lineup. Each player is multiplied by a <strong>position weight</strong> (RB/WR 1.00, TE 0.50, QB 0.25 SF / 0.15 1QB, DST/K 0.10), sorted by weighted value, then a diminishing curve <code>1.00 → 0.80 → 0.65 → 0.50 → …</code>. That stops a random QB3 from inflating bench vs real RB/WR depth. Score is market quality vs other benches — not VOR vs starter RV.</p>
+      <p>Everyone <em>not</em> in the optimal lineup. Each player is multiplied by a <strong>position weight</strong> (RB/WR 1.00, TE 0.50, QB 0.25 SF / 0.15 1QB, DST/K 0.10), sorted by weighted value, then a diminishing curve <code>1.00 → 0.80 → 0.65 → 0.50 → …</code>. That stops a random QB3 from inflating bench vs real RB/WR depth. Score is market quality vs other benches, not VOR vs starter RV.</p>
 
       <h3>3. Positional surplus (columns / needs)</h3>
-      <p>VOR vs external positional replacement. Scarcity diagnostic only — not summed as starter strength and not the definition of bench.</p>
+      <p>VOR vs external positional replacement. Scarcity diagnostic only. Not summed as starter strength and not the definition of bench.</p>
 
-      <h3>4–6. Scoring &amp; record</h3>
+      <h3>4-6. Scoring &amp; record</h3>
       <p>Avg always when points exist. Median needs ≥2 weeks for a separate Power signal (else falls back to avg). Record: <code>(W+1)/(G+2)</code>.</p>
 
       <h3>Power</h3>
-      <p>Roster (starter + bench) vs. results (avg/median/record) is split <strong>80/20</strong> within roster and <strong>55/20/25</strong> within results — but the roster/results balance itself shifts across the season:</p>
+      <p>Roster (starter + bench) vs. results (avg/median/record) is split <strong>80/20</strong> within roster and <strong>55/20/25</strong> within results, but the roster/results balance itself shifts across the season:</p>
       <ul>
-        <li>Week 0–1: roster ≈ <strong>70%</strong> of Power, results ≈ 30% — there's little or no game data yet, so what your roster looks like on paper is nearly all you have.</li>
+        <li>Week 0-1: roster is about <strong>70%</strong> of Power, results about 30%. There's little or no game data yet, so paper roster strength is most of what you have.</li>
         <li>Each additional week shifts about <strong>4.5 points</strong> from roster to results.</li>
         <li>By roughly week 13, results already carry the clear majority; by the end of a full season roster bottoms out around <strong>12%</strong> and results (record + scoring) drive ~88% of Power.</li>
       </ul>
-      <p>The idea: early on, projected roster strength is the best information available. As actual games pile up, what a team <em>actually did</em> should matter far more than what it should have done on paper — a team that outperformed its roster all year deserves to rank above one that looked good in the preseason but underperformed. Normalize: median + MAD → tanh → clamp [0,100].</p>
+      <p>The idea: early on, projected roster strength is the best information available. As actual games pile up, what a team <em>actually did</em> should matter far more than what it should have done on paper - a team that outperformed its roster all year deserves to rank above one that looked strong on paper but underperformed. Scores are normalized (median + MAD, then tanh, clamped to 0-100).</p>
     </div>
 
     <div id="info-content-needs" style="display:none;">
@@ -1564,9 +1564,9 @@
 
       <h3>Buckets</h3>
       <ul>
-        <li><strong>Starters</strong> — optimal legal lineup at that position (same assignment as Rankings). VORP mode uses surplus vs replacement; Regular uses market value.</li>
-        <li><strong>Bench</strong> — same idea as Rankings bench: <em>market value</em> of non-starters (streamable positions weighted down). <strong>Not</strong> VOR vs starter RV — that would zero almost every backup.</li>
-        <li><strong>Overall</strong> — starters metric + bench metric</li>
+        <li><strong>Starters</strong> - optimal legal lineup at that position (same assignment as Rankings). VORP mode uses surplus vs replacement; Regular uses market value.</li>
+        <li><strong>Bench</strong> - same idea as Rankings bench: <em>market value</em> of non-starters (streamable positions weighted down). <strong>Not</strong> VOR vs starter RV (that would zero almost every backup).</li>
+        <li><strong>Overall</strong> - starters metric + bench metric</li>
       </ul>
 
       <h3>Labels</h3>
@@ -1588,8 +1588,8 @@
       <p>Needs “0” is about your roster vs replacement level. This page shows concrete unrostered names you can target. Always confirm availability on ESPN/Sleeper before claiming.</p>
 
       <h3>Simulate power impact</h3>
-      <p>Pick <strong>My team</strong>, then click <strong>Simulate power impact</strong>. For each candidate (top ~15 per position), the app tries adding that player to your roster and dropping every other player on your roster in turn — including current starters, not just your worst bench guy — and keeps whichever drop produces the highest resulting Power score. It reports the <strong>Δ Power</strong> (change vs. your current score) and the <strong>suggested drop</strong> for the best outcome found.</p>
-      <p>This only recomputes <em>your</em> starter/bench numbers and re-normalizes against the rest of the league as-is; it does not simulate anyone else's moves. A positive Δ Power means the swap would improve your rank relative to the league as it stands today. Sort by "Power impact" to see the biggest gains first.</p>
+      <p>Pick <strong>My team</strong>, then click <strong>Simulate power impact</strong>. For each candidate (top ~15 per position), the app tries adding that player and dropping each active roster player in turn (including starters, not only the worst bench piece). IR and taxi players are skipped as drop targets because cutting them does not free a normal roster spot. Only swaps that improve your Power score are shown, with the best drop and the Δ Power for that move.</p>
+      <p>This only recomputes your starter/bench numbers and re-normalizes against the rest of the league as it stands; it does not model other teams' moves. Sort by Power impact to see the biggest gains first.</p>
     </div>
 
     <button type="button" class="btn btn-primary info-close" id="btn-info-close">Got it</button>
@@ -1865,7 +1865,7 @@
         throw new Error('This league looks private, or ESPN rejected the request. Set the league to public temporarily, or add SWID / espn_s2 under "Private league?".');
       }
       if(err.status === 404){
-        throw new Error('League not found — double check the League ID and season.');
+        throw new Error('League not found. Double-check the League ID and season.');
       }
       throw new Error('Could not reach ESPN (' + (err.message || 'network/CORS issue') + '). Try again, or switch to Sleeper if this is a Sleeper league.');
     }
@@ -1896,11 +1896,15 @@
       const ownerId = (t.owners||[])[0];
       const roster = (t.roster && t.roster.entries || []).map(e => {
         const p = e.playerPoolEntry.player;
+        // ESPN IR slots: 21=IR, 22=IR+, 10 sometimes used for injured reserve
+        const slot = e.lineupSlotId;
+        const isIR = slot === 21 || slot === 22 || slot === 10;
         return {
           id: p.id,
           fullName: p.fullName,
           position: POS_MAP[p.defaultPositionId] || '—',
-          teamAbbr: ESPN_TEAM_ABBR[p.proTeamId] || null
+          teamAbbr: ESPN_TEAM_ABBR[p.proTeamId] || null,
+          isIR: !!isIR
         };
       });
       const overall = (t.record && t.record.overall) || {};
@@ -1956,7 +1960,7 @@
       const data = await res.json();
       if(!data) throw new Error();
       return data;
-    }catch(e){ throw new Error('League not found — double check the Sleeper League ID.'); }
+    }catch(e){ throw new Error('League not found. Double-check the Sleeper League ID.'); }
   }
   async function fetchSleeperRosters(leagueId){
     const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`);
@@ -1993,22 +1997,28 @@
     return rosters.map(r => {
       const u = userById[r.owner_id];
       const name = (u && u.metadata && u.metadata.team_name) || (u && u.display_name) || ('Team ' + r.roster_id);
+      const reserveSet = new Set((r.reserve || []).map(String));
+      const taxiSet = new Set((r.taxi || []).map(String));
       const roster = (r.players||[]).map(pid => {
         const p = playersMap[pid];
         if(!p) return null;
         const isDef = p.position === 'DEF';
+        const pidStr = String(pid);
+        // IR / reserve (and taxi) do not free a normal roster spot the same way
+        const isIR = reserveSet.has(pidStr) || taxiSet.has(pidStr);
         return {
           id: pid,
           fullName: isDef ? (p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid) : (p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim()),
           position: isDef ? 'DST' : (p.position || '—'),
-          teamAbbr: isDef ? pid : (p.team || null)
+          teamAbbr: isDef ? pid : (p.team || null),
+          isIR: !!isIR
         };
       }).filter(Boolean);
       const s = r.settings || {};
       const wins = s.wins || 0;
       const losses = s.losses || 0;
       const ties = s.ties || 0;
-      // Sleeper: fpts is whole points, fpts_decimal is fractional (often already 0–99)
+      // Sleeper: fpts is whole points, fpts_decimal is fractional (often already 0-99)
       let pf = 0;
       if(typeof s.fpts === 'number'){
         pf = s.fpts;
@@ -2074,20 +2084,29 @@
   async function attachWeeklyScores(){
     try{
       if(state.platform === 'sleeper'){
-        let week = 1;
+        // Only count COMPLETED weeks. During week N (e.g. Friday of week 2),
+        // partial scores would drag median/min and skew power rankings.
+        let currentWeek = 1;
+        let lastCompleted = 0;
         try{
           const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
           const nflState = await stateRes.json();
-          week = Math.min(Math.max(1, Number(nflState.leg || nflState.week || nflState.display_week) || 1), 18);
+          currentWeek = Math.min(Math.max(1, Number(nflState.leg || nflState.week || nflState.display_week) || 1), 18);
+          // leg/week is the in-progress NFL week; scores for that week are not final yet
+          lastCompleted = Math.max(0, currentWeek - 1);
         }catch(e){
           const maxGames = Math.max(0, ...state.teams.map(t => (t.wins||0)+(t.losses||0)+(t.ties||0)));
-          week = Math.min(18, Math.max(1, maxGames));
+          lastCompleted = Math.min(18, Math.max(0, maxGames));
+        }
+        if(lastCompleted < 1){
+          applyWeeklyScoreArrays({});
+          return;
         }
         const scoresByRoster = {};
         state.teams.forEach(t => { scoresByRoster[t.id] = []; });
-        for(let i = 1; i <= week; i += 5){
+        for(let i = 1; i <= lastCompleted; i += 5){
           const batch = [];
-          for(let w = i; w < i + 5 && w <= week; w++) batch.push(w);
+          for(let w = i; w < i + 5 && w <= lastCompleted; w++) batch.push(w);
           const results = await Promise.all(batch.map(w =>
             robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${w}`)
               .then(r => r.json())
@@ -2107,8 +2126,8 @@
         }
         applyWeeklyScoreArrays(scoresByRoster);
       } else if(state.platform === 'espn' && state.year){
-        // One full schedule fetch. ESPN returns ALL matchup periods in one payload.
-        // Use pointsByScoringPeriod[period] when > 0; ignore 0.0 placeholders for future weeks.
+        // Only keep matchups that are decided (winner set). In-progress weeks
+        // still have partial pointsByScoringPeriod and would distort median/min.
         const byTeamPeriod = {};
         state.teams.forEach(t => { byTeamPeriod[t.id] = {}; });
 
@@ -2123,23 +2142,22 @@
           (data.schedule || []).forEach(game => {
             const period = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
             if(period == null) return;
+            const decided = game.winner && game.winner !== 'UNDECIDED';
+            if(!decided) return; // skip current / unfinished week
             ['home','away'].forEach(side => {
               const entry = game[side];
               if(!entry || entry.teamId == null) return;
               let pts = null;
               const pbs = entry.pointsByScoringPeriod;
               if(pbs && typeof pbs === 'object'){
-                // Prefer the map entry for this matchup period
                 if(pbs[String(period)] != null) pts = Number(pbs[String(period)]);
                 else {
-                  // sometimes only one key present
                   const keys = Object.keys(pbs);
                   if(keys.length === 1) pts = Number(pbs[keys[0]]);
                 }
               }
               if((pts == null || pts <= 0) && typeof entry.totalPoints === 'number' && entry.totalPoints > 0){
-                const decided = game.winner && game.winner !== 'UNDECIDED';
-                if(decided) pts = entry.totalPoints;
+                pts = entry.totalPoints;
               }
               if(typeof pts !== 'number' || isNaN(pts) || pts <= 0) return;
               if(!byTeamPeriod[entry.teamId]) byTeamPeriod[entry.teamId] = {};
@@ -2413,7 +2431,7 @@
       el('setup-screen').style.display = 'none';
       el('app').classList.add('show');
 
-      // Weekly high/low scores — non-blocking
+      // Weekly high/low scores - non-blocking
       attachWeeklyScores().then(() => {
         if(el('app').classList.contains('show')) renderRankings();
       });
@@ -2667,7 +2685,7 @@
       searchInput.value = waiverSearch || '';
     }
 
-    // "My team" selector + simulate button + sort toggle — injected once, then kept in sync
+    // "My team" selector + simulate button + sort toggle - injected once, then kept in sync
     let extraRow = el('waiver-extra-row');
     if(!extraRow){
       extraRow = document.createElement('div');
@@ -2741,6 +2759,9 @@
     let best = null;
     rosterWithAdd.forEach(dropCandidate => {
       if(dropCandidate.id === fakeId) return; // must drop an existing player, not the pickup itself
+      // Skipping IR / reserve: dropping them does not free a normal roster spot
+      // (you would still need to drop someone else). Only suggest real roster cuts.
+      if(dropCandidate.isIR) return;
       const trialRoster = rosterWithAdd.filter(p => p.id !== dropCandidate.id);
       const trialTeam = { ...team, roster: trialRoster };
       const { assignments, starterIds } = optimalStarterLineup(trialTeam, ctx.counts, ctx.flexElig, ctx.sfElig);
@@ -2755,7 +2776,10 @@
     if(!best) return null;
     const currentRow = ctx.base.find(r => r.team.id === team.id);
     const currentPower = currentRow ? currentRow.power : 0;
-    return { delta: best.power - currentPower, dropName: best.dropName, dropPos: best.dropPos, newPower: best.power };
+    const delta = best.power - currentPower;
+    // Only surface suggestions that actually help this team
+    if(delta <= 0) return null;
+    return { delta, dropName: best.dropName, dropPos: best.dropPos, newPower: best.power };
   }
 
   // Recompute one team's Power score after substituting a new starterSurplus/benchQuality
@@ -2790,7 +2814,7 @@
     }
     const ctx = state._powerContext;
     if(!ctx){
-      if(statusEl) statusEl.textContent = 'Could not compute — try Refresh first.';
+      if(statusEl) statusEl.textContent = 'Could not compute. Try Refresh first.';
       return;
     }
 
@@ -2861,7 +2885,7 @@
       sel.innerHTML = '';
       state.teams.forEach(t => {
         const o = document.createElement('option');
-        o.value = t.id; o.textContent = t.name + (t.owner ? ' — ' + t.owner : '');
+        o.value = t.id; o.textContent = t.name + (t.owner ? ' - ' + t.owner : '');
         sel.appendChild(o);
       });
       sel.value = side === 'a' ? state.selectedTeamA : state.selectedTeamB;
@@ -3076,7 +3100,7 @@
     if(pctDiff >= 1){
       parts.push(`gap of <strong>${fmt(Math.abs(diff))}</strong> (${pctDiff.toFixed(0)}%)`);
     }
-    summary.innerHTML = parts.join(' — ');
+    summary.innerHTML = parts.join(' · ');
     syncUrl();
   }
 
@@ -3104,7 +3128,7 @@
    * FLAW (illustrated by Saint Allen):
    *   Measuring bench as Σ max(0, V − RV) zeroes out valuable backups that sit
    *   under a high starter-replacement bar. Saint's bench (MHJ, Godwin, Dowdle,
-   *   quality depth after Allen+Caleb+Jeanty+Brown+Nico start) is real talent —
+   *   quality depth after Allen+Caleb+Jeanty+Brown+Nico start) is real talent  - 
    *   but VOR-vs-starter-RV said "weak depth." VOR answers scarcity, not
    *   "how good is this team's bench relative to other benches?"
    *
@@ -3115,7 +3139,7 @@
    *   4. Scoring + record  = results
    *
    * Every player is exactly one of: STARTER or BENCH (no overlap).
-   * FLEX/SF: one slot assignment only — no triple-counting eligibility.
+   * FLEX/SF: one slot assignment only - no triple-counting eligibility.
    *
    * Power (base, when results fully weighted):
    *   48% Starter surplus · 12% Bench · 22% Avg · 8% Median · 10% Record
@@ -3126,7 +3150,7 @@
    *
    * SEASON PROGRESSION:
    *   Roster-based signals (starter/bench) matter most when there's little
-   *   or no game data — that's all you have in weeks 1-2. As weeks accumulate,
+   *   or no game data - that's all you have in weeks 1-2. As weeks accumulate,
    *   actual results (record, avg/median scoring) should increasingly dominate:
    *   what a team *should* have done on paper matters less than what actually
    *   happened. By late season, roster share decays toward a small floor and
@@ -3272,7 +3296,7 @@
     };
 
     // Waiver / depth baseline: best FantasyCalc player at position NOT rostered in this league
-    // (format-pool free-agent proxy — not a live host claim list)
+    // (format-pool free-agent proxy - not a live host claim list)
     const rostered = getRosteredNameSet();
     const waiverRV = {};
     const waiverRVPlayer = {};
@@ -3282,7 +3306,7 @@
         waiverRV[pos] = free[0].value;
         waiverRVPlayer[pos] = free[0].name;
       } else {
-        // No unrostered names in pool — fall back to deep pool rank past starts
+        // No unrostered names in pool - fall back to deep pool rank past starts
         const all = byPosAll[pos];
         const idx = Math.min(all.length - 1, startersAt[pos].length + N);
         waiverRV[pos] = all.length ? all[Math.max(0, idx)].value : 0;
@@ -3374,7 +3398,7 @@
   }
 
   // Starter strength = market value of optimal lineup (who actually starts).
-  // Starter surplus (diagnostic) = Σ max(0, V − RV_slot) — scarcity, not Power input.
+  // Starter surplus (diagnostic) = Σ max(0, V − RV_slot) - scarcity, not Power input.
   function computeStarterMetrics(assignments, slotRV){
     let starterValue = 0;
     let starterSurplus = 0;
@@ -3402,7 +3426,7 @@
 
   /**
    * Streamable bench positions must not dominate.
-   * A QB3 at ~2–3k market value would otherwise outrank a useful RB3/WR3,
+   * A QB3 at ~2-3k market value would otherwise outrank a useful RB3/WR3,
    * so teams that stream QBs look "weak" and teams that stash a third QB look "deep."
    */
   function benchPosWeight(pos, counts){
@@ -3473,7 +3497,7 @@
     };
   }
 
-  // Positional surplus diagnostic (VOR when vorp mode) — needs + table columns only
+  // Positional surplus diagnostic (VOR when vorp mode) - needs + table columns only
   function positionalSurplus(team, starterRV){
     const out = { QB:0, RB:0, WR:0, TE:0 };
     (team.roster || []).forEach(p => {
@@ -3489,7 +3513,7 @@
     return out;
   }
 
-  // Median + MAD normalization → 0–100 via tanh (outlier-resistant)
+  // Median + MAD normalization → 0-100 via tanh (outlier-resistant)
   // z = (x − med) / max(1.4826 * MAD, ε)
   // score = 50 + 50 * tanh(z / 1.5)
   function madRelativeScores(values){
@@ -3536,7 +3560,7 @@
     }
     const avg = team.avgPts || 0;
     if(avg > 0){
-      // Season avg from host without weekly breakdown — show avg only
+      // Season avg from host without weekly breakdown - show avg only
       return { avg, med: avg, high: null, low: null, hasAvg: true, hasDist: false, weeks: 0 };
     }
     return { avg: null, med: null, high: null, low: null, hasAvg: false, hasDist: false, weeks: 0 };
@@ -3627,12 +3651,12 @@
     // Season-progression roster/results split.
     // Early (weeks ~0-2): little/no result data exists, so roster (starter+bench)
     // carries most of the score. As weeks accumulate, actual record + scoring
-    // increasingly outweigh "what your roster looked like on paper" — by the
+    // increasingly outweigh "what your roster looked like on paper" - by the
     // back half of a ~17-week season, results should dominate the score, since
     // what actually happened matters far more than the preseason-style roster
     // read by that point.
     // rosterShare: 0.70 at week 0, decaying ~0.045/week, floor 0.12 (never fully
-    // zero — roster still matters a little for context/injuries even in week 17).
+    // zero - roster still matters a little for context/injuries even in week 17).
     const ROSTER_SHARE_START = 0.70;
     const ROSTER_SHARE_DECAY_PER_WEEK = 0.045;
     const ROSTER_SHARE_FLOOR = 0.12;
@@ -3751,18 +3775,18 @@
     setTh('th-te', vorp ? 'TE surplus' : 'TE value', vorp ? 'Diagnostic VOR vs positional RV' : 'Sum of FantasyCalc value for rostered TEs');
 
     const needsTitle = el('needs-section-title');
-    if(needsTitle) needsTitle.textContent = vorp ? 'Team needs — Starters · Bench · Overall' : 'Team needs — Starters · Bench · Overall';
+    if(needsTitle) needsTitle.textContent = vorp ? 'Team needs: Starters, Bench, Overall' : 'Team needs: Starters, Bench, Overall';
     const needsIntro = el('needs-intro-text');
     if(needsIntro){
       needsIntro.textContent = vorp
-        ? 'Starters = lineup surplus vs RV. Bench = market value of non-starters (same idea as Rankings bench — not zeroed by starter RV). Overall = both. Each vs league median.'
+        ? 'Starters = lineup surplus vs RV. Bench = market value of non-starters (same idea as Rankings bench, not zeroed by starter RV). Overall = both. Each is compared to the league median.'
         : 'Starters / Bench / Overall = market values (bench matches Rankings weighting). Each vs league median.';
     }
     const rankTitle = document.querySelector('#panel-rankings .section-title');
     if(rankTitle){
       rankTitle.textContent = vorp
-        ? 'Power rankings — FantasyPulse (VORP)'
-        : 'Power rankings — FantasyPulse (raw values)';
+        ? 'Power rankings (FantasyPulse, VORP)'
+        : 'Power rankings (FantasyPulse, raw values)';
     }
   }
 
@@ -3874,7 +3898,7 @@
   });
 
   /* ---------- needs ---------- */
-  // Starters: VORP vs starter RV (or raw value) — scarcity of who actually starts
+  // Starters: VORP vs starter RV (or raw value) - scarcity of who actually starts
   function starterBucketMetric(players, starterRV){
     const out = { QB:0, RB:0, WR:0, TE:0 };
     (players || []).forEach(p => {
@@ -3890,7 +3914,7 @@
     return out;
   }
 
-  // Bench: SAME philosophy as Rankings bench strength — market value of non-starters,
+  // Bench: SAME philosophy as Rankings bench strength - market value of non-starters,
   // with streamable-position weights. NEVER subtract starter RV (that zeros almost everyone).
   function benchBucketMetric(players, counts){
     const out = { QB:0, RB:0, WR:0, TE:0 };
@@ -4191,7 +4215,7 @@
       sfEligible: levels.sfElig || counts.sfEligible,
       replacementLevels: {
         methodology: levels.methodology || null,
-        note: 'Replacement/VOR is for positional surplus diagnostics only — not bench strength',
+        note: 'Replacement/VOR is for positional surplus diagnostics only - not bench strength',
         starterRV,
         starterRVPlayer: levels.starterRVPlayer || null,
         slotRV,
@@ -4236,7 +4260,7 @@
         document.body.removeChild(ta);
         showToast('Debug data copied');
       }catch(e2){
-        showToast('Copy failed — see console');
+        showToast('Copy failed - see console');
         console.log(text);
       }
     }
