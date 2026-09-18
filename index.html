@@ -716,6 +716,63 @@
     font-weight: 600;
   }
 
+  .trade-power-impact {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+    display: none;
+  }
+  .trade-power-impact.show { display: block; }
+  .trade-power-impact .tpi-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+  .tpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 600px) {
+    .tpi-grid { grid-template-columns: 1fr; }
+  }
+  .tpi-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .tpi-card .tpi-name {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tpi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12.5px;
+    padding: 2px 0;
+    gap: 8px;
+  }
+  .tpi-row .tpi-lbl { color: var(--text-muted); }
+  .tpi-row .tpi-val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .tpi-note {
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
   .share-toast {
     position: fixed;
     bottom: 24px;
@@ -1368,6 +1425,11 @@
               <span class="side-b-lbl" id="meter-lbl-b">Team B</span>
             </div>
             <div class="fairness-summary" id="fairness-summary"></div>
+            <div class="trade-power-impact" id="trade-power-impact">
+              <div class="tpi-title">Power ranking impact</div>
+              <div class="tpi-grid" id="trade-power-grid"></div>
+              <div class="tpi-note" id="trade-power-note"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -1522,10 +1584,13 @@
       <h3>Fairness rule</h3>
       <p>Each side is the sum of selected asset values. The meter shifts by the gap as a share of the larger side:</p>
       <ul>
-        <li>Within ~8-10% of the larger side → effectively even (common “fair band” in trade calculators)</li>
+        <li>Within ~8-10% of the larger side → effectively even (common fair band in trade calculators)</li>
         <li>Larger gaps → the meter leans toward the side receiving more value</li>
       </ul>
       <p>There is no hard winner stamp. Context (needs, schedule, dynasty horizon) still matters.</p>
+
+      <h3>Power ranking impact</h3>
+      <p>Below the meter, both teams are re-scored as if the player swap already happened (picks are ignored for lineup strength). You get each team's new Power score, the change, and where they would rank vs the rest of the league. Record and weekly scoring stay as they are today.</p>
 
       <h3>Sharing</h3>
       <p>The URL updates live with teams and selected players so anyone pasting it loads the same trade.</p>
@@ -2799,6 +2864,124 @@
     return w.wS * Smap2[teamId] + w.wD * Dmap2[teamId] + w.wA * A + w.wM * M + w.wR * R;
   }
 
+  // Same as powerWithOverride but for two teams at once (a trade). Returns a map of teamId → new power
+  // for every team after re-normalizing starter/bench MAD scores with both overrides applied.
+  function powerWithDualOverride(teamIdA, surpA, benchA, teamIdB, surpB, benchB, ctx){
+    const sArr = ctx.base.map(r => {
+      let val = r.starterSurplus;
+      if(r.team.id === teamIdA) val = surpA;
+      else if(r.team.id === teamIdB) val = surpB;
+      return { id: r.team.id, val };
+    });
+    const dArr = ctx.base.map(r => {
+      let val = r.depthVor;
+      if(r.team.id === teamIdA) val = benchA;
+      else if(r.team.id === teamIdB) val = benchB;
+      return { id: r.team.id, val };
+    });
+    const Smap2 = madRelativeScores(sArr);
+    const Dmap2 = madRelativeScores(dArr);
+    const w = ctx.weights;
+    const powers = {};
+    ctx.base.forEach(r => {
+      const id = r.team.id;
+      const A = r.hasAvg ? (ctx.Amap[id] ?? 50) : 50;
+      const M = r.hasDist ? (ctx.Mmap[id] ?? 50) : A;
+      const R = ctx.Rmap[id] ?? 50;
+      powers[id] = w.wS * (Smap2[id] ?? 50) + w.wD * (Dmap2[id] ?? 50) + w.wA * A + w.wM * M + w.wR * R;
+    });
+    return powers;
+  }
+
+  function ranksFromPowers(powerById){
+    const sorted = Object.keys(powerById)
+      .map(id => ({ id, power: powerById[id] }))
+      .sort((a, b) => b.power - a.power || String(a.id).localeCompare(String(b.id)));
+    const rank = {};
+    sorted.forEach((row, i) => { rank[row.id] = i + 1; });
+    return rank;
+  }
+
+  // Apply a trade: A sends tradeA assets to B, B sends tradeB assets to A.
+  // Picks are ignored for power (they do not sit in a lineup). Only rostered players move.
+  function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
+    if(!teamA || !teamB || teamA.id === teamB.id) return null;
+    if(!state._powerContext){
+      try{ buildPowerRows(); }catch(e){ return null; }
+    }
+    const ctx = state._powerContext;
+    if(!ctx) return null;
+
+    const playerAssets = list => (list || []).filter(a => !a.isPick);
+    const sendA = playerAssets(assetsFromA);
+    const sendB = playerAssets(assetsFromB);
+    if(sendA.length === 0 && sendB.length === 0) return null;
+
+    function applyTradeToRoster(team, outgoing, incoming, otherTeam){
+      const outIds = new Set(outgoing.map(a => String(a.id)));
+      let roster = (team.roster || []).filter(p => !outIds.has(String(p.id)));
+      incoming.forEach(a => {
+        // Prefer the real player object from the other roster so value/position match
+        const src = (otherTeam.roster || []).find(p => String(p.id) === String(a.id));
+        if(src){
+          roster.push({ ...src });
+        } else {
+          roster.push({
+            id: a.id,
+            fullName: a.name,
+            position: a.position,
+            value: a.value || 0,
+            matched: true,
+            isIR: false
+          });
+        }
+      });
+      return roster;
+    }
+
+    const rosterA = applyTradeToRoster(teamA, sendA, sendB, teamB);
+    const rosterB = applyTradeToRoster(teamB, sendB, sendA, teamA);
+
+    function metricsFor(team, roster){
+      const trial = { ...team, roster };
+      const { assignments, starterIds } = optimalStarterLineup(trial, ctx.counts, ctx.flexElig, ctx.sfElig);
+      const { starterSurplus } = computeStarterMetrics(assignments, ctx.slotRV);
+      const { benchQuality } = computeBenchMetrics(trial, starterIds, ctx.starterSlotCount, ctx.counts, ctx.flexElig, ctx.sfElig);
+      return { starterSurplus, benchQuality };
+    }
+
+    const mA = metricsFor(teamA, rosterA);
+    const mB = metricsFor(teamB, rosterB);
+    const newPowers = powerWithDualOverride(
+      teamA.id, mA.starterSurplus, mA.benchQuality,
+      teamB.id, mB.starterSurplus, mB.benchQuality,
+      ctx
+    );
+
+    const oldPowers = {};
+    ctx.base.forEach(r => { oldPowers[r.team.id] = r.power; });
+    const oldRanks = ranksFromPowers(oldPowers);
+    const newRanks = ranksFromPowers(newPowers);
+
+    function side(team){
+      const id = team.id;
+      const oldP = oldPowers[id] ?? 0;
+      const newP = newPowers[id] ?? 0;
+      return {
+        teamId: id,
+        name: team.name,
+        oldPower: oldP,
+        newPower: newP,
+        delta: newP - oldP,
+        oldRank: oldRanks[id] ?? null,
+        newRank: newRanks[id] ?? null,
+        rankDelta: (oldRanks[id] != null && newRanks[id] != null) ? oldRanks[id] - newRanks[id] : 0 // positive = moved up
+      };
+    }
+
+    return { a: side(teamA), b: side(teamB) };
+  }
+
   function runWaiverSimulation(){
     const statusEl = el('waiver-sim-status');
     if(!state.teams || !state.teams.length || state.myTeamId == null){
@@ -3029,6 +3212,78 @@
   });
 
   /* ---------- fairness meter (left/right) ---------- */
+  function renderTradePowerImpact(teamA, teamB){
+    const box = el('trade-power-impact');
+    const grid = el('trade-power-grid');
+    const note = el('trade-power-note');
+    if(!box || !grid) return;
+
+    const hasPlayers =
+      state.tradeA.some(a => !a.isPick) || state.tradeB.some(a => !a.isPick);
+
+    if(!teamA || !teamB || teamA.id === teamB.id || !hasPlayers){
+      box.classList.remove('show');
+      grid.innerHTML = '';
+      if(note) note.textContent = '';
+      return;
+    }
+
+    const result = simulateTradePower(teamA, teamB, state.tradeA, state.tradeB);
+    if(!result){
+      box.classList.remove('show');
+      grid.innerHTML = '';
+      if(note) note.textContent = '';
+      return;
+    }
+
+    function fmtDelta(d){
+      const s = (d >= 0 ? '+' : '') + d.toFixed(1);
+      return s;
+    }
+    function deltaCls(d){
+      if(d > 0.15) return 'up';
+      if(d < -0.15) return 'down';
+      return '';
+    }
+    function rankStr(side){
+      if(side.oldRank == null || side.newRank == null) return '—';
+      const move = side.rankDelta;
+      if(move === 0) return '#' + side.oldRank + ' (same)';
+      const arrow = move > 0 ? '↑' : '↓';
+      const n = Math.abs(move);
+      return '#' + side.oldRank + ' → #' + side.newRank + ' (' + arrow + n + ')';
+    }
+    function rankCls(side){
+      if(side.rankDelta > 0) return 'up';
+      if(side.rankDelta < 0) return 'down';
+      return '';
+    }
+    function cardHtml(side){
+      return `<div class="tpi-card">
+        <div class="tpi-name">${escapeHtml(side.name)}</div>
+        <div class="tpi-row">
+          <span class="tpi-lbl">Power</span>
+          <span class="tpi-val">${side.oldPower.toFixed(1)} → ${side.newPower.toFixed(1)}
+            <span class="pct-cell ${deltaCls(side.delta)}">(${fmtDelta(side.delta)})</span>
+          </span>
+        </div>
+        <div class="tpi-row">
+          <span class="tpi-lbl">Rank</span>
+          <span class="tpi-val pct-cell ${rankCls(side)}">${rankStr(side)}</span>
+        </div>
+      </div>`;
+    }
+
+    grid.innerHTML = cardHtml(result.a) + cardHtml(result.b);
+    if(note){
+      const picksOnly = (state.tradeA.some(a => a.isPick) || state.tradeB.some(a => a.isPick));
+      note.textContent = picksOnly
+        ? 'Power uses post-trade rosters only (picks do not affect lineup strength). Record and scoring stay the same.'
+        : 'Power re-ranks both teams after the swap. Record and weekly scoring are unchanged.';
+    }
+    box.classList.add('show');
+  }
+
   function renderFairness(){
     const totalA = state.tradeA.reduce((s,a)=>s+a.value,0);
     const totalB = state.tradeB.reduce((s,a)=>s+a.value,0);
@@ -3048,6 +3303,7 @@
       fill.style.width = '0';
       fill.style.background = 'var(--accent)';
       summary.textContent = '';
+      renderTradePowerImpact(null, null);
       return;
     }
 
@@ -3101,6 +3357,8 @@
       parts.push(`gap of <strong>${fmt(Math.abs(diff))}</strong> (${pctDiff.toFixed(0)}%)`);
     }
     summary.innerHTML = parts.join(' · ');
+
+    renderTradePowerImpact(teamA, teamB);
     syncUrl();
   }
 
