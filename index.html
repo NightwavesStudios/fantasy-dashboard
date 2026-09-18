@@ -791,6 +791,74 @@
   }
   .share-toast.show { opacity: 1; }
 
+  .hist-list { display: flex; flex-direction: column; gap: 8px; }
+  .hist-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .hist-card.mine { border-color: rgba(74, 155, 110, 0.45); }
+  .hist-card.pending { border-color: rgba(196, 162, 78, 0.4); }
+  .hist-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .hist-teams { font-weight: 600; font-size: 13.5px; }
+  .hist-date { font-size: 11.5px; color: var(--text-muted); }
+  .hist-sides {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: start;
+    font-size: 12.5px;
+  }
+  .hist-side-label {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .hist-asset {
+    color: var(--text-secondary);
+    padding: 1px 0;
+  }
+  .hist-vs {
+    color: var(--text-muted);
+    font-size: 11px;
+    padding-top: 18px;
+    text-align: center;
+  }
+  .hist-impact {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .hist-impact .hi-team { font-weight: 600; margin-bottom: 2px; }
+  .hist-empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 16px 4px;
+  }
+  .hist-meta {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .hist-meta strong { color: var(--text); }
+
   /* ---------- rankings ---------- */
   .section-title {
     font-size: 10.5px;
@@ -1331,6 +1399,14 @@
         <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="15" r="3"/><path d="M18 14v2M17 15h2"/></svg></span>
         Waivers
       </button>
+      <button class="nav-item" data-panel="panel-history">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 12h6"/><path d="M12 7v5l3 2"/></svg></span>
+        History
+      </button>
+      <button class="nav-item" data-panel="panel-playoffs">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
+        Playoffs
+      </button>
     </nav>
     <div class="sidebar-footer">
       <button class="nav-item" id="btn-refresh" title="Refresh values">
@@ -1518,6 +1594,61 @@
         </div>
       </section>
 
+      <!-- ---------- HISTORY (trades + offers) ---------- -->
+      <section class="panel" id="panel-history">
+        <div class="section-title-row" style="margin-bottom:12px;">
+          <div class="section-title" style="margin:0;">Trade history &amp; offers</div>
+          <button type="button" class="info-btn" id="btn-history-info" title="How history works">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+            How it works
+          </button>
+        </div>
+        <div class="waiver-toolbar" style="margin-bottom:14px;">
+          <label class="field-label" style="margin:0;">My team</label>
+          <select id="history-myteam-select" style="max-width:240px;"></select>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-history-refresh">Refresh trades</button>
+          <span id="history-status" style="font-size:11.5px;color:var(--text-muted);"></span>
+        </div>
+
+        <div class="section-title" style="margin-bottom:8px;">Current offers (last 7 days)</div>
+        <div id="offers-list" class="hist-list"></div>
+
+        <div class="section-title" style="margin:18px 0 8px;">Completed trades</div>
+        <p class="needs-intro" style="margin-bottom:10px;">Completed deals only. Exact reverse trades (undo) are paired and excluded so they do not pollute the history.</p>
+        <div id="history-list" class="hist-list"></div>
+      </section>
+
+      <!-- ---------- PLAYOFFS ---------- -->
+      <section class="panel" id="panel-playoffs">
+        <div class="section-title-row" style="margin-bottom:12px;">
+          <div class="section-title" style="margin:0;">Playoff picture</div>
+          <button type="button" class="info-btn" id="btn-playoffs-info" title="How playoff odds work">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+            How it works
+          </button>
+        </div>
+        <p class="needs-intro" id="playoffs-intro">Seeding from current standings. Odds from a simple simulation of remaining regular-season weeks using each team's scoring so far.</p>
+        <div id="playoffs-meta" class="hist-meta"></div>
+        <div style="overflow-x:auto;margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>Record</th>
+                <th>PF</th>
+                <th title="Chance to make the playoffs">Playoffs %</th>
+                <th title="Chance at a first-round bye (when the format has byes)">Bye %</th>
+                <th title="Chance to win the league">Title %</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="playoffs-body"></tbody>
+          </table>
+        </div>
+        <p class="tpi-note" id="playoffs-note" style="margin-top:12px;"></p>
+      </section>
+
       <div class="footer-note">Player values from FantasyCalc · roster data from your league host · not financial advice</div>
     </main>
   </div>
@@ -1552,6 +1683,12 @@
     </select>
   </div>
   <p class="hint">VORP subtracts positional replacement from the full player pool. Regular ranks on market value only. Trades always use raw values.</p>
+  <hr class="drawer-divider">
+  <div class="field">
+    <label class="field-label">My team (default everywhere)</label>
+    <select id="sel-my-team"></select>
+  </div>
+  <p class="hint">Used as default on Trade (Team A), Waivers, History, and Playoffs highlights.</p>
   <hr class="drawer-divider">
   <div class="field">
     <span class="field-label">League</span>
@@ -1657,6 +1794,24 @@
       <p>This only recomputes your starter/bench numbers and re-normalizes against the rest of the league as it stands; it does not model other teams' moves. Sort by Power impact to see the biggest gains first.</p>
     </div>
 
+    <div id="info-content-history" style="display:none;">
+      <h2>Trade history &amp; offers</h2>
+      <p class="info-sub">Completed trades from your league host, plus recent open offers when the API exposes them.</p>
+      <h3>Completed trades</h3>
+      <p>Only deals marked complete are listed. If the same two teams later swap the same assets back (an undo), both legs are dropped so the history stays clean.</p>
+      <h3>Impact</h3>
+      <p>For each completed trade we total today's FantasyCalc value each side received and the edge (difference). That is a present-day read of who won the deal on paper, not values from the day it happened.</p>
+      <h3>Current offers</h3>
+      <p>Pending trades from the last 7 days when the host provides them. Availability varies by platform and privacy settings.</p>
+    </div>
+    <div id="info-content-playoffs" style="display:none;">
+      <h2>Playoff picture</h2>
+      <p class="info-sub">Current seeding plus simple odds from simulating the rest of the regular season.</p>
+      <h3>Seeding</h3>
+      <p>Sorted by record, then points for (common default). Division rules are applied when the league reports divisions; otherwise it is a pure overall ranking.</p>
+      <h3>Odds</h3>
+      <p>Each remaining week is simulated many times using each team's average score and score variance so far. Playoff spots and byes follow your league's playoff team count and bye structure. Title odds run a simplified bracket from those seeds. This is a rough model, not a forecast market.</p>
+    </div>
     <button type="button" class="btn btn-primary info-close" id="btn-info-close">Got it</button>
   </div>
 </div>
@@ -1733,8 +1888,48 @@
     pendingTrade: null,
     usingCachedValues: false,
     valueMode: 'vorp', // 'vorp' | 'raw'
-    myTeamId: null
+    myTeamId: null,
+    completedTrades: [],
+    pendingOffers: [],
+    historyLoaded: false,
+    playoffSettings: null,
+    playersMap: null // sleeper players id -> info for trade name resolution
   };
+
+  const MY_TEAM_KEY = 'fd_my_team_v1';
+
+  function myTeamStorageKey(){
+    return state.platform + ':' + state.leagueId;
+  }
+  function loadSavedMyTeam(){
+    try{
+      const all = JSON.parse(localStorage.getItem(MY_TEAM_KEY) || '{}');
+      const id = all[myTeamStorageKey()];
+      if(id == null) return null;
+      return parseIdVal(id);
+    }catch(e){ return null; }
+  }
+  function saveMyTeam(id){
+    state.myTeamId = id;
+    try{
+      const all = JSON.parse(localStorage.getItem(MY_TEAM_KEY) || '{}');
+      all[myTeamStorageKey()] = id;
+      localStorage.setItem(MY_TEAM_KEY, JSON.stringify(all));
+    }catch(e){}
+  }
+  function applyMyTeamDefaults(){
+    if(state.myTeamId == null && state.teams[0]) state.myTeamId = state.teams[0].id;
+    const saved = loadSavedMyTeam();
+    if(saved != null && state.teams.some(t => t.id === saved || String(t.id) === String(saved))){
+      state.myTeamId = saved;
+    }
+    // Prefer my team on trade side A when loading
+    if(state.myTeamId != null){
+      state.selectedTeamA = state.myTeamId;
+      const other = state.teams.find(t => t.id !== state.myTeamId);
+      if(other) state.selectedTeamB = other.id;
+    }
+  }
 
   function isVorpMode(){ return state.valueMode !== 'raw'; }
 
@@ -2448,6 +2643,7 @@
         const [rosters, users] = await Promise.all([fetchSleeperRosters(leagueId), fetchSleeperUsers(leagueId)]);
         setStatus('Loading player database (cached after first time)…');
         const playersMap = await fetchSleeperPlayers();
+        state.playersMap = playersMap;
         teams = buildSleeperTeams(rosters, users, playersMap);
         ppr = sleeperDetectPpr(league);
         numQBs = sleeperDetectSuperflex(league) ? 2 : 1;
@@ -2467,11 +2663,16 @@
       state.leagueName = leagueName;
       state.teams = teams;
       state.fcValues = fcValues; state.fcIndex = fc.idx; state.picksAvailable = fc.picks; state.fcDst = fc.dstList;
-      state.selectedTeamA = teams[0] ? teams[0].id : null;
-      state.selectedTeamB = teams[1] ? teams[1].id : (teams[0] ? teams[0].id : null);
-      state.myTeamId = teams[0] ? teams[0].id : null;
       state.tradeA = []; state.tradeB = [];
       state.searchA = ''; state.searchB = '';
+      state.completedTrades = [];
+      state.pendingOffers = [];
+      state.historyLoaded = false;
+      state.playoffSettings = detectPlayoffSettings();
+
+      applyMyTeamDefaults();
+      if(state.selectedTeamA == null) state.selectedTeamA = teams[0] ? teams[0].id : null;
+      if(state.selectedTeamB == null) state.selectedTeamB = teams[1] ? teams[1].id : (teams[0] ? teams[0].id : null);
 
       saveRecent({
         platform: state.platform,
@@ -2498,7 +2699,14 @@
 
       // Weekly high/low scores - non-blocking
       attachWeeklyScores().then(() => {
-        if(el('app').classList.contains('show')) renderRankings();
+        if(el('app').classList.contains('show')){
+          renderRankings();
+          renderPlayoffs();
+        }
+      });
+      // Trade history - non-blocking
+      loadTradeHistory().then(() => {
+        if(el('app').classList.contains('show')) renderHistory();
       });
     }catch(err){
       hideStatus();
@@ -2565,12 +2773,15 @@
 
     populateTeamSelectors();
     populatePickSelectors();
+    syncMyTeamSelectors();
     renderPosFilters('a'); renderPosFilters('b');
     renderTradeSide('a'); renderTradeSide('b');
     renderFairness();
     renderRankings();
     renderNeeds();
     renderWaivers();
+    renderHistory();
+    renderPlayoffs();
   }
 
   let waiverPosFilter = 'ALL';
@@ -2778,9 +2989,12 @@
         }
       });
       el('waiver-myteam-select').addEventListener('change', (e) => {
-        state.myTeamId = parseIdVal(e.target.value);
+        saveMyTeam(parseIdVal(e.target.value));
         waiverImpactCache = null;
+        syncMyTeamSelectors();
         renderWaivers();
+        renderHistory();
+        renderPlayoffs();
       });
     }
 
@@ -3026,6 +3240,711 @@
     if(sortSel) sortSel.value = 'impact';
     if(statusEl) statusEl.textContent = 'Simulated ' + candidates.length + ' pickups for ' + team.name + '.';
     renderWaivers();
+  }
+
+  /* ---------- playoff settings + odds ---------- */
+  function detectPlayoffSettings(){
+    const nTeams = state.numTeams || (state.teams && state.teams.length) || 12;
+    let playoffTeams = Math.min(6, Math.max(4, Math.floor(nTeams / 2)));
+    let playoffWeekStart = 15;
+    let byes = 0;
+    let divisions = false;
+
+    if(state.platform === 'sleeper' && state.league){
+      const s = state.league.settings || {};
+      if(typeof s.playoff_teams === 'number') playoffTeams = s.playoff_teams;
+      if(typeof s.playoff_week_start === 'number') playoffWeekStart = s.playoff_week_start;
+      // 0 = none, 1 = one bye (top seed), etc. Sleeper often uses playoff_round_type
+      if(playoffTeams >= 6) byes = 2;
+      else if(playoffTeams >= 4) byes = playoffTeams === 4 ? 0 : 1;
+      if(state.league.metadata && state.league.metadata.division_1) divisions = true;
+      if((state.league.settings && state.league.settings.divisions) > 0) divisions = true;
+    } else if(state.platform === 'espn' && state.league){
+      try{
+        const sch = state.league.settings && state.league.settings.scheduleSettings;
+        if(sch){
+          if(typeof sch.playoffTeamCount === 'number') playoffTeams = sch.playoffTeamCount;
+          // matchup period length / playoff start vary; default week 15-ish
+          if(typeof sch.playoffMatchupPeriodLength === 'number'){ /* keep */ }
+        }
+        const rs = state.league.settings && state.league.settings.rosterSettings;
+        // ESPN divisions
+        if(state.league.settings && state.league.settings.divisionSettings) divisions = true;
+      }catch(e){}
+      if(playoffTeams >= 6) byes = 2;
+      else if(playoffTeams === 4) byes = 0;
+    }
+    // Cap byes so bracket works: e.g. 6-team → 2 byes is standard
+    if(byes > playoffTeams - 2) byes = Math.max(0, playoffTeams - 2);
+    return { playoffTeams, playoffWeekStart, byes, divisions, nTeams };
+  }
+
+  function teamScoreModel(team){
+    const scores = (team.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+    let mean = team.avgPts || 0;
+    let std = 22;
+    if(scores.length >= 2){
+      mean = scores.reduce((a,b) => a + b, 0) / scores.length;
+      const v = scores.reduce((a,b) => a + (b - mean) * (b - mean), 0) / (scores.length - 1);
+      std = Math.max(12, Math.sqrt(v));
+    } else if(mean > 0){
+      std = Math.max(15, mean * 0.18);
+    }
+    return { mean, std };
+  }
+
+  function randn(){
+    // Box-Muller
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random();
+    while(v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function simulatePlayoffOdds(sims){
+    sims = sims || 2500;
+    const settings = state.playoffSettings || detectPlayoffSettings();
+    const teams = state.teams || [];
+    if(!teams.length) return null;
+
+    const models = {};
+    teams.forEach(t => { models[t.id] = teamScoreModel(t); });
+
+    // Current standings snapshot
+    const base = teams.map(t => {
+      const w = t.wins || 0, l = t.losses || 0, ti = t.ties || 0;
+      const g = w + l + ti;
+      const pf = t.pointsFor || (t.avgPts || 0) * Math.max(g, 1);
+      return {
+        id: t.id,
+        name: t.name,
+        wins: w, losses: l, ties: ti,
+        pf,
+        winPct: g > 0 ? (w + 0.5 * ti) / g : 0
+      };
+    });
+
+    // Remaining regular-season weeks
+    let currentWeek = 1;
+    try{
+      // Prefer completed weeks count from scores
+      const weekCounts = teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length);
+      currentWeek = weekCounts.length ? Math.max(...weekCounts) : 1;
+    }catch(e){}
+    const playoffStart = settings.playoffWeekStart || 15;
+    const remaining = Math.max(0, playoffStart - 1 - currentWeek);
+
+    const counts = {
+      playoff: {},
+      bye: {},
+      title: {}
+    };
+    teams.forEach(t => {
+      counts.playoff[t.id] = 0;
+      counts.bye[t.id] = 0;
+      counts.title[t.id] = 0;
+    });
+
+    const nPlayoff = settings.playoffTeams;
+    const nBye = settings.byes || 0;
+
+    for(let s = 0; s < sims; s++){
+      const sim = base.map(b => ({
+        id: b.id,
+        wins: b.wins,
+        losses: b.losses,
+        ties: b.ties,
+        pf: b.pf
+      }));
+
+      for(let w = 0; w < remaining; w++){
+        // Pair randomly each week (simplified - not real schedule)
+        const order = sim.map((_, i) => i).sort(() => Math.random() - 0.5);
+        for(let i = 0; i + 1 < order.length; i += 2){
+          const a = sim[order[i]], b = sim[order[i + 1]];
+          const ma = models[a.id], mb = models[b.id];
+          const sa = Math.max(0, ma.mean + ma.std * randn());
+          const sb = Math.max(0, mb.mean + mb.std * randn());
+          a.pf += sa; b.pf += sb;
+          if(Math.abs(sa - sb) < 0.05){ a.ties++; b.ties++; }
+          else if(sa > sb){ a.wins++; b.losses++; }
+          else { b.wins++; a.losses++; }
+        }
+        if(order.length % 2 === 1){
+          // bye week: just add mean points
+          const solo = sim[order[order.length - 1]];
+          const m = models[solo.id];
+          solo.pf += Math.max(0, m.mean + m.std * randn() * 0.5);
+        }
+      }
+
+      sim.forEach(row => {
+        const g = row.wins + row.losses + row.ties;
+        row.winPct = g > 0 ? (row.wins + 0.5 * row.ties) / g : 0;
+      });
+      sim.sort((a, b) => b.winPct - a.winPct || b.pf - a.pf || String(a.id).localeCompare(String(b.id)));
+
+      const playoffIds = sim.slice(0, nPlayoff).map(r => r.id);
+      playoffIds.forEach(id => { counts.playoff[id]++; });
+      sim.slice(0, nBye).forEach(r => { counts.bye[r.id]++; });
+
+      // Simplified bracket: seed order, byes sit, single-elim with score draws from model
+      const bracket = sim.slice(0, nPlayoff).map(r => ({ id: r.id }));
+      // First round: bottom (nPlayoff - nBye) play, top nBye get byes
+      let active = bracket.slice(0, nBye);
+      const firstRound = bracket.slice(nBye);
+      for(let i = 0; i + 1 < firstRound.length; i += 2){
+        const a = firstRound[i], b = firstRound[i + 1];
+        const ma = models[a.id], mb = models[b.id];
+        const sa = ma.mean + ma.std * randn();
+        const sb = mb.mean + mb.std * randn();
+        active.push(sa >= sb ? a : b);
+      }
+      // If odd leftover, auto-advance
+      if(firstRound.length % 2 === 1) active.push(firstRound[firstRound.length - 1]);
+
+      while(active.length > 1){
+        const next = [];
+        // re-seed by original seed order among remaining
+        active.sort((x, y) => {
+          const ix = bracket.findIndex(z => z.id === x.id);
+          const iy = bracket.findIndex(z => z.id === y.id);
+          return ix - iy;
+        });
+        for(let i = 0; i < Math.floor(active.length / 2); i++){
+          const a = active[i];
+          const b = active[active.length - 1 - i];
+          if(!b || a.id === b.id){ next.push(a); continue; }
+          const ma = models[a.id], mb = models[b.id];
+          const sa = ma.mean + ma.std * randn();
+          const sb = mb.mean + mb.std * randn();
+          next.push(sa >= sb ? a : b);
+        }
+        if(active.length % 2 === 1 && active.length > 2){
+          // middle team gets lucky bye in odd bracket (rare)
+        }
+        // Deduplicate and progress
+        const uniq = [];
+        const seen = new Set();
+        next.forEach(t => {
+          if(!seen.has(t.id)){ seen.add(t.id); uniq.push(t); }
+        });
+        // Fallback pairwise if still too many
+        if(uniq.length === active.length && uniq.length > 1){
+          const shrink = [];
+          for(let i = 0; i + 1 < uniq.length; i += 2){
+            const a = uniq[i], b = uniq[i + 1];
+            const ma = models[a.id], mb = models[b.id];
+            shrink.push((ma.mean + ma.std * randn()) >= (mb.mean + mb.std * randn()) ? a : b);
+          }
+          if(uniq.length % 2 === 1) shrink.push(uniq[uniq.length - 1]);
+          active = shrink;
+        } else {
+          active = uniq;
+        }
+        if(active.length >= 16) break; // safety
+      }
+      if(active[0]) counts.title[active[0].id]++;
+    }
+
+    // Current seed order (no sim)
+    const currentSeed = base.slice().sort((a, b) => b.winPct - a.winPct || b.pf - a.pf);
+    currentSeed.forEach((r, i) => { r.seed = i + 1; });
+
+    return {
+      settings,
+      remaining,
+      sims,
+      currentSeed,
+      odds: teams.map(t => {
+        const seedRow = currentSeed.find(r => r.id === t.id);
+        return {
+          team: t,
+          seed: seedRow ? seedRow.seed : null,
+          record: (t.ties ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins || 0}-${t.losses || 0}`),
+          pf: seedRow ? seedRow.pf : (t.pointsFor || 0),
+          playoffPct: 100 * (counts.playoff[t.id] || 0) / sims,
+          byePct: nBye > 0 ? 100 * (counts.bye[t.id] || 0) / sims : null,
+          titlePct: 100 * (counts.title[t.id] || 0) / sims,
+          clinched: seedRow && seedRow.seed <= nPlayoff && remaining === 0,
+          eliminated: seedRow && seedRow.seed > nPlayoff && remaining === 0
+        };
+      }).sort((a, b) => (a.seed || 99) - (b.seed || 99))
+    };
+  }
+
+  function renderPlayoffs(){
+    const tbody = el('playoffs-body');
+    const meta = el('playoffs-meta');
+    const note = el('playoffs-note');
+    const intro = el('playoffs-intro');
+    if(!tbody) return;
+
+    if(!state.teams || !state.teams.length){
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+      return;
+    }
+
+    state.playoffSettings = state.playoffSettings || detectPlayoffSettings();
+    const result = simulatePlayoffOdds(2000);
+    if(!result){
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Could not simulate.</td></tr>';
+      return;
+    }
+
+    const s = result.settings;
+    if(meta){
+      meta.innerHTML = `
+        <span><strong>${s.playoffTeams}</strong> playoff teams</span>
+        <span>Playoffs start week <strong>${s.playoffWeekStart}</strong></span>
+        <span><strong>${s.byes}</strong> bye(s)</span>
+        <span><strong>${result.remaining}</strong> regular week(s) left (sim)</span>
+        <span>${result.sims.toLocaleString()} simulations</span>`;
+    }
+    if(intro){
+      intro.textContent = result.remaining > 0
+        ? 'Current seeding from record and points for. Odds from simulating remaining weeks with each team\'s scoring average and variance.'
+        : 'Regular season complete (or no weeks left in the model). Seeding and odds reflect the current table.';
+    }
+    if(note){
+      note.textContent = 'Title odds use a simplified single-elimination bracket from simulated seeds. Real schedules, injuries, and league-specific tiebreakers are not fully modeled.';
+    }
+
+    tbody.innerHTML = '';
+    result.odds.forEach((row, i) => {
+      const tr = document.createElement('tr');
+      const isMine = state.myTeamId != null && (row.team.id === state.myTeamId || String(row.team.id) === String(state.myTeamId));
+      if(isMine) tr.style.background = 'var(--accent-muted)';
+      let status = '—';
+      if(row.clinched) status = 'In';
+      else if(row.eliminated) status = 'Out';
+      else if(row.seed <= s.playoffTeams) status = 'In (proj)';
+      else status = 'Out (proj)';
+      const byeCell = row.byePct == null ? '—' : row.byePct.toFixed(0) + '%';
+      tr.innerHTML = `
+        <td><span class="rank-num">${row.seed || (i + 1)}</span></td>
+        <td class="team-name-cell">${escapeHtml(row.team.name)}${isMine ? ' <span style="color:var(--accent);font-size:11px;">you</span>' : ''}</td>
+        <td class="val-cell">${escapeHtml(row.record)}</td>
+        <td class="val-cell">${fmtPts(row.pf)}</td>
+        <td class="val-cell"><strong>${row.playoffPct.toFixed(0)}%</strong></td>
+        <td class="val-cell">${byeCell}</td>
+        <td class="val-cell">${row.titlePct.toFixed(0)}%</td>
+        <td class="val-cell">${status}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ---------- trade history + offers ---------- */
+  function playerNameFromId(pid){
+    if(state.playersMap && state.playersMap[pid]){
+      const p = state.playersMap[pid];
+      if(p.position === 'DEF') return p.team || p.last_name || String(pid);
+      return p.full_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || String(pid);
+    }
+    // Search rosters
+    for(const t of (state.teams || [])){
+      const hit = (t.roster || []).find(p => String(p.id) === String(pid));
+      if(hit) return hit.fullName;
+    }
+    // FantasyCalc index is by name not id - leave id
+    return String(pid);
+  }
+
+  function teamByRosterId(rid){
+    return (state.teams || []).find(t => t.id === rid || String(t.id) === String(rid));
+  }
+
+  function tradeSignature(sideAIds, sideBIds){
+    const a = sideAIds.map(String).sort().join(',');
+    const b = sideBIds.map(String).sort().join(',');
+    return a + '||' + b;
+  }
+
+  function isExactReverse(t1, t2){
+    // Same two teams, assets swapped
+    if(t1.rosterIds.length !== 2 || t2.rosterIds.length !== 2) return false;
+    const sameTeams =
+      (String(t1.rosterIds[0]) === String(t2.rosterIds[0]) && String(t1.rosterIds[1]) === String(t2.rosterIds[1])) ||
+      (String(t1.rosterIds[0]) === String(t2.rosterIds[1]) && String(t1.rosterIds[1]) === String(t2.rosterIds[0]));
+    if(!sameTeams) return false;
+    const sig1 = tradeSignature(t1.sideAIds, t1.sideBIds);
+    const sig2rev = tradeSignature(t2.sideBIds, t2.sideAIds);
+    const sig2 = tradeSignature(t2.sideAIds, t2.sideBIds);
+    const sig1rev = tradeSignature(t1.sideBIds, t1.sideAIds);
+    return sig1 === sig2rev || sig1 === sig2 || sig1rev === sig2;
+  }
+
+  function filterReversedTrades(trades){
+    // Sort oldest first; mark pairs that undo each other
+    const sorted = trades.slice().sort((a, b) => (a.created || 0) - (b.created || 0));
+    const drop = new Set();
+    for(let i = 0; i < sorted.length; i++){
+      if(drop.has(sorted[i].id)) continue;
+      for(let j = i + 1; j < sorted.length; j++){
+        if(drop.has(sorted[j].id)) continue;
+        if(isExactReverse(sorted[i], sorted[j])){
+          drop.add(sorted[i].id);
+          drop.add(sorted[j].id);
+          break;
+        }
+      }
+    }
+    return trades.filter(t => !drop.has(t.id)).sort((a, b) => (b.created || 0) - (a.created || 0));
+  }
+
+  function parseSleeperTrade(tx){
+    const rosterIds = (tx.roster_ids || []).slice();
+    if(rosterIds.length < 2 && tx.type === 'trade') return null;
+    const adds = tx.adds || {};
+    const drops = tx.drops || {};
+    // adds: playerId -> rosterId receiving
+    const byRoster = {};
+    rosterIds.forEach(r => { byRoster[r] = []; });
+    Object.keys(adds).forEach(pid => {
+      const rid = adds[pid];
+      if(!byRoster[rid]) byRoster[rid] = [];
+      byRoster[rid].push({ id: pid, name: playerNameFromId(pid), isPick: false });
+    });
+    (tx.draft_picks || []).forEach(dp => {
+      const rid = dp.owner_id; // new owner
+      if(!byRoster[rid]) byRoster[rid] = [];
+      const label = (dp.season || '') + ' R' + (dp.round || '?');
+      byRoster[rid].push({ id: 'pick-' + label + '-' + (dp.roster_id || ''), name: label + ' pick', isPick: true });
+    });
+    // For 2-team trades, sideA = assets received by rosterIds[0]
+    const r0 = rosterIds[0], r1 = rosterIds[1];
+    const sideA = byRoster[r0] || [];
+    const sideB = byRoster[r1] || [];
+    const sideAIds = sideA.filter(x => !x.isPick).map(x => x.id);
+    const sideBIds = sideB.filter(x => !x.isPick).map(x => x.id);
+
+    return {
+      id: String(tx.transaction_id || tx.created),
+      platform: 'sleeper',
+      status: tx.status || 'complete',
+      created: tx.status_updated || tx.created || 0,
+      leg: tx.leg,
+      rosterIds: [r0, r1],
+      teamA: teamByRosterId(r0),
+      teamB: teamByRosterId(r1),
+      assetsA: sideA, // received by team A
+      assetsB: sideB,
+      sideAIds,
+      sideBIds
+    };
+  }
+
+  async function fetchSleeperTransactions(){
+    const maxWeek = 18;
+    let weekCap = maxWeek;
+    try{
+      const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+      const nfl = await stateRes.json();
+      weekCap = Math.min(maxWeek, Math.max(1, Number(nfl.leg || nfl.week || 1) + 1));
+    }catch(e){}
+    const all = [];
+    for(let w = 1; w <= weekCap; w += 4){
+      const batch = [];
+      for(let i = w; i < w + 4 && i <= weekCap; i++) batch.push(i);
+      const results = await Promise.all(batch.map(round =>
+        robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/transactions/${round}`)
+          .then(r => r.json())
+          .catch(() => [])
+      ));
+      results.forEach(list => {
+        if(Array.isArray(list)) all.push(...list);
+      });
+    }
+    return all;
+  }
+
+  async function fetchEspnTransactions(){
+    // Best-effort: mTransactions2 / mPendingTransactions
+    const year = state.year;
+    const path = `/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${state.leagueId}?view=mTransactions2`;
+    const pendingPath = `/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${state.leagueId}?view=mPendingTransactions`;
+    const urls = [
+      `https://lm-api-reads.fantasy.espn.com${path}`,
+      `https://fantasy.espn.com${path}`
+    ];
+    const out = { complete: [], pending: [] };
+    try{
+      const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+      const data = await res.json();
+      (data.transactions || []).forEach(tx => {
+        // ESPN type: TRADE = 2 sometimes; look at type string if present
+        const type = (tx.type || tx.typeId || '').toString().toUpperCase();
+        if(type !== 'TRADE' && type !== '2' && tx.typeId !== 2) return;
+        const items = tx.items || [];
+        const byTeam = {};
+        items.forEach(it => {
+          // type 1 = add, 2 = drop roughly; for trades from is from team, to is to team
+          const to = it.toTeamId != null ? it.toTeamId : it.destinationTeamId;
+          const from = it.fromTeamId != null ? it.fromTeamId : it.sourceTeamId;
+          if(to == null) return;
+          if(!byTeam[to]) byTeam[to] = [];
+          const name = (it.playerName || (it.playerId != null ? playerNameFromId(it.playerId) : 'Player'));
+          byTeam[to].push({ id: it.playerId, name, isPick: false });
+        });
+        const teams = Object.keys(byTeam).map(Number);
+        if(teams.length < 2) return;
+        const r0 = teams[0], r1 = teams[1];
+        out.complete.push({
+          id: String(tx.id || tx.proposedDate || Math.random()),
+          platform: 'espn',
+          status: 'complete',
+          created: tx.proposedDate || tx.processDate || 0,
+          rosterIds: [r0, r1],
+          teamA: teamByRosterId(r0),
+          teamB: teamByRosterId(r1),
+          assetsA: byTeam[r0] || [],
+          assetsB: byTeam[r1] || [],
+          sideAIds: (byTeam[r0] || []).map(x => x.id),
+          sideBIds: (byTeam[r1] || []).map(x => x.id)
+        });
+      });
+    }catch(e){}
+    try{
+      const purls = [
+        `https://lm-api-reads.fantasy.espn.com${pendingPath}`,
+        `https://fantasy.espn.com${pendingPath}`
+      ];
+      const res = await robustFetchAny(purls, { timeoutMs: 12000 });
+      const data = await res.json();
+      // structure varies; collect trade-like pending
+      const list = data.transactions || data.pendingTransactions || [];
+      list.forEach(tx => {
+        const type = (tx.type || '').toString().toUpperCase();
+        if(type && type.indexOf('TRADE') < 0 && tx.typeId !== 2) return;
+        // minimal pending card
+        out.pending.push({
+          id: String(tx.id || Math.random()),
+          platform: 'espn',
+          status: 'pending',
+          created: tx.proposedDate || tx.date || Date.now(),
+          rosterIds: tx.teamIds || [],
+          teamA: null,
+          teamB: null,
+          assetsA: [],
+          assetsB: [],
+          sideAIds: [],
+          sideBIds: [],
+          raw: true
+        });
+      });
+    }catch(e){}
+    return out;
+  }
+
+  async function loadTradeHistory(){
+    const statusEl = el('history-status');
+    if(statusEl) statusEl.textContent = 'Loading trades…';
+    try{
+      let completed = [];
+      let pending = [];
+      if(state.platform === 'sleeper'){
+        const txs = await fetchSleeperTransactions();
+        txs.forEach(tx => {
+          if(tx.type !== 'trade') return;
+          const parsed = parseSleeperTrade(tx);
+          if(!parsed) return;
+          if(parsed.status === 'complete') completed.push(parsed);
+          else pending.push(parsed);
+        });
+      } else if(state.platform === 'espn'){
+        const data = await fetchEspnTransactions();
+        completed = data.complete || [];
+        pending = data.pending || [];
+      }
+      completed = filterReversedTrades(completed);
+      const weekMs = 7 * 24 * 60 * 60 * 1000;
+      const cutoff = Date.now() - weekMs;
+      pending = pending.filter(p => (p.created || 0) >= cutoff || p.created < 1e12);
+      // sleeper timestamps are ms; filter last 7 days for offers
+      pending = pending.filter(p => {
+        const ts = p.created < 1e12 ? p.created * 1000 : p.created;
+        return ts >= cutoff;
+      });
+
+      state.completedTrades = completed;
+      state.pendingOffers = pending;
+      state.historyLoaded = true;
+      if(statusEl) statusEl.textContent = completed.length + ' trade(s), ' + pending.length + ' offer(s)';
+    }catch(e){
+      if(statusEl) statusEl.textContent = 'Could not load trades';
+      state.historyLoaded = true;
+    }
+  }
+
+  function fcValueForAsset(asset){
+    if(!asset || asset.isPick) return 0;
+    if(typeof asset.value === 'number' && asset.value > 0) return asset.value;
+    // Match by name against FantasyCalc index
+    const key = normalizeName(asset.name);
+    if(state.fcIndex && state.fcIndex[key]) return state.fcIndex[key].value || 0;
+    // Match roster player by id
+    for(const t of (state.teams || [])){
+      const hit = (t.roster || []).find(p => String(p.id) === String(asset.id));
+      if(hit && hit.value) return hit.value;
+    }
+    return 0;
+  }
+
+  function analyzeCompletedTrade(trade){
+    // Rosters already reflect completed deals, so we do not re-run a roster swap.
+    // Instead: today's market value each side received, and who "won" the deal on paper.
+    const teamA = trade.teamA;
+    const teamB = trade.teamB;
+    if(!teamA || !teamB) return null;
+    const vA = (trade.assetsA || []).reduce((s, a) => s + fcValueForAsset(a), 0);
+    const vB = (trade.assetsB || []).reduce((s, a) => s + fcValueForAsset(a), 0);
+    return {
+      teamA, teamB,
+      valueA: vA,
+      valueB: vB,
+      edgeA: vA - vB,
+      edgeB: vB - vA
+    };
+  }
+
+  function renderHistory(){
+    const histList = el('history-list');
+    const offersList = el('offers-list');
+    const sel = el('history-myteam-select');
+    if(!histList) return;
+
+    if(sel){
+      sel.innerHTML = '';
+      (state.teams || []).forEach(t => {
+        const o = document.createElement('option');
+        o.value = t.id;
+        o.textContent = t.name;
+        sel.appendChild(o);
+      });
+      if(state.myTeamId != null) sel.value = state.myTeamId;
+      if(!sel._bound){
+        sel._bound = true;
+        sel.addEventListener('change', e => {
+          saveMyTeam(parseIdVal(e.target.value));
+          syncMyTeamSelectors();
+          renderHistory();
+        });
+      }
+    }
+
+    function involvesMine(trade){
+      if(state.myTeamId == null) return false;
+      return trade.rosterIds.some(r => r === state.myTeamId || String(r) === String(state.myTeamId));
+    }
+
+    function fmtDate(ts){
+      if(!ts) return '';
+      const ms = ts < 1e12 ? ts * 1000 : ts;
+      try{
+        return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      }catch(e){ return ''; }
+    }
+
+    function assetsHtml(assets){
+      if(!assets || !assets.length) return '<div class="hist-asset" style="color:var(--text-muted);">—</div>';
+      return assets.map(a => `<div class="hist-asset">${escapeHtml(a.name)}${a.isPick ? ' <span style="color:var(--text-muted)">(pick)</span>' : ''}</div>`).join('');
+    }
+
+    function impactHtml(trade){
+      const impact = analyzeCompletedTrade(trade);
+      if(!impact) return '';
+      function side(name, received, edge){
+        const cls = edge > 50 ? 'up' : edge < -50 ? 'down' : '';
+        const eStr = (edge >= 0 ? '+' : '') + fmt(edge);
+        return `<div>
+          <div class="hi-team">${escapeHtml(name)}</div>
+          <div>Got <strong>${fmt(received)}</strong> value · edge <span class="pct-cell ${cls}">${eStr}</span></div>
+        </div>`;
+      }
+      const n0 = impact.teamA.name;
+      const n1 = impact.teamB.name;
+      return `<div class="hist-impact">${side(n0, impact.valueA, impact.edgeA)}${side(n1, impact.valueB, impact.edgeB)}</div>`;
+    }
+
+    // Offers
+    if(offersList){
+      offersList.innerHTML = '';
+      if(!state.pendingOffers.length){
+        offersList.innerHTML = '<div class="hist-empty">No open offers in the last 7 days (or the host did not return pending trades).</div>';
+      } else {
+        state.pendingOffers.forEach(trade => {
+          const card = document.createElement('div');
+          card.className = 'hist-card pending' + (involvesMine(trade) ? ' mine' : '');
+          const n0 = trade.teamA ? trade.teamA.name : ('Team ' + (trade.rosterIds[0] || '?'));
+          const n1 = trade.teamB ? trade.teamB.name : ('Team ' + (trade.rosterIds[1] || '?'));
+          card.innerHTML = `
+            <div class="hist-head">
+              <div class="hist-teams">${escapeHtml(n0)} ⇄ ${escapeHtml(n1)}</div>
+              <div class="hist-date">Pending · ${fmtDate(trade.created)}</div>
+            </div>
+            <div class="hist-sides">
+              <div><div class="hist-side-label">${escapeHtml(n0)} gets</div>${assetsHtml(trade.assetsA)}</div>
+              <div class="hist-vs">for</div>
+              <div><div class="hist-side-label">${escapeHtml(n1)} gets</div>${assetsHtml(trade.assetsB)}</div>
+            </div>`;
+          offersList.appendChild(card);
+        });
+      }
+    }
+
+    // Completed
+    histList.innerHTML = '';
+    if(!state.historyLoaded){
+      histList.innerHTML = '<div class="hist-empty">Loading…</div>';
+      return;
+    }
+    if(!state.completedTrades.length){
+      histList.innerHTML = '<div class="hist-empty">No completed trades found (or reverse pairs were filtered out).</div>';
+      return;
+    }
+
+    // Show mine first optional filter - show all but highlight mine
+    state.completedTrades.forEach(trade => {
+      const card = document.createElement('div');
+      card.className = 'hist-card' + (involvesMine(trade) ? ' mine' : '');
+      const n0 = trade.teamA ? trade.teamA.name : ('Team ' + trade.rosterIds[0]);
+      const n1 = trade.teamB ? trade.teamB.name : ('Team ' + trade.rosterIds[1]);
+      card.innerHTML = `
+        <div class="hist-head">
+          <div class="hist-teams">${escapeHtml(n0)} ⇄ ${escapeHtml(n1)}</div>
+          <div class="hist-date">${fmtDate(trade.created)}${trade.leg ? ' · Week ' + trade.leg : ''}</div>
+        </div>
+        <div class="hist-sides">
+          <div><div class="hist-side-label">${escapeHtml(n0)} got</div>${assetsHtml(trade.assetsA)}</div>
+          <div class="hist-vs">⇄</div>
+          <div><div class="hist-side-label">${escapeHtml(n1)} got</div>${assetsHtml(trade.assetsB)}</div>
+        </div>
+        ${impactHtml(trade)}`;
+      histList.appendChild(card);
+    });
+  }
+
+  function syncMyTeamSelectors(){
+    const id = state.myTeamId;
+    ['waiver-myteam-select', 'history-myteam-select', 'sel-my-team', 'select-team-a'].forEach(sid => {
+      const node = el(sid);
+      if(!node || id == null) return;
+      try{ node.value = id; }catch(e){}
+    });
+    // Update drawer options
+    const drawerSel = el('sel-my-team');
+    if(drawerSel && state.teams){
+      const cur = drawerSel.value;
+      drawerSel.innerHTML = '';
+      state.teams.forEach(t => {
+        const o = document.createElement('option');
+        o.value = t.id;
+        o.textContent = t.name + (t.owner ? ' - ' + t.owner : '');
+        drawerSel.appendChild(o);
+      });
+      if(id != null) drawerSel.value = id;
+      else if(cur) drawerSel.value = cur;
+    }
   }
 
   function renderPosFilters(side){
@@ -4295,7 +5214,7 @@
 
   /* ---------- info modals (rankings + needs) ---------- */
   function openInfoModal(which){
-    ['trade','rankings','needs','waivers'].forEach(k => {
+    ['trade','rankings','needs','waivers','history','playoffs'].forEach(k => {
       const node = el('info-content-' + k);
       if(node) node.style.display = which === k ? 'block' : 'none';
     });
@@ -4306,12 +5225,40 @@
   const btnRankInfo = el('btn-rankings-info');
   const btnNeedsInfo = el('btn-needs-info');
   const btnWaiversInfo = el('btn-waivers-info');
+  const btnHistoryInfo = el('btn-history-info');
+  const btnPlayoffsInfo = el('btn-playoffs-info');
   const btnInfoClose = el('btn-info-close');
   if(btnTradeInfo) btnTradeInfo.addEventListener('click', () => openInfoModal('trade'));
   if(btnRankInfo) btnRankInfo.addEventListener('click', () => openInfoModal('rankings'));
   if(btnNeedsInfo) btnNeedsInfo.addEventListener('click', () => openInfoModal('needs'));
   if(btnWaiversInfo) btnWaiversInfo.addEventListener('click', () => openInfoModal('waivers'));
+  if(btnHistoryInfo) btnHistoryInfo.addEventListener('click', () => openInfoModal('history'));
+  if(btnPlayoffsInfo) btnPlayoffsInfo.addEventListener('click', () => openInfoModal('playoffs'));
   if(btnInfoClose) btnInfoClose.addEventListener('click', closeInfoModal);
+
+  const btnHistoryRefresh = el('btn-history-refresh');
+  if(btnHistoryRefresh){
+    btnHistoryRefresh.addEventListener('click', async () => {
+      await loadTradeHistory();
+      renderHistory();
+    });
+  }
+
+  const selMyTeam = el('sel-my-team');
+  if(selMyTeam){
+    selMyTeam.addEventListener('change', e => {
+      saveMyTeam(parseIdVal(e.target.value));
+      state.selectedTeamA = state.myTeamId;
+      const other = state.teams.find(t => t.id !== state.myTeamId);
+      if(other) state.selectedTeamB = other.id;
+      syncMyTeamSelectors();
+      populateTeamSelectors();
+      renderTradeSide('a'); renderTradeSide('b'); renderFairness();
+      renderWaivers();
+      renderHistory();
+      renderPlayoffs();
+    });
+  }
   el('info-modal').addEventListener('click', e => {
     if(e.target === el('info-modal')) closeInfoModal();
   });
@@ -4558,81 +5505,6 @@
   renderRecent();
 
 })();
-
-// 1. Fetch player adjustments from player_adjustments.json
-async function loadPlayerAdjustments() {
-  try {
-    const response = await fetch('player_adjustments.json');
-    if (!response.ok) {
-      console.warn('player_adjustments.json not found. Proceeding without adjustments.');
-      return {};
-    }
-    return await response.json();
-  } catch (error) {
-    console.warn('Could not load adjustments file:', error);
-    return {};
-  }
-}
-
-// 2. Apply adjustments to a player's base value
-function getAdjustedPlayerValue(player, adjustments) {
-  const baseValue = player.value || 0;
-  
-  // Check if player exists in adjustments file
-  const adj = adjustments[player.name] || adjustments[player.full_name];
-  if (!adj) return baseValue;
-
-  let finalValue = baseValue;
-
-  switch (adj.type) {
-    case 'multiplier':
-      finalValue = Math.round(baseValue * adj.value);
-      break;
-    case 'flat':
-      finalValue = Math.round(baseValue + adj.value);
-      break;
-    case 'override':
-      finalValue = adj.value;
-      break;
-    default:
-      finalValue = baseValue;
-  }
-
-  // Ensure value never goes below zero
-  return Math.max(0, finalValue);
-}
-
-// 3. Main Data Fetching Pipeline Example
-async function fetchAndProcessFantasyCalcData() {
-  try {
-    // Fetch adjustments & API data concurrently
-    const [adjustments, apiResponse] = await Promise.all([
-      loadPlayerAdjustments(),
-      fetch('https://api.fantasycalc.com/values/current?isDynasty=true&numQbs=1')
-    ]);
-
-    const playersData = await apiResponse.json();
-
-    // Transform player values
-    const processedPlayers = playersData.map(player => {
-      const originalValue = player.value;
-      const adjustedValue = getAdjustedPlayerValue(player, adjustments);
-
-      return {
-        ...player,
-        value: adjustedValue,              // Overwrite with adjusted value
-        originalValue: originalValue,      // Retain original FantasyCalc base value
-        isAdjusted: originalValue !== adjustedValue
-      };
-    });
-
-    console.log('Processed Players:', processedPlayers);
-    return processedPlayers;
-
-  } catch (err) {
-    console.error('Error fetching player data:', err);
-  }
-}
 </script>
 </body>
 </html>
