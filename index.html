@@ -1554,6 +1554,14 @@
         <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
         Rate my team
       </button>
+      <button class="nav-item" data-panel="panel-finder">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        Trade finder
+      </button>
+      <button class="nav-item" data-panel="panel-roster">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        Start/sit
+      </button>
 
       <div class="nav-section">Standings</div>
       <button class="nav-item" data-panel="panel-rankings">
@@ -1782,6 +1790,10 @@
       <section class="panel" id="panel-rate">
         <div class="section-title-row" style="margin-bottom:12px;">
           <div class="section-title" style="margin:0;">Rate my team</div>
+          <button type="button" class="info-btn" id="btn-rate-info" title="How it works">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+            How it works
+          </button>
         </div>
         <div class="waiver-toolbar" style="margin-bottom:14px;">
           <label class="field-label" style="margin:0;">Team</label>
@@ -1790,10 +1802,70 @@
         <div id="rate-report" class="hist-list"></div>
       </section>
 
+      <!-- ---------- TRADE FINDER ---------- -->
+      <section class="panel" id="panel-finder">
+        <div class="section-title-row" style="margin-bottom:12px;">
+          <div class="section-title" style="margin:0;">Trade finder</div>
+          <button type="button" class="info-btn" id="btn-finder-info" title="How it works">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+            How it works
+          </button>
+        </div>
+        <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;">
+          <select id="finder-myteam" style="max-width:200px;"></select>
+          <select id="finder-partner" style="max-width:200px;">
+            <option value="ALL">Any partner</option>
+          </select>
+          <select id="finder-pos" style="max-width:140px;">
+            <option value="ALL">Any position</option>
+            <option value="QB">QB</option>
+            <option value="RB">RB</option>
+            <option value="WR">WR</option>
+            <option value="TE">TE</option>
+          </select>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-finder-run">Find trades</button>
+          <span id="finder-status" style="font-size:11.5px;color:var(--text-muted);"></span>
+        </div>
+        <p class="needs-intro">Looks for 1-for-1 and 2-for-1 packages that raise your Power and do not crush the other team. Market gap stays in a fair band.</p>
+        <div id="finder-results" class="hist-list"></div>
+      </section>
+
+      <!-- ---------- START/SIT ---------- -->
+      <section class="panel" id="panel-roster">
+        <div class="section-title-row" style="margin-bottom:12px;">
+          <div class="section-title" style="margin:0;">Start/sit accuracy</div>
+          <button type="button" class="info-btn" id="btn-roster-info" title="How it works">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+            How it works
+          </button>
+        </div>
+        <p class="needs-intro" id="roster-intro">Compares who you started to the best lineup from your roster that week (by actual points when available). Shows points left on the bench and hit rate.</p>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>Weeks</th>
+                <th>Optimal %</th>
+                <th>Pts left on bench</th>
+                <th>Avg miss / wk</th>
+              </tr>
+            </thead>
+            <tbody id="roster-body"></tbody>
+          </table>
+        </div>
+        <p class="tpi-note" id="roster-note" style="margin-top:12px;"></p>
+      </section>
+
       <!-- ---------- LUCK + SOS ---------- -->
       <section class="panel" id="panel-luck">
         <div class="section-title-row" style="margin-bottom:12px;">
           <div class="section-title" style="margin:0;">Expected wins, luck &amp; schedule</div>
+          <button type="button" class="info-btn" id="btn-luck-info" title="How it works">
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+            How it works
+          </button>
         </div>
         <p class="needs-intro" id="luck-intro">Expected wins from weekly scores vs the field. Luck is actual wins minus expected. SOS uses opponents' average points for when weekly matchup data exists.</p>
         <div style="overflow-x:auto;">
@@ -2020,6 +2092,31 @@
       <h3>Odds</h3>
       <p>Each remaining week is simulated many times using each team's average score and score variance so far. Playoff spots and byes follow your league's playoff team count and bye structure. Title odds run a simplified bracket from those seeds. This is a rough model, not a forecast market.</p>
     </div>
+    
+    <div id="info-content-rate" style="display:none;">
+      <h2>Rate my team</h2>
+      <p class="info-sub">Letter grade is relative to this league only.</p>
+      <p>Power scores are not out of 100 in an absolute sense. The top team in a 12-team league might sit around 70–80 Power. Grades use your percentile rank so the best roster gets an A-band grade even if Power is 75.</p>
+      <p>Tips look at positional surplus, whether you already roster extra players at that spot, and rough Power impact of closing the gap.</p>
+    </div>
+    <div id="info-content-finder" style="display:none;">
+      <h2>Trade finder</h2>
+      <p class="info-sub">Scans 1-for-1 and 2-for-1 packages that help you without wrecking the other side.</p>
+      <p>Filters: market values stay within a fair band, your Power goes up, and the partner does not lose a huge amount of Power. Use partner and position filters to narrow the list.</p>
+    </div>
+    <div id="info-content-roster" style="display:none;">
+      <h2>Start/sit accuracy</h2>
+      <p class="info-sub">Compares actual starters to the best lineup from that week’s points.</p>
+      <p>Works best on Sleeper where weekly player points and starters are public. Points left on the bench is the gap between optimal and what was started.</p>
+    </div>
+    <div id="info-content-luck" style="display:none;">
+      <h2>Expected wins, luck &amp; SOS</h2>
+      <p class="info-sub">All-play expected wins and real-schedule strength of schedule.</p>
+      <p><strong>Expected wins:</strong> each week your score is compared to every other team’s score (all-play). Your all-play win% times games played is how many H2H wins a neutral schedule would “expect.”</p>
+      <p><strong>Luck:</strong> actual wins minus expected. Positive means you won more than your scores usually would.</p>
+      <p><strong>SOS:</strong> average points/game of every opponent you have played or still have on the schedule. Higher means a tougher path.</p>
+    </div>
+
     <button type="button" class="btn btn-primary info-close" id="btn-info-close">Got it</button>
   </div>
 </div>
@@ -2918,6 +3015,12 @@
           renderRecords();
         }
       });
+      loadScheduleGraph().then(() => {
+        if(el('app').classList.contains('show')) renderLuck();
+      });
+      loadRosterWeekData().then(() => {
+        if(el('app').classList.contains('show')) renderRosterMgmt();
+      });
     }catch(err){
       hideStatus();
       showError(err.message || 'Something went wrong loading your league.');
@@ -2995,6 +3098,8 @@
     renderRecords();
     renderRateTeam();
     renderLuck();
+    setupFinderControls();
+    renderRosterMgmt();
   }
 
   let waiverPosFilter = 'ALL';
@@ -4116,17 +4221,18 @@
   }
 
   /* ---------- rate my team ---------- */
-  function letterGrade(score0to100){
-    if(score0to100 >= 93) return 'A';
-    if(score0to100 >= 90) return 'A-';
-    if(score0to100 >= 87) return 'B+';
-    if(score0to100 >= 83) return 'B';
-    if(score0to100 >= 80) return 'B-';
-    if(score0to100 >= 77) return 'C+';
-    if(score0to100 >= 73) return 'C';
-    if(score0to100 >= 70) return 'C-';
-    if(score0to100 >= 67) return 'D+';
-    if(score0to100 >= 60) return 'D';
+  function letterFromPercentile(pct){
+    // pct = 0..100, relative to this league only
+    if(pct >= 90) return 'A';
+    if(pct >= 80) return 'A-';
+    if(pct >= 70) return 'B+';
+    if(pct >= 60) return 'B';
+    if(pct >= 50) return 'B-';
+    if(pct >= 40) return 'C+';
+    if(pct >= 30) return 'C';
+    if(pct >= 20) return 'C-';
+    if(pct >= 12) return 'D+';
+    if(pct >= 5) return 'D';
     return 'F';
   }
 
@@ -4141,16 +4247,14 @@
 
     const levels = computeReplacementLevels();
     const { starterRV, counts, flexElig, sfElig } = levels;
-    const { starterIds } = optimalStarterLineup(team, counts, flexElig, sfElig);
-    const starters = (team.roster || []).filter(p => starterIds.has(p.id));
-    const bench = (team.roster || []).filter(p => !starterIds.has(p.id));
-
-    const posSurplus = { QB:0, RB:0, WR:0, TE:0 };
-    (team.roster || []).forEach(p => {
-      if(!posSurplus.hasOwnProperty(p.position)) return;
-      const rv = starterRV[p.position] != null ? starterRV[p.position] : 0;
-      posSurplus[p.position] += Math.max(0, (p.value || 0) - rv);
-    });
+    const starterSlots = {
+      QB: counts.QB || 0,
+      RB: (counts.RB || 0),
+      WR: (counts.WR || 0),
+      TE: counts.TE || 0
+    };
+    // Rough starter demand including flex: flex usually wants RB/WR more than TE
+    const needTe = (counts.TE || 0) + ((counts.FLEX || 0) > 0 ? 0.3 : 0);
 
     const medians = {
       power: medianOf(rows.map(r => r.power)),
@@ -4162,56 +4266,96 @@
       TE: medianOf(rows.map(r => r.TE))
     };
 
+    const sorted = rows.slice().sort((a,b) => b.power - a.power);
+    const rank = sorted.findIndex(r => r.team.id === team.id) + 1;
+    const n = rows.length;
+    // Percentile within this league (top team ~100, bottom ~0)
+    const percentile = n <= 1 ? 50 : Math.round(100 * (n - rank) / (n - 1));
+    const grade = letterFromPercentile(percentile);
     const power = row.power;
-    const grade = letterGrade(power);
+
     const strengths = [];
     const weaknesses = [];
     const tips = [];
 
-    [['QB','QB'],['RB','RB'],['WR','WR'],['TE','TE']].forEach(([key, label]) => {
-      const val = row[key];
+    function posGap(key){
+      const val = row[key] || 0;
       const med = medians[key] || 0;
-      const pct = med > 0 ? ((val / med) - 1) * 100 : (val > 0 ? 50 : 0);
-      if(pct > 15) strengths.push(label + ' depth is strong vs the league (+' + pct.toFixed(0) + '% surplus)');
-      else if(pct < -15){
-        weaknesses.push(label + ' is a clear gap (' + pct.toFixed(0) + '% vs median)');
-        tips.push('Target ' + label + ' on waivers or in trades; check the Waivers and Team needs tabs.');
+      if(med <= 0) return val > 0 ? 20 : 0;
+      return ((val / med) - 1) * 100;
+    }
+
+    const gaps = {
+      QB: posGap('QB'),
+      RB: posGap('RB'),
+      WR: posGap('WR'),
+      TE: posGap('TE')
+    };
+
+    // Count how many useful players at each pos on roster
+    const posCount = { QB:0, RB:0, WR:0, TE:0 };
+    (team.roster || []).forEach(p => {
+      if(posCount.hasOwnProperty(p.position) && (p.value || 0) > 0) posCount[p.position]++;
+    });
+
+    Object.keys(gaps).forEach(pos => {
+      const g = gaps[pos];
+      if(g > 20) strengths.push(pos + ' is a real strength (about ' + Math.round(g) + '% above league median surplus).');
+      else if(g < -20){
+        weaknesses.push(pos + ' is soft versus the rest of the league (~' + Math.round(g) + '% vs median).');
       }
     });
 
     const starterPct = medians.starter > 0 ? ((row.starterVor / medians.starter) - 1) * 100 : 0;
     const benchPct = medians.bench > 0 ? ((row.depthVor / medians.bench) - 1) * 100 : 0;
-    if(starterPct > 10) strengths.push('Starting lineup grades out above league average');
-    else if(starterPct < -10){
-      weaknesses.push('Starting lineup is below median');
-      tips.push('Upgrade a flex or marginal starter before stacking bench depth.');
-    }
-    if(benchPct > 15) strengths.push('Bench quality is a real asset');
-    else if(benchPct < -15){
-      weaknesses.push('Thin bench / streamer-heavy depth');
-      tips.push('Add handcuffs or upside stashes at your weakest positions.');
+    if(starterPct > 12) strengths.push('Your starting lineup is clearly above the pack.');
+    else if(starterPct < -12) weaknesses.push('The starting unit is the main drag on Power.');
+    if(benchPct > 20) strengths.push('Bench depth is better than most teams.');
+    else if(benchPct < -20) weaknesses.push('Bench is thin once injuries hit.');
+
+    // Tips: only push a position if it is a real hole AND you are not already over-rostered there
+    const rankedGaps = Object.keys(gaps).map(p => ({ p, g: gaps[p] })).sort((a,b) => a.g - b.g);
+    const worst = rankedGaps[0];
+    if(worst && worst.g < -15){
+      const overRostered =
+        (worst.p === 'TE' && posCount.TE >= 2 && needTe <= 1.3) ||
+        (worst.p === 'QB' && posCount.QB >= (state.numQBs === 2 ? 3 : 2));
+      if(overRostered){
+        tips.push(
+          worst.p + ' surplus is low, but you already roster multiple ' + worst.p +
+          's. A pure add is less useful than trading a ' + worst.p + ' plus depth for an upgrade at RB/WR, or swapping into a better starter.'
+        );
+      } else {
+        // Estimate rough Power lift from closing half the gap toward median
+        const lift = Math.min(6, Math.max(1, Math.round(Math.abs(worst.g) / 12)));
+        tips.push(
+          'Biggest lever is ' + worst.p + '. Closing even half that gap is worth roughly +' + lift +
+          ' Power in a league this size (you are #' + rank + ' at ' + power.toFixed(1) + ' now).'
+        );
+      }
     }
 
-    const g = (team.wins||0)+(team.losses||0)+(team.ties||0);
-    if(g >= 3 && row.avgPts != null){
-      const avgMed = medianOf(rows.map(r => r.avgPts).filter(v => v > 0));
-      if(avgMed > 0 && row.avgPts > avgMed * 1.08) strengths.push('Scoring average is running hot');
-      if(avgMed > 0 && row.avgPts < avgMed * 0.92) weaknesses.push('Scoring average lags the field');
+    if(starterPct < -10 && benchPct > 10){
+      tips.push('You are carrying bench value while the lineup lags. Move a bench piece for a starter upgrade even if the name is less flashy.');
+    }
+    if(starterPct > 10 && benchPct < -15){
+      tips.push('Starters are fine; the risk is injuries. One solid RB/WR handcuff or bye-week piece would stabilize you without blowing up the lineup.');
     }
 
-    if(!strengths.length) strengths.push('No single standout category yet - roster is near league middle');
-    if(!weaknesses.length) weaknesses.push('No glaring positional hole relative to the league median');
-    if(!tips.length) tips.push('Hold the line and shop for small upgrades at your least strong position.');
+    if(rank <= 3){
+      tips.push('You are already near the top of this league on paper. Shop for schedule-proofing (bye weeks, handcuffs) more than splashy upside.');
+    } else if(rank >= n - 1){
+      tips.push('This roster needs a real swing, not nickels. Look at Trade finder for packages that raise your Power without asking the other side to gift you a win.');
+    }
 
-    // Rank among league
-    const sorted = rows.slice().sort((a,b) => b.power - a.power);
-    const rank = sorted.findIndex(r => r.team.id === team.id) + 1;
+    if(!strengths.length) strengths.push('Nothing jumps off the sheet; you are close to the league middle on most positions.');
+    if(!weaknesses.length) weaknesses.push('No single position is a disaster relative to this league.');
+    if(!tips.length) tips.push('Small upgrades at your weakest skill position are enough; you do not need a full rebuild.');
 
     return {
-      team, grade, power, rank, n: rows.length,
+      team, grade, power, rank, n, percentile,
       strengths, weaknesses, tips,
-      starterPct, benchPct,
-      posSurplus
+      starterPct, benchPct, gaps
     };
   }
 
@@ -4250,14 +4394,17 @@
       return;
     }
 
-    const color = report.power >= 70 ? 'var(--accent)' : report.power >= 50 ? 'var(--gold)' : 'var(--red)';
+    const color = report.percentile >= 70 ? 'var(--accent)' : report.percentile >= 40 ? 'var(--gold)' : 'var(--red)';
     box.innerHTML = `<div class="rate-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
         <div>
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">${escapeHtml(report.team.name)}</div>
           <div class="rate-grade" style="color:${color};">${report.grade}</div>
           <div style="font-size:13px;color:var(--text-secondary);margin-top:6px;">
-            Power ${report.power.toFixed(1)} · Rank ${report.rank} of ${report.n}
+            Power ${report.power.toFixed(1)} · #${report.rank} of ${report.n} · ${report.percentile}th percentile in this league
+          </div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+            Grade is relative to your league, not a perfect 100 Power score. Top team gets the A band even if Power is 75.
           </div>
         </div>
       </div>
@@ -4277,6 +4424,76 @@
   }
 
   /* ---------- luck + SOS ---------- */
+  // Schedule graph: rosterId -> { past: [oppId], future: [oppId] }
+  let scheduleCache = null;
+
+  async function loadScheduleGraph(){
+    const graph = {};
+    (state.teams || []).forEach(t => { graph[t.id] = { past: [], future: [] }; });
+    try{
+      if(state.platform === 'sleeper'){
+        let cur = 1, maxW = 14;
+        try{
+          const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+          const nfl = await stateRes.json();
+          cur = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || 1)));
+          const ps = (state.playoffSettings || detectPlayoffSettings()).playoffWeekStart || 15;
+          maxW = Math.max(cur, ps - 1);
+        }catch(e){}
+        for(let w = 1; w <= maxW; w += 4){
+          const batch = [];
+          for(let i = w; i < w + 4 && i <= maxW; i++) batch.push(i);
+          const results = await Promise.all(batch.map(week =>
+            robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`)
+              .then(r => r.json()).catch(() => [])
+          ));
+          results.forEach((list, idx) => {
+            const week = batch[idx];
+            if(!Array.isArray(list)) return;
+            const byM = {};
+            list.forEach(m => {
+              if(m.matchup_id == null) return;
+              if(!byM[m.matchup_id]) byM[m.matchup_id] = [];
+              byM[m.matchup_id].push(m.roster_id);
+            });
+            Object.values(byM).forEach(pair => {
+              if(pair.length < 2) return;
+              const a = pair[0], b = pair[1];
+              if(!graph[a]) graph[a] = { past: [], future: [] };
+              if(!graph[b]) graph[b] = { past: [], future: [] };
+              const bucket = week < cur ? 'past' : (week === cur ? 'past' : 'future');
+              // treat current week as past once scores exist
+              graph[a][bucket].push(b);
+              graph[b][bucket].push(a);
+            });
+          });
+        }
+      } else if(state.platform === 'espn' && state.year){
+        const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchup`;
+        const urls = [
+          `https://lm-api-reads.fantasy.espn.com${path}`,
+          `https://fantasy.espn.com${path}`
+        ];
+        const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+        const data = await res.json();
+        const cur = data.scoringPeriodId || (data.status && data.status.currentMatchupPeriod) || 1;
+        (data.schedule || []).forEach(game => {
+          const period = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
+          if(period == null || !game.home || !game.away) return;
+          const a = game.home.teamId, b = game.away.teamId;
+          if(a == null || b == null) return;
+          if(!graph[a]) graph[a] = { past: [], future: [] };
+          if(!graph[b]) graph[b] = { past: [], future: [] };
+          const bucket = period <= cur ? 'past' : 'future';
+          graph[a][bucket].push(b);
+          graph[b][bucket].push(a);
+        });
+      }
+    }catch(e){}
+    scheduleCache = graph;
+    return graph;
+  }
+
   function renderLuck(){
     const tbody = el('luck-body');
     const note = el('luck-note');
@@ -4287,69 +4504,51 @@
       return;
     }
 
-    // Expected wins: for each completed week, 1 if score > league median that week, 0.5 if tie-ish
+    // All-play expected wins (standard method):
+    // Each week, if you scored higher than K other teams, that week is K wins in all-play.
+    // Exp W = all-play wins / (n-1) * gamesPlayed  (same as all-play% * H2H games)
+    const nTeams = state.teams.length;
     const maxWeeks = Math.max(0, ...state.teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length));
-    const weekMedians = [];
-    for(let w = 0; w < maxWeeks; w++){
-      const scores = state.teams.map(t => {
-        const s = (t.weeklyScores || [])[w];
-        return (typeof s === 'number' && s > 0) ? s : null;
-      }).filter(v => v != null);
-      weekMedians[w] = scores.length ? medianOf(scores) : null;
-    }
 
-    // SOS: average of opponents' season avgPts when we have matchup-level data is hard without full schedule.
-    // Proxy: inverse of own scoring luck isn't SOS. Use residual: teams that faced high-scoring weeks
-    // For Sleeper/ESPN without full remaining schedule stored, SOS ≈ league-average PF of teams
-    // you are "behind" in ranking volatility - simpler proxy: variance of weekly scores of the field
-    // Better proxy with available data: opponent PF from records is unavailable.
-    // Use: expected win% vs actual as luck; SOS = how hard your path looks via average of all other teams' avg (same for all) - useless.
-    // Practical SOS with weekly scores only: rank teams by "all-play" record (each week, wins vs every other team's score that week).
-    // All-play wins / possible = strength-independent measure; SOS can be: your opponents' all-play win% if we had schedule.
-    // Without schedule: report all-play expected wins and luck; SOS column = average weekly score of the field excluding you (weak).
+    const avgPtsMap = {};
+    state.teams.forEach(t => {
+      const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+      avgPtsMap[t.id] = t.avgPts || (scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0);
+    });
+
+    const graph = scheduleCache || {};
 
     const rows = state.teams.map(t => {
       const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
-      let expW = 0;
       let allPlayW = 0, allPlayG = 0;
       scores.forEach((s, w) => {
-        const med = weekMedians[w];
-        if(med != null){
-          if(s > med + 0.05) expW += 1;
-          else if(s < med - 0.05) expW += 0;
-          else expW += 0.5;
-        }
-        // all-play: compare to every other team that week
         state.teams.forEach(o => {
           if(o.id === t.id) return;
           const os = (o.weeklyScores || [])[w];
-          if(typeof os !== 'number' || os <= 0) return;
+          if(typeof os !== 'number' || !(os > 0)) return;
           allPlayG++;
           if(s > os + 0.05) allPlayW += 1;
           else if(Math.abs(s - os) <= 0.05) allPlayW += 0.5;
         });
       });
-      // Prefer all-play expected wins scaled to games played when we have enough pairwise data
       const games = (t.wins||0)+(t.losses||0)+(t.ties||0);
-      let expectedWins = expW;
-      if(allPlayG > 0 && games > 0){
-        const allPlayPct = allPlayW / allPlayG;
-        expectedWins = allPlayPct * games;
-      }
+      const allPlayPct = allPlayG > 0 ? allPlayW / allPlayG : 0;
+      // Expected H2H wins if opponents were a random draw from the league each week
+      const expectedWins = games > 0 ? allPlayPct * games : allPlayPct * scores.length;
       const actualW = (t.wins||0) + 0.5*(t.ties||0);
       const luck = actualW - expectedWins;
 
-      // SOS proxy: average of weekly league median (same path difficulty if everyone plays same weeks)
-      // Better: for each week, "difficulty" = how high the median was; average those for weeks you played.
-      // Differential SOS: mean opponent score when we only have H2H from current week cache is incomplete.
-      // Use: all-play win% inverted as "how often the field beats you" is related to strength not schedule.
-      // Schedule strength without schedule data: leave SOS as relative difficulty of weeks played
-      // (mean of week medians for weeks with a score) - higher median weeks = harder scoring environment.
-      let sos = 0, sosN = 0;
-      scores.forEach((s, w) => {
-        if(weekMedians[w] != null){ sos += weekMedians[w]; sosN++; }
+      // SOS: mean season avg of opponents played + opponents still to play
+      const node = graph[t.id] || { past: [], future: [] };
+      const oppIds = [...node.past, ...node.future];
+      let sosSum = 0, sosN = 0;
+      oppIds.forEach(oid => {
+        if(avgPtsMap[oid] != null && avgPtsMap[oid] > 0){
+          sosSum += avgPtsMap[oid];
+          sosN++;
+        }
       });
-      const sosVal = sosN ? sos / sosN : null;
+      const sosVal = sosN ? sosSum / sosN : null;
 
       return {
         team: t,
@@ -4357,22 +4556,27 @@
         expW: expectedWins,
         luck,
         sos: sosVal,
+        sosN,
         pf: t.pointsFor || scores.reduce((a,b)=>a+b,0),
-        avg: t.avgPts || (scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0),
+        avg: avgPtsMap[t.id],
         games,
-        allPlayPct: allPlayG > 0 ? allPlayW / allPlayG : null
+        allPlayPct,
+        allPlayRecord: allPlayG ? (allPlayW.toFixed(0) + '-' + (allPlayG - allPlayW).toFixed(0)) : '—'
       };
     });
 
     rows.sort((a,b) => b.expW - a.expW || b.pf - a.pf);
 
     if(intro){
-      intro.textContent = maxWeeks >= 2
-        ? 'Expected wins use all-play results (your score vs every other team each week), scaled to games played. Luck = actual wins − expected. SOS here is the average league-median score in weeks you played (higher = tougher scoring environment).'
-        : 'Need at least a couple completed weeks for expected wins and luck to mean much.';
+      intro.textContent = maxWeeks >= 1
+        ? 'Expected wins = all-play win% × games played. All-play: each week you "play" every other team; beat their score and it counts as a win. Luck = actual wins − expected. SOS = average points/game of every opponent you have played or still play.'
+        : 'Need completed weekly scores before expected wins and luck are useful.';
     }
     if(note){
-      note.textContent = 'True strength of schedule needs the full remaining/past opponent list from the host. Until that is wired, SOS reflects weekly scoring environment, not specific opponents.';
+      const hasSched = rows.some(r => r.sosN > 0);
+      note.textContent = hasSched
+        ? 'SOS uses the real matchup schedule from your host when available. Higher SOS means you face (or faced) higher-scoring teams on average.'
+        : 'Schedule not loaded yet — open this tab again after matchups load, or hit Refresh. Until then SOS may be blank.';
     }
 
     tbody.innerHTML = '';
@@ -4391,6 +4595,296 @@
         <td class="val-cell">${r.sos != null ? fmtPts(r.sos) : '—'}</td>
         <td class="val-cell">${fmtPts(r.pf)}</td>
         <td class="val-cell">${fmtPts(r.avg)}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+
+  /* ---------- trade finder ---------- */
+  function runTradeFinder(){
+    const status = el('finder-status');
+    const results = el('finder-results');
+    if(!results) return;
+    const myId = parseIdVal(el('finder-myteam') && el('finder-myteam').value);
+    const partnerFilter = el('finder-partner') && el('finder-partner').value;
+    const posFilter = el('finder-pos') && el('finder-pos').value;
+    const me = state.teams.find(t => t.id === myId || String(t.id) === String(myId));
+    if(!me){
+      if(status) status.textContent = 'Pick your team';
+      return;
+    }
+    if(!state._powerContext) buildPowerRows();
+    if(status) status.textContent = 'Searching…';
+
+    const partners = state.teams.filter(t => t.id !== me.id && (partnerFilter === 'ALL' || String(t.id) === String(partnerFilter)));
+    const hits = [];
+
+    function topPlayers(team, n, requirePos){
+      return (team.roster || [])
+        .filter(p => p.matched && (p.value || 0) > 0 && !p.isIR)
+        .filter(p => !requirePos || posFilter === 'ALL' || p.position === posFilter)
+        .slice()
+        .sort((a,b) => (b.value||0) - (a.value||0))
+        .slice(0, n);
+    }
+
+    partners.forEach(partner => {
+      const mine = topPlayers(me, 8, false);
+      const theirs = topPlayers(partner, 8, true);
+      // 1-for-1
+      mine.forEach(a => {
+        theirs.forEach(b => {
+          if(posFilter !== 'ALL' && a.position !== posFilter && b.position !== posFilter) return;
+          // I send a, get b
+          const tradeA = [{ id:a.id, isPick:false, name:a.fullName, position:a.position, value:a.value }];
+          const tradeB = [{ id:b.id, isPick:false, name:b.fullName, position:b.position, value:b.value }];
+          const valGap = Math.abs((a.value||0) - (b.value||0));
+          const maxV = Math.max(a.value||0, b.value||0, 1);
+          if(valGap / maxV > 0.22) return; // outside fair band
+          const impact = simulateTradePower(me, partner, tradeA, tradeB);
+          if(!impact) return;
+          if(impact.a.delta <= 0.15) return; // must help me
+          if(impact.b.delta < -1.5) return; // do not crush them
+          hits.push({
+            kind: '1-for-1',
+            me, partner,
+            send: [a], recv: [b],
+            deltaMe: impact.a.delta,
+            deltaThem: impact.b.delta,
+            rankMe: impact.a,
+            fair: valGap / maxV
+          });
+        });
+      });
+      // 2-for-1: I send two, get one star
+      for(let i = 0; i < mine.length; i++){
+        for(let j = i + 1; j < mine.length; j++){
+          theirs.slice(0, 5).forEach(b => {
+            if(posFilter !== 'ALL' && b.position !== posFilter) return;
+            const a1 = mine[i], a2 = mine[j];
+            const sendVal = (a1.value||0)+(a2.value||0);
+            const valGap = Math.abs(sendVal - (b.value||0));
+            const maxV = Math.max(sendVal, b.value||0, 1);
+            if(valGap / maxV > 0.25) return;
+            const tradeA = [
+              { id:a1.id, isPick:false, name:a1.fullName, position:a1.position, value:a1.value },
+              { id:a2.id, isPick:false, name:a2.fullName, position:a2.position, value:a2.value }
+            ];
+            const tradeB = [{ id:b.id, isPick:false, name:b.fullName, position:b.position, value:b.value }];
+            const impact = simulateTradePower(me, partner, tradeA, tradeB);
+            if(!impact) return;
+            if(impact.a.delta <= 0.2) return;
+            if(impact.b.delta < -1.8) return;
+            hits.push({
+              kind: '2-for-1',
+              me, partner,
+              send: [a1, a2], recv: [b],
+              deltaMe: impact.a.delta,
+              deltaThem: impact.b.delta,
+              rankMe: impact.a,
+              fair: valGap / maxV
+            });
+          });
+        }
+      }
+    });
+
+    hits.sort((a,b) => (b.deltaMe + Math.min(b.deltaThem, 2)) - (a.deltaMe + Math.min(a.deltaThem, 2)));
+    const top = hits.slice(0, 25);
+    if(status) status.textContent = top.length ? (top.length + ' packages') : 'No fair two-way fits found';
+    results.innerHTML = '';
+    if(!top.length){
+      results.innerHTML = '<div class="hist-empty">No packages cleared the bar (helps you, does not wreck them, market gap under ~22%). Try another partner or clear the position filter.</div>';
+      return;
+    }
+    top.forEach(h => {
+      const card = document.createElement('div');
+      card.className = 'hist-card';
+      const sendStr = h.send.map(p => p.fullName + ' (' + p.position + ')').join(' + ');
+      const recvStr = h.recv.map(p => p.fullName + ' (' + p.position + ')').join(' + ');
+      const dMe = (h.deltaMe >= 0 ? '+' : '') + h.deltaMe.toFixed(1);
+      const dThem = (h.deltaThem >= 0 ? '+' : '') + h.deltaThem.toFixed(1);
+      card.innerHTML = `
+        <div class="hist-head">
+          <div class="hist-teams">${escapeHtml(h.me.name)} ⇄ ${escapeHtml(h.partner.name)} · ${h.kind}</div>
+          <div class="hist-date">You ${dMe} Power · Them ${dThem}</div>
+        </div>
+        <div class="hist-sides">
+          <div><div class="hist-side-label">You send</div><div class="hist-asset">${escapeHtml(sendStr)}</div></div>
+          <div class="hist-vs">for</div>
+          <div><div class="hist-side-label">You get</div><div class="hist-asset">${escapeHtml(recvStr)}</div></div>
+        </div>`;
+      results.appendChild(card);
+    });
+  }
+
+  function setupFinderControls(){
+    const mine = el('finder-myteam');
+    const partner = el('finder-partner');
+    if(!mine || !state.teams) return;
+    mine.innerHTML = '';
+    partner.innerHTML = '<option value="ALL">Any partner</option>';
+    state.teams.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.id; o.textContent = t.name;
+      mine.appendChild(o);
+      const o2 = document.createElement('option');
+      o2.value = t.id; o2.textContent = t.name;
+      partner.appendChild(o2);
+    });
+    if(state.myTeamId != null) mine.value = state.myTeamId;
+    const btn = el('btn-finder-run');
+    if(btn && !btn._bound){
+      btn._bound = true;
+      btn.addEventListener('click', () => runTradeFinder());
+    }
+  }
+
+  /* ---------- start/sit accuracy ---------- */
+  let rosterWeekCache = null; // { week: [ { roster_id, starters, players_points } ] }
+
+  async function loadRosterWeekData(){
+    const byTeam = {};
+    (state.teams || []).forEach(t => { byTeam[t.id] = []; });
+    if(state.platform !== 'sleeper'){
+      rosterWeekCache = byTeam;
+      return byTeam;
+    }
+    let cur = 1;
+    try{
+      const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+      const nfl = await stateRes.json();
+      cur = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || 1)));
+    }catch(e){}
+    for(let w = 1; w < cur; w += 4){
+      const batch = [];
+      for(let i = w; i < w + 4 && i < cur; i++) batch.push(i);
+      const results = await Promise.all(batch.map(week =>
+        robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`)
+          .then(r => r.json()).catch(() => [])
+      ));
+      results.forEach((list, idx) => {
+        const week = batch[idx];
+        if(!Array.isArray(list)) return;
+        list.forEach(m => {
+          if(m.roster_id == null) return;
+          if(!byTeam[m.roster_id]) byTeam[m.roster_id] = [];
+          byTeam[m.roster_id].push({
+            week,
+            starters: m.starters || [],
+            players_points: m.players_points || {},
+            points: m.points
+          });
+        });
+      });
+    }
+    rosterWeekCache = byTeam;
+    return byTeam;
+  }
+
+  function optimalLineupByPoints(rosterPlayers, pointsMap, counts, flexElig, sfElig){
+    // rosterPlayers: [{id, position}], pointsMap id->pts
+    const players = rosterPlayers.map(p => ({
+      id: p.id,
+      position: p.position,
+      pts: typeof pointsMap[p.id] === 'number' ? pointsMap[p.id] : (typeof pointsMap[String(p.id)] === 'number' ? pointsMap[String(p.id)] : 0)
+    })).sort((a,b) => b.pts - a.pts);
+    const used = new Set();
+    let total = 0;
+    function take(elig, n){
+      let took = 0;
+      for(const pl of players){
+        if(took >= n) break;
+        if(used.has(pl.id)) continue;
+        if(!elig.includes(pl.position)) continue;
+        used.add(pl.id);
+        total += pl.pts;
+        took++;
+      }
+    }
+    take(['QB'], counts.QB || 0);
+    take(['RB'], counts.RB || 0);
+    take(['WR'], counts.WR || 0);
+    take(['TE'], counts.TE || 0);
+    take(['DST'], counts.DST || 0);
+    take(['K'], counts.K || 0);
+    take(sfElig || ['QB','RB','WR','TE'], counts.SF || 0);
+    take(flexElig || ['RB','WR','TE'], counts.FLEX || 0);
+    return { total, starterIds: used };
+  }
+
+  function renderRosterMgmt(){
+    const tbody = el('roster-body');
+    const note = el('roster-note');
+    const intro = el('roster-intro');
+    if(!tbody) return;
+    if(!state.teams || !state.teams.length){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+      return;
+    }
+    const counts = getStarterCounts();
+    const data = rosterWeekCache || {};
+    const rows = state.teams.map(t => {
+      const weeks = data[t.id] || data[String(t.id)] || [];
+      let optimalHits = 0, totalWeeks = 0, missed = 0;
+      weeks.forEach(w => {
+        const ptsMap = w.players_points || {};
+        if(!Object.keys(ptsMap).length) return;
+        const rosterPlayers = (t.roster || []).map(p => ({ id: p.id, position: p.position }));
+        // Also include anyone who scored that week even if not on current roster
+        Object.keys(ptsMap).forEach(pid => {
+          if(!rosterPlayers.find(p => String(p.id) === String(pid))){
+            const pl = state.playersMap && state.playersMap[pid];
+            rosterPlayers.push({ id: pid, position: pl ? (pl.position === 'DEF' ? 'DST' : pl.position) : 'WR' });
+          }
+        });
+        const opt = optimalLineupByPoints(rosterPlayers, ptsMap, counts, counts.flexEligible, counts.sfEligible);
+        let startedPts = 0;
+        (w.starters || []).forEach(sid => {
+          if(!sid) return;
+          const v = ptsMap[sid] != null ? ptsMap[sid] : ptsMap[String(sid)];
+          if(typeof v === 'number') startedPts += v;
+        });
+        // If starters empty, use total points as started
+        if(!(w.starters || []).some(Boolean) && typeof w.points === 'number') startedPts = w.points;
+        const miss = Math.max(0, opt.total - startedPts);
+        missed += miss;
+        totalWeeks++;
+        if(miss < 1.5) optimalHits++;
+      });
+      return {
+        team: t,
+        weeks: totalWeeks,
+        optPct: totalWeeks ? 100 * optimalHits / totalWeeks : null,
+        missed,
+        avgMiss: totalWeeks ? missed / totalWeeks : null
+      };
+    });
+    rows.sort((a,b) => (b.optPct||0) - (a.optPct||0) || (a.avgMiss||99) - (b.avgMiss||99));
+
+    if(intro){
+      intro.textContent = state.platform === 'sleeper'
+        ? 'For each finished week we rebuild the best lineup from that week’s actual points and compare it to who was started. Optimal % is weeks within ~1.5 pts of perfect.'
+        : 'Start/sit needs weekly player points from the host. Sleeper leagues get the full report; ESPN support is limited without box-score views.';
+    }
+    if(note){
+      note.textContent = rows.some(r => r.weeks > 0)
+        ? 'Points left on the bench is the season total gap between optimal and actual starters.'
+        : 'No weekly starter point data yet. Load a Sleeper league midseason or refresh after week 1 finals.';
+    }
+
+    tbody.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      const isMine = state.myTeamId != null && (r.team.id === state.myTeamId || String(r.team.id) === String(state.myTeamId));
+      if(isMine) tr.style.background = 'var(--accent-muted)';
+      tr.innerHTML = `
+        <td><span class="rank-num">${i+1}</span></td>
+        <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
+        <td class="val-cell">${r.weeks || '—'}</td>
+        <td class="val-cell">${r.optPct != null ? r.optPct.toFixed(0) + '%' : '—'}</td>
+        <td class="val-cell">${r.weeks ? fmtPts(r.missed) : '—'}</td>
+        <td class="val-cell">${r.avgMiss != null ? fmtPts(r.avgMiss) : '—'}</td>`;
       tbody.appendChild(tr);
     });
   }
@@ -6131,8 +6625,16 @@
         refreshMatchups();
       }
       if(btn.dataset.panel === 'panel-rate') renderRateTeam();
-      if(btn.dataset.panel === 'panel-luck') renderLuck();
+      if(btn.dataset.panel === 'panel-luck'){
+        if(!scheduleCache) loadScheduleGraph().then(() => renderLuck());
+        else renderLuck();
+      }
       if(btn.dataset.panel === 'panel-records') renderRecords();
+      if(btn.dataset.panel === 'panel-finder') setupFinderControls();
+      if(btn.dataset.panel === 'panel-roster'){
+        if(!rosterWeekCache) loadRosterWeekData().then(() => renderRosterMgmt());
+        else renderRosterMgmt();
+      }
     });
   });
 
@@ -6161,7 +6663,7 @@
 
   /* ---------- info modals (rankings + needs) ---------- */
   function openInfoModal(which){
-    ['trade','rankings','needs','waivers','history','playoffs'].forEach(k => {
+    ['trade','rankings','needs','waivers','history','playoffs','rate','finder','roster','luck'].forEach(k => {
       const node = el('info-content-' + k);
       if(node) node.style.display = which === k ? 'block' : 'none';
     });
@@ -6181,6 +6683,15 @@
   if(btnWaiversInfo) btnWaiversInfo.addEventListener('click', () => openInfoModal('waivers'));
   if(btnHistoryInfo) btnHistoryInfo.addEventListener('click', () => openInfoModal('history'));
   if(btnPlayoffsInfo) btnPlayoffsInfo.addEventListener('click', () => openInfoModal('playoffs'));
+  const btnRateInfo = el('btn-rate-info');
+  const btnFinderInfo = el('btn-finder-info');
+  const btnRosterInfo = el('btn-roster-info');
+  if(btnRateInfo) btnRateInfo.addEventListener('click', () => openInfoModal('rate'));
+  if(btnFinderInfo) btnFinderInfo.addEventListener('click', () => openInfoModal('finder'));
+  if(btnRosterInfo) btnRosterInfo.addEventListener('click', () => openInfoModal('roster'));
+  const btnLuckInfo = el('btn-luck-info');
+  if(btnLuckInfo) btnLuckInfo.addEventListener('click', () => openInfoModal('luck'));
+
   if(btnInfoClose) btnInfoClose.addEventListener('click', closeInfoModal);
 
   const selMyTeam = el('sel-my-team');
