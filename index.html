@@ -4558,6 +4558,81 @@
   renderRecent();
 
 })();
+
+// 1. Fetch player adjustments from player_adjustments.json
+async function loadPlayerAdjustments() {
+  try {
+    const response = await fetch('player_adjustments.json');
+    if (!response.ok) {
+      console.warn('player_adjustments.json not found. Proceeding without adjustments.');
+      return {};
+    }
+    return await response.json();
+  } catch (error) {
+    console.warn('Could not load adjustments file:', error);
+    return {};
+  }
+}
+
+// 2. Apply adjustments to a player's base value
+function getAdjustedPlayerValue(player, adjustments) {
+  const baseValue = player.value || 0;
+  
+  // Check if player exists in adjustments file
+  const adj = adjustments[player.name] || adjustments[player.full_name];
+  if (!adj) return baseValue;
+
+  let finalValue = baseValue;
+
+  switch (adj.type) {
+    case 'multiplier':
+      finalValue = Math.round(baseValue * adj.value);
+      break;
+    case 'flat':
+      finalValue = Math.round(baseValue + adj.value);
+      break;
+    case 'override':
+      finalValue = adj.value;
+      break;
+    default:
+      finalValue = baseValue;
+  }
+
+  // Ensure value never goes below zero
+  return Math.max(0, finalValue);
+}
+
+// 3. Main Data Fetching Pipeline Example
+async function fetchAndProcessFantasyCalcData() {
+  try {
+    // Fetch adjustments & API data concurrently
+    const [adjustments, apiResponse] = await Promise.all([
+      loadPlayerAdjustments(),
+      fetch('https://api.fantasycalc.com/values/current?isDynasty=true&numQbs=1')
+    ]);
+
+    const playersData = await apiResponse.json();
+
+    // Transform player values
+    const processedPlayers = playersData.map(player => {
+      const originalValue = player.value;
+      const adjustedValue = getAdjustedPlayerValue(player, adjustments);
+
+      return {
+        ...player,
+        value: adjustedValue,              // Overwrite with adjusted value
+        originalValue: originalValue,      // Retain original FantasyCalc base value
+        isAdjusted: originalValue !== adjustedValue
+      };
+    });
+
+    console.log('Processed Players:', processedPlayers);
+    return processedPlayers;
+
+  } catch (err) {
+    console.error('Error fetching player data:', err);
+  }
+}
 </script>
 </body>
 </html>
