@@ -859,6 +859,53 @@
   }
   .hist-meta strong { color: var(--text); }
 
+  .mu-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .mu-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    align-items: center;
+  }
+  .mu-team { min-width: 0; }
+  .mu-team.right { text-align: right; }
+  .mu-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mu-score {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .mu-proj { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .mu-mid { text-align: center; color: var(--text-muted); font-size: 11px; }
+  .mu-rank {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-top: 4px;
+  }
+  .mu-rank.top { background: var(--accent-muted); color: #6bbf8a; }
+  .mu-rank.bot { background: var(--red-muted); color: #d48a84; }
+  .mu-pos {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 12px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  @media (max-width: 600px) {
+    .mu-pos { grid-template-columns: repeat(2, 1fr); }
+  }
+  .mu-pos-cell { color: var(--text-secondary); }
+  .mu-pos-cell strong { color: var(--text); display: block; }
+
   /* ---------- rankings ---------- */
   .section-title {
     font-size: 10.5px;
@@ -1284,18 +1331,47 @@
     }
     #app.show { flex-direction: column; }
     .content { margin-left: 0; }
+    .sidebar-brand {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .sidebar-brand > div { min-width: 0; }
+    .nav-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .nav-toggle .icon { width: 18px; height: 18px; }
     .sidebar-nav {
-      flex-direction: row;
-      flex-wrap: wrap;
-      padding: 8px 10px;
-      gap: 4px;
+      display: none;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      padding: 8px 10px 4px;
+      gap: 2px;
     }
-    .nav-item { width: auto; flex: 1; justify-content: center; }
+    .sidebar.nav-open .sidebar-nav { display: flex; }
     .sidebar-footer {
-      flex-direction: row;
-      padding: 8px 10px 12px;
+      display: none;
+      flex-direction: column;
+      padding: 4px 10px 12px;
+      gap: 2px;
     }
-    .sidebar-brand { padding: 14px 14px 10px; }
+    .sidebar.nav-open .sidebar-footer { display: flex; }
+    .nav-item { width: 100%; justify-content: flex-start; }
+  }
+  @media (min-width: 861px) {
+    .nav-toggle { display: none !important; }
   }
 
   @media (max-width: 600px) {
@@ -1377,10 +1453,15 @@
 
 <!-- ================= APP SHELL ================= -->
 <div id="app">
-  <aside class="sidebar">
+  <aside class="sidebar" id="app-sidebar">
     <div class="sidebar-brand">
-      <h1>Fantasy Dashboard</h1>
-      <span class="league-chip" id="league-chip">—</span>
+      <div>
+        <h1>Fantasy Dashboard</h1>
+        <span class="league-chip" id="league-chip">—</span>
+      </div>
+      <button type="button" class="nav-toggle" id="btn-nav-toggle" aria-label="Menu" title="Menu">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>
+      </button>
     </div>
     <nav class="sidebar-nav">
       <button class="nav-item active" data-panel="panel-trade">
@@ -1406,6 +1487,10 @@
       <button class="nav-item" data-panel="panel-playoffs">
         <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
         Playoffs
+      </button>
+      <button class="nav-item" data-panel="panel-matchups">
+        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 3v4M7 3v4M3 9h18M5 7h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/></svg></span>
+        Matchups
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -1647,6 +1732,17 @@
           </table>
         </div>
         <p class="tpi-note" id="playoffs-note" style="margin-top:12px;"></p>
+      </section>
+
+      <!-- ---------- MATCHUPS ---------- -->
+      <section class="panel" id="panel-matchups">
+        <div class="section-title-row" style="margin-bottom:12px;">
+          <div class="section-title" style="margin:0;">Matchups</div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-matchups-refresh">Refresh scores</button>
+        </div>
+        <p class="needs-intro" id="matchups-intro">This week’s games with projected and live scores when the host provides them. Rankings use projected points (top half green, bottom half red).</p>
+        <div id="matchups-median-board" class="waiver-top-grid" style="margin-bottom:14px;"></div>
+        <div id="matchups-list" class="hist-list"></div>
       </section>
 
       <div class="footer-note">Player values from FantasyCalc · roster data from your league host · not financial advice</div>
@@ -2704,9 +2800,12 @@
           renderPlayoffs();
         }
       });
-      // Trade history - non-blocking
+      // Trade history + matchups - non-blocking
       loadTradeHistory().then(() => {
         if(el('app').classList.contains('show')) renderHistory();
+      });
+      fetchCurrentMatchups().then(() => {
+        if(el('app').classList.contains('show')) renderMatchups();
       });
     }catch(err){
       hideStatus();
@@ -2782,6 +2881,7 @@
     renderWaivers();
     renderHistory();
     renderPlayoffs();
+    renderMatchups();
   }
 
   let waiverPosFilter = 'ALL';
@@ -3301,8 +3401,35 @@
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
 
+  function playoffDataQuality(){
+    const teams = state.teams || [];
+    if(!teams.length) return { weeks: 0, level: 'none', ready: false, label: 'No data' };
+    const weekCounts = teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length);
+    const gameCounts = teams.map(t => (t.wins||0)+(t.losses||0)+(t.ties||0));
+    const weeks = Math.max(
+      weekCounts.length ? medianOf(weekCounts) : 0,
+      gameCounts.length ? medianOf(gameCounts) : 0
+    );
+    // Need enough completed scoring weeks before odds are meaningful.
+    // Confidence rises as the sample of weekly scores grows.
+    let level = 'none';
+    let label = 'Too early for odds';
+    if(weeks >= 11){ level = 'high'; label = 'Higher confidence'; }
+    else if(weeks >= 7){ level = 'medium'; label = 'Moderate confidence'; }
+    else if(weeks >= 3){ level = 'low'; label = 'Low confidence'; }
+    else { level = 'none'; label = 'Need ~3 completed weeks'; }
+    return { weeks, level, ready: weeks >= 3, label };
+  }
+
   function simulatePlayoffOdds(sims){
-    sims = sims || 2500;
+    const quality = playoffDataQuality();
+    // Scale sims with data quality; never claim precision early
+    if(sims == null){
+      if(quality.level === 'high') sims = 5000;
+      else if(quality.level === 'medium') sims = 3500;
+      else if(quality.level === 'low') sims = 2000;
+      else sims = 0;
+    }
     const settings = state.playoffSettings || detectPlayoffSettings();
     const teams = state.teams || [];
     if(!teams.length) return null;
@@ -3324,12 +3451,14 @@
       };
     });
 
-    // Remaining regular-season weeks
-    let currentWeek = 1;
+    // Remaining regular-season weeks (completed weeks only; in-progress week excluded)
+    let currentWeek = 0;
     try{
-      // Prefer completed weeks count from scores
       const weekCounts = teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length);
-      currentWeek = weekCounts.length ? Math.max(...weekCounts) : 1;
+      currentWeek = weekCounts.length ? Math.max(...weekCounts) : 0;
+      const gameCounts = teams.map(t => (t.wins||0)+(t.losses||0)+(t.ties||0));
+      const medG = gameCounts.length ? medianOf(gameCounts) : 0;
+      if(medG > currentWeek) currentWeek = medG;
     }catch(e){}
     const playoffStart = settings.playoffWeekStart || 15;
     const remaining = Math.max(0, playoffStart - 1 - currentWeek);
@@ -3451,10 +3580,12 @@
     const currentSeed = base.slice().sort((a, b) => b.winPct - a.winPct || b.pf - a.pf);
     currentSeed.forEach((r, i) => { r.seed = i + 1; });
 
+    const denom = Math.max(1, sims);
     return {
       settings,
       remaining,
       sims,
+      quality,
       currentSeed,
       odds: teams.map(t => {
         const seedRow = currentSeed.find(r => r.id === t.id);
@@ -3463,9 +3594,9 @@
           seed: seedRow ? seedRow.seed : null,
           record: (t.ties ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins || 0}-${t.losses || 0}`),
           pf: seedRow ? seedRow.pf : (t.pointsFor || 0),
-          playoffPct: 100 * (counts.playoff[t.id] || 0) / sims,
-          byePct: nBye > 0 ? 100 * (counts.bye[t.id] || 0) / sims : null,
-          titlePct: 100 * (counts.title[t.id] || 0) / sims,
+          playoffPct: sims > 0 ? 100 * (counts.playoff[t.id] || 0) / denom : null,
+          byePct: sims > 0 && nBye > 0 ? 100 * (counts.bye[t.id] || 0) / denom : null,
+          titlePct: sims > 0 ? 100 * (counts.title[t.id] || 0) / denom : null,
           clinched: seedRow && seedRow.seed <= nPlayoff && remaining === 0,
           eliminated: seedRow && seedRow.seed > nPlayoff && remaining === 0
         };
@@ -3486,28 +3617,38 @@
     }
 
     state.playoffSettings = state.playoffSettings || detectPlayoffSettings();
-    const result = simulatePlayoffOdds(2000);
+    const quality = playoffDataQuality();
+    const result = simulatePlayoffOdds(); // auto-scales sims; 0 when not ready
     if(!result){
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Could not simulate.</td></tr>';
       return;
     }
 
     const s = result.settings;
+    const showOdds = quality.ready && result.sims > 0;
     if(meta){
       meta.innerHTML = `
         <span><strong>${s.playoffTeams}</strong> playoff teams</span>
         <span>Playoffs start week <strong>${s.playoffWeekStart}</strong></span>
         <span><strong>${s.byes}</strong> bye(s)</span>
-        <span><strong>${result.remaining}</strong> regular week(s) left (sim)</span>
-        <span>${result.sims.toLocaleString()} simulations</span>`;
+        <span><strong>${result.remaining}</strong> week(s) left</span>
+        <span>~<strong>${quality.weeks.toFixed(0)}</strong> weeks of scoring data</span>
+        <span style="color:${quality.level === 'high' ? 'var(--accent)' : quality.level === 'none' ? 'var(--red)' : 'var(--gold)'};">${escapeHtml(quality.label)}</span>
+        ${showOdds ? `<span>${result.sims.toLocaleString()} sims</span>` : ''}`;
     }
     if(intro){
-      intro.textContent = result.remaining > 0
-        ? 'Current seeding from record and points for. Odds from simulating remaining weeks with each team\'s scoring average and variance.'
-        : 'Regular season complete (or no weeks left in the model). Seeding and odds reflect the current table.';
+      if(!showOdds){
+        intro.textContent = 'Seeding is shown from current record and points for. Playoff odds stay hidden until about 3 completed weeks so early noise does not look like a forecast.';
+      } else if(result.remaining > 0){
+        intro.textContent = 'Seeding from record and points for. Odds simulate remaining weeks using each team\'s scoring average and variance. Confidence rises as more weeks finalize.';
+      } else {
+        intro.textContent = 'Regular season complete in the model. Seeding and odds reflect the current table.';
+      }
     }
     if(note){
-      note.textContent = 'Title odds use a simplified single-elimination bracket from simulated seeds. Real schedules, injuries, and league-specific tiebreakers are not fully modeled.';
+      note.textContent = showOdds
+        ? 'Title odds use a simplified bracket. Schedule is approximated (not every real remaining matchup). Variance is estimated from weekly scores when available. Treat low/moderate confidence as directional only.'
+        : 'Come back after a few weeks of scores for odds. Until then, use seeding and Power rankings.';
     }
 
     tbody.innerHTML = '';
@@ -3518,20 +3659,239 @@
       let status = '—';
       if(row.clinched) status = 'In';
       else if(row.eliminated) status = 'Out';
-      else if(row.seed <= s.playoffTeams) status = 'In (proj)';
-      else status = 'Out (proj)';
-      const byeCell = row.byePct == null ? '—' : row.byePct.toFixed(0) + '%';
+      else if(row.seed <= s.playoffTeams) status = 'Bubble / in';
+      else status = 'Outside';
+      const pct = (v) => (v == null || !showOdds) ? '—' : v.toFixed(0) + '%';
       tr.innerHTML = `
         <td><span class="rank-num">${row.seed || (i + 1)}</span></td>
         <td class="team-name-cell">${escapeHtml(row.team.name)}${isMine ? ' <span style="color:var(--accent);font-size:11px;">you</span>' : ''}</td>
         <td class="val-cell">${escapeHtml(row.record)}</td>
         <td class="val-cell">${fmtPts(row.pf)}</td>
-        <td class="val-cell"><strong>${row.playoffPct.toFixed(0)}%</strong></td>
-        <td class="val-cell">${byeCell}</td>
-        <td class="val-cell">${row.titlePct.toFixed(0)}%</td>
+        <td class="val-cell">${showOdds ? '<strong>' + pct(row.playoffPct) + '</strong>' : '—'}</td>
+        <td class="val-cell">${pct(row.byePct)}</td>
+        <td class="val-cell">${pct(row.titlePct)}</td>
         <td class="val-cell">${status}</td>`;
       tbody.appendChild(tr);
     });
+  }
+
+  /* ---------- matchups (live / projected) ---------- */
+  let matchupCache = null;
+
+  function detectLeagueMedian(){
+    // Sleeper: settings.league_average_match or similar; ESPN: scheduleSettings sometimes
+    try{
+      if(state.platform === 'sleeper' && state.league && state.league.settings){
+        // common keys: league_average_match, daily_waivers_days unused
+        if(state.league.settings.league_average_match === 1) return true;
+        if(state.league.settings.league_median_match === 1) return true;
+      }
+      if(state.platform === 'espn' && state.league && state.league.settings){
+        const sch = state.league.settings.scheduleSettings || {};
+        if(sch.leagueMedian || sch.playAgainstLeagueMedian) return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  async function fetchCurrentMatchups(){
+    const out = [];
+    try{
+      if(state.platform === 'sleeper'){
+        let week = 1;
+        try{
+          const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+          const nfl = await stateRes.json();
+          week = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
+        }catch(e){}
+        const res = await robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
+        const data = await res.json();
+        if(!Array.isArray(data)) return out;
+        const byMatch = {};
+        data.forEach(m => {
+          if(m.matchup_id == null) return;
+          if(!byMatch[m.matchup_id]) byMatch[m.matchup_id] = [];
+          byMatch[m.matchup_id].push(m);
+        });
+        Object.keys(byMatch).forEach(mid => {
+          const pair = byMatch[mid];
+          if(pair.length < 2){
+            // bye
+            const a = pair[0];
+            const teamA = teamByRosterId(a.roster_id);
+            out.push({
+              week,
+              teamA, teamB: null,
+              pointsA: typeof a.points === 'number' ? a.points : 0,
+              pointsB: null,
+              projA: null, projB: null,
+              startersA: a.starters || [],
+              startersB: []
+            });
+            return;
+          }
+          const a = pair[0], b = pair[1];
+          out.push({
+            week,
+            teamA: teamByRosterId(a.roster_id),
+            teamB: teamByRosterId(b.roster_id),
+            pointsA: typeof a.points === 'number' ? a.points : 0,
+            pointsB: typeof b.points === 'number' ? b.points : 0,
+            projA: null, projB: null,
+            startersA: a.starters || [],
+            startersB: b.starters || []
+          });
+        });
+      } else if(state.platform === 'espn' && state.year){
+        const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore&view=mScoreboard&view=mRoster`;
+        const urls = [
+          `https://lm-api-reads.fantasy.espn.com${path}`,
+          `https://fantasy.espn.com${path}`
+        ];
+        const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+        const data = await res.json();
+        const period = data.scoringPeriodId || data.status && data.status.currentMatchupPeriod;
+        (data.schedule || []).forEach(game => {
+          const mp = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
+          if(period != null && mp != null && mp !== period) return;
+          const home = game.home, away = game.away;
+          if(!home || !away) return;
+          const teamA = teamByRosterId(home.teamId);
+          const teamB = teamByRosterId(away.teamId);
+          const pointsA = home.totalPointsLive != null ? home.totalPointsLive : (home.totalPoints || 0);
+          const pointsB = away.totalPointsLive != null ? away.totalPointsLive : (away.totalPoints || 0);
+          const projA = home.totalProjectedPointsLive != null ? home.totalProjectedPointsLive : (home.totalProjectedPoints || null);
+          const projB = away.totalProjectedPointsLive != null ? away.totalProjectedPointsLive : (away.totalProjectedPoints || null);
+          out.push({
+            week: mp || period,
+            teamA, teamB,
+            pointsA, pointsB,
+            projA, projB,
+            startersA: [], startersB: []
+          });
+        });
+      }
+    }catch(e){}
+    matchupCache = out;
+    return out;
+  }
+
+  function starterPosSummary(team, starterIds){
+    const counts = { QB:0, RB:0, WR:0, TE:0 };
+    if(!team || !team.roster) return counts;
+    const idSet = new Set((starterIds || []).map(String).filter(Boolean));
+    // If no starter list, approximate with optimal lineup
+    if(!idSet.size){
+      try{
+        const countsSlots = getStarterCounts();
+        const { starterIds: ids } = optimalStarterLineup(team, countsSlots, countsSlots.flexEligible, countsSlots.sfEligible);
+        ids.forEach(id => idSet.add(String(id)));
+      }catch(e){}
+    }
+    team.roster.forEach(p => {
+      if(!idSet.has(String(p.id))) return;
+      if(counts.hasOwnProperty(p.position)) counts[p.position] += (p.value || 0);
+    });
+    return counts;
+  }
+
+  function renderMatchups(){
+    const list = el('matchups-list');
+    const board = el('matchups-median-board');
+    const intro = el('matchups-intro');
+    if(!list) return;
+
+    const data = matchupCache || [];
+    if(!data.length){
+      list.innerHTML = '<div class="hist-empty">No matchup data yet. Tap Refresh scores after loading a league.</div>';
+      if(board) board.innerHTML = '';
+      return;
+    }
+
+    // Rank by projected points (fallback to live points)
+    const flat = [];
+    data.forEach(m => {
+      if(m.teamA) flat.push({ team: m.teamA, live: m.pointsA || 0, proj: m.projA != null ? m.projA : (m.pointsA || 0) });
+      if(m.teamB) flat.push({ team: m.teamB, live: m.pointsB || 0, proj: m.projB != null ? m.projB : (m.pointsB || 0) });
+    });
+    flat.sort((a, b) => b.proj - a.proj || b.live - a.live);
+    const rankMap = {};
+    flat.forEach((r, i) => { rankMap[r.team.id] = i + 1; });
+    const n = flat.length;
+    const topN = Math.ceil(n / 2);
+
+    const hasMedian = detectLeagueMedian();
+    if(intro){
+      intro.textContent = hasMedian
+        ? 'Projected ranking for median leagues: top half green, bottom half red. Live scores update when you refresh.'
+        : 'Head-to-head matchups. Projected points when available (ESPN live projections); otherwise current points. Top half of the board is green, bottom half red.';
+    }
+
+    if(board){
+      board.innerHTML = '';
+      flat.forEach((r, i) => {
+        const card = document.createElement('div');
+        card.className = 'waiver-pos-card';
+        const rank = i + 1;
+        const cls = rank <= topN ? 'top' : 'bot';
+        card.innerHTML = `<h4>#${rank}</h4>
+          <div class="wp-player">${escapeHtml(r.team.name)}</div>
+          <div class="wp-meta">Live ${fmtPts(r.live)} · Proj ${fmtPts(r.proj)}
+            <span class="mu-rank ${cls}">${rank <= topN ? 'Top half' : 'Bottom half'}</span>
+          </div>`;
+        board.appendChild(card);
+      });
+    }
+
+    list.innerHTML = '';
+    data.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'mu-card';
+      const nA = m.teamA ? m.teamA.name : 'TBD';
+      const nB = m.teamB ? m.teamB.name : 'BYE';
+      const rA = m.teamA ? rankMap[m.teamA.id] : null;
+      const rB = m.teamB ? rankMap[m.teamB.id] : null;
+      const rankBadge = (rank) => {
+        if(rank == null) return '';
+        const cls = rank <= topN ? 'top' : 'bot';
+        return `<span class="mu-rank ${cls}">#${rank}</span>`;
+      };
+      const posA = starterPosSummary(m.teamA, m.startersA);
+      const posB = starterPosSummary(m.teamB, m.startersB);
+      const posRow = (label, a, b) =>
+        `<div class="mu-pos-cell"><strong>${label}</strong>${fmt(a)} vs ${fmt(b)}</div>`;
+
+      card.innerHTML = `
+        <div class="mu-row">
+          <div class="mu-team">
+            <div class="mu-name">${escapeHtml(nA)}</div>
+            <div class="mu-score">${fmtPts(m.pointsA)}</div>
+            <div class="mu-proj">${m.projA != null ? 'Proj ' + fmtPts(m.projA) : ''}</div>
+            ${rankBadge(rA)}
+          </div>
+          <div class="mu-mid">Week ${m.week || '—'}<br>vs</div>
+          <div class="mu-team right">
+            <div class="mu-name">${escapeHtml(nB)}</div>
+            <div class="mu-score">${m.pointsB == null ? '—' : fmtPts(m.pointsB)}</div>
+            <div class="mu-proj">${m.projB != null ? 'Proj ' + fmtPts(m.projB) : ''}</div>
+            ${rankBadge(rB)}
+          </div>
+        </div>
+        ${m.teamB ? `<div class="mu-pos">
+          ${posRow('QB val', posA.QB, posB.QB)}
+          ${posRow('RB val', posA.RB, posB.RB)}
+          ${posRow('WR val', posA.WR, posB.WR)}
+          ${posRow('TE val', posA.TE, posB.TE)}
+        </div>` : ''}`;
+      list.appendChild(card);
+    });
+  }
+
+  async function refreshMatchups(){
+    const list = el('matchups-list');
+    if(list) list.innerHTML = '<div class="hist-empty">Loading matchups…</div>';
+    await fetchCurrentMatchups();
+    renderMatchups();
   }
 
   /* ---------- trade history + offers ---------- */
@@ -3593,41 +3953,65 @@
   }
 
   function parseSleeperTrade(tx){
-    const rosterIds = (tx.roster_ids || []).slice();
-    if(rosterIds.length < 2 && tx.type === 'trade') return null;
+    if(!tx || tx.type !== 'trade') return null;
+    let rosterIds = (tx.roster_ids || []).map(Number).filter(n => !isNaN(n));
+    // Fallback: consenter_ids sometimes present when roster_ids is thin
+    if(rosterIds.length < 2 && Array.isArray(tx.consenter_ids)){
+      rosterIds = tx.consenter_ids.map(Number).filter(n => !isNaN(n));
+    }
+    if(rosterIds.length < 2) return null;
+
     const adds = tx.adds || {};
-    const drops = tx.drops || {};
-    // adds: playerId -> rosterId receiving
     const byRoster = {};
     rosterIds.forEach(r => { byRoster[r] = []; });
+
     Object.keys(adds).forEach(pid => {
-      const rid = adds[pid];
+      const rid = Number(adds[pid]);
+      if(isNaN(rid)) return;
       if(!byRoster[rid]) byRoster[rid] = [];
       byRoster[rid].push({ id: pid, name: playerNameFromId(pid), isPick: false });
     });
     (tx.draft_picks || []).forEach(dp => {
-      const rid = dp.owner_id; // new owner
+      const rid = Number(dp.owner_id);
+      if(isNaN(rid)) return;
       if(!byRoster[rid]) byRoster[rid] = [];
       const label = (dp.season || '') + ' R' + (dp.round || '?');
-      byRoster[rid].push({ id: 'pick-' + label + '-' + (dp.roster_id || ''), name: label + ' pick', isPick: true });
+      byRoster[rid].push({
+        id: 'pick-' + label + '-' + (dp.roster_id || ''),
+        name: label + ' pick',
+        isPick: true
+      });
     });
-    // For 2-team trades, sideA = assets received by rosterIds[0]
+    (tx.waiver_budget || []).forEach(wb => {
+      const rid = Number(wb.receiver);
+      if(isNaN(rid)) return;
+      if(!byRoster[rid]) byRoster[rid] = [];
+      byRoster[rid].push({
+        id: 'faab-' + (wb.amount || 0) + '-' + (wb.sender || ''),
+        name: (wb.amount || 0) + ' FAAB',
+        isPick: false,
+        isFaab: true
+      });
+    });
+
+    // Prefer first two distinct roster ids for a 2-team view
     const r0 = rosterIds[0], r1 = rosterIds[1];
     const sideA = byRoster[r0] || [];
     const sideB = byRoster[r1] || [];
-    const sideAIds = sideA.filter(x => !x.isPick).map(x => x.id);
-    const sideBIds = sideB.filter(x => !x.isPick).map(x => x.id);
+    // If both sides empty (data gap), still keep the card with roster names
+    const sideAIds = sideA.filter(x => !x.isPick && !x.isFaab).map(x => x.id);
+    const sideBIds = sideB.filter(x => !x.isPick && !x.isFaab).map(x => x.id);
 
     return {
-      id: String(tx.transaction_id || tx.created),
+      id: String(tx.transaction_id || (tx.created + '-' + r0 + '-' + r1)),
       platform: 'sleeper',
-      status: tx.status || 'complete',
+      status: (tx.status || 'complete').toLowerCase(),
       created: tx.status_updated || tx.created || 0,
       leg: tx.leg,
       rosterIds: [r0, r1],
       teamA: teamByRosterId(r0),
       teamB: teamByRosterId(r1),
-      assetsA: sideA, // received by team A
+      assetsA: sideA,
       assetsB: sideB,
       sideAIds,
       sideBIds
@@ -3635,24 +4019,37 @@
   }
 
   async function fetchSleeperTransactions(){
+    // Week 0 = offseason / preseason trades; then 1..current week
     const maxWeek = 18;
-    let weekCap = maxWeek;
+    let weekCap = 2;
     try{
       const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
       const nfl = await stateRes.json();
-      weekCap = Math.min(maxWeek, Math.max(1, Number(nfl.leg || nfl.week || 1) + 1));
-    }catch(e){}
+      weekCap = Math.min(maxWeek, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
+    }catch(e){
+      const maxGames = Math.max(0, ...(state.teams || []).map(t => (t.wins||0)+(t.losses||0)+(t.ties||0)));
+      weekCap = Math.min(maxWeek, Math.max(1, maxGames + 1));
+    }
+    const rounds = [];
+    for(let r = 0; r <= weekCap + 1; r++) rounds.push(r); // include 0 and one ahead
+
     const all = [];
-    for(let w = 1; w <= weekCap; w += 4){
-      const batch = [];
-      for(let i = w; i < w + 4 && i <= weekCap; i++) batch.push(i);
+    const seen = new Set();
+    for(let i = 0; i < rounds.length; i += 5){
+      const batch = rounds.slice(i, i + 5);
       const results = await Promise.all(batch.map(round =>
         robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/transactions/${round}`)
           .then(r => r.json())
           .catch(() => [])
       ));
       results.forEach(list => {
-        if(Array.isArray(list)) all.push(...list);
+        if(!Array.isArray(list)) return;
+        list.forEach(tx => {
+          const id = String(tx.transaction_id || '');
+          if(id && seen.has(id)) return;
+          if(id) seen.add(id);
+          all.push(tx);
+        });
       });
     }
     return all;
@@ -3742,37 +4139,57 @@
     try{
       let completed = [];
       let pending = [];
+      let rawTradeCount = 0;
       if(state.platform === 'sleeper'){
         const txs = await fetchSleeperTransactions();
         txs.forEach(tx => {
-          if(tx.type !== 'trade') return;
+          if(!tx || tx.type !== 'trade') return;
+          rawTradeCount++;
           const parsed = parseSleeperTrade(tx);
           if(!parsed) return;
-          if(parsed.status === 'complete') completed.push(parsed);
-          else pending.push(parsed);
+          const st = (parsed.status || '').toLowerCase();
+          if(st === 'complete' || st === 'completed' || st === ''){
+            completed.push(parsed);
+          } else if(st === 'pending' || st === 'proposed' || st === 'waiting'){
+            pending.push(parsed);
+          }
+          // ignore failed / cancelled
         });
       } else if(state.platform === 'espn'){
         const data = await fetchEspnTransactions();
         completed = data.complete || [];
         pending = data.pending || [];
+        rawTradeCount = completed.length + pending.length;
       }
+      const beforeFilter = completed.length;
       completed = filterReversedTrades(completed);
+      const reversedDropped = beforeFilter - completed.length;
+
       const weekMs = 7 * 24 * 60 * 60 * 1000;
       const cutoff = Date.now() - weekMs;
-      pending = pending.filter(p => (p.created || 0) >= cutoff || p.created < 1e12);
-      // sleeper timestamps are ms; filter last 7 days for offers
       pending = pending.filter(p => {
-        const ts = p.created < 1e12 ? p.created * 1000 : p.created;
+        let ts = p.created || 0;
+        if(ts > 0 && ts < 1e12) ts *= 1000;
+        if(!ts) return true; // keep undated pending
         return ts >= cutoff;
       });
 
       state.completedTrades = completed;
       state.pendingOffers = pending;
       state.historyLoaded = true;
-      if(statusEl) statusEl.textContent = completed.length + ' trade(s), ' + pending.length + ' offer(s)';
+      if(statusEl){
+        let msg = completed.length + ' trade(s), ' + pending.length + ' offer(s)';
+        if(reversedDropped > 0) msg += ' · ' + reversedDropped + ' undo pair(s) hidden';
+        if(rawTradeCount === 0 && completed.length === 0){
+          msg = 'No trades returned by host yet';
+        }
+        statusEl.textContent = msg;
+      }
     }catch(e){
-      if(statusEl) statusEl.textContent = 'Could not load trades';
+      if(statusEl) statusEl.textContent = 'Could not load trades (' + (e.message || 'error') + ')';
       state.historyLoaded = true;
+      state.completedTrades = state.completedTrades || [];
+      state.pendingOffers = state.pendingOffers || [];
     }
   }
 
@@ -4196,9 +4613,16 @@
     grid.innerHTML = cardHtml(result.a) + cardHtml(result.b);
     if(note){
       const picksOnly = (state.tradeA.some(a => a.isPick) || state.tradeB.some(a => a.isPick));
-      note.textContent = picksOnly
+      const quality = playoffDataQuality();
+      let msg = picksOnly
         ? 'Power uses post-trade rosters only (picks do not affect lineup strength). Record and scoring stay the same.'
         : 'Power re-ranks both teams after the swap. Record and weekly scoring are unchanged.';
+      if(quality.ready){
+        msg += ' Playoff odds (Playoffs tab) use scoring history and stay gated until enough weeks are final; a roster-only trade does not rewrite those sims by itself.';
+      } else {
+        msg += ' Playoff odds stay locked until ~3 completed weeks of scores.';
+      }
+      note.textContent = msg;
     }
     box.classList.add('show');
   }
@@ -5198,8 +5622,28 @@
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       el(btn.dataset.panel).classList.add('active');
+      const sb = el('app-sidebar');
+      if(sb) sb.classList.remove('nav-open');
+      if(btn.dataset.panel === 'panel-matchups' && (!matchupCache || !matchupCache.length)){
+        refreshMatchups();
+      }
+      if(btn.dataset.panel === 'panel-history' && !state.historyLoaded){
+        loadTradeHistory().then(() => renderHistory());
+      }
     });
   });
+
+  const btnNavToggle = el('btn-nav-toggle');
+  if(btnNavToggle){
+    btnNavToggle.addEventListener('click', () => {
+      const sb = el('app-sidebar');
+      if(sb) sb.classList.toggle('nav-open');
+    });
+  }
+  const btnMatchupsRefresh = el('btn-matchups-refresh');
+  if(btnMatchupsRefresh){
+    btnMatchupsRefresh.addEventListener('click', () => refreshMatchups());
+  }
 
   /* ---------- settings ---------- */
   el('btn-settings').addEventListener('click', () => {
