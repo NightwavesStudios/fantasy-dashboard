@@ -1447,6 +1447,8 @@
                 <th>Value</th>
                 <th>vs RV</th>
                 <th>Tier</th>
+                <th title="Change in your team's Power score if you added this player and dropped the best-fit roster spot for it (simulated — click &quot;Simulate power impact&quot;)">Δ Power</th>
+                <th>Suggested drop</th>
               </tr>
             </thead>
             <tbody id="waivers-body"></tbody>
@@ -1547,7 +1549,13 @@
       <p>Avg always when points exist. Median needs ≥2 weeks for a separate Power signal (else falls back to avg). Record: <code>(W+1)/(G+2)</code>.</p>
 
       <h3>Power</h3>
-      <p>≈ <strong>48%</strong> starter surplus · <strong>12%</strong> bench · <strong>22%</strong> avg · <strong>8%</strong> median · <strong>10%</strong> record (roster/results split shifts early season). Normalize: median + MAD → tanh → clamp [0,100].</p>
+      <p>Roster (starter + bench) vs. results (avg/median/record) is split <strong>80/20</strong> within roster and <strong>55/20/25</strong> within results — but the roster/results balance itself shifts across the season:</p>
+      <ul>
+        <li>Week 0–1: roster ≈ <strong>70%</strong> of Power, results ≈ 30% — there's little or no game data yet, so what your roster looks like on paper is nearly all you have.</li>
+        <li>Each additional week shifts about <strong>4.5 points</strong> from roster to results.</li>
+        <li>By roughly week 13, results already carry the clear majority; by the end of a full season roster bottoms out around <strong>12%</strong> and results (record + scoring) drive ~88% of Power.</li>
+      </ul>
+      <p>The idea: early on, projected roster strength is the best information available. As actual games pile up, what a team <em>actually did</em> should matter far more than what it should have done on paper — a team that outperformed its roster all year deserves to rank above one that looked good in the preseason but underperformed. Normalize: median + MAD → tanh → clamp [0,100].</p>
     </div>
 
     <div id="info-content-needs" style="display:none;">
@@ -1578,6 +1586,10 @@
 
       <h3>What VORP 0 on needs means vs this page</h3>
       <p>Needs “0” is about your roster vs replacement level. This page shows concrete unrostered names you can target. Always confirm availability on ESPN/Sleeper before claiming.</p>
+
+      <h3>Simulate power impact</h3>
+      <p>Pick <strong>My team</strong>, then click <strong>Simulate power impact</strong>. For each candidate (top ~15 per position), the app tries adding that player to your roster and dropping every other player on your roster in turn — including current starters, not just your worst bench guy — and keeps whichever drop produces the highest resulting Power score. It reports the <strong>Δ Power</strong> (change vs. your current score) and the <strong>suggested drop</strong> for the best outcome found.</p>
+      <p>This only recomputes <em>your</em> starter/bench numbers and re-normalizes against the rest of the league as-is; it does not simulate anyone else's moves. A positive Δ Power means the swap would improve your rank relative to the league as it stands today. Sort by "Power impact" to see the biggest gains first.</p>
     </div>
 
     <button type="button" class="btn btn-primary info-close" id="btn-info-close">Got it</button>
@@ -1655,7 +1667,8 @@
     posFilterA:'ALL', posFilterB:'ALL',
     pendingTrade: null,
     usingCachedValues: false,
-    valueMode: 'vorp' // 'vorp' | 'raw'
+    valueMode: 'vorp', // 'vorp' | 'raw'
+    myTeamId: null
   };
 
   function isVorpMode(){ return state.valueMode !== 'raw'; }
@@ -2373,6 +2386,7 @@
       state.fcValues = fcValues; state.fcIndex = fc.idx; state.picksAvailable = fc.picks; state.fcDst = fc.dstList;
       state.selectedTeamA = teams[0] ? teams[0].id : null;
       state.selectedTeamB = teams[1] ? teams[1].id : (teams[0] ? teams[0].id : null);
+      state.myTeamId = teams[0] ? teams[0].id : null;
       state.tradeA = []; state.tradeB = [];
       state.searchA = ''; state.searchB = '';
 
@@ -2478,6 +2492,8 @@
 
   let waiverPosFilter = 'ALL';
   let waiverSearch = '';
+  let waiverSortMode = 'metric'; // 'metric' | 'impact'
+  let waiverImpactCache = null; // { key, byName: Map }
 
   function waiverTier(p, starterRV){
     const rv = starterRV[p.position] != null ? starterRV[p.position] : 0;
@@ -2528,7 +2544,7 @@
     if(!tbody) return;
 
     if(!state.teams || !state.teams.length){
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
       if(topBox) topBox.innerHTML = '';
       return;
     }
@@ -2554,6 +2570,77 @@
       });
     }
 
+    renderWaiverToolbar(available);
+
+    const thVal = el('th-waiver-val');
+    if(thVal) thVal.textContent = isVorpMode() ? 'VORP' : 'Value';
+
+    let list = available.filter(p => waiverPosFilter === 'ALL' || p.position === waiverPosFilter);
+    if(waiverSearch){
+      list = list.filter(p => p.name.toLowerCase().includes(waiverSearch));
+    }
+
+    // Attach cached impact numbers (if a simulation has been run) before sort/slice
+    const impactMap = (waiverImpactCache && waiverImpactCache.myTeamId === state.myTeamId) ? waiverImpactCache.byName : null;
+    list = list.map(p => {
+      const hit = impactMap ? impactMap.get(normalizeName(p.name)) : null;
+      return hit ? { ...p, impact: hit } : { ...p, impact: null };
+    });
+
+    if(waiverSortMode === 'impact'){
+      list.sort((a,b) => {
+        const av = a.impact ? a.impact.delta : -Infinity;
+        const bv = b.impact ? b.impact.delta : -Infinity;
+        if(av !== bv) return bv - av;
+        return (b.vorp - a.vorp) || (b.value - a.value);
+      });
+    }
+
+    list = list.slice(0, 120);
+
+    tbody.innerHTML = '';
+    if(!list.length){
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">No available players match.</td></tr>';
+      return;
+    }
+    list.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      const metric = isVorpMode() ? p.vorp : p.value;
+      const tier = waiverTier(p, starterRV);
+      const vsRv = p.rv > 0 ? ((p.value / p.rv - 1) * 100) : null;
+      const vsStr = vsRv == null ? '—' : ((vsRv >= 0 ? '+' : '') + vsRv.toFixed(0) + '%');
+      const vsCls = vsRv == null ? '' : vsRv > 5 ? 'up' : vsRv < -5 ? 'down' : '';
+
+      let impactCell, dropCell;
+      if(p.impact){
+        const d = p.impact.delta;
+        const dCls = d > 0.3 ? 'up' : d < -0.3 ? 'down' : '';
+        const dStr = (d >= 0 ? '+' : '') + d.toFixed(1);
+        impactCell = `<span class="pct-cell ${dCls}" style="font-weight:600;">${dStr}</span>`;
+        dropCell = p.impact.dropName
+          ? `${escapeHtml(p.impact.dropName)} <span style="color:var(--text-muted);">(${p.impact.dropPos})</span>`
+          : '<span style="color:var(--text-muted);">—</span>';
+      } else {
+        impactCell = '<span style="color:var(--text-muted);">—</span>';
+        dropCell = '<span style="color:var(--text-muted);">—</span>';
+      }
+
+      tr.innerHTML = `
+        <td><span class="rank-num">${i + 1}</span></td>
+        <td class="team-name-cell">${escapeHtml(p.name)}${p.team ? ' <span style="color:var(--text-muted);font-size:11px;">' + escapeHtml(p.team) + '</span>' : ''}</td>
+        <td>${p.position}</td>
+        <td class="val-cell">${fmt(metric)}</td>
+        <td class="val-cell" style="color:var(--text-muted)">${fmt(p.value)}</td>
+        <td class="val-cell"><span class="pct-cell ${vsCls}">${vsStr}</span></td>
+        <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>
+        <td class="val-cell">${impactCell}</td>
+        <td class="val-cell">${dropCell}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderWaiverToolbar(available){
+    const filters = el('waiver-pos-filters');
     if(filters){
       const positions = ['ALL','QB','RB','WR','TE'];
       filters.innerHTML = '';
@@ -2580,37 +2667,158 @@
       searchInput.value = waiverSearch || '';
     }
 
-    const thVal = el('th-waiver-val');
-    if(thVal) thVal.textContent = isVorpMode() ? 'VORP' : 'Value';
+    // "My team" selector + simulate button + sort toggle — injected once, then kept in sync
+    let extraRow = el('waiver-extra-row');
+    if(!extraRow){
+      extraRow = document.createElement('div');
+      extraRow.id = 'waiver-extra-row';
+      extraRow.className = 'waiver-toolbar';
+      extraRow.style.marginTop = '-4px';
+      extraRow.innerHTML = `
+        <select id="waiver-myteam-select" style="max-width:220px;"></select>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-waiver-simulate">Simulate power impact</button>
+        <select id="waiver-sort-select" style="max-width:190px;">
+          <option value="metric">Sort: VORP / Value</option>
+          <option value="impact">Sort: Power impact</option>
+        </select>
+        <span id="waiver-sim-status" style="font-size:11.5px;color:var(--text-muted);"></span>`;
+      const toolbar = document.querySelector('.waiver-toolbar');
+      if(toolbar && toolbar.parentNode) toolbar.parentNode.insertBefore(extraRow, toolbar.nextSibling);
 
-    let list = available.filter(p => waiverPosFilter === 'ALL' || p.position === waiverPosFilter);
-    if(waiverSearch){
-      list = list.filter(p => p.name.toLowerCase().includes(waiverSearch));
+      el('btn-waiver-simulate').addEventListener('click', () => runWaiverSimulation());
+      el('waiver-sort-select').addEventListener('change', (e) => {
+        waiverSortMode = e.target.value === 'impact' ? 'impact' : 'metric';
+        if(waiverSortMode === 'impact' && (!waiverImpactCache || waiverImpactCache.myTeamId !== state.myTeamId)){
+          runWaiverSimulation();
+        } else {
+          renderWaivers();
+        }
+      });
+      el('waiver-myteam-select').addEventListener('change', (e) => {
+        state.myTeamId = parseIdVal(e.target.value);
+        waiverImpactCache = null;
+        renderWaivers();
+      });
     }
-    list = list.slice(0, 120);
 
-    tbody.innerHTML = '';
-    if(!list.length){
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">No available players match.</td></tr>';
+    const sel = el('waiver-myteam-select');
+    if(sel){
+      sel.innerHTML = '';
+      state.teams.forEach(t => {
+        const o = document.createElement('option');
+        o.value = t.id; o.textContent = 'My team: ' + t.name;
+        sel.appendChild(o);
+      });
+      if(state.myTeamId == null && state.teams[0]) state.myTeamId = state.teams[0].id;
+      sel.value = state.myTeamId;
+    }
+    const sortSel = el('waiver-sort-select');
+    if(sortSel) sortSel.value = waiverSortMode;
+  }
+
+  /* ---------- waiver "would this improve my power score" simulation ----------
+   * For the selected "my team", tries adding each waiver-eligible candidate
+   * and dropping each current roster player in turn, recomputing that one
+   * team's starter-surplus / bench-quality and re-normalizing Power against
+   * the rest of the (unchanged) league. Reports the best drop found and the
+   * resulting change in Power score. This is deliberately exhaustive over
+   * drop choices (not just "drop your worst bench guy") because the optimal
+   * drop can be a marginal starter if the incoming player is good enough to
+   * unseat them.
+   */
+  function simulateAddDrop(team, candidate, ctx){
+    const fakeId = 'FA-' + normalizeName(candidate.name);
+    const faPlayer = {
+      id: fakeId,
+      fullName: candidate.name,
+      position: candidate.position,
+      teamAbbr: candidate.team || null,
+      value: candidate.value,
+      matched: true
+    };
+    const rosterWithAdd = team.roster.concat([faPlayer]);
+
+    let best = null;
+    rosterWithAdd.forEach(dropCandidate => {
+      if(dropCandidate.id === fakeId) return; // must drop an existing player, not the pickup itself
+      const trialRoster = rosterWithAdd.filter(p => p.id !== dropCandidate.id);
+      const trialTeam = { ...team, roster: trialRoster };
+      const { assignments, starterIds } = optimalStarterLineup(trialTeam, ctx.counts, ctx.flexElig, ctx.sfElig);
+      const { starterSurplus } = computeStarterMetrics(assignments, ctx.slotRV);
+      const { benchQuality } = computeBenchMetrics(trialTeam, starterIds, ctx.starterSlotCount, ctx.counts, ctx.flexElig, ctx.sfElig);
+      const power = powerWithOverride(team.id, ctx, starterSurplus, benchQuality);
+      if(!best || power > best.power){
+        best = { power, dropId: dropCandidate.id, dropName: dropCandidate.fullName, dropPos: dropCandidate.position };
+      }
+    });
+
+    if(!best) return null;
+    const currentRow = ctx.base.find(r => r.team.id === team.id);
+    const currentPower = currentRow ? currentRow.power : 0;
+    return { delta: best.power - currentPower, dropName: best.dropName, dropPos: best.dropPos, newPower: best.power };
+  }
+
+  // Recompute one team's Power score after substituting a new starterSurplus/benchQuality
+  // for that team only, re-running the MAD normalization against the rest of the league
+  // (whose starter/bench numbers are unchanged). Scoring + record are unaffected by roster moves.
+  function powerWithOverride(teamId, ctx, newStarterSurplus, newBenchQuality){
+    const sArr = ctx.base.map(r => ({ id: r.team.id, val: r.team.id === teamId ? newStarterSurplus : r.starterSurplus }));
+    const dArr = ctx.base.map(r => ({ id: r.team.id, val: r.team.id === teamId ? newBenchQuality : r.depthVor }));
+    const Smap2 = madRelativeScores(sArr);
+    const Dmap2 = madRelativeScores(dArr);
+    const row = ctx.base.find(r => r.team.id === teamId);
+    if(!row) return 0;
+    const A = row.hasAvg ? (ctx.Amap[teamId] ?? 50) : 50;
+    const M = row.hasDist ? (ctx.Mmap[teamId] ?? 50) : A;
+    const R = ctx.Rmap[teamId] ?? 50;
+    const w = ctx.weights;
+    return w.wS * Smap2[teamId] + w.wD * Dmap2[teamId] + w.wA * A + w.wM * M + w.wR * R;
+  }
+
+  function runWaiverSimulation(){
+    const statusEl = el('waiver-sim-status');
+    if(!state.teams || !state.teams.length || state.myTeamId == null){
+      if(statusEl) statusEl.textContent = 'Load a league first.';
       return;
     }
-    list.forEach((p, i) => {
-      const tr = document.createElement('tr');
-      const metric = isVorpMode() ? p.vorp : p.value;
-      const tier = waiverTier(p, starterRV);
-      const vsRv = p.rv > 0 ? ((p.value / p.rv - 1) * 100) : null;
-      const vsStr = vsRv == null ? '—' : ((vsRv >= 0 ? '+' : '') + vsRv.toFixed(0) + '%');
-      const vsCls = vsRv == null ? '' : vsRv > 5 ? 'up' : vsRv < -5 ? 'down' : '';
-      tr.innerHTML = `
-        <td><span class="rank-num">${i + 1}</span></td>
-        <td class="team-name-cell">${escapeHtml(p.name)}${p.team ? ' <span style="color:var(--text-muted);font-size:11px;">' + escapeHtml(p.team) + '</span>' : ''}</td>
-        <td>${p.position}</td>
-        <td class="val-cell">${fmt(metric)}</td>
-        <td class="val-cell" style="color:var(--text-muted)">${fmt(p.value)}</td>
-        <td class="val-cell"><span class="pct-cell ${vsCls}">${vsStr}</span></td>
-        <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>`;
-      tbody.appendChild(tr);
+    const team = state.teams.find(t => t.id === state.myTeamId);
+    if(!team) return;
+
+    if(!state._powerContext){
+      // Force a Power computation so the shared context exists
+      buildPowerRows();
+    }
+    const ctx = state._powerContext;
+    if(!ctx){
+      if(statusEl) statusEl.textContent = 'Could not compute — try Refresh first.';
+      return;
+    }
+
+    const { available } = buildAvailableWaivers();
+    // Cap candidates for performance: top ~15 per position by current metric (already sorted).
+    const perPosCap = 15;
+    const seen = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0 };
+    const candidates = available.filter(p => {
+      if(!seen.hasOwnProperty(p.position)) return false;
+      if(seen[p.position] >= perPosCap) return false;
+      seen[p.position]++;
+      return true;
     });
+
+    if(statusEl) statusEl.textContent = 'Simulating ' + candidates.length + ' pickups…';
+
+    const byName = new Map();
+    candidates.forEach(c => {
+      const result = simulateAddDrop(team, c, ctx);
+      if(result) byName.set(normalizeName(c.name), result);
+    });
+
+    waiverImpactCache = { myTeamId: state.myTeamId, byName };
+    waiverSortMode = 'impact';
+    const sortSel = el('waiver-sort-select');
+    if(sortSel) sortSel.value = 'impact';
+    if(statusEl) statusEl.textContent = 'Simulated ' + candidates.length + ' pickups for ' + team.name + '.';
+    renderWaivers();
   }
 
   function renderPosFilters(side){
@@ -2915,6 +3123,15 @@
    * (e.g. Allen+Caleb) must not be crushed by thin residual benches.
    * Starter component uses slot SURPLUS (not raw value) so padding FLEX
    * with replacement-level players does not inflate ranks.
+   *
+   * SEASON PROGRESSION:
+   *   Roster-based signals (starter/bench) matter most when there's little
+   *   or no game data — that's all you have in weeks 1-2. As weeks accumulate,
+   *   actual results (record, avg/median scoring) should increasingly dominate:
+   *   what a team *should* have done on paper matters less than what actually
+   *   happened. By late season, roster share decays toward a small floor and
+   *   results carry the large majority of the score. See buildPowerRows().
+   *
    * Normalize with median + MAD + tanh.
    */
 
@@ -3407,10 +3624,19 @@
     });
     const weeks = weekCounts.length ? medianOf(weekCounts) : 0;
 
-    // Target mix at full results weight: 48S / 12D / 22A / 8M / 10R
-    // Within roster 80% starter / 20% bench; within results 55% avg / 20% med / 25% record
-    // Early season: raise roster share, but never ignore large scoring gaps
-    const rosterShare = Math.max(0.52, Math.min(0.70, 0.68 - weeks * 0.03));
+    // Season-progression roster/results split.
+    // Early (weeks ~0-2): little/no result data exists, so roster (starter+bench)
+    // carries most of the score. As weeks accumulate, actual record + scoring
+    // increasingly outweigh "what your roster looked like on paper" — by the
+    // back half of a ~17-week season, results should dominate the score, since
+    // what actually happened matters far more than the preseason-style roster
+    // read by that point.
+    // rosterShare: 0.70 at week 0, decaying ~0.045/week, floor 0.12 (never fully
+    // zero — roster still matters a little for context/injuries even in week 17).
+    const ROSTER_SHARE_START = 0.70;
+    const ROSTER_SHARE_DECAY_PER_WEEK = 0.045;
+    const ROSTER_SHARE_FLOOR = 0.12;
+    const rosterShare = Math.max(ROSTER_SHARE_FLOOR, Math.min(ROSTER_SHARE_START, ROSTER_SHARE_START - weeks * ROSTER_SHARE_DECAY_PER_WEEK));
     const resultsShare = 1 - rosterShare;
     const wS = rosterShare * 0.80;
     const wD = rosterShare * 0.20;
@@ -3442,10 +3668,18 @@
       return Math.round(100 * below / benchVals.length);
     }
 
+    // Shared context for waiver-pickup power simulation (see simulateAddDrop / powerWithOverride)
+    state._powerContext = {
+      base, weights: { wS, wD, wA, wM, wR },
+      Amap, Mmap, Rmap,
+      starterRV, slotRV, counts, flexElig, sfElig, starterSlotCount
+    };
+
     state._lastPowerDebug = {
       model: 'starter=lineup market value; bench=top-K remaining market value with whole-bench curve; VOR diagnostic only',
       levels,
       starterSlotCount,
+      seasonProgression: { weeks, rosterShare, resultsShare, wS, wD, wA, wM, wR },
       rows: base.map(r => ({
         team: r.team.name,
         power: r.power,
@@ -3816,6 +4050,7 @@
     // Value mode alone does not need a FantasyCalc refetch
     if(!pricingChanged){
       state.valueMode = valueMode;
+      waiverImpactCache = null;
       renderAll();
       return;
     }
@@ -3827,6 +4062,7 @@
       state.valueMode = valueMode;
       state.fcValues = fcValues; state.fcIndex = fc.idx; state.picksAvailable = fc.picks; state.fcDst = fc.dstList;
       attachValues();
+      waiverImpactCache = null;
       renderAll();
     }catch(err){
       alert(err.message || 'Failed to re-price.');
@@ -3843,6 +4079,7 @@
     if(!prev) el('in-leagueid').value = state.leagueId;
     try{
       showToast('Refreshing…');
+      waiverImpactCache = null;
       await loadLeague();
       showToast('Refreshed');
     }catch(e){
