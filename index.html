@@ -1854,7 +1854,11 @@
  <div id="waiver-top-by-pos" class="waiver-top-grid"></div>
  <div class="waiver-toolbar">
  <div class="pos-filters" id="waiver-pos-filters"></div>
- <input type="search" id="waiver-search" class="waiver-search" placeholder="Search player…" autocomplete="off" />
+ <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;white-space:nowrap;">
+            <input type="checkbox" id="waiver-ir-only" />
+            IR eligible only
+          </label>
+          <input type="search" id="waiver-search" class="waiver-search" placeholder="Search player…" autocomplete="off" />
  </div>
  <div style="overflow-x:auto;">
  <table>
@@ -1962,6 +1966,7 @@
  <th>Team</th>
  <th>Weeks</th>
  <th>Start %</th>
+ <th title="Your starter points / optimal lineup points">Perfect %</th>
  <th>Pts left on bench</th>
  <th>Avg left / wk</th>
  </tr>
@@ -3450,6 +3455,49 @@
  return { available, starterRV };
  }
 
+
+ function playerInjuryStatus(playerOrEntry){
+ // Returns normalized status: 'out' | 'ir' | 'pup' | 'doubtful' | 'questionable' | 'ok' | null
+ try{
+ let st = null;
+ if(playerOrEntry && playerOrEntry.injury_status) st = playerOrEntry.injury_status;
+ if(!st && playerOrEntry && playerOrEntry.injuryStatus) st = playerOrEntry.injuryStatus;
+ if(!st && playerOrEntry && playerOrEntry.player){
+ const pl = playerOrEntry.player;
+ st = pl.injury_status || pl.injuryStatus || null;
+ }
+ // Sleeper players map by id
+ const pid = playerOrEntry && (playerOrEntry.sleeperId || playerOrEntry.id || (playerOrEntry.player && playerOrEntry.player.sleeperId));
+ if(!st && pid && state.playersMap){
+ const pl = state.playersMap[pid] || state.playersMap[String(pid)];
+ if(pl) st = pl.injury_status || pl.injuryStatus;
+ }
+ if(!st) return null;
+ const s = String(st).toLowerCase();
+ if(s.includes('pup') || s === 'pup') return 'pup';
+ if(s === 'ir' || s.includes('injured_reserve') || s.includes('injured reserve')) return 'ir';
+ if(s === 'out' || s === 'o') return 'out';
+ if(s === 'doubtful' || s === 'd') return 'doubtful';
+ if(s === 'questionable' || s === 'q') return 'questionable';
+ if(s === 'probable' || s === 'p') return 'ok';
+ return s;
+ }catch(e){ return null; }
+ }
+
+ function isIrEligibleInjury(status){
+ // ESPN: typically Out only for IR slots. Sleeper: league may allow Out/IR/PUP/Doubtful.
+ if(!status) return false;
+ if(state.platform === 'espn') return status === 'out' || status === 'ir';
+ // Sleeper: check league settings if present
+ try{
+ const settings = state.league && state.league.settings;
+ if(settings){
+ // common keys vary; default Out + IR + PUP
+ }
+ }catch(e){}
+ return status === 'out' || status === 'ir' || status === 'pup' || status === 'doubtful';
+ }
+
  function renderWaivers(){
  const tbody = el('waivers-body');
  const filters = el('waiver-pos-filters');
@@ -3491,6 +3539,22 @@
  let list = available.filter(p => waiverPosFilter === 'ALL' || p.position === waiverPosFilter);
  if(waiverSearch){
  list = list.filter(p => p.name.toLowerCase().includes(waiverSearch));
+ }
+ const irOnly = el('waiver-ir-only') && el('waiver-ir-only').checked;
+ if(irOnly){
+ list = list.filter(p => {
+ // Match FC entry injury via sleeper id / name through playersMap
+ let st = null;
+ try{
+ const pool = state.fcValues || [];
+ const entry = pool.find(e => e.player && normalizeName(e.player.name) === normalizeName(p.name));
+ st = playerInjuryStatus(entry || p);
+ if(!st && entry && entry.player && entry.player.sleeperId && state.playersMap){
+ st = playerInjuryStatus(state.playersMap[entry.player.sleeperId]);
+ }
+ }catch(e){}
+ return isIrEligibleInjury(st);
+ });
  }
 
  // Attach cached impact numbers (if a simulation has been run) before sort/slice
@@ -3575,6 +3639,11 @@
  waiverSearch = (searchInput.value || '').trim().toLowerCase();
  renderWaivers();
  });
+ }
+ const irCb = el('waiver-ir-only');
+ if(irCb && !irCb._bound){
+ irCb._bound = true;
+ irCb.addEventListener('change', () => renderWaivers());
  }
  if(searchInput && searchInput.value !== (waiverSearch || '') && !searchInput.matches(':focus')){
  searchInput.value = waiverSearch || '';
@@ -4673,23 +4742,21 @@
  * Model: final ~ N(live + remaining, sigma^2) with sigma growing with remaining points.
  */
  function matchupWinPct(liveA, liveB, projA, projB){
- const pA = projA != null ? projA : liveA;
- const pB = projB != null ? projB : liveB;
- const remA = Math.max(0, pA - liveA);
- const remB = Math.max(0, pB - liveB);
- // Base expected finals
- const muA = liveA + remA;
- const muB = liveB + remB;
- // Variance: floor + scale with remaining (and a bit of live uncertainty)
- const sigA = Math.max(8, 6 + remA * 0.35 + liveA * 0.02);
- const sigB = Math.max(8, 6 + remB * 0.35 + liveB * 0.02);
- const sig = Math.sqrt(sigA * sigA + sigB * sigB);
+ // Odds from projected finals. Confidence rises as remaining points shrink.
+ const muA = projA != null ? projA : (liveA || 0);
+ const muB = projB != null ? projB : (liveB || 0);
+ const remA = Math.max(0, muA - (liveA || 0));
+ const remB = Math.max(0, muB - (liveB || 0));
+ const remTot = remA + remB;
+ let sigA = Math.max(3, 4 + remA * 0.42);
+ let sigB = Math.max(3, 4 + remB * 0.42);
+ let sig = Math.sqrt(sigA * sigA + sigB * sigB);
+ if(remTot < 5) sig = Math.max(1.5, sig * 0.35);
+ else if(remTot < 20) sig = Math.max(2.5, sig * 0.65);
  if(sig < 1e-6) return muA >= muB ? 1 : 0;
- // P(A > B) ≈ Φ((muA - muB) / sig)
  const z = (muA - muB) / sig;
- // logistic approx to normal CDF
- const winA = 1 / (1 + Math.exp(-1.7 * z));
- return Math.max(0.02, Math.min(0.98, winA));
+ const winA = 1 / (1 + Math.exp(-1.85 * z));
+ return Math.max(0.01, Math.min(0.99, winA));
  }
 
  function renderMatchups(){
@@ -4761,11 +4828,15 @@
  const wB = 1 - wA;
  const pctA = Math.round(wA * 100);
  const pctB = 100 - pctA;
- winHtml = `<div class="mu-win">
- <span><strong>${pctA}%</strong> ${escapeHtml(nA)}</span>
- <div class="mu-win-bar"><div class="a" style="width:${pctA}%"></div><div class="b" style="width:${pctB}%"></div></div>
- <span>${escapeHtml(nB)} <strong>${pctB}%</strong></span>
+ winHtml = (() => {
+ const colA = pctA >= pctB ? '#3d8f5f' : '#c45c52';
+ const colB = pctB > pctA ? '#3d8f5f' : '#c45c52';
+ return `<div class="mu-win">
+ <span style="color:${colA};"><strong>${pctA}%</strong> ${escapeHtml(nA)}</span>
+ <div class="mu-win-bar"><div class="a" style="width:${pctA}%;background:${colA};"></div><div class="b" style="width:${pctB}%;background:${colB};"></div></div>
+ <span style="color:${colB};">${escapeHtml(nB)} <strong>${pctB}%</strong></span>
  </div>`;
+ })();
  }
 
  card.innerHTML = `
@@ -4838,18 +4909,29 @@
  if(avg > 0 && avg < lowestAvg.val){ lowestAvg.val = avg; lowestAvg.team = t; }
  });
 
- // Blowout from matchup cache if present
- (matchupCache || []).forEach(m => {
- if(m.pointsA == null || m.pointsB == null) return;
- const gap = Math.abs(m.pointsA - m.pointsB);
+ // Biggest gap from completed weeks only (skip active week)
+ let curWeek = null;
+ try{
+ if(matchupCache && matchupCache[0] && matchupCache[0].week) curWeek = matchupCache[0].week;
+ else if(typeof projectionCacheWeek === 'number') curWeek = projectionCacheWeek;
+ }catch(e){}
+ const maxWeeks = Math.max(0, ...teams.map(t => (t.weeklyScores || []).length));
+ for(let wi = 0; wi < maxWeeks; wi++){
+ if(curWeek != null && (wi + 1) >= curWeek) continue;
+ const weekScores = teams.map(t => {
+ const s = (t.weeklyScores || [])[wi];
+ return (typeof s === 'number' && s > 0) ? { t, s } : null;
+ }).filter(Boolean);
+ if(weekScores.length < 2) continue;
+ weekScores.sort((a,b) => b.s - a.s);
+ const gap = weekScores[0].s - weekScores[weekScores.length - 1].s;
  if(gap > biggestBlowout.val){
  biggestBlowout.val = gap;
- const winner = m.pointsA >= m.pointsB ? m.teamA : m.teamB;
- const loser = m.pointsA >= m.pointsB ? m.teamB : m.teamA;
- biggestBlowout.team = winner;
- biggestBlowout.detail = (winner ? winner.name : '?') + ' over ' + (loser ? loser.name : '?');
+ biggestBlowout.team = weekScores[0].t;
+ biggestBlowout.detail = weekScores[0].t.name + ' (' + fmtPts(weekScores[0].s) + ') vs ' +
+ weekScores[weekScores.length-1].t.name + ' (' + fmtPts(weekScores[weekScores.length-1].s) + '), wk ' + (wi+1);
  }
- });
+ }
 
  function card(title, value, who){
  return `<div class="rec-card"><h3>${escapeHtml(title)}</h3>
@@ -4869,7 +4951,7 @@
  card('Most wins', mostWins.team ? String(mostWins.val) : '-', mostWins.team && mostWins.team.name),
  card('Highest scoring avg', highestAvg.team ? fmtPts(highestAvg.val) : '-', highestAvg.team && highestAvg.team.name),
  card('Lowest scoring avg', lowestAvg.team && lowestAvg.val < Infinity ? fmtPts(lowestAvg.val) : '-', lowestAvg.team && lowestAvg.team.name),
- card('Biggest gap (this week)', biggestBlowout.val > 0 ? fmtPts(biggestBlowout.val) : '-', biggestBlowout.detail || null)
+ card('Biggest week gap (final)', biggestBlowout.val > 0 ? fmtPts(biggestBlowout.val) : '-', biggestBlowout.detail || null)
  ].join('');
  }
 
@@ -4913,16 +4995,17 @@
  // for average starters, so a linear "value / (1.55×RV)" scale maxes everyone out.
  // Map ratio → 0-100 so replacement ≈ 38, solid ≈ 55, good ≈ 68, elite ≈ 88.
  function slotScoreFromRatio(ratio){
+ // Steeper curve so mediocre vs elite slots separate more across a league
  if(!(ratio > 0)) return 0;
- if(ratio < 0.5) return ratio * 30; // 0-15
- if(ratio < 1.0) return 15 + (ratio - 0.5) * 46; // 15-38 at 1.0× RV
- if(ratio < 1.5) return 38 + (ratio - 1.0) * 24; // 38-50
- if(ratio < 2.0) return 50 + (ratio - 1.5) * 20; // 50-60
- if(ratio < 2.5) return 60 + (ratio - 2.0) * 16; // 60-68
- if(ratio < 3.5) return 68 + (ratio - 2.5) * 10; // 68-78
- if(ratio < 5.0) return 78 + (ratio - 3.5) * 6; // 78-87
- if(ratio < 7.0) return 87 + (ratio - 5.0) * 4; // 87-95
- return Math.min(100, 95 + (ratio - 7.0));
+ if(ratio < 0.5) return ratio * 20;
+ if(ratio < 1.0) return 10 + (ratio - 0.5) * 36; // 10-28 at 1.0x RV
+ if(ratio < 1.5) return 28 + (ratio - 1.0) * 28; // 28-42
+ if(ratio < 2.0) return 42 + (ratio - 1.5) * 24; // 42-54
+ if(ratio < 2.5) return 54 + (ratio - 2.0) * 20; // 54-64
+ if(ratio < 3.5) return 64 + (ratio - 2.5) * 12; // 64-76
+ if(ratio < 5.0) return 76 + (ratio - 3.5) * 8; // 76-88
+ if(ratio < 7.0) return 88 + (ratio - 5.0) * 4; // 88-96
+ return Math.min(100, 96 + (ratio - 7.0));
  }
 
  let yourStarter = 0;
@@ -4959,8 +5042,9 @@
  // Depth: top 5 bench vs a high bar (two solid flex-caliber pieces)
  const benchPlayers = (team.roster || [])
  .filter(p => !starterIds.has(p.id) && !starterIds.has(String(p.id)))
- .map(p => ({ name: p.fullName, pos: p.position, value: p.value || 0, isIR: !!p.isIR }))
+ .map(p => ({ name: p.fullName, pos: p.position, value: (p.value || 0) * (p.isIR ? 0.28 : 1), isIR: !!p.isIR, raw: p.value || 0 }))
  .sort((a,b) => b.value - a.value);
+ // Depth uses IR-discounted value so a star on IR is not "depth cover"
  const yourBench = benchPlayers.slice(0, 5).reduce((s,p) => s + p.value, 0);
  const depthTarget = (starterRV.RB || 400) * 2.2 + (starterRV.WR || 400) * 1.8;
  const depthRatio = depthTarget > 0 ? yourBench / depthTarget : 0;
@@ -5705,14 +5789,14 @@
  const intro = el('roster-intro');
  if(!tbody) return;
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
  return;
  }
  const counts = getStarterCounts();
  const data = rosterWeekCache || {};
  const rows = state.teams.map(t => {
  const weeks = data[t.id] || data[String(t.id)] || [];
- let correct = 0, wrong = 0, missedPts = 0, weeksUsed = 0;
+ let correct = 0, wrong = 0, missedPts = 0, weeksUsed = 0, sumStarted = 0, sumOpt = 0;
  weeks.forEach(w => {
  const ptsMap = {};
  Object.keys(w.players_points || {}).forEach(k => {
@@ -5755,6 +5839,8 @@
  // e.g. optimal 100, you started 99 → 1 left on bench (not the full bench player's score)
  const gap = Math.max(0, (opt.total || 0) - startedPts);
  missedPts += gap;
+ sumStarted += startedPts;
+ sumOpt += (opt.total || 0);
  weeksUsed++;
 
  // Correct vs wrong: each actual starter is correct if they belong in the optimal set
@@ -5771,20 +5857,22 @@
  }
  });
  const decisions = correct + wrong;
+ const perfectPct = sumOpt > 0 ? Math.min(100, 100 * sumStarted / sumOpt) : null;
  return {
  team: t,
  weeks: weeksUsed,
  correct,
  wrong,
  optPct: decisions ? 100 * correct / decisions : null,
+ perfectPct,
  missed: missedPts,
  avgMiss: weeksUsed ? missedPts / weeksUsed : null
  };
  });
- rows.sort((a,b) => (b.optPct||0) - (a.optPct||0) || (a.avgMiss||99) - (b.avgMiss||99));
+ rows.sort((a,b) => (b.perfectPct||0) - (a.perfectPct||0) || (b.optPct||0) - (a.optPct||0) || (a.avgMiss||99) - (b.avgMiss||99));
 
  if(intro){
- intro.textContent = 'Start % = correct starters / (correct + wrong). A starter is correct if they were in the best lineup by actual points that week. Pts left on bench = optimal lineup points minus your starter points (the gap, not full bench score).';
+ intro.textContent = 'Perfect % = your starter points / optimal lineup points (how close to max possible). Start % = share of starter slots that matched the optimal set. Pts left on bench = optimal minus what you started.';
  }
  if(note){
  note.textContent = rows.some(r => r.weeks > 0)
@@ -5802,6 +5890,7 @@
  <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
  <td class="val-cell">${r.weeks || '-'}</td>
  <td class="val-cell">${r.optPct != null ? r.optPct.toFixed(0) + '% <span style="color:var(--text-muted);font-size:11px;">(' + r.correct + '/' + (r.correct+r.wrong) + ')</span>' : '-'}</td>
+ <td class="val-cell">${r.perfectPct != null ? r.perfectPct.toFixed(1) + '%' : '-'}</td>
  <td class="val-cell">${r.weeks ? fmtPts(r.missed) : '-'}</td>
  <td class="val-cell">${r.avgMiss != null ? fmtPts(r.avgMiss) : '-'}</td>`;
  tbody.appendChild(tr);
@@ -6192,12 +6281,25 @@
  detail = 'Covered by reshuffling existing non-bye starters across slots.';
  } else {
  const ratio = abs.value > 0 ? (cover.value || 0) / abs.value : 1;
+ const dropPct = abs.value > 0 ? Math.max(0, (1 - ratio) * 100) : 0;
+ // Weekly projection gap if we have host projections
+ let projDrop = null;
+ try{
+ const pAbs = getPlayerProjection(abs.p.id, abs.p.fullName);
+ const pCov = getPlayerProjection(cover.id, cover.name);
+ if(pAbs && pCov && pAbs.proj > 0){
+ projDrop = Math.max(0, pAbs.proj - (pCov.proj || 0));
+ }
+ }catch(e){}
  if(ratio < 0.45 || (abs.value - (cover.value || 0) > 2500)){
  status = 'soft';
- detail = 'Only free cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ' vs ' + fmt(abs.value) + ').';
+ detail = 'Only free cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ' vs ' + fmt(abs.value) + ', -' + dropPct.toFixed(0) + '% value)';
+ if(projDrop != null) detail += '. Proj gap ~' + fmtPts(projDrop) + ' pts/wk';
  } else {
  status = 'covered';
- detail = 'Free cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ').';
+ detail = 'Free cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ')';
+ if(dropPct >= 8) detail += ', -' + dropPct.toFixed(0) + '% value';
+ if(projDrop != null && projDrop >= 1) detail += '. Proj gap ~' + fmtPts(projDrop);
  }
  }
  return {
@@ -6206,7 +6308,8 @@
  slot: slotKind,
  value: abs.value,
  status,
- detail
+ detail,
+ dropPct: typeof dropPct === 'number' ? dropPct : 0
  };
  }).sort((a,b) => {
  const rank = { hole: 0, soft: 1, covered: 2 };
@@ -6241,7 +6344,7 @@
  </tr></thead><tbody>
  ${starterByes.map(s => {
  const stColor = s.status === 'hole' ? 'var(--red)' : s.status === 'soft' ? 'var(--gold)' : 'var(--accent)';
- const stLabel = s.status === 'hole' ? 'Hole' : s.status === 'soft' ? 'Soft' : 'Covered';
+ const stLabel = s.status === 'hole' ? 'Hole' : s.status === 'soft' ? ('Soft' + (s.dropPct ? ' -' + s.dropPct.toFixed(0) + '%' : '')) : 'Covered';
  return `<tr>
  <td>${escapeHtml(s.name)} <span style="color:var(--text-muted);font-size:11px;">${escapeHtml(s.pos)}</span></td>
  <td>${escapeHtml(s.slot)}</td>
@@ -6464,6 +6567,46 @@
  return `<div class="spark-wrap"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${rects}</svg></div>`;
  }
 
+
+ function enableTableSort(table){
+ if(!table || table._sortBound) return;
+ table._sortBound = true;
+ const thead = table.querySelector('thead');
+ if(!thead) return;
+ thead.querySelectorAll('th').forEach((th, colIdx) => {
+ th.style.cursor = 'pointer';
+ th.title = (th.title ? th.title + ' · ' : '') + 'Click to sort';
+ th.addEventListener('click', () => {
+ const tbody = table.querySelector('tbody');
+ if(!tbody) return;
+ const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => tr.children.length > 1);
+ const dir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+ thead.querySelectorAll('th').forEach(h => { delete h.dataset.sortDir; h.classList.remove('sorted'); });
+ th.dataset.sortDir = dir;
+ th.classList.add('sorted');
+ const parse = (td) => {
+ if(!td) return { n: -Infinity, s: '' };
+ const t = (td.textContent || '').replace(/,/g,'').trim();
+ const num = parseFloat(t.replace(/[^0-9.\-]/g,''));
+ if(!isNaN(num) && /[0-9]/.test(t)) return { n: num, s: t };
+ return { n: null, s: t.toLowerCase() };
+ };
+ rows.sort((a,b) => {
+ const A = parse(a.children[colIdx]);
+ const B = parse(b.children[colIdx]);
+ let cmp = 0;
+ if(A.n != null && B.n != null) cmp = A.n - B.n;
+ else cmp = (A.s || '').localeCompare(B.s || '');
+ return dir === 'asc' ? cmp : -cmp;
+ });
+ rows.forEach(r => tbody.appendChild(r));
+ });
+ });
+ }
+ function bindAllTableSorts(){
+ document.querySelectorAll('.panel table, .table-wrap table, table.data-table').forEach(enableTableSort);
+ }
+
  function renderHome(){
  const grid = el('home-grid');
  const charts = el('home-charts');
@@ -6483,8 +6626,9 @@
  const myRank = mine ? sorted.indexOf(mine) + 1 : null;
  const myTeam = mine ? mine.team : (state.teams.find(t => t.id === state.myTeamId) || state.teams[0]);
 
- function card(title, val, sub, extra){
- return `<div class="rec-card">
+ function card(title, val, sub, extra, panel){
+ const go = panel ? ` data-go-panel="${panel}" style="cursor:pointer;"` : '';
+ return `<div class="rec-card"${go} title="${panel ? 'Open ' + panel.replace('panel-','') : ''}">
  <h3>${escapeHtml(title)}</h3>
  <div class="rec-val">${val}</div>
  <div class="rec-who">${sub || ''}</div>
@@ -6576,22 +6720,29 @@
  }
 
  const cards = [];
- cards.push(card('Your Power rank', myRank != null ? '#' + myRank : '-', mine ? ('Power ' + mine.power.toFixed(1)) : 'Set My team in settings', mine ? escapeHtml(mine.team.name) : ''));
- cards.push(card('Roster grade', rate ? rate.grade : '-', rate ? ('Quality ' + rate.quality + '/100') : 'Open Rate my team', rate ? 'vs a competitive bar, not league percentile' : ''));
- cards.push(card('Record', rec, 'PF ' + pf, 'Avg ' + avg + ' / wk'));
- cards.push(card('Playoff odds', playoffPct, quality.ready ? quality.label : 'Need more weeks', '~' + quality.weeks.toFixed(0) + ' weeks scored'));
- cards.push(card('League leader', top ? escapeHtml(top.team.name) : '-', top ? 'Power ' + top.power.toFixed(1) : '', sorted[1] ? ('#2 ' + escapeHtml(sorted[1].team.name)) : ''));
- cards.push(card('Luck (all-play)', luckLine, 'Actual wins vs all-play expected', ''));
- cards.push(card('Strength of schedule', sosLine, 'Opponent scoring vs league avg', ''));
- cards.push(card('Next opponent', escapeHtml(nextOpp), 'From remaining schedule', posSnap || ''));
- cards.push(card('Format', (state.isDynasty ? 'Dynasty' : 'Redraft') + (state.isSuperflex ? ' · SF' : ' · 1QB'), (state.platform || '') + ' · ' + state.teams.length + ' teams', state.leagueName || ''));
+ cards.push(card('Your Power rank', myRank != null ? '#' + myRank : '-', mine ? ('Power ' + mine.power.toFixed(1)) : 'Set My team in settings', mine ? escapeHtml(mine.team.name) : '', 'panel-rankings'));
+ cards.push(card('Roster grade', rate ? rate.grade : '-', rate ? ('Quality ' + rate.quality + '/100') : 'Open Rate my team', rate ? 'vs a competitive bar, not league percentile' : '', 'panel-rate'));
+ cards.push(card('Record', rec, 'PF ' + pf, 'Avg ' + avg + ' / wk', 'panel-records'));
+ cards.push(card('Playoff odds', playoffPct, quality.ready ? quality.label : 'Need more weeks', '~' + quality.weeks.toFixed(0) + ' weeks scored', 'panel-playoffs'));
+ cards.push(card('League leader', top ? escapeHtml(top.team.name) : '-', top ? 'Power ' + top.power.toFixed(1) : '', sorted[1] ? ('#2 ' + escapeHtml(sorted[1].team.name)) : '', 'panel-rankings'));
+ cards.push(card('Luck (all-play)', luckLine, 'Actual wins vs all-play expected', '', 'panel-luck'));
+ cards.push(card('Strength of schedule', sosLine, 'Opponent scoring vs league avg', '', 'panel-luck'));
+ cards.push(card('Next opponent', escapeHtml(nextOpp), 'From remaining schedule', posSnap || '', 'panel-matchups'));
+ cards.push(card('Format', (state.isDynasty ? 'Dynasty' : 'Redraft') + (state.isSuperflex ? ' · SF' : ' · 1QB'), (state.platform || '') + ' · ' + state.teams.length + ' teams', state.leagueName || '', null));
  if(rate){
- cards.push(card('Starter quality', rate.starterScore.toFixed(0) + '/100', fmt(rate.yourStarter) + ' vs ' + fmt(rate.idealStarter) + ' target', rate.miss ? rate.miss + ' empty slot(s)' : 'Lineup legal'));
- cards.push(card('Coverage', rate.coverPts.toFixed(0) + '/100', rate.miss ? 'Fix empty slots first' : 'Starters filled', ''));
- cards.push(card('Depth score', rate.depthScore.toFixed(0) + '/100', 'Top bench ' + fmt(rate.yourBench), ''));
+ cards.push(card('Starter quality', rate.starterScore.toFixed(0) + '/100', fmt(rate.yourStarter) + ' vs ' + fmt(rate.idealStarter) + ' target', rate.miss ? rate.miss + ' empty slot(s)' : 'Lineup legal', 'panel-rate'));
+ cards.push(card('Coverage', rate.coverPts.toFixed(0) + '/100', rate.miss ? 'Fix empty slots first' : 'Starters filled', '', 'panel-rate'));
+ cards.push(card('Depth score', rate.depthScore.toFixed(0) + '/100', 'Top bench ' + fmt(rate.yourBench), '', 'panel-depth'));
  }
 
  grid.innerHTML = cards.join('');
+ grid.querySelectorAll('[data-go-panel]').forEach(node => {
+ node.addEventListener('click', () => {
+ const id = node.getAttribute('data-go-panel');
+ const nav = document.querySelector('.nav-item[data-panel="' + id + '"]');
+ if(nav) nav.click();
+ });
+ });
 
  if(intro){
  intro.textContent = (state.leagueName || 'League') + ' dashboard: roster quality, standings, and schedule.';
@@ -6983,7 +7134,7 @@
  let changesHtml = '';
  if(res.hasCurrent){
  const sitRows = (res.sitThem || []).filter(p => !p.locked).map(p =>
- `<div style="color:#c45c52;font-weight:700;">Sit ${escapeHtml(p.name)}${p.position ? ' (' + escapeHtml(p.position) + ')' : ''}</div>`
+ `<div style="color:#c45c52;font-weight:700;">BENCH ${escapeHtml(p.name)}${p.position ? ' (' + escapeHtml(p.position) + ')' : ''}</div>`
  ).join('');
  const startRows = (res.startThem || []).filter(a => !a.locked).map(a =>
  `<div style="color:#3d8f5f;font-weight:700;">Start ${escapeHtml(a.name)} <span style="font-weight:500;color:#888;">(${escapeHtml(a.slotKind)})</span></div>`
@@ -8388,13 +8539,15 @@
  .map(p => {
  const value = p.value || 0;
  const posW = benchPosWeight(p.position, counts);
+ // IR stashes are assets but not real next-man-up depth (can't fill starters)
+ const irW = p.isIR ? 0.28 : 1.0;
  return {
  id: p.id,
  name: p.fullName,
  position: p.position,
  value,
  posW,
- weighted: value * posW,
+ weighted: value * posW * irW,
  starterOrBench: 'bench',
  isIR: !!p.isIR
  };
