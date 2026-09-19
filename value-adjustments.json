@@ -1,0 +1,10 @@
+{
+  "_comment": "Manual value overrides applied after FantasyCalc matching. Use plus (add to value), multiply (scale value), or set (absolute). Match by player name (case-insensitive). Starters and bench both use the adjusted value for Power, trades, and rankings.",
+  "players": [
+    {
+      "name": "Marvin Harrison Jr.",
+      "plus": 600,
+      "note": "Starter bump"
+    }
+  ]
+}
