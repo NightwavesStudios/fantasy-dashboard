@@ -2705,17 +2705,21 @@
  const ownerId = (t.owners||[])[0];
  const roster = (t.roster && t.roster.entries || []).map(e => {
  const p = e.playerPoolEntry.player;
- // ESPN IR slots: 21=IR, 22=IR+, 10 sometimes used for injured reserve
+ // ESPN: 21=IR, 22=IR+. Slot 10 is IDP (LB), not IR.
  const slot = e.lineupSlotId;
- const isIR = slot === 21 || slot === 22 || slot === 10;
+ const isIR = slot === 21 || slot === 22;
+ const isTaxi = false;
  // 20=bench, 21/22=IR. Everything else is a starter slot (incl FLEX 23)
  const isStarter = slot != null && slot !== 20 && slot !== 21 && slot !== 22;
+ const injuryStatus = (p.injuryStatus || p.injury_status || null);
  return {
  id: p.id,
  fullName: p.fullName,
  position: POS_MAP[p.defaultPositionId] || '-',
  teamAbbr: ESPN_TEAM_ABBR[p.proTeamId] || null,
  isIR: !!isIR,
+ isTaxi: !!isTaxi,
+ injuryStatus,
  lineupSlotId: slot,
  isStarter: !!isStarter
  };
@@ -2817,14 +2821,16 @@
  if(!p) return null;
  const isDef = p.position === 'DEF';
  const pidStr = String(pid);
- // IR / reserve (and taxi) do not free a normal roster spot the same way
- const isIR = reserveSet.has(pidStr) || taxiSet.has(pidStr);
+ const isIR = reserveSet.has(pidStr);
+ const isTaxi = taxiSet.has(pidStr);
  return {
  id: pid,
  fullName: isDef ? (p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid) : (p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim()),
  position: isDef ? 'DST' : (p.position || '-'),
  teamAbbr: isDef ? pid : (p.team || null),
- isIR: !!isIR
+ isIR: !!isIR,
+ isTaxi: !!isTaxi,
+ injuryStatus: p.injury_status || p.injuryStatus || null
  };
  }).filter(Boolean);
  const s = r.settings || {};
@@ -3066,10 +3072,12 @@
  idx[normalizeName(p.name)] = entry;
  // also index common alt forms
  if(p.maybeTeam) idx[normalizeName(p.maybeTeam)] = entry;
- // Platform IDs when FantasyCalc provides them
- ['sleeperId','sleeper_id','espnId','espn_id','mflId','id'].forEach(k => {
- if(p[k] != null) byExternalId[String(p[k])] = entry;
- });
+ // Namespace platform IDs so sleeper "4034" never collides with FC/espn/mfl ids
+ if(p.sleeperId != null) byExternalId['sleeper:' + String(p.sleeperId)] = entry;
+ if(p.sleeper_id != null) byExternalId['sleeper:' + String(p.sleeper_id)] = entry;
+ if(p.espnId != null) byExternalId['espn:' + String(p.espnId)] = entry;
+ if(p.espn_id != null) byExternalId['espn:' + String(p.espn_id)] = entry;
+ // Do not index bare FantasyCalc id / mflId (collision risk across namespaces)
  });
  return { idx, byExternalId, list, picks, dstList };
  }
@@ -3113,10 +3121,17 @@
  if(hit) return hit;
  }
  }
- // Prefer platform ID match when FantasyCalc exposes sleeperId / espnId
+ // Prefer namespaced platform ID match
  if(player.id != null && fc.byExternalId){
- const byId = fc.byExternalId[String(player.id)];
- if(byId) return byId;
+ const pid = String(player.id);
+ const keys = [
+ (state.platform === 'espn' ? 'espn:' : 'sleeper:') + pid,
+ 'sleeper:' + pid,
+ 'espn:' + pid
+ ];
+ for(const k of keys){
+ if(fc.byExternalId[k]) return fc.byExternalId[k];
+ }
  }
  const key = normalizeName(player.fullName);
  const hit = fc.idx[key];
@@ -3196,10 +3211,10 @@
  }
 
  /** Exact unfilled starter slots using the lineup solver (not a hand-rolled cover rule). */
- function unfilledSlots(roster, counts){
+ function unfilledSlots(roster, counts, opts){
  counts = counts || getStarterCounts();
  const needed = countStarterSlots(counts);
- const { assignments } = optimalStarterLineup({ roster: roster || [] }, counts, counts.flexEligible, counts.sfEligible);
+ const { assignments } = optimalStarterLineup({ roster: roster || [] }, counts, counts.flexEligible, counts.sfEligible, opts);
  return Math.max(0, needed - assignments.length);
  }
 
@@ -3714,10 +3729,11 @@
  * drop can be a marginal starter if the incoming player is good enough to
  * unseat them.
  */
- function countActiveByPos(roster){
+ function countActiveByPos(roster, opts){
+ const healthyOnly = !!(opts && opts.healthyOnly);
  const c = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0 };
  (roster || []).forEach(p => {
- if(p.isIR) return;
+ if(healthyOnly && p.isIR) return;
  if(c.hasOwnProperty(p.position)) c[p.position]++;
  });
  return c;
@@ -3729,24 +3745,11 @@
  }
 
  /**
- * Shared roster-change evaluator for waivers, trades, and the finder.
- * Returns metrics after the change; rejects illegal lineups via unfilledSlots.
+ * Single metrics path for Power baseline, waivers, trades, and finder.
+ * Full strength by default (IR counts). Pass { healthyOnly:true } for weekly views.
  */
- function evaluateRosterChange(team, newRoster, ctx){
- ctx = ctx || state._powerContext;
- if(!ctx) return null;
- const beforeMiss = unfilledSlots(team.roster, ctx.counts);
- const afterMiss = unfilledSlots(newRoster, ctx.counts);
- if(afterMiss > beforeMiss){
- return { legal: false, miss: afterMiss, beforeMiss, delta: null };
- }
- const trialTeam = { ...team, roster: newRoster };
- const { assignments, starterIds } = optimalStarterLineup(trialTeam, ctx.counts, ctx.flexElig, ctx.sfElig);
- const { starterSurplus } = computeStarterMetrics(assignments, ctx.slotRV);
- const { benchQuality } = computeBenchMetrics(trialTeam, starterIds, ctx.starterSlotCount, ctx.counts, ctx.flexElig, ctx.sfElig);
- // Depth cover: pure starter positions with no backup
- const c = countActiveByPos(newRoster);
- const counts = ctx.counts || {};
+ function thinPenaltyForRoster(roster, counts){
+ const c = countActiveByPos(roster); // full strength counts IR
  let thin = 0;
  [['QB', (counts.QB||0)+(counts.SF||0)], ['RB', counts.RB||0], ['WR', counts.WR||0], ['TE', counts.TE||0]].forEach(([pos, need]) => {
  if(need <= 0) return;
@@ -3754,19 +3757,56 @@
  if(have === need) thin += 8;
  else if(have === need + 1) thin += 2;
  });
- const adjSurplus = starterSurplus - thin;
- const power = powerWithOverride(team.id, ctx, adjSurplus, benchQuality);
+ return thin;
+ }
+
+ function rosterMetrics(team, roster, ctx, opts){
+ ctx = ctx || state._powerContext;
+ const counts = (ctx && ctx.counts) || getStarterCounts();
+ const flexElig = (ctx && ctx.flexElig) || counts.flexEligible;
+ const sfElig = (ctx && ctx.sfElig) || counts.sfEligible;
+ const slotRV = (ctx && ctx.slotRV) || {};
+ const starterSlotCount = (ctx && ctx.starterSlotCount) || countStarterSlots(counts);
+ const trial = { ...(team || {}), roster: roster || [] };
+ const { assignments, starterIds, totalValue } = optimalStarterLineup(trial, counts, flexElig, sfElig, opts);
+ const holes = unfilledSlots(roster, counts, opts);
+ // Charge empty slots by their own RV when we can detect kind; else skill default
+ let { starterValue, starterSurplus, details } = computeStarterMetrics(assignments, slotRV, { emptySlots: 0 });
+ if(holes > 0){
+ const defaultRv = (slotRV.FLEX || slotRV.RB || slotRV.WR || slotRV.TE || 500);
+ starterSurplus -= holes * defaultRv;
+ }
+ const thin = thinPenaltyForRoster(roster, counts);
+ starterSurplus -= thin;
+ const { benchQuality, benchRaw, details: benchDetails, positionalDepth, nextManUp, residualScore, K, benchCount } =
+ computeBenchMetrics(trial, starterIds, starterSlotCount, counts, flexElig, sfElig);
+ return {
+ assignments, starterIds, totalValue, holes, thin,
+ starterValue, starterSurplus, benchQuality, benchRaw,
+ starterDetails: details, benchDetails, positionalDepth, nextManUp, residualScore, K, benchCount
+ };
+ }
+
+ function evaluateRosterChange(team, newRoster, ctx){
+ ctx = ctx || state._powerContext;
+ if(!ctx) return null;
+ const before = rosterMetrics(team, team.roster, ctx);
+ const after = rosterMetrics(team, newRoster, ctx);
+ if(after.holes > before.holes){
+ return { legal: false, miss: after.holes, beforeMiss: before.holes, delta: null };
+ }
+ const power = powerWithOverride(team.id, ctx, after.starterSurplus, after.benchQuality);
  const currentRow = ctx.base.find(r => r.team.id === team.id);
  const currentPower = currentRow ? currentRow.power : 0;
  return {
  legal: true,
- miss: afterMiss,
- beforeMiss,
- starterSurplus: adjSurplus,
- benchQuality,
+ miss: after.holes,
+ beforeMiss: before.holes,
+ starterSurplus: after.starterSurplus,
+ benchQuality: after.benchQuality,
  power,
  delta: power - currentPower,
- thin
+ thin: after.thin
  };
  }
 
@@ -3786,7 +3826,7 @@
  let best = null;
  rosterWithAdd.forEach(dropCandidate => {
  if(dropCandidate.id === fakeId) return;
- if(dropCandidate.isIR) return;
+ if(dropCandidate.isIR || dropCandidate.isTaxi) return;
  const trialRoster = rosterWithAdd.filter(p => p.id !== dropCandidate.id);
  const ev = evaluateRosterChange(team, trialRoster, ctx);
  if(!ev || !ev.legal) return;
@@ -3896,24 +3936,16 @@
  const rosterB = applyTradeToRoster(teamB, sendB, sendA, teamA);
 
  function metricsFor(team, roster){
- const beforeMiss = unfilledSlots(team.roster, ctx.counts);
- const miss = unfilledSlots(roster, ctx.counts);
- const trial = { ...team, roster };
- const { assignments, starterIds } = optimalStarterLineup(trial, ctx.counts, ctx.flexElig, ctx.sfElig);
- let { starterSurplus } = computeStarterMetrics(assignments, ctx.slotRV, { emptySlots: miss });
- let { benchQuality } = computeBenchMetrics(trial, starterIds, ctx.starterSlotCount, ctx.counts, ctx.flexElig, ctx.sfElig);
- // Thin depth (legal but no backup at a starter position)
- const c = countActiveByPos(roster);
- const counts = ctx.counts || {};
- let thin = 0;
- [['QB', (counts.QB||0)+(counts.SF||0)], ['RB', counts.RB||0], ['WR', counts.WR||0], ['TE', counts.TE||0]].forEach(([pos, need]) => {
- if(need <= 0) return;
- const have = c[pos] || 0;
- if(have === need) thin += 8;
- else if(have === need + 1) thin += 2;
- });
- starterSurplus -= thin;
- return { starterSurplus, benchQuality, miss, beforeMiss, thin, legal: miss <= beforeMiss };
+ const before = rosterMetrics(team, team.roster, ctx);
+ const after = rosterMetrics(team, roster, ctx);
+ return {
+ starterSurplus: after.starterSurplus,
+ benchQuality: after.benchQuality,
+ miss: after.holes,
+ beforeMiss: before.holes,
+ thin: after.thin,
+ legal: after.holes <= before.holes
+ };
  }
 
  const mA = metricsFor(teamA, rosterA);
@@ -5042,7 +5074,7 @@
  // Depth: top 5 bench vs a high bar (two solid flex-caliber pieces)
  const benchPlayers = (team.roster || [])
  .filter(p => !starterIds.has(p.id) && !starterIds.has(String(p.id)))
- .map(p => ({ name: p.fullName, pos: p.position, value: (p.value || 0) * (p.isIR ? 0.28 : 1), isIR: !!p.isIR, raw: p.value || 0 }))
+ .map(p => ({ name: p.fullName, pos: p.position, value: p.value || 0, isIR: !!p.isIR, isTaxi: !!p.isTaxi, raw: p.value || 0 }))
  .sort((a,b) => b.value - a.value);
  // Depth uses IR-discounted value so a star on IR is not "depth cover"
  const yourBench = benchPlayers.slice(0, 5).reduce((s,p) => s + p.value, 0);
@@ -5072,18 +5104,33 @@
  // ~60% in starters → ~55; 75% → ~70; 40% → ~35
  const efficiencyScore = Math.max(0, Math.min(100, starterShare * 95));
 
- // Composite - starters dominate; coverage still matters; depth/efficiency secondary
+ // Diagnostics stay visible; letter grade uses league-relative full-strength surplus
  const quality = Math.round(
- 0.55 * starterScore +
- 0.20 * coverPts +
- 0.15 * depthScore +
- 0.10 * efficiencyScore
+ 0.70 * starterScore +
+ 0.15 * coverPts +
+ 0.10 * depthScore +
+ 0.05 * efficiencyScore
  );
- const grade = letterFromQuality(quality);
 
- // League context is secondary (shown, not the grade)
+ // League context
  const sorted = rows.slice().sort((a,b) => b.power - a.power);
  const rank = sorted.findIndex(r => r.team.id === team.id) + 1;
+
+ // Grade from z-score of full-strength starter surplus + depth (same for every team in league)
+ const vals = rows.map(r => (r.starterSurplus || 0) + 0.35 * (r.depthVor || 0));
+ const mu = vals.reduce((a,b)=>a+b,0) / Math.max(1, vals.length);
+ const sd = Math.max(
+ Math.sqrt(vals.reduce((a,b)=>a+(b-mu)*(b-mu),0) / Math.max(1, vals.length)),
+ Math.abs(mu) * 0.08,
+ 1
+ );
+ const myVal = (row.starterSurplus || 0) + 0.35 * (row.depthVor || 0);
+ const z = (myVal - mu) / sd;
+ const steps = ['F','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+'];
+ let gIdx = Math.round(5 + z * 3.2); // z=0 -> C
+ if(miss > 0) gIdx = Math.min(gIdx, 6); // hole caps at C+
+ gIdx = Math.max(0, Math.min(12, gIdx));
+ const grade = steps[gIdx];
  const n = rows.length;
  const power = row.power;
 
@@ -6175,7 +6222,7 @@
  const counts = getStarterCounts();
  const flexElig = counts.flexEligible || ['RB','WR','TE'];
  const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
- const base = optimalStarterLineup(team, counts, flexElig, sfElig);
+ const base = optimalStarterLineup(team, counts, flexElig, sfElig, { healthyOnly: true });
  const baseStarterIds = base.starterIds;
  const baseById = {};
  base.assignments.forEach(a => { baseById[String(a.id)] = a; });
@@ -6207,8 +6254,8 @@
  // Available that week: not on bye (IR stays unavailable for lineup fill)
  const available = (team.roster || []).filter(p => !byeIds.has(String(p.id)) && !p.isIR);
  const trial = { ...team, roster: available };
- const alt = optimalStarterLineup(trial, counts, flexElig, sfElig);
- const holes = unfilledSlots(available, counts);
+ const alt = optimalStarterLineup(trial, counts, flexElig, sfElig, { healthyOnly: true });
+ const holes = unfilledSlots(available, counts, { healthyOnly: true });
  const altById = {};
  alt.assignments.forEach(a => { altById[String(a.id)] = a; });
 
@@ -8431,9 +8478,12 @@
 
  // Optimal legal lineup: maximize Σ raw FantasyCalc value (assignment authority).
  // Returns assignments so each starter maps to exactly one slot kind.
- function optimalStarterLineup(team, counts, flexElig, sfElig){
+ function optimalStarterLineup(team, counts, flexElig, sfElig, opts){
+ // Default: full strength (IR players count as normal assets/starters).
+ // Pass { healthyOnly: true } for this-week Start/Sit, bye holes, weekly warnings.
+ const healthyOnly = !!(opts && opts.healthyOnly);
  const players = (team.roster || [])
- .filter(p => !p.isIR)
+ .filter(p => !healthyOnly || !p.isIR)
  .map(p => ({
  id: p.id,
  name: p.fullName,
@@ -8539,17 +8589,16 @@
  .map(p => {
  const value = p.value || 0;
  const posW = benchPosWeight(p.position, counts);
- // IR stashes are assets but not real next-man-up depth (can't fill starters)
- const irW = p.isIR ? 0.28 : 1.0;
  return {
  id: p.id,
  name: p.fullName,
  position: p.position,
  value,
  posW,
- weighted: value * posW * irW,
+ weighted: value * posW,
  starterOrBench: 'bench',
- isIR: !!p.isIR
+ isIR: !!p.isIR,
+ isTaxi: !!p.isTaxi
  };
  })
  // Sort by weighted value so a high-price QB3 does not crowd out RB/WR depth
@@ -8670,12 +8719,12 @@
  const { starterRV, slotRV, counts, flexElig, sfElig } = levels;
  const starterSlotCount = countStarterSlots(counts);
 
+ const ctxSeed = { counts, flexElig, sfElig, slotRV, starterSlotCount };
  const base = state.teams.map(team => {
- const { assignments, starterIds, totalValue } = optimalStarterLineup(team, counts, flexElig, sfElig);
- const { starterValue, starterSurplus, details: starterDetails } =
- computeStarterMetrics(assignments, slotRV, { emptySlots: unfilledSlots(team.roster, counts) });
- const { benchRaw, benchQuality, K, benchCount, details: benchDetails, positionalDepth, nextManUp, residualScore } =
- computeBenchMetrics(team, starterIds, starterSlotCount, counts, flexElig, sfElig);
+ const m = rosterMetrics(team, team.roster, ctxSeed); // full strength
+ const { assignments, starterIds, totalValue, starterValue, starterSurplus,
+ benchRaw, benchQuality, K, benchCount, starterDetails, benchDetails,
+ positionalDepth, nextManUp, residualScore } = m;
  const pos = positionalSurplus(team, starterRV);
  const scoring = teamScoringStats(team);
  const wins = team.wins || 0;
