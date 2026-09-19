@@ -1601,6 +1601,9 @@
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
  Trade finder
  </button>
+ <button class="nav-item" data-panel="panel-compare">
+ Compare
+ </button>
  <button class="nav-item" data-panel="panel-sit">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
  Start/Sit lineup
@@ -1906,7 +1909,20 @@
  </section>
 
  <!-- ---------- TRADE FINDER ---------- -->
- <section class="panel" id="panel-finder">
+ 
+ <section class="panel" id="panel-compare">
+ <div class="section-title-row" style="margin-bottom:12px;">
+ <div class="section-title" style="margin:0;">Player compare</div>
+ </div>
+ <p class="needs-intro">Pick 2–4 players and compare value, trend, age, position rank, and roster context.</p>
+ <div class="waiver-toolbar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+ <input type="search" id="compare-search" placeholder="Search players…" style="min-width:180px;" />
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-compare-clear">Clear</button>
+ </div>
+ <div id="compare-selected" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;"></div>
+ <div id="compare-results" class="hist-list"></div>
+ </section>
+<section class="panel" id="panel-finder">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Trade finder</div>
  <button type="button" class="info-btn" id="btn-finder-info" title="How it works">
@@ -1921,11 +1937,15 @@
  </div>
  <div>
  <label class="field-label">Trade type</label>
- <select id="finder-kind" style="max-width:160px;display:block;">
- <option value="ALL">1-for-1 + 2-for-1</option>
- <option value="1">1-for-1 only</option>
- <option value="2">2-for-1 only</option>
- </select>
+ <select id="finder-kind" style="max-width:200px;display:block;">
+ <option value="ALL">All sizes</option>
+ <option value="1">1-for-1</option>
+ <option value="2">2-for-1 / 1-for-2</option>
+ <option value="22">2-for-2</option>
+ <option value="33">3-for-3</option>
+ <option value="mix">2-for-3 / 3-for-2</option>
+ <option value="buy">Buy-low targets</option>
+</select>
  </div>
  <button type="button" class="btn btn-primary btn-sm" id="btn-finder-run" style="margin-top:18px;">Find trades</button>
  <span id="finder-status" style="font-size:11.5px;color:var(--text-muted);margin-top:22px;"></span>
@@ -2182,7 +2202,14 @@
  <p class="hint" id="drawer-league-info">-</p>
  </div>
  <div class="small-btn-row">
- <button class="btn btn-ghost btn-sm" id="btn-apply-settings">Apply & recalculate</button>
+ 
+ <hr class="drawer-divider">
+ <div class="drawer-row">
+ <label class="field-label" for="set-show-pct">Show % changes</label>
+ <input type="checkbox" id="set-show-pct" />
+ </div>
+ <p class="hint">When off, trend and value moves show absolute amounts only (no %).</p>
+<button class="btn btn-ghost btn-sm" id="btn-apply-settings">Apply & recalculate</button>
  </div>
  <hr class="drawer-divider">
  <div class="field">
@@ -2303,7 +2330,7 @@
  <div id="info-content-rate" style="display:none;">
  <h2>Rate my team</h2>
  <p class="info-sub">Letter grade is relative to this league only.</p>
- <p>Grades are <strong>not</strong> league Power percentiles. Quality is 0-100 from starter value vs a competitive target (about 1.55x replacement per slot), empty or thin slots, bench depth, and how much value is in the starting lineup. League rank is just context.</p>
+ <p>Grade uses full-strength lineup surplus relative to this league (z-score). VORP stays a scarcity diagnostic on Rankings/Needs, not the letter grade. Grade uses full-strength lineup surplus vs this league (z-score). VORP is a scarcity diagnostic on Rankings/Needs, not the letter. Quality (shown as a number) is 0-100 from starter value vs a competitive target (about 1.55x replacement per slot), empty or thin slots, bench depth, and how much value is in the starting lineup. League rank is just context.</p>
  <p>Tips look at positional surplus, whether you already roster extra players at that spot, and rough Power impact of closing the gap.</p>
  </div>
  <div id="info-content-finder" style="display:none;">
@@ -3300,7 +3327,7 @@
  ts: Date.now()
  });
 
- attachValues();
+ await loadValueAdjustments(); attachValues();
 
  // Apply pending trade from share link if present
  if(state.pendingTrade){
@@ -3345,13 +3372,88 @@
  }
  }
 
+ function fallbackKickDefValue(player){
+ // FantasyCalc's public values feed is skill-only (QB/RB/WR/TE). Approximate K/DST.
+ const pos = player.position;
+ if(pos !== 'K' && pos !== 'DST' && pos !== 'DEF') return 0;
+ const isDyn = !!state.isDynasty;
+ // Dynasty: streaming positions are near-worthless as trade chips
+ if(isDyn) return pos === 'DST' || pos === 'DEF' ? 80 : 60;
+ // Redraft: rough tiers so power/trades can rank streamers
+ // Prefer known strong DST names lightly
+ const name = normalizeName(player.fullName || '');
+ const strongDst = ['ravens','bills','49ers','niners','cowboys','jets','browns','steelers','eagles','dolphins','chiefs'];
+ const midDst = ['packers','lions','saints','chargers','vikings','bears','texans','broncos','seahawks','patriots'];
+ if(pos === 'DST' || pos === 'DEF'){
+ if(strongDst.some(s => name.includes(s))) return 420;
+ if(midDst.some(s => name.includes(s))) return 280;
+ return 180;
+ }
+ // Kickers: name recognition
+ const eliteK = ['tucker','butker','carlson','aubrey','mclaughlin','elliott','bass','fairbairn'];
+ if(eliteK.some(s => name.includes(s))) return 320;
+ return 150;
+ }
+
+ // Manual value bumps from value-adjustments.json (plus / multiply / set)
+ let valueAdjustments = { players: [] };
+ async function loadValueAdjustments(){
+ try{
+ const res = await fetch('value-adjustments.json', { cache: 'no-store' });
+ if(!res.ok) return;
+ const data = await res.json();
+ if(data && Array.isArray(data.players)) valueAdjustments = data;
+ }catch(e){
+ // Optional file; ignore if missing when opened as file://
+ try{
+ // Embedded fallback so MHJ still gets +500 without a server
+ valueAdjustments = {
+ players: [{ name: 'Marvin Harrison Jr.', plus: 600, note: 'Starter bump' }]
+ };
+ }catch(e2){}
+ }
+ }
+ function applyValueAdjustment(player, baseValue){
+ let v = typeof baseValue === 'number' ? baseValue : 0;
+ const key = normalizeName(player.fullName || player.name || '');
+ if(!key) return v;
+ const rules = (valueAdjustments && valueAdjustments.players) || [];
+ for(const rule of rules){
+ if(!rule || !rule.name) continue;
+ if(normalizeName(rule.name) !== key) continue;
+ if(typeof rule.set === 'number') v = rule.set;
+ if(typeof rule.multiply === 'number') v = v * rule.multiply;
+ if(typeof rule.plus === 'number') v = v + rule.plus;
+ if(typeof rule.minus === 'number') v = v - rule.minus;
+ player.valueAdj = rule;
+ break;
+ }
+ return Math.max(0, v);
+ }
+
  function attachValues(){
  const fc = { idx: state.fcIndex, dstList: state.fcDst, byExternalId: state.fcById, list: state.fcList };
  state.teams.forEach(team => {
  team.roster.forEach(p => {
  const m = matchPlayer(p, fc);
- p.value = m ? m.value : 0;
- p.matched = !!m;
+ if(m){
+ p.value = applyValueAdjustment(p, m.value || 0);
+ p.matched = true;
+ p.fcEntry = m;
+ p.fcRawValue = m.value || 0;
+ p.trend30 = typeof m.trend30Day === 'number' ? m.trend30Day : null;
+ p.fcAge = m.player && m.player.maybeAge != null ? m.player.maybeAge : null;
+ p.fcVol = typeof m.maybeMovingStandardDeviation === 'number' ? m.maybeMovingStandardDeviation : null;
+ } else {
+ const fb = fallbackKickDefValue(p);
+ p.fcRawValue = fb;
+ p.value = applyValueAdjustment(p, fb);
+ p.matched = p.value > 0;
+ p.fcEntry = null;
+ p.trend30 = null;
+ p.fcAge = null;
+ p.fcVol = null;
+ }
  });
  });
  }
@@ -5434,7 +5536,9 @@
  ? (d > 0.5 ? 'down' : d < -0.5 ? 'up' : '')
  : (d > 0.5 ? 'up' : d < -0.5 ? 'down' : '');
  const sign = d >= 0 ? '+' : '';
- return `<span class="pct-cell ${cls}">${fmtPts(val)} <span style="font-size:10px;opacity:.85;">(${sign}${pct.toFixed(0)}%)</span></span>`;
+ return showPctChanges()
+ ? `<span class="pct-cell ${cls}">${fmtPts(val)} <span style="font-size:10px;opacity:.85;">(${sign}${pct.toFixed(0)}%)</span></span>`
+ : `<span class="pct-cell ${cls}">${fmtPts(val)}</span>`;
  }
 
  tbody.innerHTML = '';
@@ -5459,6 +5563,37 @@
 
 
  /* ---------- trade finder ---------- */
+
+ function teamPosNeedScores(team){
+ // Higher = more need. Based on surplus vs replacement at pure starter slots.
+ const levels = computeReplacementLevels();
+ const counts = levels.counts;
+ const starterRV = levels.starterRV || {};
+ const { assignments } = optimalStarterLineup(team, counts, counts.flexEligible, counts.sfEligible);
+ const byPos = { QB: [], RB: [], WR: [], TE: [] };
+ assignments.forEach(a => {
+ if(byPos[a.position]) byPos[a.position].push(a.value || 0);
+ });
+ const need = {};
+ ['QB','RB','WR','TE'].forEach(pos => {
+ const needN = pos === 'QB' ? (counts.QB || 0) + (counts.SF || 0) : (counts[pos] || 0);
+ const vals = byPos[pos] || [];
+ const avg = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+ const rv = starterRV[pos] || 400;
+ const ratio = rv > 0 ? avg / rv : 1;
+ // need high when ratio low or missing starters
+ let n = 50;
+ if(vals.length < needN) n = 90;
+ else if(ratio < 1.1) n = 80;
+ else if(ratio < 1.5) n = 60;
+ else if(ratio < 2.0) n = 35;
+ else if(ratio < 2.8) n = 20;
+ else n = 8;
+ need[pos] = n;
+ });
+ return need;
+ }
+
  function runTradeFinder(){
  const status = el('finder-status');
  const results = el('finder-results');
@@ -5484,101 +5619,136 @@
  if(selectedPartners.length){
  partners = partners.filter(t => selectedPartners.includes(String(t.id)));
  }
+ const myNeed = teamPosNeedScores(me);
  const hits = [];
  const seen = new Set();
 
  function sig(send, recv){
- const s = send.map(p => String(p.id)).sort().join(',');
- const r = recv.map(p => String(p.id)).sort().join(',');
- return s + '=>' + r;
+ return send.map(p => String(p.id)).sort().join(',') + '=>' + recv.map(p => String(p.id)).sort().join(',');
  }
  function topPlayers(team, n, posAllow){
  return (team.roster || [])
- .filter(p => p.matched && (p.value || 0) > 0 && !p.isIR)
+ .filter(p => p.matched && (p.value || 0) > 50 && !p.isIR && !p.isTaxi)
  .filter(p => !posAllow || !posAllow.length || posAllow.includes(p.position))
  .slice()
  .sort((a,b) => (b.value||0) - (a.value||0))
  .slice(0, n);
  }
-
- partners.forEach(partner => {
- const mine = topPlayers(me, 10, sendPos);
- const theirs = topPlayers(partner, 10, getPos);
- if(kind !== '2'){
- mine.forEach(a => {
- theirs.forEach(b => {
- const key = sig([a], [b]);
+ function combos(arr, k){
+ if(k === 1) return arr.map(x => [x]);
+ if(k <= 0 || arr.length < k) return [];
+ const out = [];
+ for(let i = 0; i <= arr.length - k; i++){
+ combos(arr.slice(i+1), k-1).forEach(rest => out.push([arr[i], ...rest]));
+ }
+ return out;
+ }
+ function packageVal(list){ return list.reduce((s,p) => s + (p.value||0), 0); }
+ function needFitScore(sendList, recvList, myNeedMap, partnerNeedMap){
+ // Prefer receiving at positions we need, sending where we are surplus
+ let score = 0;
+ recvList.forEach(p => { score += (myNeedMap[p.position] || 30); });
+ sendList.forEach(p => { score += Math.max(0, 70 - (myNeedMap[p.position] || 30)); });
+ // Partner: they should need what we send
+ sendList.forEach(p => { score += (partnerNeedMap[p.position] || 20) * 0.35; });
+ recvList.forEach(p => { score += Math.max(0, 50 - (partnerNeedMap[p.position] || 30)) * 0.25; });
+ return score;
+ }
+ function tryPackage(partner, sendList, recvList, label){
+ const key = sig(sendList, recvList);
  if(seen.has(key)) return;
- const valGap = Math.abs((a.value||0) - (b.value||0));
- const maxV = Math.max(a.value||0, b.value||0, 1);
- if(valGap / maxV > 0.22) return;
- const tradeA = [{ id:a.id, isPick:false, name:a.fullName, position:a.position, value:a.value }];
- const tradeB = [{ id:b.id, isPick:false, name:b.fullName, position:b.position, value:b.value }];
+ const sv = packageVal(sendList), rv = packageVal(recvList);
+ const maxV = Math.max(sv, rv, 1);
+ if(Math.abs(sv - rv) / maxV > 0.28) return;
+ const tradeA = sendList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
+ const tradeB = recvList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
  const impact = simulateTradePower(me, partner, tradeA, tradeB);
  if(!impact) return;
  if(impact.a.miss > (impact.a.beforeMiss || 0)) return;
  if(impact.b.miss > (impact.b.beforeMiss || 0)) return;
- if(impact.a.delta <= 0.2) return;
- if(impact.b.delta < -1.2) return;
+ if(impact.a.delta <= 0.15) return;
+ if(impact.b.delta < -1.8) return;
+ const pNeed = teamPosNeedScores(partner);
+ const fit = needFitScore(sendList, recvList, myNeed, pNeed);
+ // Reject trades that mainly upgrade our strongest pos while hurting a weak one
+ const recvNeedAvg = recvList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, recvList.length);
+ const sendNeedAvg = sendList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, sendList.length);
+ if(recvNeedAvg < 25 && sendNeedAvg > 55) return; // upgrading surplus, dumping need
+ // Buy-low mode filter
+ if(kind === 'buy'){
+ const ok = recvList.some(p => {
+ const c = classifyPlayerTrend(p);
+ return c && (c.tag === 'injury' || c.tag === 'drift') && c.pct <= -8;
+ });
+ if(!ok) return;
+ }
  seen.add(key);
  hits.push({
- kind: '1-for-1', me, partner, send:[a], recv:[b],
+ kind: label, me, partner, send: sendList, recv: recvList,
  deltaMe: impact.a.delta, deltaThem: impact.b.delta,
- tradeA, tradeB
- });
- });
+ fit, tradeA, tradeB
  });
  }
- if(kind !== '1'){
- for(let i = 0; i < mine.length; i++){
- for(let j = i + 1; j < Math.min(mine.length, i + 6); j++){
- theirs.slice(0, 6).forEach(b => {
- const a1 = mine[i], a2 = mine[j];
- const key = sig([a1,a2], [b]);
- if(seen.has(key)) return;
- const sendVal = (a1.value||0)+(a2.value||0);
- const valGap = Math.abs(sendVal - (b.value||0));
- const maxV = Math.max(sendVal, b.value||0, 1);
- if(valGap / maxV > 0.25) return;
- const tradeA = [
- { id:a1.id, isPick:false, name:a1.fullName, position:a1.position, value:a1.value },
- { id:a2.id, isPick:false, name:a2.fullName, position:a2.position, value:a2.value }
- ];
- const tradeB = [{ id:b.id, isPick:false, name:b.fullName, position:b.position, value:b.value }];
- const impact = simulateTradePower(me, partner, tradeA, tradeB);
- if(!impact) return;
- if(impact.a.miss > (impact.a.beforeMiss || 0) || impact.b.miss > (impact.b.beforeMiss || 0)) return;
- if(impact.a.delta <= 0.25) return;
- if(impact.b.delta < -1.5) return;
- seen.add(key);
- hits.push({
- kind: '2-for-1', me, partner, send:[a1,a2], recv:[b],
- deltaMe: impact.a.delta, deltaThem: impact.b.delta,
- tradeA, tradeB
+
+ const want1 = kind === 'ALL' || kind === '1' || kind === 'buy';
+ const want21 = kind === 'ALL' || kind === '2' || kind === 'buy';
+ const want22 = kind === 'ALL' || kind === '22' || kind === 'buy';
+ const want33 = kind === '33' || kind === 'ALL';
+ const wantMix = kind === 'mix' || kind === 'ALL';
+
+ partners.forEach(partner => {
+ const mine = topPlayers(me, kind === '33' ? 8 : 10, sendPos);
+ const theirs = topPlayers(partner, kind === '33' ? 8 : 10, getPos);
+ if(want1){
+ mine.forEach(a => theirs.forEach(b => tryPackage(partner, [a], [b], '1-for-1')));
+ }
+ if(want21){
+ combos(mine, 2).slice(0, 24).forEach(pair => {
+ theirs.slice(0, 7).forEach(b => tryPackage(partner, pair, [b], '2-for-1'));
  });
+ mine.slice(0, 7).forEach(a => {
+ combos(theirs, 2).slice(0, 20).forEach(pair => tryPackage(partner, [a], pair, '1-for-2'));
  });
  }
+ if(want22){
+ combos(mine, 2).slice(0, 18).forEach(sp => {
+ combos(theirs, 2).slice(0, 18).forEach(rp => tryPackage(partner, sp, rp, '2-for-2'));
+ });
  }
+ if(wantMix){
+ combos(mine, 2).slice(0, 12).forEach(sp => {
+ combos(theirs, 3).slice(0, 12).forEach(rp => tryPackage(partner, sp, rp, '2-for-3'));
+ });
+ combos(mine, 3).slice(0, 12).forEach(sp => {
+ combos(theirs, 2).slice(0, 12).forEach(rp => tryPackage(partner, sp, rp, '3-for-2'));
+ });
+ }
+ if(want33){
+ combos(mine, 3).slice(0, 10).forEach(sp => {
+ combos(theirs, 3).slice(0, 10).forEach(rp => tryPackage(partner, sp, rp, '3-for-3'));
+ });
  }
  });
 
- // Cluster near-duplicates: same receive player + same partner, keep best for you
  const bestByCluster = new Map();
  hits.forEach(h => {
- const cluster = h.partner.id + '|' + h.recv.map(p => p.id).sort().join(',');
+ const cluster = h.partner.id + '|' + h.recv.map(p => p.id).sort().join(',') + '|' + h.send.map(p => p.id).sort().join(',');
  const prev = bestByCluster.get(cluster);
- if(!prev || h.deltaMe > prev.deltaMe + 0.05 || (Math.abs(h.deltaMe - prev.deltaMe) < 0.05 && h.deltaThem > prev.deltaThem)){
- bestByCluster.set(cluster, h);
- }
+ const score = (h) => h.deltaMe * 2 + Math.min(h.deltaThem, 2) * 0.6 + (h.fit || 0) * 0.02;
+ if(!prev || score(h) > score(prev)) bestByCluster.set(cluster, h);
  });
  const deduped = Array.from(bestByCluster.values());
- deduped.sort((a,b) => (b.deltaMe + Math.min(b.deltaThem, 1.5)*0.5) - (a.deltaMe + Math.min(a.deltaThem, 1.5)*0.5));
- const top = deduped.slice(0, 20);
+ deduped.sort((a,b) => {
+ const sa = a.deltaMe * 2 + Math.min(a.deltaThem, 2) * 0.6 + (a.fit || 0) * 0.02;
+ const sb = b.deltaMe * 2 + Math.min(b.deltaThem, 2) * 0.6 + (b.fit || 0) * 0.02;
+ return sb - sa;
+ });
+ const top = deduped.slice(0, 24);
 
- if(status) status.textContent = top.length ? (top.length + ' distinct packages') : 'No fair two-way fits';
+ if(status) status.textContent = top.length ? (top.length + ' packages') : 'No fits that help your needs';
  results.innerHTML = '';
  if(!top.length){
- results.innerHTML = '<div class="hist-empty">Nothing cleared the bar (helps you, both sides can still field starters, market gap tight). Loosen position filters or try another partner.</div>';
+ results.innerHTML = '<div class="hist-empty">Nothing cleared the bar (helps you at positions of need, both sides still field starters, market gap tight).</div>';
  return;
  }
  top.forEach((h, idx) => {
@@ -5588,6 +5758,7 @@
  const recvStr = h.recv.map(p => p.fullName + ' (' + p.position + ')').join(' + ');
  const dMe = (h.deltaMe >= 0 ? '+' : '') + h.deltaMe.toFixed(1);
  const dThem = (h.deltaThem >= 0 ? '+' : '') + h.deltaThem.toFixed(1);
+ const needNote = h.recv.map(p => p.position + ' need ' + (myNeed[p.position]||0)).join(', ');
  card.innerHTML = `
  <div class="hist-head">
  <div class="hist-teams">${escapeHtml(h.me.name)} ⇄ ${escapeHtml(h.partner.name)} · ${h.kind}</div>
@@ -5598,6 +5769,7 @@
  <div class="hist-vs">for</div>
  <div><div class="hist-side-label">You get</div><div class="hist-asset">${escapeHtml(recvStr)}</div></div>
  </div>
+ <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">Need fit: ${escapeHtml(needNote)}</div>
  <div style="margin-top:10px;">
  <button type="button" class="btn btn-ghost btn-sm finder-open-trade" data-idx="${idx}">Open in Trade tool</button>
  </div>`;
@@ -6457,6 +6629,157 @@
  if(best.ts === current.ts) return null;
  return { prev: best, cur: current, hours: (current.ts - best.ts) / 3600000 };
  }
+
+ /* ---------- Player trend lens (trade timing; separate from Power) ---------- */
+ function getFcTrendBundle(playerOrName){
+ // Look up FC row by name / roster player
+ let entry = null;
+ if(playerOrName && playerOrName.fcEntry) entry = playerOrName.fcEntry;
+ if(!entry && playerOrName && Array.isArray(state.fcValues)){
+ const key = normalizeName(playerOrName.fullName || playerOrName.name || playerOrName);
+ entry = state.fcValues.find(e => e.player && normalizeName(e.player.name) === key) || null;
+ }
+ if(!entry) return null;
+ const cur = typeof entry.value === 'number' ? entry.value : 0;
+ const t30 = typeof entry.trend30Day === 'number' ? entry.trend30Day : 0;
+ const prev = cur - t30;
+ const pct = prev > 0 ? (t30 / prev) * 100 : 0;
+ const age = entry.player && entry.player.maybeAge != null ? Number(entry.player.maybeAge) : null;
+ const pos = normalizeFcPosition(entry.player && entry.player.position) || null;
+ const vol = typeof entry.maybeMovingStandardDeviation === 'number' ? entry.maybeMovingStandardDeviation : null;
+ const volPerc = typeof entry.maybeMovingStandardDeviationPerc === 'number' ? entry.maybeMovingStandardDeviationPerc : null;
+ // Approximate 30d baseline; without history, treat prev as "recent avg"
+ const pctile = null; // needs longer history
+ return { entry, cur, t30, prev, pct, age, pos, vol, volPerc, name: entry.player && entry.player.name };
+ }
+
+ function expectedAgeDecayPct(pos, age){
+ // Rough expected annual-ish value decay; used only as a filter on "is this just age?"
+ if(age == null || !pos) return 0;
+ if(pos === 'RB'){
+ if(age >= 28) return 12;
+ if(age >= 26) return 6;
+ return 2;
+ }
+ if(pos === 'WR'){
+ if(age >= 30) return 8;
+ if(age >= 28) return 4;
+ return 1;
+ }
+ if(pos === 'TE'){
+ if(age >= 31) return 7;
+ if(age >= 29) return 3;
+ return 1;
+ }
+ if(pos === 'QB'){
+ if(age >= 34) return 6;
+ if(age >= 32) return 3;
+ return 1;
+ }
+ return 2;
+ }
+
+ function classifyPlayerTrend(playerOrName){
+ // Returns { tag, advice, pct, t30, cur, label } — signal, not a prediction
+ const b = getFcTrendBundle(playerOrName);
+ if(!b || !(b.cur > 0)) return null;
+ // Ignore tiny absolute noise
+ if(Math.abs(b.t30) < 80 && Math.abs(b.pct) < 4){
+ return { tag: 'flat', advice: 'Stable. Trend is noise-level.', pct: b.pct, t30: b.t30, cur: b.cur, label: 'Flat' };
+ }
+ const injury = playerInjuryStatus(playerOrName) || playerInjuryStatus(b.entry);
+ const expDecay = expectedAgeDecayPct(b.pos, b.age);
+ const dropExceedsAge = b.pct < 0 && Math.abs(b.pct) > expDecay + 8;
+
+ let tag = 'drift';
+ let label = 'Unexplained';
+ let advice = 'Flag for review. Market moved without a clear tag.';
+
+ if(injury && (injury === 'out' || injury === 'ir' || injury === 'pup' || injury === 'doubtful')){
+ tag = 'injury';
+ label = 'Injury dip';
+ advice = b.pct < -5
+ ? 'Buy-low candidate if return timeline is short. Market may be overreacting.'
+ : 'Injured. Prefer short-term bench plan over long-term write-off.';
+ } else if(b.pct <= -12 && b.age != null && b.age >= 27 && !dropExceedsAge && (b.pos === 'RB' || b.pos === 'WR')){
+ tag = 'age';
+ label = 'Age curve';
+ advice = 'Looks like normal aging, not a discount.';
+ } else if(b.pct <= -15 && dropExceedsAge){
+ tag = 'role';
+ label = 'Role risk';
+ advice = 'Drop exceeds age curve. Likely role/depth-chart; avoid or sell unless you know otherwise.';
+ } else if(b.pct >= 15){
+ tag = 'hype';
+ label = 'Hype spike';
+ advice = 'Sell-high window if the bump is a hot stretch without a lasting role change.';
+ } else if(b.pct <= -10){
+ tag = 'drift';
+ label = 'Soft dip';
+ advice = 'Mild dislocation. Useful timing note, not automatic buy.';
+ } else if(b.pct >= 8){
+ tag = 'hype';
+ label = 'Rising';
+ advice = 'Appreciating. Fine to hold; less ideal as a buy.';
+ }
+
+ // Volatility note
+ if(b.vol != null && Math.abs(b.vol) >= 8 && tag !== 'injury'){
+ advice += ' High FC volatility.';
+ }
+ return { tag, label, advice, pct: b.pct, t30: b.t30, cur: b.cur, age: b.age, pos: b.pos, vol: b.vol };
+ }
+
+
+ function showPctChanges(){
+ try{
+ if(el('set-show-pct')) return !!el('set-show-pct').checked;
+ return localStorage.getItem('fd_show_pct') === '1';
+ }catch(e){ return false; }
+ }
+ function initShowPctSetting(){
+ const cb = el('set-show-pct');
+ if(!cb) return;
+ try{ cb.checked = localStorage.getItem('fd_show_pct') === '1'; }catch(e){}
+ if(!cb._bound){
+ cb._bound = true;
+ cb.addEventListener('change', () => {
+ try{ localStorage.setItem('fd_show_pct', cb.checked ? '1' : '0'); }catch(e){}
+ // Refresh panels that show %
+ try{ if(typeof renderTrends === 'function') renderTrends(); }catch(e){}
+ try{ if(typeof renderFairness === 'function') renderFairness(); }catch(e){}
+ try{ if(typeof renderTradeSide === 'function'){ renderTradeSide('a'); renderTradeSide('b'); } }catch(e){}
+ try{ if(typeof renderLuck === 'function') renderLuck(); }catch(e){}
+ });
+ }
+ }
+
+ function trendChipHtml(playerOrName){
+ const c = classifyPlayerTrend(playerOrName);
+ if(!c) return '';
+ const sign = c.pct >= 0 ? '+' : '';
+ const color = c.pct >= 5 ? '#3d8f5f' : c.pct <= -5 ? '#c45c52' : 'var(--text-muted)';
+ const pctPart = showPctChanges() ? (` ${sign}${c.pct.toFixed(0)}%`) : '';
+ return `<span class="trend-chip" title="${escapeHtml(c.advice)}" style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:700;background:rgba(120,140,160,0.12);color:${color};">${escapeHtml(c.label)}${pctPart}</span>`;
+ }
+
+ function portfolioTrendSummary(team){
+ if(!team) return null;
+ let up = 0, down = 0, flat = 0, sumT30 = 0, n = 0;
+ const sell = [], buy = [];
+ (team.roster || []).forEach(p => {
+ if(!(p.value > 0)) return;
+ const c = classifyPlayerTrend(p);
+ if(!c) return;
+ n++;
+ sumT30 += c.t30 || 0;
+ if(c.pct >= 8){ up++; if(c.tag === 'hype') sell.push({ p, c }); }
+ else if(c.pct <= -8){ down++; if(c.tag === 'injury' || c.tag === 'drift') buy.push({ p, c }); }
+ else flat++;
+ });
+ return { up, down, flat, sumT30, n, sell: sell.slice(0, 5), buy: buy.slice(0, 5) };
+ }
+
  function topMovers(mapPrev, mapCur, n, mode){
  // mode value: map id -> {name,pos,value}; power: id -> {name,power}
  const rows = [];
@@ -6498,10 +6821,13 @@
           const detail = isPower
             ? `${r.prev.toFixed(1)} → ${r.cur.toFixed(1)}`
             : (r.prev != null ? `${fmt(r.prev)} → ${fmt(r.cur)}` : fmt(r.cur));
-          const pctStr = r.pct != null && isFinite(r.pct)
+          const pctStr = (showPctChanges() && r.pct != null && isFinite(r.pct))
             ? ` (${sign}${r.pct.toFixed(0)}%)`
             : '';
-          return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border-subtle);">
+          const tag = (!isPower && r.name) ? (classifyPlayerTrend(r.name) || {}) : {};
+ const tagStr = tag.label ? ' <span style="font-size:10px;color:var(--text-muted);">'+escapeHtml(tag.label)+'</span>' : '';
+ const tip = tag.advice || detail;
+ return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border-subtle);">
             <span>${i+1}. ${escapeHtml(r.name)}${r.pos ? ' <span style="color:var(--text-muted)">'+escapeHtml(r.pos)+'</span>' : ''}</span>
             <span class="pct-cell ${cls}" title="${escapeHtml(detail)}">${sign}${isPower ? r.delta.toFixed(1) : fmt(r.delta)}${pctStr}</span>
           </div>`;
@@ -6652,6 +6978,136 @@
  }
  function bindAllTableSorts(){
  document.querySelectorAll('.panel table, .table-wrap table, table.data-table').forEach(enableTableSort);
+ }
+
+
+ function renderCompare(){
+ const box = el('compare-results');
+ const selBox = el('compare-selected');
+ const search = el('compare-search');
+ if(!box) return;
+ if(!state._compareList) state._compareList = [];
+
+ function allPlayers(){
+ const out = [];
+ const seen = new Set();
+ (state.teams || []).forEach(t => {
+ (t.roster || []).forEach(p => {
+ const k = normalizeName(p.fullName);
+ if(seen.has(k)) return;
+ seen.add(k);
+ out.push({ ...p, ownerTeam: t.name, ownerId: t.id });
+ });
+ });
+ // FC pool extras
+ (state.fcValues || []).forEach(e => {
+ const p = e.player;
+ if(!p || !p.name) return;
+ const pos = normalizeFcPosition(p.position);
+ if(!pos || !['QB','RB','WR','TE'].includes(pos)) return;
+ const k = normalizeName(p.name);
+ if(seen.has(k)) return;
+ seen.add(k);
+ out.push({
+ fullName: p.name, position: pos, value: e.value || 0, matched: true,
+ trend30: e.trend30Day, fcEntry: e, ownerTeam: 'Free agent', ownerId: null,
+ id: 'fc-' + (p.id || k)
+ });
+ });
+ return out.sort((a,b) => (b.value||0) - (a.value||0));
+ }
+
+ if(search && !search._bound){
+ search._bound = true;
+ search.addEventListener('input', () => renderCompare());
+ }
+ const clearBtn = el('btn-compare-clear');
+ if(clearBtn && !clearBtn._bound){
+ clearBtn._bound = true;
+ clearBtn.addEventListener('click', () => { state._compareList = []; renderCompare(); });
+ }
+
+ const q = (search && search.value || '').trim().toLowerCase();
+ const pool = allPlayers().filter(p => !q || (p.fullName||'').toLowerCase().includes(q) || (p.position||'').toLowerCase() === q);
+
+ // Selected chips
+ if(selBox){
+ selBox.innerHTML = state._compareList.map((p,i) =>
+ `<span class="asset-chip" style="cursor:pointer;" data-rm="${i}"><span class="chip-name">${escapeHtml(p.fullName)}</span> <span class="val">${fmt(p.value)}</span></span>`
+ ).join('') || '<span style="color:var(--text-muted);font-size:13px;">Select players below (up to 4).</span>';
+ selBox.querySelectorAll('[data-rm]').forEach(node => {
+ node.addEventListener('click', () => {
+ state._compareList.splice(Number(node.dataset.rm), 1);
+ renderCompare();
+ });
+ });
+ }
+
+ // Search hits
+ let html = '';
+ if(q && pool.length){
+ html += '<div class="rec-card" style="margin-bottom:12px;"><h3>Search</h3>';
+ pool.slice(0, 12).forEach(p => {
+ const on = state._compareList.some(x => normalizeName(x.fullName) === normalizeName(p.fullName));
+ html += `<div class="roster-row" style="cursor:pointer;" data-add="${escapeHtml(p.fullName)}">
+ <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span>${escapeHtml(p.fullName)}</span>
+ <span class="rval">${fmt(p.value)} ${on ? '✓' : '+'}</span></div>`;
+ });
+ html += '</div>';
+ }
+
+ // Comparison table
+ if(state._compareList.length >= 2){
+ const cols = state._compareList;
+ const rows = [
+ ['Name', p => escapeHtml(p.fullName)],
+ ['Pos', p => p.position || '-'],
+ ['Owner', p => escapeHtml(p.ownerTeam || '-')],
+ ['Value', p => fmt(p.value)],
+ ['30d trend', p => {
+ const c = classifyPlayerTrend(p);
+ if(!c) return '-';
+ return (c.pct >= 0 ? '+' : '') + c.pct.toFixed(0) + '% · ' + c.label;
+ }],
+ ['Trend advice', p => {
+ const c = classifyPlayerTrend(p);
+ return c ? escapeHtml(c.advice) : '-';
+ }],
+ ['Age (FC)', p => {
+ const b = getFcTrendBundle(p);
+ return b && b.age != null ? b.age.toFixed(1) : '-';
+ }],
+ ['FC volatility', p => {
+ const b = getFcTrendBundle(p);
+ return b && b.vol != null ? String(b.vol) : '-';
+ }],
+ ['Injury', p => playerInjuryStatus(p) || '-'],
+ ];
+ html += '<div style="overflow-x:auto;"><table><thead><tr><th>Metric</th>';
+ cols.forEach(p => { html += '<th>' + escapeHtml(p.fullName) + '</th>'; });
+ html += '</tr></thead><tbody>';
+ rows.forEach(([label, fn]) => {
+ html += '<tr><td>' + label + '</td>';
+ cols.forEach(p => { html += '<td class="val-cell">' + fn(p) + '</td>'; });
+ html += '</tr>';
+ });
+ html += '</tbody></table></div>';
+ } else if(state._compareList.length === 1){
+ html += '<div class="hist-empty">Add one more player to compare.</div>';
+ }
+
+ box.innerHTML = html;
+ box.querySelectorAll('[data-add]').forEach(node => {
+ node.addEventListener('click', () => {
+ const name = node.getAttribute('data-add');
+ const p = pool.find(x => x.fullName === name);
+ if(!p) return;
+ if(state._compareList.some(x => normalizeName(x.fullName) === normalizeName(p.fullName))) return;
+ if(state._compareList.length >= 4) return;
+ state._compareList.push(p);
+ renderCompare();
+ });
+ });
  }
 
  function renderHome(){
@@ -8019,7 +8475,7 @@
  const already = alreadyIdx >= 0;
  const row = document.createElement('div');
  row.className = 'roster-row' + (already ? ' added' : '');
- row.innerHTML = `<span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span><span class="rname-text">${escapeHtml(p.fullName)}${p.matched ? '' : ' <span class="no-match">(unmatched)</span>'}</span></span><span class="add-hint">${already ? '' : '+ add'}</span><span class="rval">${p.matched ? fmt(p.value) : '-'}</span>`;
+ row.innerHTML = `<span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span><span class="rname-text">${escapeHtml(p.fullName)}${p.matched ? '' : ' <span class="no-match">(unmatched)</span>'}${trendChipHtml(p)}</span></span><span class="add-hint">${already ? '' : '+ add'}</span><span class="rval">${p.matched || p.value ? fmt(p.value) : '-'}</span>`;
  row.addEventListener('click', () => {
  if(already){
  tradeList.splice(alreadyIdx, 1);
@@ -8039,7 +8495,7 @@
  chip.innerHTML = `
  <span class="chip-left">
  <span class="pos-badge pos-${a.position}">${a.position}</span>
- <span class="chip-name">${escapeHtml(a.name)}</span>
+ <span class="chip-name">${escapeHtml(a.name)}${trendChipHtml(a)}</span>
  </span>
  <span class="val">${fmt(a.value)}</span>`;
  const rm = document.createElement('button');
@@ -8221,9 +8677,44 @@
  const parts = [];
  parts.push(`A sends <strong>${fmt(totalA)}</strong> · B sends <strong>${fmt(totalB)}</strong>`);
  if(pctDiff >= 1){
- parts.push(`gap of <strong>${fmt(Math.abs(diff))}</strong> (${pctDiff.toFixed(0)}%)`);
+ parts.push(showPctChanges()
+ ? `gap of <strong>${fmt(Math.abs(diff))}</strong> (${pctDiff.toFixed(0)}%)`
+ : `gap of <strong>${fmt(Math.abs(diff))}</strong>`);
  }
+ // Positional impact (value by position moving)
+ const posNet = { QB:0, RB:0, WR:0, TE:0, K:0, DST:0 };
+ state.tradeB.forEach(a => { // A receives B's assets
+ const pos = a.position === 'DEF' ? 'DST' : a.position;
+ if(posNet[pos] != null) posNet[pos] += (a.value || 0);
+ });
+ state.tradeA.forEach(a => { // A sends
+ const pos = a.position === 'DEF' ? 'DST' : a.position;
+ if(posNet[pos] != null) posNet[pos] -= (a.value || 0);
+ });
+ const posBits = Object.keys(posNet).filter(k => Math.abs(posNet[k]) >= 50).map(k => {
+ const v = posNet[k];
+ const sign = v >= 0 ? '+' : '';
+ return k + ' ' + sign + fmt(v);
+ });
+ if(posBits.length) parts.push('Pos for A: ' + posBits.join(', '));
+
+ // Timing (trend lens) — separate from fairness math
+ const timing = [];
+ [...state.tradeA, ...state.tradeB].forEach(a => {
+ const c = classifyPlayerTrend(a);
+ if(!c || Math.abs(c.pct) < 6) return;
+ const side = state.tradeA.includes(a) ? 'selling' : 'buying';
+ timing.push(side + ' ' + a.name + ' near ' + c.label.toLowerCase() + (showPctChanges() ? (' (' + (c.pct >= 0 ? '+' : '') + c.pct.toFixed(0) + '% 30d)') : ''));
+ });
  summary.innerHTML = parts.join(' · ');
+ if(timing.length){
+ summary.innerHTML += '<div style="margin-top:8px;font-size:12px;color:var(--text-secondary);">Timing (not fairness): ' +
+ timing.slice(0, 4).map(escapeHtml).join(' · ') +
+ '. Signals only; markets are often right.</div>';
+ }
+ if(posBits.length){
+ summary.innerHTML += '<div style="margin-top:6px;font-size:12px;color:var(--text-secondary);">Positional value net for side A (positive = A gains that pos).</div>';
+ }
 
  renderTradePowerImpact(teamA, teamB);
  syncUrl();
@@ -9182,6 +9673,7 @@
  if(btn.dataset.panel === 'panel-depth') renderDepth();
  if(btn.dataset.panel === 'panel-byes') renderByes();
  if(btn.dataset.panel === 'panel-home') renderHome();
+ if(btn.dataset.panel === 'panel-compare') renderCompare();
  if(btn.dataset.panel === 'panel-trends') renderTrends();
  if(btn.dataset.panel === 'panel-sit'){
  Promise.all([
@@ -9209,7 +9701,8 @@
  }
 
  /* ---------- settings ---------- */
- el('btn-settings').addEventListener('click', () => {
+ initShowPctSetting();
+el('btn-settings').addEventListener('click', () => {
  el('drawer').classList.add('show');
  el('overlay').classList.add('show');
  });
@@ -9312,7 +9805,7 @@
  state.isDynasty = isDynasty; state.numQBs = numQBs; state.ppr = ppr;
  state.valueMode = valueMode;
  state.fcValues = fcValues; state.fcIndex = fc.idx; state.fcById = fc.byExternalId; state.fcList = fc.list; state.picksAvailable = fc.picks; state.fcDst = fc.dstList;
- attachValues();
+ await loadValueAdjustments(); attachValues();
  waiverImpactCache = null;
  renderAll();
  }catch(err){
