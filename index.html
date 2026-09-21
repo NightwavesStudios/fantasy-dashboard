@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Fantasy Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -316,10 +316,14 @@
 
  .sidebar-nav {
  flex: 1;
+ min-height: 0;
  padding: 12px 10px;
  display: flex;
  flex-direction: column;
  gap: 2px;
+ overflow-y: auto;
+ overflow-x: hidden;
+ -webkit-overflow-scrolling: touch;
  }
 
  .nav-item {
@@ -345,6 +349,9 @@
  }
  .nav-item .icon { opacity: 0.75; }
  .nav-item.active .icon { opacity: 1; }
+ .nav-item, .btn, .nav-toggle, .pos-filter, .roster-row {
+ touch-action: manipulation;
+ }
 
  .nav-section {
  font-size: 10px;
@@ -355,6 +362,32 @@
  padding: 12px 10px 4px;
  }
  .nav-section:first-child { padding-top: 4px; }
+
+ #panel-compare .compare-picks {
+ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; min-height: 36px;
+ }
+ #panel-compare .compare-picks .asset-chip {
+ background: var(--surface-2); border: 1px solid var(--border);
+ }
+ #panel-compare .compare-search-panel {
+ border: 1px solid var(--border); border-radius: var(--radius);
+ background: var(--surface); margin-bottom: 14px; overflow: hidden;
+ }
+ #panel-compare .compare-search-panel h3 {
+ margin: 0; padding: 10px 12px; font-size: 12px; text-transform: uppercase;
+ letter-spacing: 0.04em; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle);
+ }
+ #panel-compare .compare-table-wrap {
+ border: 1px solid var(--border); border-radius: var(--radius);
+ overflow-x: auto; background: var(--surface);
+ }
+ #panel-compare .compare-table-wrap table { margin: 0; width: 100%; }
+ #panel-compare .compare-table-wrap th:first-child,
+ #panel-compare .compare-table-wrap td:first-child {
+ position: sticky; left: 0; background: var(--surface); z-index: 1;
+ font-weight: 600; color: var(--text-secondary); min-width: 110px;
+ }
+ 
 
  .sidebar-footer {
  padding: 12px 10px 16px;
@@ -1395,58 +1428,87 @@
 
  /* ---------- mobile ---------- */
  @media (max-width: 900px) {
- .trade-layout { grid-template-columns: 1fr; }
+ .trade-layout { grid-template-columns: 1fr; gap: 12px; }
+ .finder-filters { grid-template-columns: 1fr !important; }
  }
 
  @media (max-width: 860px) {
  .sidebar {
  width: 100%;
  height: auto;
- position: relative;
+ max-height: 100dvh;
+ position: sticky;
+ top: 0;
+ z-index: 40;
  border-right: 0;
  border-bottom: 1px solid var(--border);
+ background: var(--surface);
  }
  #app.show { flex-direction: column; }
- .content { margin-left: 0; }
+ .content { margin-left: 0; min-width: 0; }
  .sidebar-brand {
- padding: 12px 14px;
+ padding: 10px 12px;
+ padding-top: max(10px, env(safe-area-inset-top));
  display: flex;
  align-items: center;
  justify-content: space-between;
  gap: 10px;
  }
  .sidebar-brand > div { min-width: 0; }
+ .sidebar-brand h1 { font-size: 14px; }
+ .sidebar-brand .league-chip {
+ font-size: 10.5px;
+ white-space: nowrap;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ max-width: 70vw;
+ }
  .nav-toggle {
  display: inline-flex;
  align-items: center;
  justify-content: center;
- width: 36px;
- height: 36px;
+ width: 44px;
+ height: 44px;
  border-radius: var(--radius-sm);
  border: 1px solid var(--border);
  background: var(--surface-2);
  color: var(--text);
  cursor: pointer;
  flex-shrink: 0;
+ -webkit-tap-highlight-color: transparent;
  }
- .nav-toggle .icon { width: 18px; height: 18px; }
+ .nav-toggle .icon { width: 20px; height: 20px; }
  .sidebar-nav {
  display: none;
  flex-direction: column;
  flex-wrap: nowrap;
- padding: 8px 10px 4px;
- gap: 2px;
+ padding: 6px 10px 8px;
+ gap: 1px;
+ max-height: min(70dvh, calc(100dvh - 120px));
+ overflow-y: auto;
+ -webkit-overflow-scrolling: touch;
  }
  .sidebar.nav-open .sidebar-nav { display: flex; }
  .sidebar-footer {
  display: none;
  flex-direction: column;
  padding: 4px 10px 12px;
- gap: 2px;
+ padding-bottom: max(12px, env(safe-area-inset-bottom));
+ gap: 1px;
+ border-top: 1px solid var(--border-subtle);
  }
  .sidebar.nav-open .sidebar-footer { display: flex; }
- .nav-item { width: 100%; justify-content: flex-start; }
+ .nav-item {
+ width: 100%;
+ justify-content: flex-start;
+ min-height: 44px;
+ padding: 11px 12px;
+ font-size: 14px;
+ -webkit-tap-highlight-color: transparent;
  }
+ .nav-section { padding: 10px 12px 2px; }
+ }
+
  @media (min-width: 861px) {
  .nav-toggle { display: none !important; }
  }
@@ -1454,15 +1516,100 @@
  @media (max-width: 600px) {
  #setup-screen {
  padding: 20px 14px;
+ padding-bottom: max(24px, env(safe-area-inset-bottom));
  align-items: flex-start;
- padding-top: 36px;
+ padding-top: max(28px, env(safe-area-inset-top));
  }
- main { padding: 18px 14px 48px; }
- .card { padding: 14px; }
- .needs-grid { grid-template-columns: 1fr; }
- table { min-width: 720px; }
- #panel-rankings .card { overflow-x: auto; }
- #drawer { width: min(320px, 92vw); }
+ .setup-wrap { max-width: 100%; }
+ main {
+ padding: 14px 12px 56px;
+ padding-bottom: max(56px, calc(16px + env(safe-area-inset-bottom)));
+ }
+ .card { padding: 12px; border-radius: 10px; }
+ .needs-grid { grid-template-columns: 1fr; gap: 10px; }
+ .section-title { font-size: 17px; }
+ .section-title-row {
+ flex-wrap: wrap;
+ gap: 8px;
+ align-items: center;
+ }
+ .waiver-toolbar {
+ flex-direction: column;
+ align-items: stretch !important;
+ gap: 8px !important;
+ }
+ .waiver-toolbar select,
+ .waiver-toolbar input[type="search"],
+ .waiver-toolbar input:not([type="checkbox"]),
+ .waiver-toolbar .btn {
+ width: 100%;
+ max-width: none !important;
+ }
+ /* 16px inputs avoid iOS zoom on focus */
+ select, input[type="text"], input[type="search"], input[type="number"], textarea {
+ font-size: 16px !important;
+ min-height: 44px;
+ }
+ .btn, .btn-sm {
+ min-height: 44px;
+ padding: 10px 14px;
+ font-size: 14px;
+ }
+ .btn-sm { min-height: 40px; padding: 8px 12px; }
+ table { min-width: 640px; font-size: 12.5px; }
+ .card, #panel-rankings .card, #panel-playoffs,
+ #panel-luck .card, .compare-table-wrap {
+ overflow-x: auto;
+ -webkit-overflow-scrolling: touch;
+ }
+ #drawer {
+ width: min(100vw, 100%);
+ max-width: 100%;
+ }
+ .fairness { padding: 12px; }
+ .trade-side { min-width: 0; }
+ .roster-row {
+ padding: 10px 8px;
+ min-height: 44px;
+ gap: 8px;
+ }
+ .asset-chip { max-width: 100%; }
+ .hist-card { padding: 12px; }
+ .hist-sides {
+ flex-direction: column;
+ gap: 8px;
+ }
+ .hist-vs { transform: rotate(90deg); margin: 4px 0; }
+ .mu-card { padding: 12px; }
+ .mu-row {
+ flex-wrap: wrap;
+ gap: 8px;
+ }
+ .mu-rank-list { font-size: 13px; }
+ .mu-rank-row {
+ flex-wrap: wrap;
+ gap: 4px 10px;
+ padding: 10px 8px;
+ min-height: 44px;
+ }
+ .pos-filter {
+ min-height: 36px;
+ padding: 6px 12px;
+ }
+ .info-panel {
+ max-width: 100%;
+ margin: 0;
+ border-radius: 12px 12px 0 0;
+ max-height: 85dvh;
+ overflow-y: auto;
+ }
+ /* Home dashboard cards full width */
+ #home-grid .rec-card, #home-grid .home-card {
+ min-width: 0;
+ }
+ /* Reduce dense table pressure on playoffs */
+ #panel-playoffs table th,
+ #panel-playoffs table td { padding: 8px 6px; }
  }
 
  [data-theme="light"] {
@@ -1538,25 +1685,26 @@
  <input type="text" id="in-myteam-name" placeholder="Team name (saved with this league)" autocomplete="off">
  <p class="hint" style="margin-top:4px;">Matched after load. Also saved under Settings → My team.</p>
  </div>
- <button class="btn btn-primary" id="btn-load">Load league</button>
- <div class="status-line" id="status-line"><span class="spinner"></span><span id="status-text">Fetching league…</span></div>
- <div class="error-box" id="error-box"></div>
 
  <div class="advanced-toggle" id="espn-advanced-wrap">
- <button class="link-btn" id="toggle-advanced">Private league?</button>
+ <button type="button" class="link-btn" id="toggle-advanced">Private league? (ESPN cookies)</button>
  <div class="advanced-body" id="advanced-body">
  <div class="field">
  <label class="field-label">SWID cookie</label>
- <input type="text" id="in-swid" placeholder="{XXXXXXXX-XXXX-...}">
+ <input type="text" id="in-swid" placeholder="{XXXXXXXX-XXXX-...}" autocomplete="off">
  </div>
  <div class="field">
  <label class="field-label">espn_s2 cookie</label>
- <input type="password" id="in-espns2" placeholder="Long token from espn.com cookies">
+ <input type="password" id="in-espns2" placeholder="Long token from espn.com cookies" autocomplete="off">
  </div>
- <p class="hint">Get both from a browser where you're signed into ESPN: DevTools → Application → Cookies → fantasy.espn.com.</p>
+ <p class="hint">Desktop Chrome/Edge: open fantasy.espn.com signed in → F12 → Application → Cookies → https://fantasy.espn.com. Copy <strong>SWID</strong> (keep the {braces}) and the full <strong>espn_s2</strong> value (very long). Then press Load league. Cookies are sent through a proxy because the browser cannot attach them to ESPN directly.</p>
  </div>
  </div>
  <p class="hint" id="sleeper-note" style="display:none;">Sleeper's API is public read-only. Private leagues load without login.</p>
+
+ <button type="button" class="btn btn-primary" id="btn-load" style="margin-top:8px;">Load league</button>
+ <div class="status-line" id="status-line"><span class="spinner"></span><span id="status-text">Fetching league…</span></div>
+ <div class="error-box" id="error-box"></div>
  </div>
 
  <div class="recent-section" id="recent-section">
@@ -1602,6 +1750,7 @@
  Trade finder
  </button>
  <button class="nav-item" data-panel="panel-compare">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/><path d="M16 4v4M18 6h-4"/></svg></span>
  Compare
  </button>
  <button class="nav-item" data-panel="panel-sit">
@@ -2028,8 +2177,10 @@
  <div class="section-title" style="margin:0;">Playoff path</div>
  </div>
  <p class="needs-intro" id="path-intro">Games that matter most for your seed and bubble, based on current standings and remaining schedule.</p>
- <div class="waiver-toolbar" style="margin-bottom:12px;">
+ <div class="waiver-toolbar" style="margin-bottom:12px;gap:8px;align-items:center;flex-wrap:wrap;">
  <select id="path-team" style="max-width:240px;"></select>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-path-force">Run path early (override)</button>
+ <span id="path-force-warn" style="font-size:12px;color:var(--gold);"></span>
  </div>
  <div id="path-list" class="hist-list"></div>
  </section>
@@ -2125,6 +2276,10 @@
  </button>
  </div>
  <p class="needs-intro" id="playoffs-intro">Seeding from current standings. Odds from a simple simulation of remaining regular-season weeks using each team's scoring so far.</p>
+ <div class="waiver-toolbar" style="margin-bottom:8px;gap:8px;align-items:center;">
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-playoffs-force">Run odds early (override)</button>
+ <span id="playoffs-force-warn" style="font-size:12px;color:var(--gold);"></span>
+ </div>
  <div id="playoffs-meta" class="hist-meta"></div>
  <div style="overflow-x:auto;margin-top:12px;">
  <table>
@@ -2368,45 +2523,127 @@
  const RECENT_MAX = 6;
 
  const CORS_ATTEMPTS = [
- url => ({ url, credsOk:true }),
- url => ({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false }),
- url => ({ url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), credsOk:false }),
- url => ({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), credsOk:false })
+ url => ({ url, credsOk:true, isProxy:false }),
+ url => ({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false, isProxy:true }),
+ url => ({ url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), credsOk:false, isProxy:true }),
+ url => ({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), credsOk:false, isProxy:true })
  ];
 
- async function robustFetch(url, {credentials, timeoutMs=15000, headers}={}){
+ function corsProxyUrlWithCookie(targetUrl, cookie){
+ // Browser forbids the Cookie header on fetch(). corsproxy.io accepts
+ // upstream request headers via reqHeaders=name:value query params.
+ const base = 'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl);
+ if(!cookie) return base;
+ // cookie header value must be URL-encoded as a whole
+ return base + '&reqHeaders=' + encodeURIComponent('cookie:' + cookie);
+ }
+
+ function normalizeEspnSwid(swid){
+ if(!swid) return '';
+ let s = String(swid).trim();
+ // Users sometimes paste with or without braces
+ if(s && !s.startsWith('{') && /^[0-9A-Fa-f-]{36}$/.test(s)) s = '{' + s + '}';
+ return s;
+ }
+ function normalizeEspnS2(s2){
+ if(!s2) return '';
+ let s = String(s2).trim();
+ // Strip accidental wrapping quotes
+ if((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1,-1);
+ // If still URL-encoded (%xx), decode once
+ if(/%[0-9A-Fa-f]{2}/.test(s)){
+ try{ s = decodeURIComponent(s); }catch(e){}
+ }
+ return s;
+ }
+ function buildEspnCookieHeader(swid, espnS2){
+ const s = normalizeEspnSwid(swid);
+ const e = normalizeEspnS2(espnS2);
+ if(!s || !e) return null;
+ // ESPN expects both cookies on the request
+ return 'SWID=' + s + '; espn_s2=' + e;
+ }
+ function getEspnAuth(){
+ // Prefer live form values, fall back to state from last load
+ const sw = (el('in-swid') && el('in-swid').value) || state.espnSwid || '';
+ const s2 = (el('in-espns2') && el('in-espns2').value) || state.espnS2 || '';
+ return { swid: normalizeEspnSwid(sw), espnS2: normalizeEspnS2(s2) };
+ }
+
+ async function robustFetch(url, {credentials, timeoutMs=15000, headers, cookieHeader}={}){
+ // Browsers strip the Cookie header from every fetch(). For private ESPN leagues
+ // we put SWID + espn_s2 into corsproxy's reqHeaders query so the proxy can
+ // attach Cookie upstream.
+ const cookie = cookieHeader || null;
  let lastErr;
- for(const build of CORS_ATTEMPTS){
- const { url: finalUrl, credsOk } = build(url);
+ const attempts = [];
+ if(cookie){
+ // Prefer cookie-aware corsproxy first; skip bare ESPN (cannot auth)
+ attempts.push({ url: corsProxyUrlWithCookie(url, cookie), credsOk:false, isProxy:true });
+ // Fallback: plain proxies (may still 401 without cookie upstream)
+ attempts.push({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false, isProxy:true });
+ attempts.push({ url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), credsOk:false, isProxy:true });
+ } else {
+ for(const build of CORS_ATTEMPTS) attempts.push(build(url));
+ }
+ for(const attempt of attempts){
+ const finalUrl = attempt.url;
  try{
  const controller = new AbortController();
  const timer = setTimeout(()=>controller.abort(), timeoutMs);
  const opts = {
  signal: controller.signal,
- credentials: (credsOk && credentials) ? credentials : 'omit'
+ credentials: (!cookie && attempt.credsOk && credentials) ? credentials : 'omit',
+ headers: Object.assign({}, headers || {})
  };
- if(headers) opts.headers = headers;
  const res = await fetch(finalUrl, opts);
  clearTimeout(timer);
  if(res.ok) return res;
  lastErr = new Error('HTTP ' + res.status);
  lastErr.status = res.status;
- if(res.status === 401 || res.status === 403 || res.status === 404) break;
+ if(res.status === 404) break;
+ if((res.status === 401 || res.status === 403) && cookie) continue;
+ if((res.status === 401 || res.status === 403) && !cookie) break;
  }catch(e){ lastErr = e; }
  }
  throw lastErr || new Error('Failed to fetch');
  }
 
  async function robustFetchAny(urls, opts={}){
+ // Auto-attach ESPN private cookies for any fantasy.espn.com call this session
+ const opts2 = Object.assign({}, opts);
+ const looksEspn = (urls || []).some(u => /fantasy\.espn\.com/i.test(u));
+ if(looksEspn && !opts2.cookieHeader){
+ const { swid, espnS2 } = getEspnAuth();
+ const cookie = buildEspnCookieHeader(swid, espnS2);
+ if(cookie) opts2.cookieHeader = cookie;
+ }
  let lastErr;
  for(const url of urls){
- try{ return await robustFetch(url, opts); }
+ try{ return await robustFetch(url, opts2); }
  catch(e){
  lastErr = e;
- if(e.status === 401 || e.status === 403) break;
+ // With cookies, try every host; without, stop on auth errors
+ if((e.status === 401 || e.status === 403) && !opts2.cookieHeader) break;
  }
  }
  throw lastErr || new Error('Failed to fetch');
+ }
+
+ async function espnFetch(pathOrUrl, extraViews){
+ // Central ESPN GET with private-league cookies when provided
+ const path = pathOrUrl.startsWith('http') ? null : pathOrUrl;
+ const candidates = path ? [
+ 'https://lm-api-reads.fantasy.espn.com' + path,
+ 'https://fantasy.espn.com' + path
+ ] : [pathOrUrl];
+ const { swid, espnS2 } = getEspnAuth();
+ const cookie = buildEspnCookieHeader(swid, espnS2);
+ return robustFetchAny(candidates, {
+ credentials: cookie ? 'omit' : 'include',
+ cookieHeader: cookie || undefined,
+ timeoutMs: 20000
+ });
  }
 
  const yearSel = document.getElementById('in-year');
@@ -2417,6 +2654,8 @@
 
  let state = {
  platform:'espn',
+ espnSwid: null,
+ espnS2: null,
  leagueId:null, year:null, isDynasty:false, numQBs:1, ppr:1,
  numTeams:12,
  leagueName:'',
@@ -2433,7 +2672,7 @@
  completedTrades: [],
  pendingOffers: [],
  historyLoaded: false,
- playoffSettings: null,
+ playoffSettings: null, forcePlayoffOdds: false,
  playersMap: null // sleeper players id -> info for trade name resolution
  };
 
@@ -2687,18 +2926,20 @@
 
  /* ---------- ESPN ---------- */
  async function fetchEspnLeague(leagueId, year, swid, espnS2){
+ // Persist for later matchup/score fetches this session
+ state.espnSwid = normalizeEspnSwid(swid);
+ state.espnS2 = normalizeEspnS2(espnS2);
  const path = `/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${leagueId}?view=mTeam&view=mRoster&view=mSettings`;
- const candidates = [
- `https://lm-api-reads.fantasy.espn.com${path}`,
- `https://fantasy.espn.com${path}`
- ];
- const useCreds = !!(swid && espnS2);
  try{
- const res = await robustFetchAny(candidates, { credentials: useCreds ? 'include' : 'omit' });
+ const res = await espnFetch(path);
  return await res.json();
  }catch(err){
  if(err.status === 401 || err.status === 403){
- throw new Error('This league looks private, or ESPN rejected the request. Set the league to public temporarily, or add SWID / espn_s2 under "Private league?".');
+ const hasCookies = !!(state.espnSwid && state.espnS2);
+ if(hasCookies){
+ throw new Error('ESPN still rejected the request with those cookies. Check: (1) SWID includes {braces}, (2) espn_s2 is the full long value (often 300+ chars), (3) you copied from fantasy.espn.com while signed in, (4) season year matches the league. Cookies expire — re-copy if needed. Or set the league public briefly.');
+ }
+ throw new Error('This league looks private. Open "Private league?", paste SWID and espn_s2 from fantasy.espn.com cookies, then Load again.');
  }
  if(err.status === 404){
  throw new Error('League not found. Double-check the League ID and season.');
@@ -2756,6 +2997,7 @@
  const losses = overall.losses || 0;
  const ties = overall.ties || 0;
  const pointsFor = typeof overall.pointsFor === 'number' ? overall.pointsFor : 0;
+ const pointsAgainst = typeof overall.pointsAgainst === 'number' ? overall.pointsAgainst : null;
  const games = wins + losses + ties;
 
  // Prefer embedded weekly map when ESPN provides it
@@ -2788,6 +3030,7 @@
  roster,
  wins, losses, ties,
  pointsFor,
+ pointsAgainst,
  avgPts,
  maxPts,
  minPts,
@@ -3247,6 +3490,21 @@
 
  /* ---------- load flow ---------- */
  el('btn-load').addEventListener('click', loadLeague);
+
+ // Setup form: Enter submits Load league; cookie fields included
+ ['in-leagueid','in-myteam-name','in-swid','in-espns2'].forEach(id => {
+ const node = el(id);
+ if(!node || node._enterBound) return;
+ node._enterBound = true;
+ node.addEventListener('keydown', e => {
+ if(e.key === 'Enter'){
+ e.preventDefault();
+ const btn = el('btn-load');
+ if(btn && !btn.disabled) btn.click();
+ }
+ });
+ });
+
  el('toggle-advanced').addEventListener('click', () => el('advanced-body').classList.toggle('open'));
 
  async function loadLeague(){
@@ -3331,7 +3589,18 @@
 
  // Apply pending trade from share link if present
  if(state.pendingTrade){
- applyPendingTrade(state.pendingTrade);
+ const pt = state.pendingTrade;
+ applyPendingTrade(pt);
+ if(pt.tab === 'trade'){
+ try{
+ document.querySelectorAll('.nav-item[data-panel]').forEach(b => b.classList.remove('active'));
+ document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+ const nav = document.querySelector('.nav-item[data-panel="panel-trade"]');
+ if(nav) nav.classList.add('active');
+ const panel = el('panel-trade');
+ if(panel) panel.classList.add('active');
+ }catch(e){}
+ }
  state.pendingTrade = null;
  }
 
@@ -3366,7 +3635,17 @@
  });
  }catch(err){
  hideStatus();
- showError(err.message || 'Something went wrong loading your league.');
+ const msg = err.message || 'Something went wrong loading your league.';
+ showError(msg);
+ // Guide private ESPN users to cookie fields + Load button below them
+ if(/private|SWID|espn_s2|cookie|unauthorized|403/i.test(msg)){
+ try{
+ const body = el('advanced-body');
+ if(body) body.classList.add('open');
+ const sw = el('in-swid');
+ if(sw) sw.focus();
+ }catch(e2){}
+ }
  }finally{
  el('btn-load').disabled = false;
  }
@@ -3481,6 +3760,25 @@
  if(pick) state.tradeB.push({ id:pick.player.id, isPick:true, name:pick.player.name, position:'PICK', value:pick.value });
  }
  });
+ // Share links with trade params open the Trade panel
+ const hasTrade = (pt.teamA != null || pt.teamB != null || (pt.a && pt.a.length) || (pt.b && pt.b.length));
+ if(hasTrade){
+ try{
+ document.querySelectorAll('.nav-item[data-panel]').forEach(b => b.classList.remove('active'));
+ document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+ const nav = document.querySelector('.nav-item[data-panel="panel-trade"]');
+ if(nav) nav.classList.add('active');
+ const panel = el('panel-trade');
+ if(panel) panel.classList.add('active');
+ populateTeamSelectors();
+ const sa = el('select-team-a'), sb = el('select-team-b');
+ if(sa && state.selectedTeamA != null) sa.value = state.selectedTeamA;
+ if(sb && state.selectedTeamB != null) sb.value = state.selectedTeamB;
+ renderTradeSide('a');
+ renderTradeSide('b');
+ renderFairness();
+ }catch(e){}
+ }
  }
 
  /* ---------- rendering ---------- */
@@ -4043,6 +4341,10 @@
  return {
  starterSurplus: after.starterSurplus,
  benchQuality: after.benchQuality,
+ beforeSurplus: before.starterSurplus,
+ beforeBench: before.benchQuality,
+ surplusDelta: after.starterSurplus - before.starterSurplus,
+ benchDelta: after.benchQuality - before.benchQuality,
  miss: after.holes,
  beforeMiss: before.holes,
  thin: after.thin,
@@ -4082,7 +4384,11 @@
  miss: metrics ? metrics.miss : 0,
  beforeMiss: metrics ? metrics.beforeMiss : 0,
  thin: metrics ? metrics.thin : 0,
- legal: metrics ? metrics.legal : true
+ legal: metrics ? metrics.legal : true,
+ surplusDelta: metrics ? metrics.surplusDelta : 0,
+ benchDelta: metrics ? metrics.benchDelta : 0,
+ beforeSurplus: metrics ? metrics.beforeSurplus : 0,
+ starterSurplus: metrics ? metrics.starterSurplus : 0
  };
  }
 
@@ -4172,18 +4478,35 @@
  return { playoffTeams, playoffWeekStart, byes, divisions, nTeams };
  }
 
- function teamScoreModel(team){
+ function teamScoreModel(team, leagueCtx){
+ // leagueCtx: { leagueMean, weeksSample } — early season shrinks means and inflates noise
  const scores = (team.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
  let mean = team.avgPts || 0;
- let std = 22;
- if(scores.length >= 2){
+ let std = 26;
+ if(scores.length >= 1){
  mean = scores.reduce((a,b) => a + b, 0) / scores.length;
+ if(scores.length >= 2){
  const v = scores.reduce((a,b) => a + (b - mean) * (b - mean), 0) / (scores.length - 1);
- std = Math.max(12, Math.sqrt(v));
- } else if(mean > 0){
- std = Math.max(15, mean * 0.18);
+ std = Math.sqrt(v);
  }
- return { mean, std };
+ }
+ const leagueMean = (leagueCtx && leagueCtx.leagueMean) || mean || 100;
+ const weeksSample = (leagueCtx && leagueCtx.weeksSample != null)
+ ? leagueCtx.weeksSample
+ : scores.length;
+ // Empirical Bayes: pull team mean toward league average until many weeks exist
+ // k≈7 → after 2 weeks only ~22% of observed gap is trusted
+ const k = 7;
+ const rel = weeksSample / (weeksSample + k);
+ mean = leagueMean + (mean - leagueMean) * rel;
+ // Weekly variance: floor is high early; observed std is noisy with n=1–3
+ const early = Math.max(0, (8 - weeksSample) / 8); // 1.0 at wk0 → 0 at wk8+
+ std = Math.max(std, 14);
+ std = Math.max(std, (mean || 100) * (0.18 + early * 0.14));
+ std = std * (1 + early * 0.85); // nearly 2x noise in week 1–2
+ // Pure "season can still flip" luck added each simulated game
+ const gameLuck = 6 + early * 16; // ~22 pts extra noise early, ~6 late
+ return { mean, std, gameLuck, rel, weeksSample };
  }
 
  function randn(){
@@ -4207,40 +4530,61 @@
  // Confidence rises as the sample of weekly scores grows.
  let level = 'none';
  let label = 'Too early for odds';
- if(weeks >= 11){ level = 'high'; label = 'Higher confidence'; }
- else if(weeks >= 7){ level = 'medium'; label = 'Moderate confidence'; }
- else if(weeks >= 3){ level = 'low'; label = 'Low confidence'; }
- else { level = 'none'; label = 'Need ~3 completed weeks'; }
- return { weeks, level, ready: weeks >= 3, label };
+ if(weeks >= 12){ level = 'high'; label = 'Higher confidence'; }
+ else if(weeks >= 8){ level = 'medium'; label = 'Moderate confidence'; }
+ else if(weeks >= 4){ level = 'low'; label = 'Low confidence — still a lot of season left'; }
+ else if(weeks >= 1){ level = 'none'; label = 'Very early — odds are wide on purpose'; }
+ else { level = 'none'; label = 'Need completed weeks'; }
+ return { weeks, level, ready: weeks >= 3, label }; // ready ≠ high confidence; variance stays large early 
  }
 
- function simulatePlayoffOdds(sims){
+ function simulatePlayoffOdds(sims, opts){
  const quality = playoffDataQuality();
- // Scale sims with data quality; never claim precision early
+ const force = !!(opts && opts.force);
+ // Scale sims with data quality; force allows early runs with a warning
  if(sims == null){
  if(quality.level === 'high') sims = 5000;
  else if(quality.level === 'medium') sims = 3500;
  else if(quality.level === 'low') sims = 2000;
- else sims = 0;
+ else sims = force ? 1200 : 0;
  }
  const settings = state.playoffSettings || detectPlayoffSettings();
  const teams = state.teams || [];
  if(!teams.length) return null;
 
+ // League scoring context for early-season shrinkage
+ const allScores = [];
+ teams.forEach(t => (t.weeklyScores || []).forEach(s => { if(s > 0) allScores.push(s); }));
+ const leagueMean = allScores.length
+ ? allScores.reduce((a,b) => a + b, 0) / allScores.length
+ : (teams.reduce((s,t) => s + (t.avgPts || 0), 0) / Math.max(1, teams.length)) || 100;
+ const weeksSample = quality.weeks || 0;
+ const leagueCtx = { leagueMean, weeksSample };
  const models = {};
- teams.forEach(t => { models[t.id] = teamScoreModel(t); });
+ teams.forEach(t => { models[t.id] = teamScoreModel(t, leagueCtx); });
 
- // Current standings snapshot
+ // Early season: shrink current W-L toward .500 so 2-0 is not a near-lock
+ const recordRel = weeksSample / (weeksSample + 6); // ~25% weight at 2 weeks
  const base = teams.map(t => {
  const w = t.wins || 0, l = t.losses || 0, ti = t.ties || 0;
  const g = w + l + ti;
  const pf = t.pointsFor || (t.avgPts || 0) * Math.max(g, 1);
+ const rawPct = g > 0 ? (w + 0.5 * ti) / g : 0.5;
+ // Blended win% used only for seeding display stays real; sim starts from softened record
+ const softPct = 0.5 + (rawPct - 0.5) * recordRel;
+ const softWins = g > 0 ? softPct * g : 0;
+ const softLosses = g > 0 ? (1 - softPct) * g : 0;
  return {
  id: t.id,
  name: t.name,
  wins: w, losses: l, ties: ti,
+ softWins, softLosses, softTies: ti * recordRel,
+ gamesPlayed: g,
  pf,
- winPct: g > 0 ? (w + 0.5 * ti) / g : 0
+ winPct: rawPct,
+ simWins: softWins,
+ simLosses: softLosses,
+ simTies: ti * recordRel
  };
  });
 
@@ -4273,9 +4617,9 @@
  for(let s = 0; s < sims; s++){
  const sim = base.map(b => ({
  id: b.id,
- wins: b.wins,
- losses: b.losses,
- ties: b.ties,
+ wins: b.simWins != null ? b.simWins : b.wins,
+ losses: b.simLosses != null ? b.simLosses : b.losses,
+ ties: b.simTies != null ? b.simTies : b.ties,
  pf: b.pf
  }));
 
@@ -4285,8 +4629,8 @@
  for(let i = 0; i + 1 < order.length; i += 2){
  const a = sim[order[i]], b = sim[order[i + 1]];
  const ma = models[a.id], mb = models[b.id];
- const sa = Math.max(0, ma.mean + ma.std * randn());
- const sb = Math.max(0, mb.mean + mb.std * randn());
+ const sa = Math.max(0, ma.mean + ma.std * randn() + (ma.gameLuck || 0) * randn());
+ const sb = Math.max(0, mb.mean + mb.std * randn() + (mb.gameLuck || 0) * randn());
  a.pf += sa; b.pf += sb;
  if(Math.abs(sa - sb) < 0.05){ a.ties++; b.ties++; }
  else if(sa > sb){ a.wins++; b.losses++; }
@@ -4296,7 +4640,7 @@
  // bye week: just add mean points
  const solo = sim[order[order.length - 1]];
  const m = models[solo.id];
- solo.pf += Math.max(0, m.mean + m.std * randn() * 0.5);
+ solo.pf += Math.max(0, m.mean + m.std * randn() * 0.5 + (m.gameLuck || 0) * randn() * 0.4);
  }
  }
 
@@ -4318,8 +4662,8 @@
  for(let i = 0; i + 1 < firstRound.length; i += 2){
  const a = firstRound[i], b = firstRound[i + 1];
  const ma = models[a.id], mb = models[b.id];
- const sa = ma.mean + ma.std * randn();
- const sb = mb.mean + mb.std * randn();
+ const sa = ma.mean + ma.std * randn() + (ma.gameLuck || 0) * randn() * 0.7;
+ const sb = mb.mean + mb.std * randn() + (mb.gameLuck || 0) * randn() * 0.7;
  active.push(sa >= sb ? a : b);
  }
  // If odd leftover, auto-advance
@@ -4338,8 +4682,8 @@
  const b = active[active.length - 1 - i];
  if(!b || a.id === b.id){ next.push(a); continue; }
  const ma = models[a.id], mb = models[b.id];
- const sa = ma.mean + ma.std * randn();
- const sb = mb.mean + mb.std * randn();
+ const sa = ma.mean + ma.std * randn() + (ma.gameLuck || 0) * randn() * 0.7;
+ const sb = mb.mean + mb.std * randn() + (mb.gameLuck || 0) * randn() * 0.7;
  next.push(sa >= sb ? a : b);
  }
  if(active.length % 2 === 1 && active.length > 2){
@@ -4411,14 +4755,29 @@
 
  state.playoffSettings = state.playoffSettings || detectPlayoffSettings();
  const quality = playoffDataQuality();
- const result = simulatePlayoffOdds(); // auto-scales sims; 0 when not ready
+ const forced = !!state.forcePlayoffOdds;
+ const result = simulatePlayoffOdds(null, { force: forced });
  if(!result){
  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Could not simulate.</td></tr>';
  return;
  }
 
  const s = result.settings;
- const showOdds = quality.ready && result.sims > 0;
+ const showOdds = result.sims > 0 && (quality.ready || forced);
+ const forceWarn = el('playoffs-force-warn');
+ if(forceWarn){
+ forceWarn.textContent = (forced && !quality.ready)
+ ? 'Warning: early odds are noisy with only ~' + quality.weeks.toFixed(0) + ' weeks of data. Treat as directional only.'
+ : '';
+ }
+ const forceBtn = el('btn-playoffs-force');
+ if(forceBtn && !forceBtn._bound){
+ forceBtn._bound = true;
+ forceBtn.addEventListener('click', () => {
+ state.forcePlayoffOdds = true;
+ renderPlayoffs();
+ });
+ }
  if(meta){
  meta.innerHTML = `
  <span><strong>${s.playoffTeams}</strong> playoff teams</span>
@@ -4431,7 +4790,9 @@
  }
  if(intro){
  if(!showOdds){
- intro.textContent = 'Seeding is shown from current record and points for. Playoff odds stay hidden until about 3 completed weeks so early noise does not look like a forecast.';
+ intro.textContent = 'Seeding from current record and PF. Odds wait until ~3 weeks, or use Run odds early (noisy).';
+ } else if(forced && !quality.ready){
+ intro.textContent = 'Early override: thin sample. Wide swings expected. Prefer seeding until more weeks finish.';
  } else if(result.remaining > 0){
  intro.textContent = 'Seeding from record and points for. Odds simulate remaining weeks using each team\'s scoring average and variance. Confidence rises as more weeks finalize.';
  } else {
@@ -4440,8 +4801,8 @@
  }
  if(note){
  note.textContent = showOdds
- ? 'Title odds use a simplified bracket. Schedule is approximated (not every real remaining matchup). Variance is estimated from weekly scores when available. Treat low/moderate confidence as directional only.'
- : 'Come back after a few weeks of scores for odds. Until then, use seeding and Power rankings.';
+ ? ((forced && !quality.ready) ? 'OVERRIDE: low sample. ' : '') + 'Title odds use a simplified bracket. Schedule is approximated. Treat early results as directional only.'
+ : 'Come back after a few weeks for odds, or press Run odds early. Until then, use seeding and Power.';
  }
 
  tbody.innerHTML = '';
@@ -4919,11 +5280,45 @@
 
  if(intro){
  intro.textContent = hasMedian
- ? 'Median-style board below: top half of projected scores in green, bottom half in red. Each matchup shows live/proj and a win % that widens toward 50% when more points are still outstanding.'
- : 'Each matchup shows live and projected scores plus win %. Win % leans on the projected gap but gets more uncertain when a side still has a lot left to score.';
+ ? 'Median board: top half green, bottom red. Each row shows live, proj, and % chance to finish in the top half. H2H cards show head-to-head win %.'
+ : 'Ranked by projected score (top half green). Each row shows live, proj, and % chance to finish in the top half. H2H cards show matchup win %.';
  }
 
  list.innerHTML = '';
+
+ // Odds to finish top half (e.g. top 5 of 10): Monte Carlo on remaining variance
+ function scoreSigma(live, proj){
+ const rem = Math.max(0, (proj != null ? proj : live) - (live || 0));
+ return Math.max(3, 4 + rem * 0.42);
+ }
+ function sampleFinal(live, proj){
+ const mu = proj != null ? proj : (live || 0);
+ const sig = scoreSigma(live, mu);
+ // Box-Muller
+ const u = Math.max(1e-9, Math.random());
+ const v = Math.max(1e-9, Math.random());
+ const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+ return mu + z * sig;
+ }
+ const topHalfOdds = {}; // teamId -> 0-100
+ if(n >= 4){
+ const SIMS = 800;
+ const hits = {};
+ flat.forEach(r => { hits[r.team.id] = 0; });
+ for(let s = 0; s < SIMS; s++){
+ const scored = flat.map(r => ({
+ id: r.team.id,
+ final: sampleFinal(r.live, r.proj)
+ }));
+ scored.sort((a,b) => b.final - a.final);
+ for(let k = 0; k < topN && k < scored.length; k++){
+ hits[scored[k].id]++;
+ }
+ }
+ flat.forEach(r => {
+ topHalfOdds[r.team.id] = Math.round(100 * (hits[r.team.id] || 0) / SIMS);
+ });
+ }
 
  // Unified ranking list (not separate cards)
  const rankBox = document.createElement('div');
@@ -4933,12 +5328,25 @@
  const rank = i + 1;
  const cls = rank <= topN ? 'top' : 'bot';
  row.className = 'mu-rank-row ' + cls;
+ let oddsHtml = '';
+ if(topHalfOdds[r.team.id] != null){
+ const pct = topHalfOdds[r.team.id];
+ const col = pct >= 50 ? '#3d8f5f' : '#c45c52';
+ oddsHtml = ` · <span style="color:${col};font-weight:700;">${pct}% top ${topN}</span>`;
+ }
  row.innerHTML = `
  <span><strong>#${rank}</strong> ${escapeHtml(r.team.name)}</span>
- <span class="val-cell">Live ${fmtPts(r.live)} · Proj ${fmtPts(r.proj)}</span>`;
+ <span class="val-cell">Live ${fmtPts(r.live)} · Proj ${fmtPts(r.proj)}${oddsHtml}</span>`;
  rankBox.appendChild(row);
  });
  list.appendChild(rankBox);
+ if(n >= 4){
+ const note = document.createElement('p');
+ note.className = 'needs-intro';
+ note.style.margin = '8px 0 12px';
+ note.textContent = '% top ' + topN + ' = chance of finishing in the top half this week (live score + remaining projection variance). Green = currently projected top half.';
+ list.appendChild(note);
+ }
 
  data.forEach(m => {
  const card = document.createElement('div');
@@ -5073,6 +5481,86 @@
  <div class="rec-who">${who ? escapeHtml(who) : '-'}</div></div>`;
  }
 
+ // Extra records
+ const mostPA = { val: -1, team: null };
+ const leastPA = { val: Infinity, team: null };
+ const bestDiff = { val: -Infinity, team: null };
+ const worstDiff = { val: Infinity, team: null };
+ const mostConsistent = { val: Infinity, team: null }; // lowest std
+ const mostVolatile = { val: -1, team: null };
+ const closestWeek = { val: Infinity, detail: '' };
+ const longestWinStreak = { val: 0, team: null };
+ const longestLoseStreak = { val: 0, team: null };
+ const mostMedian = { val: -1, team: null };
+
+ teams.forEach(t => {
+ const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+ const pf = t.pointsFor || scores.reduce((a,b)=>a+b,0) || 0;
+ const pa = t.pointsAgainst;
+ if(typeof pa === 'number'){
+ if(pa > mostPA.val){ mostPA.val = pa; mostPA.team = t; }
+ if(pa < leastPA.val){ leastPA.val = pa; leastPA.team = t; }
+ const diff = pf - pa;
+ if(diff > bestDiff.val){ bestDiff.val = diff; bestDiff.team = t; }
+ if(diff < worstDiff.val){ worstDiff.val = diff; worstDiff.team = t; }
+ }
+ if(scores.length >= 2){
+ const mean = scores.reduce((a,b)=>a+b,0)/scores.length;
+ const v = scores.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(scores.length-1);
+ const std = Math.sqrt(v);
+ if(std < mostConsistent.val){ mostConsistent.val = std; mostConsistent.team = t; }
+ if(std > mostVolatile.val){ mostVolatile.val = std; mostVolatile.team = t; }
+ const sorted = scores.slice().sort((a,b)=>a-b);
+ const mid = sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+ if(mid > mostMedian.val){ mostMedian.val = mid; mostMedian.team = t; }
+ }
+ // Streaks from W-L if we only have totals - approximate not available week-by-week results
+ // Use high-score weeks as proxy only when we lack result history; skip if no weekly
+ });
+
+ // Closest finished week (min gap between 1st and 2nd)
+ for(let wi = 0; wi < maxWeeks; wi++){
+ if(curWeek != null && (wi + 1) >= curWeek) continue;
+ const weekScores = teams.map(t => {
+ const s = (t.weeklyScores || [])[wi];
+ return (typeof s === 'number' && s > 0) ? { t, s } : null;
+ }).filter(Boolean);
+ if(weekScores.length < 2) continue;
+ weekScores.sort((a,b) => b.s - a.s);
+ const gap = weekScores[0].s - weekScores[1].s;
+ if(gap < closestWeek.val){
+ closestWeek.val = gap;
+ closestWeek.detail = weekScores[0].t.name + ' ' + fmtPts(weekScores[0].s) + ' over ' +
+ weekScores[1].t.name + ' ' + fmtPts(weekScores[1].s) + ' (wk ' + (wi+1) + ')';
+ }
+ }
+
+ // Win/loss streaks if scheduleCache has results
+ try{
+ const graph = scheduleCache || {};
+ teams.forEach(t => {
+ const past = (graph[t.id] && graph[t.id].pastResults) || [];
+ // pastResults optional; if weekly scores only, skip
+ let wSt = 0, lSt = 0, wMax = 0, lMax = 0;
+ // Derive from wins/losses only is weak; use points vs median as soft streak
+ const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+ if(scores.length < 2) return;
+ const leagueWeeks = scores.length;
+ for(let wi = 0; wi < leagueWeeks; wi++){
+ if(curWeek != null && (wi+1) >= curWeek) break;
+ const all = teams.map(x => (x.weeklyScores||[])[wi]).filter(s => typeof s === 'number' && s > 0);
+ if(all.length < 2) continue;
+ const med = all.slice().sort((a,b)=>a-b)[Math.floor(all.length/2)];
+ const mine = (t.weeklyScores||[])[wi];
+ if(!(mine > 0)) continue;
+ if(mine >= med){ wSt++; lSt = 0; wMax = Math.max(wMax, wSt); }
+ else { lSt++; wSt = 0; lMax = Math.max(lMax, lSt); }
+ }
+ if(wMax > longestWinStreak.val){ longestWinStreak.val = wMax; longestWinStreak.team = t; }
+ if(lMax > longestLoseStreak.val){ longestLoseStreak.val = lMax; longestLoseStreak.team = t; }
+ });
+ }catch(e){}
+
  grid.innerHTML = [
  card('Highest single week', highestWeek.team ? fmtPts(highestWeek.val) : '-',
  highestWeek.team ? highestWeek.team.name + (highestWeek.week ? ' (wk ' + highestWeek.week + ')' : '') : null),
@@ -5085,7 +5573,17 @@
  card('Most wins', mostWins.team ? String(mostWins.val) : '-', mostWins.team && mostWins.team.name),
  card('Highest scoring avg', highestAvg.team ? fmtPts(highestAvg.val) : '-', highestAvg.team && highestAvg.team.name),
  card('Lowest scoring avg', lowestAvg.team && lowestAvg.val < Infinity ? fmtPts(lowestAvg.val) : '-', lowestAvg.team && lowestAvg.team.name),
- card('Biggest week gap (final)', biggestBlowout.val > 0 ? fmtPts(biggestBlowout.val) : '-', biggestBlowout.detail || null)
+ card('Biggest week gap (final)', biggestBlowout.val > 0 ? fmtPts(biggestBlowout.val) : '-', biggestBlowout.detail || null),
+ card('Closest 1st vs 2nd (final)', closestWeek.val < Infinity ? fmtPts(closestWeek.val) : '-', closestWeek.detail || null),
+ card('Most consistent (low std)', mostConsistent.team && mostConsistent.val < Infinity ? 'σ ' + fmtPts(mostConsistent.val) : '-', mostConsistent.team && mostConsistent.team.name),
+ card('Most volatile (high std)', mostVolatile.team ? 'σ ' + fmtPts(mostVolatile.val) : '-', mostVolatile.team && mostVolatile.team.name),
+ card('Highest weekly median', mostMedian.team ? fmtPts(mostMedian.val) : '-', mostMedian.team && mostMedian.team.name),
+ card('Best PF − PA', bestDiff.team && isFinite(bestDiff.val) ? fmtPts(bestDiff.val) : '-', bestDiff.team && bestDiff.team.name),
+ card('Worst PF − PA', worstDiff.team && isFinite(worstDiff.val) ? fmtPts(worstDiff.val) : '-', worstDiff.team && worstDiff.team.name),
+ card('Most points against', mostPA.team && mostPA.val >= 0 ? fmtPts(mostPA.val) : '-', mostPA.team && mostPA.team.name),
+ card('Fewest points against', leastPA.team && leastPA.val < Infinity ? fmtPts(leastPA.val) : '-', leastPA.team && leastPA.team.name),
+ card('Longest above-median streak', longestWinStreak.val > 0 ? String(longestWinStreak.val) + ' wks' : '-', longestWinStreak.team && longestWinStreak.team.name),
+ card('Longest below-median streak', longestLoseStreak.val > 0 ? String(longestLoseStreak.val) + ' wks' : '-', longestLoseStreak.team && longestLoseStreak.team.name)
  ].join('');
  }
 
@@ -5579,19 +6077,36 @@
  const needN = pos === 'QB' ? (counts.QB || 0) + (counts.SF || 0) : (counts[pos] || 0);
  const vals = byPos[pos] || [];
  const avg = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+ const minV = vals.length ? Math.min(...vals) : 0;
  const rv = starterRV[pos] || 400;
  const ratio = rv > 0 ? avg / rv : 1;
- // need high when ratio low or missing starters
+ const weakRatio = rv > 0 ? minV / rv : 1;
  let n = 50;
- if(vals.length < needN) n = 90;
- else if(ratio < 1.1) n = 80;
- else if(ratio < 1.5) n = 60;
- else if(ratio < 2.0) n = 35;
- else if(ratio < 2.8) n = 20;
- else n = 8;
+ if(vals.length < needN) n = 95;
+ else if(weakRatio < 0.9 || ratio < 1.05) n = 88;
+ else if(ratio < 1.35) n = 72;
+ else if(ratio < 1.8) n = 48;
+ else if(ratio < 2.4) n = 28;
+ else if(ratio < 3.2) n = 14;
+ else n = 6;
  need[pos] = n;
  });
  return need;
+ }
+
+ function starterUpgradeScore(team, recvList, sendList){
+ // Does this trade improve the optimal lineup at needy spots?
+ const levels = computeReplacementLevels();
+ const counts = levels.counts;
+ const before = optimalStarterLineup(team, counts, counts.flexEligible, counts.sfEligible);
+ const outIds = new Set(sendList.map(p => String(p.id)));
+ const roster = (team.roster || []).filter(p => !outIds.has(String(p.id)));
+ recvList.forEach(p => roster.push({ ...p, fullName: p.fullName || p.name, matched: true, isIR: false }));
+ const trial = { ...team, roster };
+ const after = optimalStarterLineup(trial, counts, counts.flexEligible, counts.sfEligible);
+ const beforeVal = before.assignments.reduce((s,a) => s + (a.value||0), 0);
+ const afterVal = after.assignments.reduce((s,a) => s + (a.value||0), 0);
+ return afterVal - beforeVal;
  }
 
  function runTradeFinder(){
@@ -5626,12 +6141,24 @@
  function sig(send, recv){
  return send.map(p => String(p.id)).sort().join(',') + '=>' + recv.map(p => String(p.id)).sort().join(',');
  }
- function topPlayers(team, n, posAllow){
+ // Candidates: not just top overall — mix of surplus sends and need gets
+ function candidatePool(team, n, posAllow, mode){
+ // mode: 'send' prefers positions you don't need; 'get' prefers value at any allowed pos
+ const need = teamPosNeedScores(team);
  return (team.roster || [])
- .filter(p => p.matched && (p.value || 0) > 50 && !p.isIR && !p.isTaxi)
+ .filter(p => p.matched && (p.value || 0) > 80 && !p.isIR && !p.isTaxi)
  .filter(p => !posAllow || !posAllow.length || posAllow.includes(p.position))
  .slice()
- .sort((a,b) => (b.value||0) - (a.value||0))
+ .sort((a,b) => {
+ if(mode === 'send'){
+ // Prefer sending from low-need positions (surplus)
+ const na = need[a.position] || 40, nb = need[b.position] || 40;
+ if(na !== nb) return na - nb; // low need first
+ return (b.value||0) - (a.value||0);
+ }
+ // get: high value first, slight boost if we need that pos later applied in scoring
+ return (b.value||0) - (a.value||0);
+ })
  .slice(0, n);
  }
  function combos(arr, k){
@@ -5645,13 +6172,11 @@
  }
  function packageVal(list){ return list.reduce((s,p) => s + (p.value||0), 0); }
  function needFitScore(sendList, recvList, myNeedMap, partnerNeedMap){
- // Prefer receiving at positions we need, sending where we are surplus
  let score = 0;
- recvList.forEach(p => { score += (myNeedMap[p.position] || 30); });
- sendList.forEach(p => { score += Math.max(0, 70 - (myNeedMap[p.position] || 30)); });
- // Partner: they should need what we send
- sendList.forEach(p => { score += (partnerNeedMap[p.position] || 20) * 0.35; });
- recvList.forEach(p => { score += Math.max(0, 50 - (partnerNeedMap[p.position] || 30)) * 0.25; });
+ recvList.forEach(p => { score += (myNeedMap[p.position] || 30) * 1.4; });
+ sendList.forEach(p => { score += Math.max(0, 80 - (myNeedMap[p.position] || 30)); });
+ sendList.forEach(p => { score += (partnerNeedMap[p.position] || 20) * 0.5; });
+ recvList.forEach(p => { score += Math.max(0, 55 - (partnerNeedMap[p.position] || 30)) * 0.3; });
  return score;
  }
  function tryPackage(partner, sendList, recvList, label){
@@ -5659,22 +6184,39 @@
  if(seen.has(key)) return;
  const sv = packageVal(sendList), rv = packageVal(recvList);
  const maxV = Math.max(sv, rv, 1);
- if(Math.abs(sv - rv) / maxV > 0.28) return;
+ // Market fairness: tighter than before
+ if(Math.abs(sv - rv) / maxV > 0.22) return;
+
+ // Never send a player from a high-need position to get one from a low-need position
+ const sendNeedAvg = sendList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, sendList.length);
+ const recvNeedAvg = recvList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, recvList.length);
+ if(recvNeedAvg + 8 < sendNeedAvg) return; // net moving into worse need
+ if(recvNeedAvg < 20 && sendNeedAvg > 40) return; // pure surplus stacking
+
+ const lineupGain = starterUpgradeScore(me, recvList, sendList);
+ // Must improve optimal lineup value OR clearly fix a hole (need receive high)
+ if(lineupGain < 50 && recvNeedAvg < 55) return;
+
  const tradeA = sendList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
  const tradeB = recvList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
  const impact = simulateTradePower(me, partner, tradeA, tradeB);
  if(!impact) return;
- if(impact.a.miss > (impact.a.beforeMiss || 0)) return;
- if(impact.b.miss > (impact.b.beforeMiss || 0)) return;
- if(impact.a.delta <= 0.15) return;
- if(impact.b.delta < -1.8) return;
+ if(!impact.a.legal || impact.a.miss > (impact.a.beforeMiss || 0)) return;
+ if(!impact.b.legal || impact.b.miss > (impact.b.beforeMiss || 0)) return;
+
+ // Absolute roster quality must improve for you — not just MAD-relative Power
+ const surpMe = impact.a.surplusDelta || 0;
+ if(surpMe <= 0 && lineupGain < 150) return;
+ if(impact.a.delta <= 0.05 && surpMe <= 0) return;
+ // Partner should not be destroyed
+ if(impact.b.delta < -2.5) return;
+ if((impact.b.surplusDelta || 0) < -800 && impact.b.delta < -0.5) return;
+
  const pNeed = teamPosNeedScores(partner);
- const fit = needFitScore(sendList, recvList, myNeed, pNeed);
- // Reject trades that mainly upgrade our strongest pos while hurting a weak one
- const recvNeedAvg = recvList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, recvList.length);
- const sendNeedAvg = sendList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, sendList.length);
- if(recvNeedAvg < 25 && sendNeedAvg > 55) return; // upgrading surplus, dumping need
- // Buy-low mode filter
+ // Partner should get something they need (or at least not get crushed)
+ const partnerRecvNeed = sendList.reduce((s,p) => s + (pNeed[p.position]||30), 0) / Math.max(1, sendList.length);
+ if(partnerRecvNeed < 18 && impact.b.delta < 0) return;
+
  if(kind === 'buy'){
  const ok = recvList.some(p => {
  const c = classifyPlayerTrend(p);
@@ -5682,73 +6224,83 @@
  });
  if(!ok) return;
  }
+
+ const fit = needFitScore(sendList, recvList, myNeed, pNeed);
  seen.add(key);
  hits.push({
  kind: label, me, partner, send: sendList, recv: recvList,
  deltaMe: impact.a.delta, deltaThem: impact.b.delta,
- fit, tradeA, tradeB
+ surplusMe: surpMe, lineupGain, fit,
+ tradeA, tradeB
  });
  }
 
  const want1 = kind === 'ALL' || kind === '1' || kind === 'buy';
  const want21 = kind === 'ALL' || kind === '2' || kind === 'buy';
- const want22 = kind === 'ALL' || kind === '22' || kind === 'buy';
- const want33 = kind === '33' || kind === 'ALL';
+ const want22 = kind === 'ALL' || kind === '22';
+ const want33 = kind === '33';
  const wantMix = kind === 'mix' || kind === 'ALL';
 
  partners.forEach(partner => {
- const mine = topPlayers(me, kind === '33' ? 8 : 10, sendPos);
- const theirs = topPlayers(partner, kind === '33' ? 8 : 10, getPos);
+ const mine = candidatePool(me, 12, sendPos, 'send');
+ const theirs = candidatePool(partner, 12, getPos, 'get');
  if(want1){
- mine.forEach(a => theirs.forEach(b => tryPackage(partner, [a], [b], '1-for-1')));
+ mine.forEach(a => theirs.forEach(b => {
+ // Skip pure lateral same-pos when we already strong there
+ if(a.position === b.position && (myNeed[a.position]||0) < 25) return;
+ tryPackage(partner, [a], [b], '1-for-1');
+ }));
  }
  if(want21){
- combos(mine, 2).slice(0, 24).forEach(pair => {
- theirs.slice(0, 7).forEach(b => tryPackage(partner, pair, [b], '2-for-1'));
+ combos(mine, 2).slice(0, 30).forEach(pair => {
+ theirs.slice(0, 8).forEach(b => tryPackage(partner, pair, [b], '2-for-1'));
  });
- mine.slice(0, 7).forEach(a => {
- combos(theirs, 2).slice(0, 20).forEach(pair => tryPackage(partner, [a], pair, '1-for-2'));
+ mine.slice(0, 8).forEach(a => {
+ combos(theirs, 2).slice(0, 24).forEach(pair => tryPackage(partner, [a], pair, '1-for-2'));
  });
  }
  if(want22){
- combos(mine, 2).slice(0, 18).forEach(sp => {
- combos(theirs, 2).slice(0, 18).forEach(rp => tryPackage(partner, sp, rp, '2-for-2'));
+ combos(mine, 2).slice(0, 20).forEach(sp => {
+ combos(theirs, 2).slice(0, 20).forEach(rp => tryPackage(partner, sp, rp, '2-for-2'));
  });
  }
  if(wantMix){
- combos(mine, 2).slice(0, 12).forEach(sp => {
- combos(theirs, 3).slice(0, 12).forEach(rp => tryPackage(partner, sp, rp, '2-for-3'));
+ combos(mine, 2).slice(0, 14).forEach(sp => {
+ combos(theirs, 3).slice(0, 14).forEach(rp => tryPackage(partner, sp, rp, '2-for-3'));
  });
- combos(mine, 3).slice(0, 12).forEach(sp => {
- combos(theirs, 2).slice(0, 12).forEach(rp => tryPackage(partner, sp, rp, '3-for-2'));
+ combos(mine, 3).slice(0, 14).forEach(sp => {
+ combos(theirs, 2).slice(0, 14).forEach(rp => tryPackage(partner, sp, rp, '3-for-2'));
  });
  }
  if(want33){
- combos(mine, 3).slice(0, 10).forEach(sp => {
- combos(theirs, 3).slice(0, 10).forEach(rp => tryPackage(partner, sp, rp, '3-for-3'));
+ combos(mine, 3).slice(0, 12).forEach(sp => {
+ combos(theirs, 3).slice(0, 12).forEach(rp => tryPackage(partner, sp, rp, '3-for-3'));
  });
  }
  });
 
+ function scoreHit(h){
+ return (h.lineupGain || 0) * 0.002
+ + (h.surplusMe || 0) * 0.0015
+ + Math.max(0, h.deltaMe) * 2.2
+ + Math.min(Math.max(h.deltaThem, -1), 1.5) * 0.4
+ + (h.fit || 0) * 0.03;
+ }
  const bestByCluster = new Map();
  hits.forEach(h => {
- const cluster = h.partner.id + '|' + h.recv.map(p => p.id).sort().join(',') + '|' + h.send.map(p => p.id).sort().join(',');
+ // Cluster by receive side mainly to cut near-duplicates
+ const cluster = h.partner.id + '|' + h.recv.map(p => p.id).sort().join(',');
  const prev = bestByCluster.get(cluster);
- const score = (h) => h.deltaMe * 2 + Math.min(h.deltaThem, 2) * 0.6 + (h.fit || 0) * 0.02;
- if(!prev || score(h) > score(prev)) bestByCluster.set(cluster, h);
+ if(!prev || scoreHit(h) > scoreHit(prev)) bestByCluster.set(cluster, h);
  });
  const deduped = Array.from(bestByCluster.values());
- deduped.sort((a,b) => {
- const sa = a.deltaMe * 2 + Math.min(a.deltaThem, 2) * 0.6 + (a.fit || 0) * 0.02;
- const sb = b.deltaMe * 2 + Math.min(b.deltaThem, 2) * 0.6 + (b.fit || 0) * 0.02;
- return sb - sa;
- });
- const top = deduped.slice(0, 24);
+ deduped.sort((a,b) => scoreHit(b) - scoreHit(a));
+ const top = deduped.slice(0, 20);
 
- if(status) status.textContent = top.length ? (top.length + ' packages') : 'No fits that help your needs';
+ if(status) status.textContent = top.length ? (top.length + ' packages (need + lineup + surplus)') : 'No trades cleared the bar';
  results.innerHTML = '';
  if(!top.length){
- results.innerHTML = '<div class="hist-empty">Nothing cleared the bar (helps you at positions of need, both sides still field starters, market gap tight).</div>';
+ results.innerHTML = '<div class="hist-empty">No packages that improve your starting lineup at positions of need while staying near market fair and not gutting the other side. Try different positions or partners.</div>';
  return;
  }
  top.forEach((h, idx) => {
@@ -5758,7 +6310,8 @@
  const recvStr = h.recv.map(p => p.fullName + ' (' + p.position + ')').join(' + ');
  const dMe = (h.deltaMe >= 0 ? '+' : '') + h.deltaMe.toFixed(1);
  const dThem = (h.deltaThem >= 0 ? '+' : '') + h.deltaThem.toFixed(1);
- const needNote = h.recv.map(p => p.position + ' need ' + (myNeed[p.position]||0)).join(', ');
+ const lg = (h.lineupGain >= 0 ? '+' : '') + Math.round(h.lineupGain);
+ const needBits = h.recv.map(p => p.position + ':' + (myNeed[p.position]||0)).join(' ');
  card.innerHTML = `
  <div class="hist-head">
  <div class="hist-teams">${escapeHtml(h.me.name)} ⇄ ${escapeHtml(h.partner.name)} · ${h.kind}</div>
@@ -5769,7 +6322,9 @@
  <div class="hist-vs">for</div>
  <div><div class="hist-side-label">You get</div><div class="hist-asset">${escapeHtml(recvStr)}</div></div>
  </div>
- <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">Need fit: ${escapeHtml(needNote)}</div>
+ <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">
+ Lineup value ${lg} · Need ${escapeHtml(needBits)}
+ </div>
  <div style="margin-top:10px;">
  <button type="button" class="btn btn-ghost btn-sm finder-open-trade" data-idx="${idx}">Open in Trade tool</button>
  </div>`;
@@ -6510,16 +7065,22 @@
  projDrop = Math.max(0, pAbs.proj - (pCov.proj || 0));
  }
  }catch(e){}
- if(ratio < 0.45 || (abs.value - (cover.value || 0) > 2500)){
+ // Severity scales with how bad the replacement is vs the bye player
+ if(ratio < 0.25 || dropPct >= 75 || (abs.value - (cover.value || 0) > 4000)){
+ status = 'soft-bad';
+ detail = 'Weak cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ' vs ' + fmt(abs.value) + ', -' + dropPct.toFixed(0) + '% value)';
+ } else if(ratio < 0.50 || dropPct >= 45 || (abs.value - (cover.value || 0) > 2000)){
  status = 'soft';
- detail = 'Only free cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ' vs ' + fmt(abs.value) + ', -' + dropPct.toFixed(0) + '% value)';
- if(projDrop != null) detail += '. Proj gap ~' + fmtPts(projDrop) + ' pts/wk';
+ detail = 'Soft cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ' vs ' + fmt(abs.value) + ', -' + dropPct.toFixed(0) + '% value)';
+ } else if(ratio < 0.75 || dropPct >= 20){
+ status = 'soft-mild';
+ detail = 'Mild drop: ' + cover.name + ' (' + fmt(cover.value || 0) + ' vs ' + fmt(abs.value) + ', -' + dropPct.toFixed(0) + '% value)';
  } else {
  status = 'covered';
- detail = 'Free cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ')';
- if(dropPct >= 8) detail += ', -' + dropPct.toFixed(0) + '% value';
- if(projDrop != null && projDrop >= 1) detail += '. Proj gap ~' + fmtPts(projDrop);
+ detail = 'Solid cover: ' + cover.name + ' (' + fmt(cover.value || 0) + ')';
+ if(dropPct >= 5) detail += ', -' + dropPct.toFixed(0) + '% value';
  }
+ if(projDrop != null && projDrop >= 1) detail += '. Proj gap ~' + fmtPts(projDrop) + ' pts/wk';
  }
  return {
  name: abs.p.fullName,
@@ -6528,11 +7089,13 @@
  value: abs.value,
  status,
  detail,
- dropPct: typeof dropPct === 'number' ? dropPct : 0
+ dropPct: typeof dropPct === 'number' ? dropPct : 0,
+ coverName: cover ? cover.name : null,
+ coverValue: cover ? (cover.value || 0) : 0
  };
  }).sort((a,b) => {
- const rank = { hole: 0, soft: 1, covered: 2 };
- return (rank[a.status] - rank[b.status]) || (b.value - a.value);
+ const rank = { hole: 0, 'soft-bad': 1, soft: 2, 'soft-mild': 3, covered: 4 };
+ return ((rank[a.status]??9) - (rank[b.status]??9)) || (b.value - a.value);
  });
 
  const benchByes = onBye
@@ -6541,15 +7104,21 @@
  .slice(0, 8);
 
  const holeN = starterByes.filter(x => x.status === 'hole').length;
+ const softBadN = starterByes.filter(x => x.status === 'soft-bad').length;
  const softN = starterByes.filter(x => x.status === 'soft').length;
+ const softMildN = starterByes.filter(x => x.status === 'soft-mild').length;
+ // Worst replacement drives week severity
+ const worstDrop = starterByes.reduce((m,s) => Math.max(m, s.dropPct || 0), 0);
  let severity = 'ok';
  let severityLabel = 'Covered';
  if(holeN > 0){ severity = 'bad'; severityLabel = holeN + ' open slot' + (holeN > 1 ? 's' : ''); }
- else if(softN > 0){ severity = 'warn'; severityLabel = softN + ' soft replacement' + (softN > 1 ? 's' : ''); }
- else if(starterByes.length >= 2){ severity = 'warn'; severityLabel = starterByes.length + ' starters on bye'; }
+ else if(softBadN > 0 || worstDrop >= 70){ severity = 'bad'; severityLabel = 'Severe downgrade' + (softBadN ? ' (' + softBadN + ')' : ''); }
+ else if(softN > 0 || worstDrop >= 40){ severity = 'warn'; severityLabel = softN + ' soft replacement' + (softN > 1 ? 's' : ''); }
+ else if(softMildN > 0){ severity = 'mild'; severityLabel = softMildN + ' mild drop' + (softMildN > 1 ? 's' : ''); }
+ else if(starterByes.length >= 2){ severity = 'mild'; severityLabel = starterByes.length + ' starters on bye'; }
  else if(!starterByes.length){ severity = 'ok'; severityLabel = 'Bench byes only'; }
 
- const color = severity === 'bad' ? 'var(--red)' : severity === 'warn' ? 'var(--gold)' : 'var(--accent)';
+ const color = severity === 'bad' ? 'var(--red)' : severity === 'warn' ? 'var(--gold)' : severity === 'mild' ? '#c9a227' : 'var(--accent)';
  const card = document.createElement('div');
  card.className = 'hist-card';
  card.innerHTML = `
@@ -6562,8 +7131,15 @@
  <th>Starter</th><th>Slot</th><th>Status</th><th>Replacement</th>
  </tr></thead><tbody>
  ${starterByes.map(s => {
- const stColor = s.status === 'hole' ? 'var(--red)' : s.status === 'soft' ? 'var(--gold)' : 'var(--accent)';
- const stLabel = s.status === 'hole' ? 'Hole' : s.status === 'soft' ? ('Soft' + (s.dropPct ? ' -' + s.dropPct.toFixed(0) + '%' : '')) : 'Covered';
+ const stColor = s.status === 'hole' || s.status === 'soft-bad' ? 'var(--red)'
+ : s.status === 'soft' ? 'var(--gold)'
+ : s.status === 'soft-mild' ? '#c9a227'
+ : 'var(--accent)';
+ const stLabel = s.status === 'hole' ? 'Hole'
+ : s.status === 'soft-bad' ? ('Severe' + (s.dropPct ? ' -' + s.dropPct.toFixed(0) + '%' : ''))
+ : s.status === 'soft' ? ('Soft' + (s.dropPct ? ' -' + s.dropPct.toFixed(0) + '%' : ''))
+ : s.status === 'soft-mild' ? ('Mild' + (s.dropPct ? ' -' + s.dropPct.toFixed(0) + '%' : ''))
+ : 'Covered';
  return `<tr>
  <td>${escapeHtml(s.name)} <span style="color:var(--text-muted);font-size:11px;">${escapeHtml(s.pos)}</span></td>
  <td>${escapeHtml(s.slot)}</td>
@@ -6755,26 +7331,13 @@
  }
 
  function trendChipHtml(playerOrName){
-  if(!showPctChanges()) return '';
-
-  const c = classifyPlayerTrend(playerOrName);
-  if(!c) return '';
-
-  const sign = c.pct >= 0 ? '+' : '';
-  const color = c.pct >= 5
-    ? '#3d8f5f'
-    : c.pct <= -5
-      ? '#c45c52'
-      : 'var(--text-muted)';
-
-  const pctPart = ` ${sign}${c.pct.toFixed(0)}%`;
-
-  return `<span class="trend-chip"
-    title="${escapeHtml(c.advice)}"
-    style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:700;background:rgba(120,140,160,0.12);color:${color};">
-    ${escapeHtml(c.label)}${pctPart}
-  </span>`;
-}
+ if(!showPctChanges()) return ''; // hide labels + % unless setting on
+ const c = classifyPlayerTrend(playerOrName);
+ if(!c) return '';
+ const sign = c.pct >= 0 ? '+' : '';
+ const color = c.pct >= 5 ? '#3d8f5f' : c.pct <= -5 ? '#c45c52' : 'var(--text-muted)';
+ return `<span class="trend-chip" title="${escapeHtml(c.advice)}" style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:700;background:rgba(120,140,160,0.12);color:${color};">${escapeHtml(c.label)} ${sign}${c.pct.toFixed(0)}%</span>`;
+ }
 
  function portfolioTrendSummary(team){
  if(!team) return null;
@@ -6837,7 +7400,7 @@
           const pctStr = (showPctChanges() && r.pct != null && isFinite(r.pct))
             ? ` (${sign}${r.pct.toFixed(0)}%)`
             : '';
-          const tag = (!isPower && r.name) ? (classifyPlayerTrend(r.name) || {}) : {};
+          const tag = (showPctChanges() && !isPower && r.name) ? (classifyPlayerTrend(r.name) || {}) : {};
  const tagStr = tag.label ? ' <span style="font-size:10px;color:var(--text-muted);">'+escapeHtml(tag.label)+'</span>' : '';
  const tip = tag.advice || detail;
  return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border-subtle);">
@@ -7045,9 +7608,10 @@
 
  // Selected chips
  if(selBox){
+ selBox.className = 'compare-picks';
  selBox.innerHTML = state._compareList.map((p,i) =>
- `<span class="asset-chip" style="cursor:pointer;" data-rm="${i}"><span class="chip-name">${escapeHtml(p.fullName)}</span> <span class="val">${fmt(p.value)}</span></span>`
- ).join('') || '<span style="color:var(--text-muted);font-size:13px;">Select players below (up to 4).</span>';
+ `<span class="asset-chip" style="cursor:pointer;" data-rm="${i}"><span class="pos-badge pos-${p.position||''}">${escapeHtml(p.position||'')}</span> <span class="chip-name">${escapeHtml(p.fullName)}</span> <span class="val">${fmt(p.value)}</span></span>`
+ ).join('') || '<span style="color:var(--text-muted);font-size:13px;">Selected players appear here (up to 4). Click a chip to remove.</span>';
  selBox.querySelectorAll('[data-rm]').forEach(node => {
  node.addEventListener('click', () => {
  state._compareList.splice(Number(node.dataset.rm), 1);
@@ -7059,30 +7623,34 @@
  // Search hits
  let html = '';
  if(q && pool.length){
- html += '<div class="rec-card" style="margin-bottom:12px;"><h3>Search</h3>';
+ html += '<div class="compare-search-panel"><h3>Search results</h3>';
  pool.slice(0, 12).forEach(p => {
  const on = state._compareList.some(x => normalizeName(x.fullName) === normalizeName(p.fullName));
- html += `<div class="roster-row" style="cursor:pointer;" data-add="${escapeHtml(p.fullName)}">
- <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span>${escapeHtml(p.fullName)}</span>
+ html += `<div class="roster-row" style="cursor:pointer;padding:8px 12px;" data-add="${escapeHtml(p.fullName)}">
+ <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span> ${escapeHtml(p.fullName)} <span style="color:var(--text-muted);font-size:12px;">${escapeHtml(p.ownerTeam||'')}</span></span>
  <span class="rval">${fmt(p.value)} ${on ? '✓' : '+'}</span></div>`;
  });
  html += '</div>';
+ } else if(q){
+ html += '<div class="hist-empty">No players match that search.</div>';
  }
 
- // Comparison table
  if(state._compareList.length >= 2){
  const cols = state._compareList;
  const rows = [
  ['Name', p => escapeHtml(p.fullName)],
  ['Pos', p => p.position || '-'],
  ['Owner', p => escapeHtml(p.ownerTeam || '-')],
- ['Value', p => fmt(p.value)],
+ ['Value', p => '<strong>' + fmt(p.value) + '</strong>'],
  ['30d trend', p => {
+ if(!showPctChanges()) return '-';
  const c = classifyPlayerTrend(p);
  if(!c) return '-';
- return (c.pct >= 0 ? '+' : '') + c.pct.toFixed(0) + '% · ' + c.label;
+ const col = c.pct >= 5 ? '#3d8f5f' : c.pct <= -5 ? '#c45c52' : 'inherit';
+ return '<span style="color:' + col + '">' + (c.pct >= 0 ? '+' : '') + c.pct.toFixed(0) + '% · ' + escapeHtml(c.label) + '</span>';
  }],
- ['Trend advice', p => {
+ ['Trend note', p => {
+ if(!showPctChanges()) return '-';
  const c = classifyPlayerTrend(p);
  return c ? escapeHtml(c.advice) : '-';
  }],
@@ -7094,19 +7662,34 @@
  const b = getFcTrendBundle(p);
  return b && b.vol != null ? String(b.vol) : '-';
  }],
- ['Injury', p => playerInjuryStatus(p) || '-'],
+ ['Injury', p => {
+ const st = playerInjuryStatus(p);
+ if(!st) return '—';
+ const bad = st === 'out' || st === 'ir' || st === 'pup';
+ return bad ? '<span style="color:var(--red)">' + st + '</span>' : st;
+ }],
  ];
- html += '<div style="overflow-x:auto;"><table><thead><tr><th>Metric</th>';
- cols.forEach(p => { html += '<th>' + escapeHtml(p.fullName) + '</th>'; });
+ // Highlight best value cell
+ const maxVal = Math.max(...cols.map(p => p.value || 0));
+ html += '<div class="compare-table-wrap"><table><thead><tr><th>Metric</th>';
+ cols.forEach(p => {
+ html += '<th><span class="pos-badge pos-' + (p.position||'') + '">' + escapeHtml(p.position||'') + '</span> ' + escapeHtml(p.fullName) + '</th>';
+ });
  html += '</tr></thead><tbody>';
  rows.forEach(([label, fn]) => {
  html += '<tr><td>' + label + '</td>';
- cols.forEach(p => { html += '<td class="val-cell">' + fn(p) + '</td>'; });
+ cols.forEach(p => {
+ let cell = fn(p);
+ if(label === 'Value' && (p.value || 0) === maxVal && maxVal > 0) cell = '<span style="color:var(--accent)">' + cell + '</span>';
+ html += '<td class="val-cell">' + cell + '</td>';
+ });
  html += '</tr>';
  });
  html += '</tbody></table></div>';
  } else if(state._compareList.length === 1){
- html += '<div class="hist-empty">Add one more player to compare.</div>';
+ html += '<div class="hist-empty">Add one more player to compare (up to 4).</div>';
+ } else if(!q){
+ html += '<div class="hist-empty">Search for a player above, then add 2–4 to compare side by side.</div>';
  }
 
  box.innerHTML = html;
@@ -7746,9 +8329,24 @@
  }
 
  const quality = playoffDataQuality();
- if(!quality.ready){
- if(intro) intro.textContent = 'Playoff path waits until there are enough completed weeks for odds (~3+). Seeding alone is not enough for percent swings.';
- list.innerHTML = '<div class="hist-empty">Not ready yet. Need about ' + quality.label.toLowerCase() + ' before path % changes are shown. Current scoring sample: ~' + quality.weeks.toFixed(0) + ' weeks.</div>';
+ const forced = !!state.forcePlayoffOdds;
+ const pathWarn = el('path-force-warn');
+ if(pathWarn){
+ pathWarn.textContent = (forced && !quality.ready)
+ ? 'Warning: path % swings are unreliable this early (~' + quality.weeks.toFixed(0) + ' weeks).'
+ : '';
+ }
+ const pathBtn = el('btn-path-force');
+ if(pathBtn && !pathBtn._bound){
+ pathBtn._bound = true;
+ pathBtn.addEventListener('click', () => {
+ state.forcePlayoffOdds = true;
+ renderPath();
+ });
+ }
+ if(!quality.ready && !forced){
+ if(intro) intro.textContent = 'Playoff path waits until ~3 completed weeks for odds, or use Run path early (noisy).';
+ list.innerHTML = '<div class="hist-empty">Not ready yet (~' + quality.weeks.toFixed(0) + ' weeks scored). Press <strong>Run path early</strong> to force a low-confidence view.</div>';
  return;
  }
 
@@ -7759,10 +8357,13 @@
  }
 
  // Baseline odds
- const baseline = simulatePlayoffOdds();
+ const baseline = simulatePlayoffOdds(null, { force: forced });
  if(!baseline || !baseline.sims){
  list.innerHTML = '<div class="hist-empty">Could not run playoff odds yet.</div>';
  return;
+ }
+ if(intro && forced && !quality.ready){
+ intro.textContent = 'Early override: path percentages can swing a lot with little data. Use for curiosity, not decisions.';
  }
  const baseRow = baseline.odds.find(r => r.team.id === team.id);
  const basePct = baseRow && baseRow.playoffPct != null ? baseRow.playoffPct : null;
@@ -8711,19 +9312,21 @@
  });
  if(posBits.length) parts.push('Pos for A: ' + posBits.join(', '));
 
- // Timing (trend lens) — separate from fairness math
+ // Timing (trend lens) only when Show % changes is on
+ summary.innerHTML = parts.join(' · ');
+ if(showPctChanges()){
  const timing = [];
  [...state.tradeA, ...state.tradeB].forEach(a => {
  const c = classifyPlayerTrend(a);
  if(!c || Math.abs(c.pct) < 6) return;
  const side = state.tradeA.includes(a) ? 'selling' : 'buying';
- timing.push(side + ' ' + a.name + ' near ' + c.label.toLowerCase() + (showPctChanges() ? (' (' + (c.pct >= 0 ? '+' : '') + c.pct.toFixed(0) + '% 30d)') : ''));
+ timing.push(side + ' ' + a.name + ' near ' + c.label.toLowerCase() + ' (' + (c.pct >= 0 ? '+' : '') + c.pct.toFixed(0) + '% 30d)');
  });
- summary.innerHTML = parts.join(' · ');
  if(timing.length){
  summary.innerHTML += '<div style="margin-top:8px;font-size:12px;color:var(--text-secondary);">Timing (not fairness): ' +
  timing.slice(0, 4).map(escapeHtml).join(' · ') +
  '. Signals only; markets are often right.</div>';
+ }
  }
  if(posBits.length){
  summary.innerHTML += '<div style="margin-top:6px;font-size:12px;color:var(--text-secondary);">Positional value net for side A (positive = A gains that pos).</div>';
@@ -8745,6 +9348,8 @@
  if(state.selectedTeamB != null) params.set('tb', String(state.selectedTeamB));
  if(state.tradeA.length) params.set('a', state.tradeA.map(x => x.id).join(','));
  if(state.tradeB.length) params.set('b', state.tradeB.map(x => x.id).join(','));
+ // Flag so recipients open Trade tab when the link carries a package
+ if(state.tradeA.length || state.tradeB.length) params.set('tab', 'trade');
  const qs = params.toString();
  const next = location.pathname + (qs ? '?' + qs : '') + location.hash;
  if(location.pathname + location.search + location.hash !== next){
@@ -9669,6 +10274,15 @@
  if(panel) panel.classList.add('active');
  const sb = el('app-sidebar');
  if(sb) sb.classList.remove('nav-open');
+ try{
+ // Mobile: jump content into view after menu closes
+ const main = document.querySelector('.content main') || document.querySelector('main');
+ if(main && window.innerWidth <= 860){
+ main.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ } else {
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+ }
+ }catch(e){}
  if(btn.dataset.panel === 'panel-matchups' && (!matchupCache || !matchupCache.length)){
  refreshMatchups();
  }
@@ -9705,7 +10319,10 @@
  if(btnNavToggle){
  btnNavToggle.addEventListener('click', () => {
  const sb = el('app-sidebar');
- if(sb) sb.classList.toggle('nav-open');
+ if(sb){
+ const open = sb.classList.toggle('nav-open');
+ btnNavToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+ }
  });
  }
  const btnMatchupsRefresh = el('btn-matchups-refresh');
@@ -10015,7 +10632,8 @@ el('btn-settings').addEventListener('click', () => {
  teamA: params.get('ta'),
  teamB: params.get('tb'),
  a: (params.get('a') || '').split(',').filter(Boolean),
- b: (params.get('b') || '').split(',').filter(Boolean)
+ b: (params.get('b') || '').split(',').filter(Boolean),
+ tab: params.get('tab') || ((params.get('a') || params.get('b') || params.get('ta')) ? 'trade' : null)
  };
  }
 
