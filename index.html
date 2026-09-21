@@ -1783,7 +1783,11 @@
  </button>
  <button class="nav-item" data-panel="panel-luck">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg></span>
- Luck &amp; SOS
+ Luck
+ </button>
+ <button class="nav-item" data-panel="panel-sos">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
+ Strength of schedule
  </button>
  <button class="nav-item" data-panel="panel-trends">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
@@ -2239,7 +2243,7 @@
  <!-- ---------- LUCK + SOS ---------- -->
  <section class="panel" id="panel-luck">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Expected wins, luck &amp; schedule</div>
+ <div class="section-title" style="margin:0;">Expected wins &amp; luck</div>
  <button type="button" class="info-btn" id="btn-luck-info" title="How it works">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
  How it works
@@ -2264,6 +2268,36 @@
  </table>
  </div>
  <p class="tpi-note" id="luck-note" style="margin-top:12px;"></p>
+ </section>
+
+
+ <section class="panel" id="panel-sos">
+ <div class="section-title-row" style="margin-bottom:12px;">
+ <div class="section-title" style="margin:0;">Strength of schedule</div>
+ </div>
+ <p class="needs-intro" id="sos-intro">Week-by-week opponents with actual scores when final, live/proj for the current week, and projected lineup scores (byes excluded) for remaining weeks. Running record uses real results first, then projected outcomes.</p>
+ <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
+ <select id="sos-team" style="max-width:260px;"></select>
+ <span id="sos-summary" style="font-size:12.5px;color:var(--text-muted);"></span>
+ </div>
+ <div id="sos-meta" class="hist-meta" style="margin-bottom:10px;"></div>
+ <div style="overflow-x:auto;">
+ <table>
+ <thead>
+ <tr>
+ <th>Week</th>
+ <th>Opponent</th>
+ <th>You</th>
+ <th>Opp</th>
+ <th>Result</th>
+ <th>Record after</th>
+ <th>Source</th>
+ </tr>
+ </thead>
+ <tbody id="sos-body"></tbody>
+ </table>
+ </div>
+ <p class="tpi-note" id="sos-note" style="margin-top:12px;"></p>
  </section>
 
  <!-- ---------- PLAYOFFS ---------- -->
@@ -5035,17 +5069,19 @@
  async function loadScheduleGraph(){
  const graph = {};
  (state.teams || []).forEach(t => {
- graph[t.id] = { past: [], future: [] };
+ graph[t.id] = { past: [], future: [], weeks: {} };
  graph[String(t.id)] = graph[t.id];
  });
- function addEdge(aId, bId, when){
- if(aId == null || bId == null) return;
+ function addMatch(aId, bId, week, scoreA, scoreB, status){
+ if(aId == null || bId == null || week == null) return;
  const a = graph[aId] || graph[String(aId)];
  const b = graph[bId] || graph[String(bId)];
  if(!a || !b) return;
- const bucket = when === 'past' ? 'past' : 'future';
- if(!a[bucket].some(x => String(x) === String(bId))) a[bucket].push(bId);
- if(!b[bucket].some(x => String(x) === String(aId))) b[bucket].push(aId);
+ const when = status === 'final' ? 'past' : 'future';
+ if(!a[when].some(x => String(x) === String(bId))) a[when].push(bId);
+ if(!b[when].some(x => String(x) === String(aId))) b[when].push(aId);
+ a.weeks[week] = { oppId: bId, myScore: scoreA, oppScore: scoreB, status };
+ b.weeks[week] = { oppId: aId, myScore: scoreB, oppScore: scoreA, status };
  }
  try{
  if(state.platform === 'sleeper' && state.leagueId){
@@ -5055,7 +5091,7 @@
  const nfl = await stateRes.json();
  cur = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){}
- // Fetch weeks 1..17 in batches (past + remaining)
+ graph._currentWeek = cur;
  for(let w = 1; w <= 17; w += 4){
  const batch = [];
  for(let i = w; i < w + 4 && i <= 17; i++) batch.push(i);
@@ -5077,8 +5113,13 @@
  const a = teamByRosterId(pair[0].roster_id);
  const b = teamByRosterId(pair[1].roster_id);
  if(!a || !b) return;
- const when = week < cur ? 'past' : 'future';
- addEdge(a.id, b.id, when);
+ const ptsA = typeof pair[0].points === 'number' ? pair[0].points : null;
+ const ptsB = typeof pair[1].points === 'number' ? pair[1].points : null;
+ let status = 'future';
+ if(week < cur && ptsA != null && ptsB != null) status = 'final';
+ else if(week === cur) status = 'live';
+ else if(week < cur) status = 'final';
+ addMatch(a.id, b.id, week, ptsA, ptsB, status);
  });
  });
  }
@@ -5091,6 +5132,7 @@
  const res = await robustFetchAny(urls, { timeoutMs: 15000 });
  const data = await res.json();
  const cur = data.scoringPeriodId || (data.status && data.status.currentMatchupPeriod) || 1;
+ graph._currentWeek = cur;
  (data.schedule || []).forEach(game => {
  const mp = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
  if(mp == null) return;
@@ -5099,8 +5141,13 @@
  const teamA = teamByRosterId(home.teamId);
  const teamB = teamByRosterId(away.teamId);
  if(!teamA || !teamB) return;
- const when = mp < cur ? 'past' : 'future';
- addEdge(teamA.id, teamB.id, when);
+ const ptsA = typeof home.totalPoints === 'number' ? home.totalPoints : (typeof home.rosterForCurrentScoringPeriod?.appliedStatTotal === 'number' ? home.rosterForCurrentScoringPeriod.appliedStatTotal : null);
+ const ptsB = typeof away.totalPoints === 'number' ? away.totalPoints : (typeof away.rosterForCurrentScoringPeriod?.appliedStatTotal === 'number' ? away.rosterForCurrentScoringPeriod.appliedStatTotal : null);
+ let status = 'future';
+ if(mp < cur && ptsA != null && ptsB != null && (ptsA > 0 || ptsB > 0)) status = 'final';
+ else if(mp === cur) status = 'live';
+ else if(mp < cur) status = 'final';
+ addMatch(teamA.id, teamB.id, mp, ptsA, ptsB, status);
  });
  }
  }catch(e){
@@ -5108,6 +5155,181 @@
  }
  scheduleCache = graph;
  return graph;
+ }
+
+ // Project a team's starter points for a given week (bye-aware).
+ // Uses actual weekly score when final; live matchup when current; else proj/value model.
+ function estimateTeamWeekScore(team, week, opts){
+ opts = opts || {};
+ if(!team) return { pts: null, source: 'none' };
+ const node = (scheduleCache && (scheduleCache[team.id] || scheduleCache[String(team.id)])) || null;
+ const wRow = node && node.weeks && node.weeks[week];
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || week;
+
+ // Final week: prefer schedule points, else team.weeklyScores
+ if(wRow && wRow.status === 'final' && typeof wRow.myScore === 'number' && wRow.myScore > 0){
+ return { pts: wRow.myScore, source: 'final' };
+ }
+ const ws = (team.weeklyScores || [])[week - 1];
+ if(week < curWeek && typeof ws === 'number' && ws > 0){
+ return { pts: ws, source: 'final' };
+ }
+
+ // Current week: live or projected from matchup cache
+ if(week === curWeek && matchupCache && matchupCache.length){
+ const m = matchupCache.find(x =>
+ (x.teamA && (x.teamA.id === team.id || String(x.teamA.id) === String(team.id))) ||
+ (x.teamB && (x.teamB.id === team.id || String(x.teamB.id) === String(team.id)))
+ );
+ if(m){
+ const isA = m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id));
+ const live = isA ? m.pointsA : m.pointsB;
+ const proj = isA ? m.projA : m.projB;
+ if(typeof live === 'number' && live > 0 && (proj == null || live >= proj * 0.85)){
+ return { pts: Math.max(live, proj || 0), source: 'live' };
+ }
+ if(typeof proj === 'number' && proj > 0) return { pts: proj, source: 'live-proj' };
+ if(typeof live === 'number' && live > 0) return { pts: live, source: 'live' };
+ }
+ }
+
+ // Future (or missing): optimal lineup excluding bye-week players, using projections when known
+ const counts = getStarterCounts();
+ const flexElig = counts.flexEligible || ['RB','WR','TE'];
+ const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+ const available = (team.roster || []).filter(p => {
+ if(p.isIR) return false;
+ const bw = playerByeWeek(p);
+ if(bw != null && Number(bw) === Number(week)) return false;
+ return true;
+ });
+ const trial = { ...team, roster: available };
+ const { assignments } = optimalStarterLineup(trial, counts, flexElig, sfElig, { healthyOnly: true });
+ if(!assignments.length){
+ // Empty / all on bye — use a low placeholder from season avg * 0.35
+ const avg = team.avgPts || 0;
+ return { pts: avg > 0 ? avg * 0.35 : 40, source: 'bye-thin' };
+ }
+ let sum = 0;
+ let usedProj = 0;
+ assignments.forEach(a => {
+ const row = getPlayerProjection(a.id, a.name);
+ if(row && typeof row.proj === 'number' && row.proj > 0){
+ // Scale weekly proj lightly if this is not the projection week
+ let pts = row.proj;
+ if(projectionCacheWeek != null && week !== projectionCacheWeek){
+ // Same season average-ish: blend toward team share of value
+ pts = row.proj * 0.92;
+ }
+ sum += pts;
+ usedProj++;
+ } else if(row && typeof row.actual === 'number' && row.actual > 0 && week === curWeek){
+ sum += row.actual;
+ usedProj++;
+ } else {
+ // Value → rough weekly points: scale FantasyCalc value against team avg
+ const v = a.value || 0;
+ const teamVal = (team.roster || []).reduce((s,p) => s + (p.value||0), 0) || 1;
+ const avg = team.avgPts || 100;
+ // Starter share of value * team avg * 1.05 (starters outscore bench share)
+ const share = v / teamVal;
+ sum += Math.max(4, avg * share * (assignments.length * 0.85));
+ }
+ });
+ const holes = unfilledSlots(available, counts, { healthyOnly: true });
+ if(holes > 0) sum *= Math.max(0.55, 1 - holes * 0.12);
+ return {
+ pts: Math.round(sum * 10) / 10,
+ source: usedProj >= Math.ceil(assignments.length * 0.5) ? 'proj-lineup' : 'value-lineup'
+ };
+ }
+
+ function buildTeamSosPath(team){
+ if(!team) return null;
+ const graph = scheduleCache || {};
+ const node = graph[team.id] || graph[String(team.id)] || { weeks: {}, past: [], future: [] };
+ const curWeek = graph._currentWeek || projectionCacheWeek || 1;
+ const playoffStart = (state.playoffSettings && state.playoffSettings.playoffWeekStart) || 15;
+ const maxWeek = Math.max(playoffStart - 1, curWeek, 14);
+
+ // Actual record so far from finalized weeks
+ let w = 0, l = 0, t = 0;
+ const rows = [];
+ const weeks = Object.keys(node.weeks || {}).map(Number).sort((a,b) => a - b);
+ // Also ensure 1..maxWeek coverage if weeks missing but weeklyScores exist
+ for(let week = 1; week <= maxWeek; week++){
+ const match = node.weeks[week];
+ if(!match && week > curWeek + 8) continue; // don't invent far bye-free if no schedule
+ if(!match){
+ // no opponent listed — skip or bye
+ if(week <= curWeek){
+ const my = (team.weeklyScores || [])[week - 1];
+ if(typeof my === 'number' && my > 0){
+ rows.push({
+ week, opp: null, oppName: 'Bye / unknown',
+ myPts: my, oppPts: null, result: '—',
+ record: null, source: 'final', status: 'final'
+ });
+ }
+ }
+ continue;
+ }
+ const opp = state.teams.find(x => x.id === match.oppId || String(x.id) === String(match.oppId));
+ const myEst = estimateTeamWeekScore(team, week);
+ const oppEst = opp ? estimateTeamWeekScore(opp, week) : { pts: null, source: 'none' };
+ let myPts = myEst.pts, oppPts = oppEst.pts;
+ let source = myEst.source;
+ let status = match.status || 'future';
+ if(match.status === 'final' && typeof match.myScore === 'number'){
+ myPts = match.myScore;
+ oppPts = match.oppScore;
+ source = 'final';
+ status = 'final';
+ }
+ let result = '—';
+ let isProj = status !== 'final';
+ if(myPts != null && oppPts != null){
+ if(Math.abs(myPts - oppPts) < 0.05) result = 'T';
+ else if(myPts > oppPts) result = 'W';
+ else result = 'L';
+ }
+ if(status === 'final' && result !== '—'){
+ if(result === 'W') w++;
+ else if(result === 'L') l++;
+ else t++;
+ }
+ const recAfter = { w, l, t };
+ // For projected weeks, show what record would be if this result holds
+ let projW = w, projL = l, projT = t;
+ if(isProj && result === 'W') projW++;
+ else if(isProj && result === 'L') projL++;
+ else if(isProj && result === 'T') projT++;
+ rows.push({
+ week,
+ opp,
+ oppName: opp ? opp.name : 'Unknown',
+ myPts, oppPts, result,
+ status, source, isProj,
+ recordActual: `${w}-${l}` + (t ? `-${t}` : ''),
+ recordAfter: isProj
+ ? (`${projW}-${projL}` + (projT ? `-${projT}` : '') + ' (proj)')
+ : (`${w}-${l}` + (t ? `-${t}` : ''))
+ });
+ if(isProj){
+ // Advance projected record for subsequent weeks
+ w = projW; l = projL; t = projT;
+ }
+ }
+
+ // SOS: mean of opponent projected/actual scores across path
+ const oppScores = rows.map(r => r.oppPts).filter(x => x != null && x > 0);
+ const sos = oppScores.length ? oppScores.reduce((a,b)=>a+b,0) / oppScores.length : null;
+ return {
+ rows,
+ sos,
+ finalRecord: rows.length ? rows[rows.length - 1].recordAfter : '0-0',
+ currentWeek: curWeek
+ };
  }
 
  function detectLeagueMedian(){
@@ -5933,6 +6155,113 @@
  }
  }
 
+
+
+ function renderSos(){
+ const tbody = el('sos-body');
+ const sel = el('sos-team');
+ const summary = el('sos-summary');
+ const meta = el('sos-meta');
+ const note = el('sos-note');
+ const intro = el('sos-intro');
+ if(!tbody) return;
+
+ if(!state.teams || !state.teams.length){
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ return;
+ }
+
+ if(sel){
+ const cur = sel.value || state.myTeamId;
+ sel.innerHTML = '';
+ state.teams.forEach(t => {
+ const o = document.createElement('option');
+ o.value = t.id;
+ o.textContent = t.name + (t.owner ? ' — ' + t.owner : '');
+ sel.appendChild(o);
+ });
+ if(cur != null) sel.value = cur;
+ else if(state.myTeamId != null) sel.value = state.myTeamId;
+ if(!sel._sosBound){
+ sel._sosBound = true;
+ sel.addEventListener('change', () => renderSos());
+ }
+ }
+
+ const team = state.teams.find(t => String(t.id) === String(sel && sel.value));
+ if(!team){
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Pick a team.</td></tr>';
+ return;
+ }
+
+ function paint(){
+ const path = buildTeamSosPath(team);
+ if(!path || !path.rows.length){
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">No schedule weeks found yet. Wait for schedule load or open Matchups once.</td></tr>';
+ if(summary) summary.textContent = '';
+ return;
+ }
+ const leagueOpp = [];
+ path.rows.forEach(r => { if(r.oppPts != null) leagueOpp.push(r.oppPts); });
+ const avgOpp = path.sos;
+ // League-wide SOS for context
+ const allSos = state.teams.map(t => {
+ const p = buildTeamSosPath(t);
+ return p && p.sos != null ? p.sos : null;
+ }).filter(x => x != null);
+ const leagueAvgSos = allSos.length ? allSos.reduce((a,b)=>a+b,0)/allSos.length : null;
+
+ if(summary){
+ const delta = (avgOpp != null && leagueAvgSos != null) ? avgOpp - leagueAvgSos : null;
+ const dStr = delta == null ? '' : ((delta >= 0 ? '+' : '') + delta.toFixed(1) + ' vs league avg opp');
+ summary.textContent = (avgOpp != null ? ('SOS ' + avgOpp.toFixed(1) + ' opp pts/wk') : 'SOS —') + (dStr ? ' · ' + dStr : '');
+ }
+ if(meta){
+ meta.innerHTML = `<span>Week <strong>${path.currentWeek}</strong></span>
+ <span>Projected finish <strong>${escapeHtml(path.finalRecord)}</strong></span>
+ <span>${path.rows.filter(r=>r.status==='final').length} final · ${path.rows.filter(r=>r.isProj).length} projected</span>`;
+ }
+ if(intro){
+ intro.textContent = 'Final weeks use real scores. Current week uses live/proj when available. Future weeks build each team’s optimal lineup excluding bye players, using player projections when loaded (else value-based estimate). Record after each week rolls forward; final weeks are locked to the real W-L.';
+ }
+ if(note){
+ note.textContent = 'Source: final = official score · live / live-proj = current matchup · proj-lineup = weekly projections · value-lineup = FantasyCalc share of team average. Empty slots and byes lower the projection.';
+ }
+
+ tbody.innerHTML = '';
+ path.rows.forEach(r => {
+ const tr = document.createElement('tr');
+ if(r.status === 'final') tr.style.opacity = '1';
+ else tr.style.background = 'var(--surface-2)';
+ const resColor = r.result === 'W' ? '#3d8f5f' : r.result === 'L' ? '#c45c52' : 'var(--text-muted)';
+ const myStr = r.myPts != null ? fmtPts(r.myPts) : '—';
+ const oppStr = r.oppPts != null ? fmtPts(r.oppPts) : '—';
+ tr.innerHTML = `
+ <td><strong>${r.week}</strong>${r.week === path.currentWeek ? ' · now' : ''}</td>
+ <td class="team-name-cell">${escapeHtml(r.oppName)}</td>
+ <td class="val-cell">${myStr}</td>
+ <td class="val-cell">${oppStr}</td>
+ <td style="color:${resColor};font-weight:700;">${r.result}</td>
+ <td class="val-cell">${escapeHtml(r.recordAfter)}</td>
+ <td style="font-size:11.5px;color:var(--text-muted);">${escapeHtml(r.source)}</td>`;
+ tbody.appendChild(tr);
+ });
+ }
+
+ if(!scheduleCache){
+ tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Loading schedule…</td></tr>';
+ loadScheduleGraph().then(() => {
+ if(!projectionCache) return loadWeeklyProjections().catch(()=>null);
+ }).then(() => paint()).catch(() => paint());
+ return;
+ }
+ // Refresh projections in background if missing
+ if(!projectionCache){
+ loadWeeklyProjections().then(() => paint()).catch(() => paint());
+ } else {
+ paint();
+ }
+ }
 
  function renderLuck(){
  const tbody = el('luck-body');
@@ -10287,6 +10616,10 @@
  refreshMatchups();
  }
  if(btn.dataset.panel === 'panel-rate') renderRateTeam();
+ if(btn.dataset.panel === 'panel-sos'){
+ if(!scheduleCache) loadScheduleGraph().then(() => renderSos());
+ else renderSos();
+ }
  if(btn.dataset.panel === 'panel-luck'){
  if(!scheduleCache) loadScheduleGraph().then(() => renderLuck());
  else renderLuck();
