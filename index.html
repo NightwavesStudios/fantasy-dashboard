@@ -170,7 +170,6 @@
  .btn-primary {
  background: var(--accent);
  color: #06100a;
- width: 100%;
  }
  .btn-primary:hover { background: var(--accent-hover); }
  .btn-primary:disabled { opacity: 0.45; cursor: default; }
@@ -1644,6 +1643,289 @@
  display: flex; align-items: center; gap: 8px;
  font-size: 12.5px; color: var(--text-secondary);
  }
+
+ .strategy-strip {
+ position: sticky;
+ top: 0;
+ z-index: 20;
+ background: var(--surface);
+ border-bottom: 1px solid var(--border);
+ padding: 10px 16px;
+ margin: 0 0 8px;
+ display: none;
+ }
+ .strategy-strip.show { display: block; }
+ .strategy-strip .ss-top {
+ display: flex;
+ flex-wrap: wrap;
+ align-items: center;
+ gap: 8px 14px;
+ font-size: 12.5px;
+ }
+ .strategy-strip .ss-team { font-weight: 700; font-size: 13.5px; }
+ .strategy-strip .ss-pill {
+ background: var(--surface-2);
+ border: 1px solid var(--border-subtle);
+ border-radius: 999px;
+ padding: 3px 10px;
+ font-size: 11.5px;
+ color: var(--text-secondary);
+ white-space: nowrap;
+ }
+ .strategy-strip .ss-pill strong { color: var(--text); }
+ .strategy-strip .ss-actions {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin-top: 8px;
+ }
+ .strategy-strip .ss-action {
+ border: 1px solid var(--border);
+ background: var(--surface-2);
+ color: var(--text);
+ border-radius: var(--radius-sm);
+ padding: 6px 10px;
+ font-size: 12px;
+ cursor: pointer;
+ text-align: left;
+ max-width: 100%;
+ }
+ .strategy-strip .ss-action:hover { border-color: var(--accent); }
+ .strategy-strip .ss-action .ss-why {
+ display: block;
+ font-size: 11px;
+ color: var(--text-muted);
+ margin-top: 2px;
+ }
+ .strategy-priority {
+ border-left: 3px solid var(--accent);
+ padding: 10px 12px;
+ margin-bottom: 8px;
+ background: var(--surface);
+ border-radius: var(--radius-sm);
+ cursor: pointer;
+ }
+ .strategy-priority:hover { background: var(--surface-2); }
+ .strategy-priority .sp-title { font-weight: 600; font-size: 14px; }
+ .strategy-priority .sp-why { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
+ .strategy-flow {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin: 12px 0;
+ }
+ .strategy-flow button {
+ font-size: 12px;
+ padding: 6px 10px;
+ border-radius: 999px;
+ border: 1px solid var(--border);
+ background: var(--surface-2);
+ color: var(--text-secondary);
+ cursor: pointer;
+ }
+ .strategy-flow button:hover, .strategy-flow button.active {
+ border-color: var(--accent);
+ color: var(--text);
+ }
+ @media (max-width: 720px) {
+ .strategy-strip { padding: 8px 12px; }
+ }
+ 
+
+ .btn-primary { width: auto; }
+ .btn-primary.full, .login-card .btn-primary, #btn-load { width: 100%; }
+ /* ---- Unified controls ---- */
+ button, .btn {
+ font-family: inherit;
+ cursor: pointer;
+ transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+ }
+ .btn {
+ appearance: none;
+ border: 1px solid transparent;
+ border-radius: var(--radius-sm);
+ padding: 8px 14px;
+ font-size: 13px;
+ font-weight: 600;
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ gap: 6px;
+ line-height: 1.2;
+ }
+ .btn-primary {
+ background: var(--accent);
+ color: #06100a;
+ border-color: var(--accent);
+ width: auto;
+ min-width: 0;
+ }
+ .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+ .btn-primary:disabled { opacity: 0.45; cursor: default; }
+ .btn-ghost {
+ background: var(--surface-2);
+ color: var(--text-secondary);
+ border: 1px solid var(--border);
+ }
+ .btn-ghost:hover {
+ color: var(--text);
+ border-color: var(--text-muted);
+ background: var(--surface-3);
+ }
+ .btn-sm { padding: 5px 10px; font-size: 12px; font-weight: 600; }
+ .btn-block { width: 100%; }
+
+ .link-btn {
+ background: none;
+ border: none;
+ color: var(--accent);
+ font-size: 12.5px;
+ font-weight: 600;
+ cursor: pointer;
+ padding: 0;
+ }
+ .link-btn:hover { text-decoration: underline; }
+
+ select, input[type="text"], input[type="search"], input[type="number"], input:not([type="checkbox"]):not([type="radio"]) {
+ background: var(--surface-2);
+ border: 1px solid var(--border);
+ color: var(--text);
+ border-radius: var(--radius-sm);
+ padding: 7px 10px;
+ font-size: 13px;
+ font-family: inherit;
+ max-width: 100%;
+ }
+ select:focus, input:focus {
+ outline: none;
+ border-color: var(--accent);
+ }
+
+ .info-btn {
+ display: inline-flex;
+ align-items: center;
+ gap: 4px;
+ background: transparent;
+ border: 1px solid transparent;
+ color: var(--text-muted);
+ font-size: 12px;
+ font-weight: 500;
+ padding: 4px 8px;
+ border-radius: var(--radius-sm);
+ cursor: pointer;
+ }
+ .info-btn:hover {
+ color: var(--text-secondary);
+ border-color: var(--border);
+ background: var(--surface-2);
+ }
+ .info-btn .icon { width: 14px; height: 14px; opacity: 0.8; }
+
+ .section-title-row {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 10px;
+ flex-wrap: wrap;
+ margin-bottom: 10px;
+ }
+ .section-title {
+ font-size: 18px;
+ font-weight: 650;
+ letter-spacing: -0.02em;
+ }
+
+ .waiver-toolbar {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 8px;
+ align-items: center;
+ margin-bottom: 12px;
+ }
+ .waiver-toolbar .btn { flex-shrink: 0; }
+
+ .needs-intro {
+ font-size: 13px;
+ color: var(--text-secondary);
+ line-height: 1.45;
+ margin-bottom: 12px;
+ max-width: 62ch;
+ }
+
+ .strategy-priority {
+ border: 1px solid var(--border);
+ border-left: 3px solid var(--accent);
+ padding: 10px 12px;
+ margin-bottom: 8px;
+ background: var(--surface);
+ border-radius: var(--radius-sm);
+ cursor: pointer;
+ }
+ .strategy-priority:hover { background: var(--surface-2); }
+
+ .strategy-flow {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin: 0 0 14px;
+ }
+ .strategy-flow button {
+ font-size: 12px;
+ font-weight: 600;
+ padding: 6px 11px;
+ border-radius: 999px;
+ border: 1px solid var(--border);
+ background: var(--surface-2);
+ color: var(--text-secondary);
+ cursor: pointer;
+ }
+ .strategy-flow button:hover {
+ border-color: var(--accent);
+ color: var(--text);
+ background: var(--accent-muted);
+ }
+
+ main {
+ max-width: 1080px;
+ margin: 0 auto;
+ padding: 20px 20px 56px;
+ }
+ @media (max-width: 720px) {
+ main { padding: 14px 12px 48px; }
+ .section-title { font-size: 16px; }
+ .btn { min-height: 40px; }
+ .btn-sm { min-height: 36px; }
+ }
+
+ /* Compact table density */
+ table { font-size: 13px; }
+ th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 600; }
+
+ .rec-card {
+ padding: 12px;
+ cursor: pointer;
+ transition: border-color 0.12s ease;
+ }
+ .rec-card:hover { border-color: var(--text-muted); }
+ .rec-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 4px; }
+ .rec-card .rec-val { font-size: 20px; font-weight: 650; }
+ .rec-card .rec-who { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+ /* Nav slightly tighter */
+ .nav-item { padding: 8px 10px; font-size: 12.5px; }
+ .nav-section { padding: 10px 10px 3px; font-size: 9.5px; }
+ .sidebar-brand { padding: 12px 12px 8px; }
+
+
+ .related-links {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin-top: 16px;
+ padding-top: 12px;
+ border-top: 1px solid var(--border-subtle);
+ }
+ .related-links .btn { font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1729,92 +2011,90 @@
  <nav class="sidebar-nav">
  <button class="nav-item active" data-panel="panel-home">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></span>
- Home
+ Game plan
  </button>
 
- <div class="nav-section">Overview</div>
- <button class="nav-item" data-panel="panel-rankings">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h4V9H4v10zM10 19h4V5h-4v14zM16 19h4v-7h-4v7z"/></svg></span>
- Power rankings
+ <div class="nav-section">This week</div>
+ <button class="nav-item" data-panel="panel-sit">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+ Lineup
  </button>
  <button class="nav-item" data-panel="panel-matchups">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 3v4M7 3v4M3 9h18M5 7h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/></svg></span>
  Matchups
  </button>
- <button class="nav-item" data-panel="panel-playoffs">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
- Playoffs
- </button>
- <button class="nav-item" data-panel="panel-path">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-8 4 5 4-9"/></svg></span>
- Playoff path
- </button>
-
- <div class="nav-section">Moves</div>
- <button class="nav-item" data-panel="panel-trade">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg></span>
- Trade calc
- </button>
- <button class="nav-item" data-panel="panel-finder">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
- Trade finder
+ <button class="nav-item" data-panel="panel-byes">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+ Cover
  </button>
  <button class="nav-item" data-panel="panel-waivers">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="15" r="3"/><path d="M18 14v2M17 15h2"/></svg></span>
  Waivers
  </button>
- <button class="nav-item" data-panel="panel-compare">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/><path d="M16 4v4M18 6h-4"/></svg></span>
- Compare
- </button>
 
- <div class="nav-section">My team</div>
+ <div class="nav-section">Build the roster</div>
+ <button class="nav-item" data-panel="panel-rankings">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h4V9H4v10zM10 19h4V5h-4v14zM16 19h4v-7h-4v7z"/></svg></span>
+ Rankings
+ </button>
  <button class="nav-item" data-panel="panel-rate">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
- Team grade
- </button>
- <button class="nav-item" data-panel="panel-sit">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
- Lineup optimizer
- </button>
- <button class="nav-item" data-panel="panel-roster">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
- Lineup accuracy
+ Grade
  </button>
  <button class="nav-item" data-panel="panel-needs">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg></span>
- Team needs
+ Needs
  </button>
-
- <div class="nav-section">Schedule</div>
- <button class="nav-item" data-panel="panel-sos">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
- SOS &amp; projections
+ <button class="nav-item" data-panel="panel-finder">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+ Trades
  </button>
- <button class="nav-item" data-panel="panel-byes">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
- Bye planner
- </button>
- <button class="nav-item" data-panel="panel-injuries">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v6M9 5h6"/><circle cx="12" cy="15" r="7"/><path d="M12 12v4M12 18h.01"/></svg></span>
- Injury planner
- </button>
- <button class="nav-item" data-panel="panel-luck">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg></span>
- Luck vs expected
+ <button class="nav-item" data-panel="panel-trade">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg></span>
+ Trade calc
  </button>
 
  <div class="nav-section">League</div>
- <button class="nav-item" data-panel="panel-depth">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></svg></span>
- Player tiers
+ <button class="nav-item" data-panel="panel-rosters">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+ All teams
+ </button>
+ <button class="nav-item" data-panel="panel-playoffs">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
+ Playoffs
+ </button>
+ <button class="nav-item" data-panel="panel-sos">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
+ Schedule
+ </button>
+
+ <div class="nav-section">More</div>
+ <button class="nav-item" data-panel="panel-path">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-8 4 5 4-9"/></svg></span>
+ Path
+ </button>
+ <button class="nav-item" data-panel="panel-compare">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+ Compare
  </button>
  <button class="nav-item" data-panel="panel-trends">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
  Trends
  </button>
+ <button class="nav-item" data-panel="panel-luck">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>
+ Luck
+ </button>
+ <button class="nav-item" data-panel="panel-roster">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg></span>
+ Accuracy
+ </button>
+ <button class="nav-item" data-panel="panel-depth">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></svg></span>
+ Tiers
+ </button>
  <button class="nav-item" data-panel="panel-records">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 7h12v13H6z"/><path d="M9 11h6M9 15h4"/></svg></span>
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 7h12v13H6z"/></svg></span>
  Records
  </button>
  </nav>
@@ -1837,15 +2117,45 @@
  <div class="content">
  <main>
  <!-- ---------- TRADE ---------- -->
+ <div id="strategy-strip" class="strategy-strip" aria-label="Team strategy"></div>
+
  <section class="panel active" id="panel-home">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Dashboard</div>
+ <div class="section-title" style="margin:0;">Your game plan</div>
+ <button type="button" class="info-btn" id="btn-home-info" title="How it works">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
+ How it works
+ </button>
  </div>
- <p class="needs-intro" id="home-intro">League snapshot with live ranks and scoring shape.</p>
+ <p class="needs-intro" id="home-intro">Next moves for your team. Everything else links from here.</p>
+ <div id="home-priorities" style="margin-bottom:14px;"></div>
+ <div class="strategy-flow" id="home-flow"></div>
  <div id="home-grid" class="needs-grid"></div>
  <div id="home-charts" class="needs-grid" style="margin-top:14px;"></div>
  </section>
 
+ 
+ <section class="panel" id="panel-rosters">
+ <div class="section-title-row" style="margin-bottom:12px;">
+ <div class="section-title" style="margin:0;">All teams</div>
+ <button type="button" class="info-btn" id="btn-rosters-info" title="How it works">How it works</button>
+ </div>
+ <p class="needs-intro">Every roster with market value and recent value move. Sort teams by total value change to see who is rising or falling.</p>
+ <div class="waiver-toolbar">
+ <label class="field-label" style="margin:0;">Sort teams</label>
+ <select id="rosters-sort">
+ <option value="power">Power rank</option>
+ <option value="value">Total value</option>
+ <option value="rise">Biggest risers</option>
+ <option value="fall">Biggest fallers</option>
+ </select>
+ <label style="font-size:12.5px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+ <input type="checkbox" id="rosters-starters-only" /> Starters only
+ </label>
+ </div>
+ <div id="rosters-summary" class="hist-meta" style="margin-bottom:12px;"></div>
+ <div id="rosters-list"></div>
+ </section>
  <section class="panel" id="panel-trends">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">League trends</div>
@@ -1966,13 +2276,13 @@
  How it works
  </button>
  </div>
- <div class="waiver-toolbar" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;">
- <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-needs">Team needs</button>
- <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-sos">SOS</button>
+ <div class="waiver-toolbar" style="margin-bottom:10px;">
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-needs">Needs</button>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-rate">Grade</button>
  <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-playoffs">Playoffs</button>
- <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-rate">Team grade</button>
  </div>
  <div id="rankings-snapshot" style="margin-bottom:14px;"></div>
+ <div id="rankings-related" class="related-links" style="margin-top:0;margin-bottom:12px;border:0;padding:0;"></div>
  <div style="overflow-x:auto;">
  <table>
  <thead>
@@ -2100,26 +2410,44 @@
  How it works
  </button>
  </div>
- <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:flex-start;">
+ <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:flex-end;">
  <div>
  <label class="field-label">You</label>
  <select id="finder-myteam" style="max-width:200px;display:block;"></select>
  </div>
  <div>
- <label class="field-label">Trade type</label>
- <select id="finder-kind" style="max-width:200px;display:block;">
+ <label class="field-label">Goal</label>
+ <select id="finder-mode" style="max-width:200px;display:block;">
+ <option value="best">Best mutual trades</option>
+ <option value="sellhigh">Bias: sell-high on my roster</option>
+ <option value="buylow">Show buy-low signals</option>
+ </select>
+ </div>
+ <div>
+ <label class="field-label">Trade size</label>
+ <select id="finder-kind" style="max-width:160px;display:block;">
  <option value="ALL">All sizes</option>
  <option value="1">1-for-1</option>
  <option value="2">2-for-1 / 1-for-2</option>
  <option value="22">2-for-2</option>
  <option value="33">3-for-3</option>
  <option value="mix">2-for-3 / 3-for-2</option>
- <option value="buy">Buy-low targets</option>
-</select>
+ </select>
  </div>
- <button type="button" class="btn btn-primary btn-sm" id="btn-finder-run" style="margin-top:18px;">Find trades</button>
- <span id="finder-status" style="font-size:11.5px;color:var(--text-muted);margin-top:22px;"></span>
+ <div id="finder-player-wrap" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+ <div>
+ <label class="field-label">You send (optional)</label>
+ <input type="search" id="finder-sell-players" placeholder="Names, comma-separated" style="min-width:200px;max-width:280px;display:block;" autocomplete="off" />
  </div>
+ <div>
+ <label class="field-label">You get (optional)</label>
+ <input type="search" id="finder-buy-players" placeholder="Names, comma-separated" style="min-width:200px;max-width:280px;display:block;" autocomplete="off" />
+ </div>
+ </div>
+ <button type="button" class="btn btn-primary btn-sm" id="btn-finder-run">Find trades</button>
+ <span id="finder-status" style="font-size:11.5px;color:var(--text-muted);"></span>
+ </div>
+ <div id="finder-signal" class="needs-intro" style="display:none;margin-bottom:10px;"></div>
  <div class="finder-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px;">
  <div class="rec-card" style="padding:10px;">
  <h3 style="margin:0 0 8px;">Partners</h3>
@@ -2246,40 +2574,52 @@
  </section>
 
  <!-- ---------- BYE PLANNER ---------- -->
+ 
  <section class="panel" id="panel-byes">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Bye planner</div>
+ <div class="section-title" style="margin:0;">Cover &amp; streaming</div>
  <button type="button" class="info-btn" id="btn-byes-info" title="How it works">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
  How it works
  </button>
  </div>
- <div class="waiver-toolbar" style="margin-bottom:12px;">
- <label class="field-label" style="margin:0;">Team</label>
- <select id="byes-team-select" style="max-width:240px;"></select>
- </div>
- <p class="needs-intro">For each week, checks whether you can still fill every starter slot (including FLEX / Superflex) without players on bye, and how strong the replacement is.</p>
- <div id="byes-list" class="hist-list"></div>
- </section>
-
- <!-- ---------- LUCK + SOS ---------- -->
- 
- <section class="panel" id="panel-injuries">
- <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Injury planner</div>
- <button type="button" class="info-btn" id="btn-injuries-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
- </div>
- <p class="needs-intro">Who is hurt on your roster, whether they would start, and who replaces them this week. OUT / IR / Doubtful are treated as unavailable; Questionable is flagged but still usable.</p>
+ <p class="needs-intro">Bye weeks and injuries create short-term holes. This page shows who is out, who on your roster can cover, and which waiver streams fill the rest — including DST/K and cross-position bench fills.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
  <label class="field-label" style="margin:0;">Team</label>
- <select id="inj-team-select" style="max-width:240px;"></select>
+ <select id="cover-team-select" style="max-width:240px;"></select>
  <label style="font-size:12.5px;display:flex;align-items:center;gap:6px;cursor:pointer;">
- <input type="checkbox" id="inj-league-wide" /> League-wide board
+ <input type="checkbox" id="cover-include-stream" checked /> Suggest streams
  </label>
+ <label style="font-size:12.5px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+ <input type="checkbox" id="cover-dst-k" checked /> Include DST / K
+ </label>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-cover-to-waivers">Open waivers</button>
  </div>
- <div id="inj-summary" class="hist-meta" style="margin-bottom:12px;"></div>
- <div id="inj-list"></div>
- <div class="section-title" style="margin:20px 0 8px;font-size:15px;">Unavailable starters this week</div>
+ <div id="cover-summary" class="hist-meta" style="margin-bottom:12px;"></div>
+
+ <div class="section-title" style="font-size:15px;margin:4px 0 8px;">This week — out &amp; cover</div>
+ <div id="cover-this-week" class="hist-list"></div>
+
+ <div class="section-title" style="font-size:15px;margin:18px 0 8px;">Stream targets (waivers)</div>
+ <div style="overflow-x:auto;">
+ <table>
+ <thead>
+ <tr>
+ <th>Pos</th>
+ <th>Player</th>
+ <th>Value</th>
+ <th>Why</th>
+ <th>Est pts</th>
+ </tr>
+ </thead>
+ <tbody id="cover-stream-body"></tbody>
+ </table>
+ </div>
+
+ <div class="section-title" style="font-size:15px;margin:18px 0 8px;">Upcoming bye weeks</div>
+ <div id="cover-bye-list" class="hist-list"></div>
+
+ <div class="section-title" style="font-size:15px;margin:18px 0 8px;">Injury board</div>
  <div style="overflow-x:auto;">
  <table>
  <thead>
@@ -2288,16 +2628,16 @@
  <th>Pos</th>
  <th>Status</th>
  <th>Would start?</th>
- <th>Replacement</th>
- <th>Pts lost (est)</th>
+ <th>Roster cover</th>
+ <th>Stream if needed</th>
  </tr>
  </thead>
- <tbody id="inj-body"></tbody>
+ <tbody id="cover-inj-body"></tbody>
  </table>
  </div>
  </section>
 
-<section class="panel" id="panel-luck">
+ <section class="panel" id="panel-luck">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Expected wins &amp; luck</div>
  <button type="button" class="info-btn" id="btn-luck-info" title="How it works">
@@ -2390,7 +2730,7 @@
  How it works
  </button>
  </div>
- <p class="needs-intro" id="playoffs-intro">Seeding from current standings. Odds from a simple simulation of remaining regular-season weeks using each team's scoring so far.</p>
+ <p class="needs-intro" id="playoffs-intro">Seeding from current standings. Odds simulate each remaining week with that week's projected lineup (byes out) and the real schedule, plus noise around those projections.</p>
  <div class="waiver-toolbar" style="margin-bottom:8px;gap:8px;align-items:center;flex-wrap:wrap;">
  <button type="button" class="btn btn-ghost btn-sm" id="btn-playoffs-force">Run odds early (override)</button>
  <button type="button" class="btn btn-ghost btn-sm" id="btn-playoffs-to-path">Open playoff path</button>
@@ -2567,6 +2907,7 @@
  <div id="info-content-waivers" style="display:none;">
  <h2>How the waiver wire works</h2>
  <p class="info-sub">Best FantasyCalc players not on any roster in this league.</p>
+ <p>Impact sim also checks <strong>positional balance</strong>: dropping a surplus position (e.g. 3rd TE) to add a thin one (e.g. RB depth) can rank higher even when raw power is close.</p>
 
  <h3>How the list is built</h3>
  <ol>
@@ -2668,18 +3009,29 @@
  <p>Tiers come from value drop-offs in the full player pool so adding rostered-only view does not reshuffle tier numbers.</p>
  </div>
  <div id="info-content-byes" style="display:none;">
- <h2>Bye planner</h2>
- <p class="info-sub">Can you still field a legal lineup when a group of players is on bye?</p>
- <p>Severity depends on replacement quality: hole, severe, soft, or covered.</p>
+ <h2>Cover &amp; streaming</h2>
+ <p class="info-sub">Bye weeks and injuries leave short-term holes. This tab combines both and suggests waiver streams.</p>
+ <p><strong>This week</strong> lists who is on bye or unavailable and whether the rest of the roster still fills every starter slot.</p>
+ <p><strong>Stream targets</strong> pull free agents by the positions you need (including DST/K when enabled).</p>
+ <p><strong>Upcoming byes</strong> show severity per week and a stream name when you would have a hole.</p>
+ <p><strong>Injury board</strong> is who is hurt, whether they would start, and a stream if the roster cannot cover.</p>
  </div>
  <div id="info-content-trends" style="display:none;">
  <h2>Trends</h2>
  <p class="info-sub">Risers and fallers in market value and power rankings.</p>
  <p>Player moves can be tagged (injury dip, hype, etc.) when percent changes are enabled in settings.</p>
  </div>
+ <div id="info-content-rosters" style="display:none;">
+ <h2>All teams</h2>
+ <p class="info-sub">Every roster with FantasyCalc values and recent % moves when trend data exists.</p>
+ <p>Sort by risers/fallers to see whose roster market value is heating up or cooling off.</p>
+ </div>
  <div id="info-content-home" style="display:none;">
- <h2>Home dashboard</h2>
- <p class="info-sub">Snapshot of your team and links into the rest of the app.</p>
+ <h2>Your game plan</h2>
+ <p class="info-sub">Home is the hub for one team strategy across the whole app.</p>
+ <p>The sticky strip under the header tracks power rank, record, grade, playoff odds, SOS, and this week's holes — and offers the next moves.</p>
+ <p>Priority cards are ordered: lock-in week issues first (cover, lineup), then roster shape (needs, waivers, trades), then season outlook (path, SOS).</p>
+ <p>The numbered flow is the recommended path. Every jump keeps your team selected so Rankings, Needs, Waivers, Trades, Cover, SOS, and Playoffs stay in sync.</p>
  </div>
 
 <button type="button" class="btn btn-primary info-close" id="btn-info-close">Got it</button>
@@ -3995,6 +4347,7 @@
  renderDepth();
  renderByes();
  renderHome();
+ try{ renderStrategyStrip(); }catch(e){}
  recordSnapshot();
  renderTrends();
  }
@@ -4103,6 +4456,39 @@
 
  const { available, starterRV } = buildAvailableWaivers();
 
+ // Strategy cohesion note
+ try{
+ const note = el('waivers-strategy-note');
+ const brief = typeof buildStrategyBrief === 'function' ? buildStrategyBrief() : null;
+ if(brief){
+ let n = el('waivers-strategy-note');
+ if(!n){
+ n = document.createElement('p');
+ n.id = 'waivers-strategy-note';
+ n.className = 'needs-intro';
+ n.style.marginBottom = '10px';
+ const top = el('waiver-top-by-pos');
+ if(top && top.parentNode) top.parentNode.insertBefore(n, top);
+ }
+ let bits = [];
+ if(brief.weakPos && brief.weakPos[0]){
+ bits.push('Prioritize <strong>' + escapeHtml(brief.weakPos[0].pos) + '</strong> (weakest group)');
+ }
+ try{
+ const needs = injuryBackupNeeds(brief.team);
+ if(needs.length){
+ const topN = needs.slice(0, 3).map(x => escapeHtml(x.name) + ' (' + escapeHtml(x.pos) + ', ' + (typeof injuryLabel === 'function' ? injuryLabel(x.status) : x.status) + ')').join('; ');
+ bits.push('Injury cover: <strong>' + topN + '</strong>' + (needs[0].hasBackup ? ' — backup is weak' : ' — no healthy backup'));
+ }
+ }catch(e){}
+ bits.push('Impact sort rewards balance + injury backups');
+ n.innerHTML = 'Strategy: ' + bits.join('. ') + '. <a href="#" id="waivers-to-needs" style="color:var(--accent);">Team needs</a> · <a href="#" id="waivers-to-cover" style="color:var(--accent);">Cover &amp; stream</a>';
+ const a1 = el('waivers-to-needs'); if(a1) a1.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-needs', { teamId: brief.team.id }); };
+ const a2 = el('waivers-to-cover'); if(a2) a2.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-byes', { teamId: brief.team.id }); };
+ }
+ }catch(e){}
+
+
  // Top available by position cards
  if(topBox){
  topBox.innerHTML = '';
@@ -4185,9 +4571,14 @@
  const dCls = d > 0.3 ? 'up' : d < -0.3 ? 'down' : '';
  const dStr = (d >= 0 ? '+' : '') + d.toFixed(1);
  impactCell = `<span class="pct-cell ${dCls}" style="font-weight:600;">${dStr}</span>`;
- dropCell = p.impact.dropName
- ? `${escapeHtml(p.impact.dropName)} <span style="color:var(--text-muted);">(${p.impact.dropPos})</span>`
- : '<span style="color:var(--text-muted);">-</span>';
+ if(p.impact.dropName){
+ const balTag = p.impact.balanceNote
+ ? ` <span style="color:${p.impact.injuryBackup ? '#c9a227' : 'var(--accent)'};font-size:11px;">· ${escapeHtml(p.impact.balanceNote)}</span>`
+ : (p.impact.crossPos ? ' <span style="color:var(--text-muted);font-size:11px;">· cross-pos</span>' : '');
+ dropCell = `${escapeHtml(p.impact.dropName)} <span style="color:var(--text-muted);">(${p.impact.dropPos})</span>${balTag}`;
+ } else {
+ dropCell = '<span style="color:var(--text-muted);">-</span>';
+ }
  } else {
  impactCell = '<span style="color:var(--text-muted);">-</span>';
  dropCell = '<span style="color:var(--text-muted);">-</span>';
@@ -4386,6 +4777,157 @@
  };
  }
 
+ // How many active (non-IR) bodies per skill position on a roster
+ 
+ // Players who may miss time and lack a real backup at their position
+ function injuryBackupNeeds(team){
+ if(!team) return [];
+ const counts = getStarterCounts();
+ const flexElig = counts.flexEligible || ['RB','WR','TE'];
+ const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+ let healthyOpt = null;
+ try{
+ healthyOpt = optimalStarterLineup(team, counts, flexElig, sfElig, {
+ healthyOnly: true,
+ scoreFn: (p) => typeof playerWeeklyPtsForWeek === 'function'
+ ? playerWeeklyPtsForWeek(p, curWeek, curWeek)
+ : (p.value || 0)
+ });
+ }catch(e){}
+ const needs = [];
+ (team.roster || []).forEach(p => {
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ if(!st || st === 'ok') return;
+ // Flag OUT/IR/PUP/Doubtful always; Questionable if they would start
+ const severe = (typeof injuryUnavailable === 'function' && injuryUnavailable(st)) || st === 'questionable';
+ if(!severe) return;
+ const wouldStart = healthyOpt && (healthyOpt.starterIds.has(p.id) || healthyOpt.starterIds.has(String(p.id)));
+ if(!wouldStart && st === 'questionable') return; // Q on bench is less urgent
+ const pos = p.position;
+ // Other healthy bodies at same position (not this player, not IR, not same injury-out)
+ const backups = (team.roster || []).filter(x => {
+ if(String(x.id) === String(p.id)) return false;
+ if(x.position !== pos) return false;
+ if(x.isIR) return false;
+ let xs = playerInjuryStatus(x);
+ if(!xs && x.isIR) xs = 'ir';
+ if(xs && typeof injuryUnavailable === 'function' && injuryUnavailable(xs)) return false;
+ return true;
+ });
+ // Healthy same-pos bodies are real backups (e.g. Geno behind Caleb)
+ const hasBackup = backups.length > 0;
+ // Weak only if every backup is far below starter AND no starter-caliber reserve
+ const bestBakVal = backups.reduce((m,b) => Math.max(m, b.value || 0), 0);
+ const weakBackup = hasBackup && bestBakVal < (p.value || 0) * 0.35 && bestBakVal < 800;
+ // CRITICAL: if you already have a healthy backup, this is NOT a waiver need
+ if(hasBackup && !weakBackup) return;
+ if(!hasBackup || weakBackup){
+ needs.push({
+ player: p,
+ name: p.fullName,
+ pos,
+ status: st,
+ wouldStart: !!wouldStart,
+ hasBackup,
+ weakBackup,
+ backupCount: backups.length,
+ backupNames: backups.map(b => b.fullName),
+ protectedIds: backups.map(b => String(b.id)),
+ urgency: (!hasBackup ? 3 : 0) + (wouldStart ? 1 : 0) + (st === 'questionable' ? 0 : 1) + (weakBackup ? 1 : 0)
+ });
+ }
+ });
+ needs.sort((a,b) => b.urgency - a.urgency);
+ return needs;
+ }
+
+ // IDs you must not drop when filling an injury-backup need at a position
+ function protectedBackupIds(team, needs){
+ const set = new Set();
+ (needs || injuryBackupNeeds(team) || []).forEach(n => {
+ (n.protectedIds || []).forEach(id => set.add(String(id)));
+ });
+ // Also protect any healthy body at a pos that still has an injured starter
+ (team.roster || []).forEach(p => {
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ if(!st || st === 'ok') return;
+ if(!(typeof injuryUnavailable === 'function' && injuryUnavailable(st)) && st !== 'questionable') return;
+ const pos = p.position;
+ (team.roster || []).forEach(x => {
+ if(String(x.id) === String(p.id)) return;
+ if(x.position !== pos || x.isIR) return;
+ let xs = playerInjuryStatus(x);
+ if(xs && typeof injuryUnavailable === 'function' && injuryUnavailable(xs)) return;
+ set.add(String(x.id));
+ });
+ });
+ return set;
+ }
+
+ function backupNeedBoost(candidate, needs){
+ if(!candidate || !needs || !needs.length) return { boost: 0, note: null };
+ const hits = needs.filter(n => n.pos === candidate.position);
+ if(!hits.length) return { boost: 0, note: null };
+ const top = hits[0];
+ const boost = 0.35 + top.urgency * 0.25;
+ const note = 'Backup for ' + top.name + ' (' + (typeof injuryLabel === 'function' ? injuryLabel(top.status) : top.status) + ')';
+ return { boost, note, need: top };
+ }
+
+function countPosBodies(roster){
+ const c = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0 };
+ (roster || []).forEach(p => {
+ if(p.isIR || p.isTaxi) return;
+ const pos = p.position;
+ if(c[pos] != null) c[pos]++;
+ });
+ return c;
+ }
+ // Ideal depth targets from starter slots (extra flex/SF counted as flexible depth)
+ function idealPosTargets(counts){
+ counts = counts || getStarterCounts();
+ const flex = counts.FLEX || 0;
+ const sf = counts.SF || 0;
+ return {
+ QB: (counts.QB || 0) + sf + 1, // starter QB(s) + SF room + 1 backup
+ RB: (counts.RB || 0) + Math.ceil(flex * 0.4) + 2,
+ WR: (counts.WR || 0) + Math.ceil(flex * 0.4) + 2,
+ TE: (counts.TE || 0) + Math.ceil(flex * 0.2) + 1,
+ DST: (counts.DST || 0) + (counts.DST ? 0 : 0),
+ K: (counts.K || 0)
+ };
+ }
+ // Surplus score: positive = too many at pos, negative = thin
+ function posSurplusMap(roster, counts){
+ const have = countPosBodies(roster);
+ const ideal = idealPosTargets(counts);
+ const map = {};
+ ['QB','RB','WR','TE','DST','K'].forEach(pos => {
+ map[pos] = (have[pos] || 0) - (ideal[pos] || 0);
+ });
+ return map;
+ }
+ // Balance gain from dropping dropPos and adding addPos (higher = better for depth shape)
+ function balanceGain(beforeMap, dropPos, addPos){
+ if(!dropPos || !addPos) return 0;
+ if(dropPos === addPos) return 0;
+ const dropSur = beforeMap[dropPos] || 0;
+ const addSur = beforeMap[addPos] || 0;
+ let gain = 0;
+ // Dropping a surplus position helps
+ if(dropSur > 0) gain += Math.min(2.5, dropSur * 1.1);
+ else if(dropSur === 0) gain += 0.15;
+ else gain -= 0.9; // cutting into an already-thin position
+ // Adding into a thin position helps a lot
+ if(addSur < 0) gain += Math.min(3.0, (-addSur) * 1.3);
+ else if(addSur === 0) gain += 0.35;
+ else gain -= 0.55; // stacking an already-deep position
+ return gain;
+ }
+
  function simulateAddDrop(team, candidate, ctx){
  const fakeId = 'FA-' + normalizeName(candidate.name);
  const faPlayer = {
@@ -4398,22 +4940,80 @@
  isIR: false
  };
  const rosterWithAdd = team.roster.concat([faPlayer]);
+ const counts = (ctx && ctx.counts) || getStarterCounts();
+ // Balance is measured on the current roster (before the add/drop)
+ const beforeBal = posSurplusMap(team.roster, counts);
+ const addPos = candidate.position;
 
  let best = null;
+ const protect = protectedBackupIds(team, team._injuryBackupNeeds);
+ // Never drop the injured player you're covering either
+ (team._injuryBackupNeeds || []).forEach(n => {
+ if(n.player) protect.add(String(n.player.id));
+ });
+
  rosterWithAdd.forEach(dropCandidate => {
  if(dropCandidate.id === fakeId) return;
  if(dropCandidate.isIR || dropCandidate.isTaxi) return;
+ // Do not drop healthy backup when adding at same position (Geno behind Caleb)
+ if(protect.has(String(dropCandidate.id))) return;
+ if(addPos && dropCandidate.position === addPos){
+ // Extra guard: same-pos drop while any injured starter at that pos exists
+ const injuredStarter = (team.roster || []).some(p => {
+ if(p.position !== addPos) return false;
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ if(!st || st === 'ok') return false;
+ return true;
+ });
+ if(injuredStarter) return;
+ }
  const trialRoster = rosterWithAdd.filter(p => p.id !== dropCandidate.id);
  const ev = evaluateRosterChange(team, trialRoster, ctx);
  if(!ev || !ev.legal) return;
- if(!(ev.delta > 0.25)) return; // ignore noise-level bumps
- if(!best || ev.power > best.power){
- best = { power: ev.power, delta: ev.delta, dropId: dropCandidate.id, dropName: dropCandidate.fullName, dropPos: dropCandidate.position };
+
+ const dropPos = dropCandidate.position;
+ const bal = balanceGain(beforeBal, dropPos, addPos);
+ const bak = backupNeedBoost(candidate, team._injuryBackupNeeds || []);
+ // Composite: power + balance + injury-backup insurance
+ const score = (ev.delta || 0) + bal * 0.55 + (bak.boost || 0);
+ const powerOk = (ev.delta > 0.25)
+ || (ev.delta > -0.15 && bal >= 1.2)
+ || (ev.delta > -0.2 && bak.boost >= 0.6); // allow small power dip for real backup need
+ if(!powerOk) return;
+
+ if(!best || score > best.score || (Math.abs(score - best.score) < 0.05 && bal > best.bal)){
+ const cross = dropPos && addPos && dropPos !== addPos;
+ let note = '';
+ if(bak.note) note = bak.note;
+ else if(cross && bal >= 0.8) note = 'Balance: drop surplus ' + dropPos + ' for ' + addPos;
+ else if(cross && bal > 0) note = 'Cross-pos ' + dropPos + ' → ' + addPos;
+ best = {
+ score,
+ bal,
+ power: ev.power,
+ delta: ev.delta,
+ dropId: dropCandidate.id,
+ dropName: dropCandidate.fullName,
+ dropPos,
+ crossPos: !!cross,
+ balanceNote: note,
+ injuryBackup: !!bak.note
+ };
  }
  });
 
  if(!best) return null;
- return { delta: best.delta, dropName: best.dropName, dropPos: best.dropPos, newPower: best.power };
+ return {
+ delta: best.delta,
+ dropName: best.dropName,
+ dropPos: best.dropPos,
+ newPower: best.power,
+ crossPos: best.crossPos,
+ balance: best.bal,
+ balanceNote: best.balanceNote || null,
+ injuryBackup: !!best.injuryBackup
+ };
  }
 
  // Recompute one team's Power score after substituting a new starterSurplus/benchQuality
@@ -4591,22 +5191,63 @@
  }
 
  const { available } = buildAvailableWaivers();
- // Cap candidates for performance: top ~15 per position by current metric (already sorted).
+ const backupNeeds = injuryBackupNeeds(team);
+ team._injuryBackupNeeds = backupNeeds;
+ const needPos = new Set(backupNeeds.map(n => n.pos));
+
+ // Cap candidates for performance: top ~15 per position; extra slots for injury-backup positions
  const perPosCap = 15;
  const seen = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0 };
  const candidates = available.filter(p => {
  if(!seen.hasOwnProperty(p.position)) return false;
- if(seen[p.position] >= perPosCap) return false;
+ const cap = needPos.has(p.position) ? perPosCap + 8 : perPosCap;
+ if(seen[p.position] >= cap) return false;
  seen[p.position]++;
  return true;
  });
 
- if(statusEl) statusEl.textContent = 'Simulating ' + candidates.length + ' pickups…';
+ if(statusEl){
+ const injNote = backupNeeds.length
+ ? (' · ' + backupNeeds.length + ' injury backup need' + (backupNeeds.length > 1 ? 's' : ''))
+ : '';
+ statusEl.textContent = 'Simulating ' + candidates.length + ' pickups' + injNote + '…';
+ }
 
  const byName = new Map();
  candidates.forEach(c => {
  const result = simulateAddDrop(team, c, ctx);
  if(result) byName.set(normalizeName(c.name), result);
+ });
+
+ // Ensure at least one stream per injury need even if power-neutral
+ backupNeeds.forEach(need => {
+ if(need.hasBackup && !need.weakBackup) return; // already covered (e.g. Geno)
+ const already = [...byName.values()].some(r => r.injuryBackup && r.balanceNote && r.balanceNote.indexOf(need.name) >= 0);
+ if(already) return;
+ const pool = available.filter(p => p.position === need.pos).slice(0, 8);
+ pool.forEach(c => {
+ if(byName.has(normalizeName(c.name))) return;
+ const result = simulateAddDrop(team, c, ctx);
+ if(result) byName.set(normalizeName(c.name), result);
+ else {
+ // Soft suggestion: show as insurance even without a clean drop
+ const drop = (team.roster || [])
+ .filter(p => !p.isIR && !p.isTaxi && p.position !== need.pos)
+ .sort((a,b) => (a.value||0) - (b.value||0))[0];
+ if(drop){
+ byName.set(normalizeName(c.name), {
+ delta: 0.15 + need.urgency * 0.05,
+ dropName: drop.fullName,
+ dropPos: drop.position,
+ newPower: null,
+ crossPos: drop.position !== c.position,
+ balance: 0,
+ balanceNote: 'Backup for ' + need.name + ' (' + (typeof injuryLabel === 'function' ? injuryLabel(need.status) : need.status) + ')',
+ injuryBackup: true
+ });
+ }
+ }
+ });
  });
 
  waiverImpactCache = { myTeamId: state.myTeamId, byName };
@@ -4764,17 +5405,66 @@
  };
  });
 
- // Remaining regular-season weeks (completed weeks only; in-progress week excluded)
+ // Remaining regular-season weeks from real schedule + week-specific projections
  let currentWeek = 0;
  try{
+ if(scheduleCache && scheduleCache._currentWeek) currentWeek = Number(scheduleCache._currentWeek) || 0;
+ if(!currentWeek){
  const weekCounts = teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length);
  currentWeek = weekCounts.length ? Math.max(...weekCounts) : 0;
+ }
  const gameCounts = teams.map(t => (t.wins||0)+(t.losses||0)+(t.ties||0));
  const medG = gameCounts.length ? medianOf(gameCounts) : 0;
  if(medG > currentWeek) currentWeek = medG;
  }catch(e){}
  const playoffStart = settings.playoffWeekStart || 15;
- const remaining = Math.max(0, playoffStart - 1 - currentWeek);
+ // Simulate each future regular-season week number (not a generic "N remaining")
+ const weekNums = [];
+ for(let wk = currentWeek + 1; wk < playoffStart; wk++) weekNums.push(wk);
+ const remaining = weekNums.length;
+
+ // Precompute projected lineup points per team per week (byes/injuries/roster matter)
+ const projByWeek = {}; // teamId -> { week: pts }
+ teams.forEach(t => {
+ projByWeek[t.id] = {};
+ weekNums.forEach(wk => {
+ let pts = null;
+ try{
+ if(typeof estimateTeamWeekScore === 'function'){
+ const est = estimateTeamWeekScore(t, wk);
+ if(est && est.pts != null && isFinite(est.pts)) pts = est.pts;
+ }
+ }catch(e){}
+ if(pts == null){
+ const m = models[t.id];
+ pts = m ? m.mean : (t.avgPts || leagueMean || 100);
+ }
+ projByWeek[t.id][wk] = pts;
+ });
+ });
+
+ // Build matchup list per week from scheduleCache (real opponents)
+ const graph = scheduleCache || {};
+ const weekMatchups = {}; // week -> [{ aId, bId }] unique pairs; byes listed separately
+ weekNums.forEach(wk => {
+ const pairs = [];
+ const seen = new Set();
+ teams.forEach(t => {
+ if(seen.has(String(t.id))) return;
+ const node = graph[t.id] || graph[String(t.id)];
+ const match = node && node.weeks && (node.weeks[wk] || node.weeks[String(wk)]);
+ if(!match || match.oppId == null || match.oppId === '' || match.oppName === 'BYE'){
+ seen.add(String(t.id));
+ return; // bye / no game
+ }
+ const oid = match.oppId;
+ if(seen.has(String(oid))) return;
+ seen.add(String(t.id));
+ seen.add(String(oid));
+ pairs.push({ aId: t.id, bId: oid });
+ });
+ weekMatchups[wk] = pairs;
+ });
 
  const counts = {
  playoff: {},
@@ -4790,6 +5480,17 @@
  const nPlayoff = settings.playoffTeams;
  const nBye = settings.byes || 0;
 
+ function drawWeekScore(teamId, week){
+ const m = models[teamId] || { mean: leagueMean, std: 22, gameLuck: 8 };
+ const baseProj = (projByWeek[teamId] && projByWeek[teamId][week] != null)
+ ? projByWeek[teamId][week]
+ : m.mean;
+ // Noise around that week's projected lineup (not a flat season mean)
+ const std = Math.max(12, (m.std || 22) * 0.9);
+ const luck = (m.gameLuck || 6) * 0.75;
+ return Math.max(0, baseProj + std * randn() + luck * randn());
+ }
+
  for(let s = 0; s < sims; s++){
  const sim = base.map(b => ({
  id: b.id,
@@ -4798,27 +5499,33 @@
  ties: b.simTies != null ? b.simTies : b.ties,
  pf: b.pf
  }));
+ const byId = {};
+ sim.forEach(r => { byId[r.id] = r; byId[String(r.id)] = r; });
 
- for(let w = 0; w < remaining; w++){
- // Pair randomly each week (simplified - not real schedule)
- const order = sim.map((_, i) => i).sort(() => Math.random() - 0.5);
- for(let i = 0; i + 1 < order.length; i += 2){
- const a = sim[order[i]], b = sim[order[i + 1]];
- const ma = models[a.id], mb = models[b.id];
- const sa = Math.max(0, ma.mean + ma.std * randn() + (ma.gameLuck || 0) * randn());
- const sb = Math.max(0, mb.mean + mb.std * randn() + (mb.gameLuck || 0) * randn());
+ weekNums.forEach(wk => {
+ const pairs = weekMatchups[wk] || [];
+ const played = new Set();
+ pairs.forEach(pair => {
+ const a = byId[pair.aId] || byId[String(pair.aId)];
+ const b = byId[pair.bId] || byId[String(pair.bId)];
+ if(!a || !b) return;
+ played.add(String(a.id));
+ played.add(String(b.id));
+ const sa = drawWeekScore(a.id, wk);
+ const sb = drawWeekScore(b.id, wk);
  a.pf += sa; b.pf += sb;
  if(Math.abs(sa - sb) < 0.05){ a.ties++; b.ties++; }
  else if(sa > sb){ a.wins++; b.losses++; }
  else { b.wins++; a.losses++; }
- }
- if(order.length % 2 === 1){
- // bye week: just add mean points
- const solo = sim[order[order.length - 1]];
- const m = models[solo.id];
- solo.pf += Math.max(0, m.mean + m.std * randn() * 0.5 + (m.gameLuck || 0) * randn() * 0.4);
- }
- }
+ });
+ // Teams with no matchup this week (bye): add projected PF only, no W/L
+ sim.forEach(row => {
+ if(played.has(String(row.id))) return;
+ const pts = drawWeekScore(row.id, wk);
+ // Byes still accumulate PF at a reduced rate so PF tiebreakers stay sane
+ row.pf += pts * 0.15;
+ });
+ });
 
  sim.forEach(row => {
  const g = row.wins + row.losses + row.ties;
@@ -4926,6 +5633,17 @@
 
  if(!state.teams || !state.teams.length){
  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ return;
+ }
+
+ // Need real week-by-week schedule + projections for the sim
+ if(!scheduleCache && typeof loadScheduleGraph === 'function' && !state._playoffSchedLoading){
+ state._playoffSchedLoading = true;
+ loadScheduleGraph().then(() => {
+ state._playoffSchedLoading = false;
+ renderPlayoffs();
+ }).catch(() => { state._playoffSchedLoading = false; renderPlayoffs(); });
+ if(intro) intro.textContent = 'Loading schedule for week-by-week projections…';
  return;
  }
 
@@ -6866,26 +7584,291 @@ function matchupWinPct(liveA, liveB, projA, projB){
  return afterVal - beforeVal;
  }
 
- function runTradeFinder(){
+ 
+ function playerTrendPct(p){
+ // Percent value change when available (FantasyCalc 30d or snapshot)
+ if(!p) return null;
+ if(typeof p.trend30Day === 'number' && isFinite(p.trend30Day)) return p.trend30Day;
+ if(typeof p.fcTrend30 === 'number' && isFinite(p.fcTrend30)) return p.fcTrend30;
+ // Derive from history snapshots if present
+ try{
+ const hist = state.valueHistory || state.fcHistory;
+ if(hist && Array.isArray(hist)){
+ const key = normalizeName(p.fullName || p.name);
+ // hist entries may be { ts, values: { name: val } }
+ const pts = [];
+ hist.forEach(snap => {
+ const v = snap.values && (snap.values[key] || snap.values[p.fullName]);
+ if(typeof v === 'number') pts.push(v);
+ });
+ if(pts.length >= 2){
+ const prev = pts[0], cur = pts[pts.length-1];
+ if(prev > 0) return ((cur - prev) / prev) * 100;
+ }
+ }
+ }catch(e){}
+ return null;
+ }
+
+ function sellHighBuyLowSignals(team){
+ const sellHigh = [], buyLow = [];
+ (team.roster || []).forEach(p => {
+ if(!p.matched || !(p.value > 100)) return;
+ if(p.isIR) return;
+ const pct = playerTrendPct(p);
+ if(pct == null) return;
+ let st = playerInjuryStatus(p);
+ const hurt = st && st !== 'ok' && st !== 'questionable';
+ if(pct >= 12 && !hurt){
+ sellHigh.push({ p, pct, why: 'Up ' + pct.toFixed(0) + '% — market heat; consider selling high' });
+ } else if(pct <= -12){
+ if(hurt) buyLow.push({ p, pct, why: 'Down ' + pct.toFixed(0) + '% with injury — only buy if return timeline is clear' });
+ else buyLow.push({ p, pct, why: 'Down ' + pct.toFixed(0) + '% — possible buy-low if role is intact' });
+ }
+ });
+ sellHigh.sort((a,b) => b.pct - a.pct);
+ buyLow.sort((a,b) => a.pct - b.pct);
+ return { sellHigh, buyLow };
+ }
+
+ function resolvePlayerList(query, opts){
+ // opts: { mustBeOnTeamId, excludeTeamId }
+ opts = opts || {};
+ const parts = String(query || '').split(/[,;|]+/).map(s => s.trim()).filter(Boolean);
+ const found = [];
+ const missing = [];
+ parts.forEach(part => {
+ const hit = findPlayerOnRosters(part);
+ if(!hit){ missing.push(part); return; }
+ if(opts.mustBeOnTeamId != null && String(hit.team.id) !== String(opts.mustBeOnTeamId)){
+ missing.push(part + ' (not on your team)');
+ return;
+ }
+ if(opts.excludeTeamId != null && String(hit.team.id) === String(opts.excludeTeamId)){
+ missing.push(part + ' (already yours)');
+ return;
+ }
+ found.push(hit);
+ });
+ return { found, missing, parts };
+ }
+
+ function findPlayerOnRosters(query){
+ const q = normalizeName(query || '');
+ if(!q || q.length < 2) return null;
+ let best = null;
+ (state.teams || []).forEach(t => {
+ (t.roster || []).forEach(p => {
+ const n = normalizeName(p.fullName || '');
+ if(!n) return;
+ if(n === q || n.indexOf(q) >= 0 || q.indexOf(n) >= 0){
+ if(!best || n.length < normalizeName(best.player.fullName).length){
+ best = { team: t, player: p };
+ }
+ }
+ });
+ });
+ return best;
+ }
+
+ function renderLeagueRosters(){
+ const list = el('rosters-list');
+ const summary = el('rosters-summary');
+ const sortSel = el('rosters-sort');
+ const startersOnly = el('rosters-starters-only');
+ if(!list) return;
+ if(!state.teams || !state.teams.length){
+ list.innerHTML = '<div class="hist-empty">Load a league first.</div>';
+ return;
+ }
+ if(sortSel && !sortSel._bound){
+ sortSel._bound = true;
+ sortSel.addEventListener('change', () => renderLeagueRosters());
+ }
+ if(startersOnly && !startersOnly._bound){
+ startersOnly._bound = true;
+ startersOnly.addEventListener('change', () => renderLeagueRosters());
+ }
+ const onlyStarters = !!(startersOnly && startersOnly.checked);
+ let powerRows = [];
+ try{ powerRows = buildPowerRows(); }catch(e){}
+ const powerMap = {};
+ powerRows.forEach((r,i) => { powerMap[r.team.id] = { power: r.power, rank: i+1 }; });
+
+ const teamRows = state.teams.map(t => {
+ const counts = getStarterCounts();
+ let starterIds = new Set();
+ try{
+ const opt = optimalStarterLineup(t, counts, counts.flexEligible || ['RB','WR','TE'], counts.sfEligible || ['QB','RB','WR','TE'], { healthyOnly: true });
+ starterIds = opt.starterIds || new Set();
+ }catch(e){}
+ const players = [];
+ let totalVal = 0, weightedTrend = 0, trendWeight = 0;
+ (t.roster || []).forEach(p => {
+ const isStart = starterIds.has(p.id) || starterIds.has(String(p.id));
+ if(onlyStarters && !isStart) return;
+ const val = p.value || 0;
+ const pct = playerTrendPct(p);
+ totalVal += val;
+ if(pct != null && val > 0){
+ weightedTrend += pct * val;
+ trendWeight += val;
+ }
+ players.push({ p, val, pct, isStart });
+ });
+ players.sort((a,b) => b.val - a.val);
+ const teamPct = trendWeight > 0 ? weightedTrend / trendWeight : null;
+ const pr = powerMap[t.id] || powerMap[String(t.id)] || {};
+ return { team: t, players, totalVal, teamPct, power: pr.power, rank: pr.rank };
+ });
+
+ const sort = sortSel ? sortSel.value : 'power';
+ teamRows.sort((a,b) => {
+ if(sort === 'value') return b.totalVal - a.totalVal;
+ if(sort === 'rise') return (b.teamPct|| -999) - (a.teamPct|| -999);
+ if(sort === 'fall') return (a.teamPct|| 999) - (b.teamPct|| 999);
+ return (a.rank||99) - (b.rank||99);
+ });
+
+ if(summary){
+ const risers = teamRows.filter(r => r.teamPct != null).slice().sort((a,b)=>b.teamPct-a.teamPct);
+ const topR = risers[0], topF = risers[risers.length-1];
+ summary.innerHTML = (topR && topR.teamPct != null ? `<span>Hottest roster <strong>${escapeHtml(topR.team.name)}</strong> (${topR.teamPct>=0?'+':''}${topR.teamPct.toFixed(0)}%)</span>` : '') +
+ (topF && topF.teamPct != null ? `<span>Coldest <strong>${escapeHtml(topF.team.name)}</strong> (${topF.teamPct>=0?'+':''}${topF.teamPct.toFixed(0)}%)</span>` : '');
+ }
+
+ list.innerHTML = teamRows.map(row => {
+ const isMine = state.myTeamId != null && (row.team.id === state.myTeamId || String(row.team.id) === String(state.myTeamId));
+ const pctStr = row.teamPct == null ? '—' : ((row.teamPct>=0?'+':'') + row.teamPct.toFixed(1) + '%');
+ const pctCls = row.teamPct == null ? '' : row.teamPct > 2 ? 'up' : row.teamPct < -2 ? 'down' : '';
+ const playerHtml = row.players.slice(0, onlyStarters ? 12 : 16).map(x => {
+ const pstr = x.pct == null ? '' : ` <span class="pct-cell ${x.pct>2?'up':x.pct<-2?'down':''}" style="font-size:11px;">${x.pct>=0?'+':''}${x.pct.toFixed(0)}%</span>`;
+ return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--border-subtle);">
+ <span>${x.isStart?'<strong>':''}${escapeHtml(x.p.fullName)}${x.isStart?'</strong>':''} <span style="color:var(--text-muted);">${escapeHtml(x.p.position||'')}</span></span>
+ <span class="val-cell">${fmt(x.val)}${pstr}</span>
+ </div>`;
+ }).join('');
+ return `<div class="card" style="padding:12px;margin-bottom:12px;${isMine?'border-color:var(--accent);':''}">
+ <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+ <div>
+ <strong style="font-size:15px;">${escapeHtml(row.team.name)}</strong>
+ ${row.rank ? `<span style="color:var(--text-muted);font-size:12px;"> · Power #${row.rank}</span>` : ''}
+ </div>
+ <div style="font-size:13px;">
+ <span class="val-cell">${fmt(row.totalVal)}</span>
+ · <span class="pct-cell ${pctCls}">${pctStr}</span> value move
+ </div>
+ </div>
+ ${playerHtml}
+ <div style="margin-top:8px;">
+ <button type="button" class="btn btn-ghost btn-sm" data-roster-team="${row.team.id}">Open grade</button>
+ </div>
+ </div>`;
+ }).join('');
+
+ list.querySelectorAll('[data-roster-team]').forEach(btn => {
+ btn.addEventListener('click', () => goToPanel('panel-rate', { teamId: btn.getAttribute('data-roster-team') }));
+ });
+ }
+
+function runTradeFinder(){
  const status = el('finder-status');
  const results = el('finder-results');
  if(!results) return;
  const myId = parseIdVal(el('finder-myteam') && el('finder-myteam').value);
  const kind = el('finder-kind') ? el('finder-kind').value : 'ALL';
+ const mode = el('finder-mode') ? el('finder-mode').value : 'best';
+ const sellQ = el('finder-sell-players') ? el('finder-sell-players').value.trim() : '';
+ const buyQ = el('finder-buy-players') ? el('finder-buy-players').value.trim() : '';
  const selectedPartners = Array.from(document.querySelectorAll('.finder-partner-cb:checked')).map(c => c.value);
- const getPos = Array.from(document.querySelectorAll('.finder-pos-cb:checked')).map(c => c.value);
- const sendPos = Array.from(document.querySelectorAll('.finder-send-cb:checked')).map(c => c.value);
- if(!getPos.length || !sendPos.length){
- if(status) status.textContent = 'Pick at least one get and send position';
- return;
- }
+ let getPos = Array.from(document.querySelectorAll('.finder-pos-cb:checked')).map(c => c.value);
+ let sendPos = Array.from(document.querySelectorAll('.finder-send-cb:checked')).map(c => c.value);
+ if(!getPos.length) getPos = ['QB','RB','WR','TE'];
+ if(!sendPos.length) sendPos = ['QB','RB','WR','TE'];
  const me = state.teams.find(t => t.id === myId || String(t.id) === String(myId));
  if(!me){
  if(status) status.textContent = 'Pick your team';
  return;
  }
  if(!state._powerContext) buildPowerRows();
- if(status) status.textContent = 'Searching…';
+
+ const sigBox = el('finder-signal');
+ me._finderBiasSendIds = null;
+ me._forceSendIds = new Set();
+ me._forceRecvIds = new Set();
+ me._forcePartnerId = null;
+
+ const adviceBits = [];
+
+ if(mode === 'sellhigh' || mode === 'buylow'){
+ const { sellHigh, buyLow } = sellHighBuyLowSignals(me);
+ const rows = mode === 'sellhigh' ? sellHigh : buyLow;
+ if(rows.length){
+ adviceBits.push((mode==='sellhigh'?'Sell-high':'Buy-low signals') + ': ' +
+ rows.slice(0,6).map(r => r.p.fullName + ' (' + (r.pct>=0?'+':'') + r.pct.toFixed(0) + '%)').join(', '));
+ }
+ if(mode === 'sellhigh' && rows.length){
+ me._finderBiasSendIds = new Set(rows.slice(0,6).map(r => String(r.p.id)));
+ }
+ }
+
+ // Explicit multi player filters (can combine: send A,B and get X,Y)
+ if(sellQ){
+ const res = resolvePlayerList(sellQ, { mustBeOnTeamId: me.id });
+ if(res.missing.length){
+ if(status) status.textContent = 'Send not found: ' + res.missing.join(', ');
+ return;
+ }
+ res.found.forEach(h => me._forceSendIds.add(String(h.player.id)));
+ adviceBits.push('Must send: ' + res.found.map(h => h.player.fullName).join(', '));
+ res.found.forEach(h => {
+ const pct = playerTrendPct(h.player);
+ if(pct != null && pct >= 10) adviceBits.push(h.player.fullName + ' is up ' + pct.toFixed(0) + '% (sell-high window)');
+ if(pct != null && pct <= -10) adviceBits.push(h.player.fullName + ' is down ' + pct.toFixed(0) + '% (selling low)');
+ });
+ }
+ if(buyQ){
+ const res = resolvePlayerList(buyQ, { excludeTeamId: me.id });
+ if(res.missing.length){
+ if(status) status.textContent = 'Get not found: ' + res.missing.join(', ');
+ return;
+ }
+ // All targets must live on the same opposing roster for one trade
+ const teamIds = [...new Set(res.found.map(h => String(h.team.id)))];
+ if(teamIds.length > 1){
+ if(status) status.textContent = 'Get targets are on different teams — pick players from one roster for a single trade';
+ return;
+ }
+ me._forcePartnerId = teamIds[0];
+ res.found.forEach(h => me._forceRecvIds.add(String(h.player.id)));
+ adviceBits.push('Must get: ' + res.found.map(h => h.player.fullName).join(', ') + ' from ' + res.found[0].team.name);
+ res.found.forEach(h => {
+ const pct = playerTrendPct(h.player);
+ if(pct != null && pct <= -10) adviceBits.push(h.player.fullName + ' is down ' + pct.toFixed(0) + '% (buy-low angle)');
+ if(pct != null && pct >= 12) adviceBits.push(h.player.fullName + ' is up ' + pct.toFixed(0) + '% (buying high)');
+ });
+ }
+
+ // Goal shortcuts still seed filters if boxes empty
+ if(mode === 'target' && !buyQ && sellQ){ /* noop */ }
+ if(mode === 'sell' && sellQ){ /* already applied */ }
+ if(mode === 'target' && buyQ){ /* already applied */ }
+
+ if(sigBox){
+ if(adviceBits.length){
+ sigBox.style.display = 'block';
+ sigBox.innerHTML = adviceBits.map(b => escapeHtml(b)).join('<br>');
+ } else {
+ sigBox.style.display = 'none';
+ sigBox.innerHTML = '';
+ }
+ }
+
+ if(status) status.textContent = (me._forceSendIds.size || me._forceRecvIds.size)
+ ? ('Filtering ' + (me._forceSendIds.size ? me._forceSendIds.size + ' send' : '') +
+ (me._forceSendIds.size && me._forceRecvIds.size ? ' + ' : '') +
+ (me._forceRecvIds.size ? me._forceRecvIds.size + ' get' : '') + '…')
+ : 'Searching…';
 
  let partners = state.teams.filter(t => t.id !== me.id);
  if(selectedPartners.length){
@@ -6937,6 +7920,21 @@ function matchupWinPct(liveA, liveB, projA, projB){
  return score;
  }
  function tryPackage(partner, sendList, recvList, label){
+ if(me._forceSendIds && me._forceSendIds.size){
+ for(const id of me._forceSendIds){
+ if(!sendList.some(p => String(p.id) === id)) return;
+ }
+ }
+ if(me._forceRecvIds && me._forceRecvIds.size){
+ for(const id of me._forceRecvIds){
+ if(!recvList.some(p => String(p.id) === id)) return;
+ }
+ }
+ if(me._finderBiasSendIds && me._finderBiasSendIds.size){
+ // soft bias: at least one sell-high in package scores better later; require one if possible
+ const has = sendList.some(p => me._finderBiasSendIds.has(String(p.id)));
+ if(!has && Math.random() > 0.35) return; // mostly explore sell-high sends
+ }
  const key = sig(sendList, recvList);
  if(seen.has(key)) return;
  const sv = packageVal(sendList), rv = packageVal(recvList);
@@ -6999,8 +7997,20 @@ function matchupWinPct(liveA, liveB, projA, projB){
  const wantMix = kind === 'mix' || kind === 'ALL';
 
  partners.forEach(partner => {
- const mine = candidatePool(me, 12, sendPos, 'send');
- const theirs = candidatePool(partner, 12, getPos, 'get');
+ let mine = candidatePool(me, 14, sendPos, 'send');
+ let theirs = candidatePool(partner, 14, getPos, 'get');
+ if(me._forceSendIds && me._forceSendIds.size){
+ const forced = (me.roster || []).filter(p => me._forceSendIds.has(String(p.id)));
+ mine = [...forced, ...mine.filter(p => !me._forceSendIds.has(String(p.id)))].slice(0, 16);
+ }
+ if(me._forceRecvIds && me._forceRecvIds.size){
+ const forced = (partner.roster || []).filter(p => me._forceRecvIds.has(String(p.id)));
+ theirs = [...forced, ...theirs.filter(p => !me._forceRecvIds.has(String(p.id)))].slice(0, 16);
+ }
+ if(me._finderBiasSendIds && me._finderBiasSendIds.size){
+ const bias = (me.roster || []).filter(p => me._finderBiasSendIds.has(String(p.id)));
+ mine = [...bias, ...mine.filter(p => !me._finderBiasSendIds.has(String(p.id)))].slice(0, 14);
+ }
  if(want1){
  mine.forEach(a => theirs.forEach(b => {
  // Skip pure lateral same-pos when we already strong there
@@ -7158,6 +8168,8 @@ function matchupWinPct(liveA, liveB, projA, projB){
  mine._finderBound = true;
  mine.addEventListener('change', () => setupFinderControls());
  }
+ const wrap = el('finder-player-wrap');
+ if(wrap) wrap.style.display = 'flex';
  const btn = el('btn-finder-run');
  if(btn && !btn._bound){
  btn._bound = true;
@@ -7887,7 +8899,310 @@ function matchupWinPct(liveA, liveB, projA, projB){
  });
  }
 
+
+ function bestStreamersForPos(pos, limit, week){
+ limit = limit || 5;
+ const { available } = buildAvailableWaivers();
+ const curWeek = week || (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+ return available
+ .filter(p => p.position === pos)
+ .slice(0, 40)
+ .map(p => {
+ const fake = { id: 'FA-' + normalizeName(p.name), fullName: p.name, position: pos, value: p.value };
+ const pts = typeof playerWeeklyPtsForWeek === 'function'
+ ? playerWeeklyPtsForWeek(fake, curWeek, curWeek)
+ : (POS_WEEKLY_BASE[pos] || 8);
+ return { ...p, estPts: pts };
+ })
+ .sort((a,b) => (b.estPts - a.estPts) || (b.value - a.value))
+ .slice(0, limit);
+ }
+
+ function coverHolesForRoster(team, unavailableIds, week){
+ const counts = getStarterCounts();
+ const flexElig = counts.flexEligible || ['RB','WR','TE'];
+ const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+ const curWeek = week || (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+ const avail = (team.roster || []).filter(p => {
+ if(unavailableIds.has(String(p.id))) return false;
+ if(p.isIR) return false;
+ const bw = playerByeWeek(p);
+ if(bw != null && Number(bw) === Number(curWeek)) return false;
+ return true;
+ });
+ const { assignments } = optimalStarterLineup({ ...team, roster: avail }, counts, flexElig, sfElig, {
+ healthyOnly: true,
+ scoreFn: (p) => playerWeeklyPtsForWeek(p, curWeek, curWeek)
+ });
+ const holes = unfilledSlots(avail, counts, { healthyOnly: true });
+ // Which pure slots are short?
+ const have = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0, SF:0, FLEX:0 };
+ assignments.forEach(a => { if(have[a.slotKind] != null) have[a.slotKind]++; });
+ const need = [];
+ function short(pos, n){
+ for(let i = 0; i < n; i++) need.push(pos);
+ }
+ short('QB', Math.max(0, (counts.QB||0) - (have.QB||0)));
+ short('RB', Math.max(0, (counts.RB||0) - (have.RB||0)));
+ short('WR', Math.max(0, (counts.WR||0) - (have.WR||0)));
+ short('TE', Math.max(0, (counts.TE||0) - (have.TE||0)));
+ short('DST', Math.max(0, (counts.DST||0) - (have.DST||0)));
+ short('K', Math.max(0, (counts.K||0) - (have.K||0)));
+ short('SF', Math.max(0, (counts.SF||0) - (have.SF||0)));
+ short('FLEX', Math.max(0, (counts.FLEX||0) - (have.FLEX||0)));
+ return { holes, need, assignments, avail };
+ }
+
+ function renderCoverStreaming(){
+ const sel = el('cover-team-select') || el('byes-team-select');
+ const thisWeekEl = el('cover-this-week');
+ const byeList = el('cover-bye-list');
+ const streamBody = el('cover-stream-body');
+ const injBody = el('cover-inj-body');
+ const summary = el('cover-summary');
+ if(!thisWeekEl && !byeList) {
+ // fallback old bye list only
+ if(typeof renderByesLegacy === 'function') return renderByesLegacy();
+ return;
+ }
+
+ if(!state.teams || !state.teams.length){
+ if(thisWeekEl) thisWeekEl.innerHTML = '<div class="hist-empty">Load a league first.</div>';
+ return;
+ }
+
+ if(sel){
+ const cur = sel.value || state.myTeamId;
+ sel.innerHTML = '';
+ state.teams.forEach(t => {
+ const o = document.createElement('option');
+ o.value = t.id; o.textContent = t.name;
+ sel.appendChild(o);
+ });
+ if(cur != null) sel.value = cur;
+ else if(state.myTeamId != null) sel.value = state.myTeamId;
+ if(!sel._coverBound){
+ sel._coverBound = true;
+ sel.addEventListener('change', () => renderCoverStreaming());
+ }
+ }
+ const streamCb = el('cover-include-stream');
+ const dstkCb = el('cover-dst-k');
+ if(streamCb && !streamCb._bound){ streamCb._bound = true; streamCb.addEventListener('change', () => renderCoverStreaming()); }
+ if(dstkCb && !dstkCb._bound){ dstkCb._bound = true; dstkCb.addEventListener('change', () => renderCoverStreaming()); }
+ const toW = el('btn-cover-to-waivers');
+ if(toW && !toW._bound){
+ toW._bound = true;
+ toW.addEventListener('click', () => goToPanel('panel-waivers'));
+ }
+
+ const team = state.teams.find(t => String(t.id) === String(sel && sel.value));
+ if(!team){
+ if(thisWeekEl) thisWeekEl.innerHTML = '<div class="hist-empty">Pick a team.</div>';
+ return;
+ }
+
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+ const wantStreams = !streamCb || streamCb.checked;
+ const includeDstk = !dstkCb || dstkCb.checked;
+ const counts = getStarterCounts();
+
+ // --- This week: byes + injuries ---
+ const outThisWeek = [];
+ (team.roster || []).forEach(p => {
+ const bw = playerByeWeek(p);
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ const onBye = bw != null && Number(bw) === Number(curWeek);
+ const unavail = onBye || (st && injuryUnavailable && injuryUnavailable(st));
+ if(onBye || (st && st !== 'ok')){
+ outThisWeek.push({ player: p, onBye, status: st, unavail });
+ }
+ });
+
+ const unavailIds = new Set(
+ outThisWeek.filter(x => x.unavail).map(x => String(x.player.id))
+ );
+ const cover = coverHolesForRoster(team, unavailIds, curWeek);
+
+ if(summary){
+ summary.innerHTML = `<span>Week <strong>${curWeek}</strong></span>
+ <span>${outThisWeek.filter(x=>x.unavail).length} unavailable</span>
+ <span>${cover.holes ? `<strong style="color:#c45c52;">${cover.holes} hole(s)</strong>` : '<strong style="color:#3d8f5f;">Lineup covered</strong>'}</span>`;
+ }
+
+ if(thisWeekEl){
+ if(!outThisWeek.length){
+ thisWeekEl.innerHTML = '<div class="hist-empty">No byes or injury flags on this roster this week.</div>';
+ } else {
+ thisWeekEl.innerHTML = outThisWeek.map(x => {
+ const reason = x.onBye ? 'BYE' : injuryLabel(x.status);
+ const col = x.unavail ? '#c45c52' : '#c9a227';
+ return `<div class="hist-card" style="padding:10px 12px;">
+ <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+ <div><strong>${escapeHtml(x.player.fullName)}</strong>
+ <span style="color:var(--text-muted);"> · ${escapeHtml(x.player.position||'')}</span></div>
+ <div style="color:${col};font-weight:700;">${escapeHtml(reason)}</div>
+ </div>
+ <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${x.unavail ? 'Unavailable — need roster cover or a stream' : 'Monitor (still eligible)'}</div>
+ </div>`;
+ }).join('');
+ }
+ }
+
+ // Stream targets for holes + always offer DST/K streams if toggled
+ const streamRows = [];
+ const holePos = new Set(cover.need.map(n => n === 'SF' ? 'QB' : n === 'FLEX' ? 'RB' : n));
+ if(wantStreams){
+ const posList = [...holePos];
+ if(includeDstk){
+ if((counts.DST||0) > 0) posList.push('DST');
+ if((counts.K||0) > 0) posList.push('K');
+ }
+ // unique
+ const seenPos = new Set();
+ posList.forEach(pos => {
+ if(!pos || seenPos.has(pos)) return;
+ if(!includeDstk && (pos === 'DST' || pos === 'K')) return;
+ seenPos.add(pos);
+ const why = holePos.has(pos) || cover.need.includes(pos) || cover.need.includes('FLEX') || cover.need.includes('SF')
+ ? 'Fill hole / thin week'
+ : (pos === 'DST' || pos === 'K' ? 'Weekly stream option' : 'Depth');
+ bestStreamersForPos(pos, 3, curWeek).forEach(s => {
+ streamRows.push({ pos, name: s.name, value: s.value, estPts: s.estPts, why });
+ });
+ });
+ // If no holes, still show top DST/K streams when enabled
+ if(!streamRows.length && includeDstk && wantStreams){
+ ['DST','K'].forEach(pos => {
+ if(!(counts[pos] > 0) && pos !== 'DST' && pos !== 'K') return;
+ bestStreamersForPos(pos, 3, curWeek).forEach(s => {
+ streamRows.push({ pos, name: s.name, value: s.value, estPts: s.estPts, why: 'Weekly stream' });
+ });
+ });
+ }
+ }
+
+ if(streamBody){
+ streamBody.innerHTML = '';
+ if(!wantStreams){
+ streamBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:14px;">Streaming suggestions off.</td></tr>';
+ } else if(!streamRows.length){
+ streamBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:14px;">No clear stream targets right now.</td></tr>';
+ } else {
+ streamRows.forEach(r => {
+ const tr = document.createElement('tr');
+ tr.innerHTML = `<td>${escapeHtml(r.pos)}</td>
+ <td class="team-name-cell">${escapeHtml(r.name)}</td>
+ <td class="val-cell">${fmt(r.value)}</td>
+ <td style="font-size:12px;color:var(--text-muted);">${escapeHtml(r.why)}</td>
+ <td class="val-cell">${r.estPts != null ? fmtPts(r.estPts) : '—'}</td>`;
+ streamBody.appendChild(tr);
+ });
+ }
+ }
+
+ // --- Upcoming byes ---
+ if(byeList){
+ const byWeek = {};
+ (team.roster || []).forEach(p => {
+ const bw = playerByeWeek(p);
+ if(!bw || Number(bw) < Number(curWeek)) return;
+ if(!byWeek[bw]) byWeek[bw] = [];
+ byWeek[bw].push(p);
+ });
+ const weeks = Object.keys(byWeek).map(Number).sort((a,b)=>a-b);
+ byeList.innerHTML = '';
+ if(!weeks.length){
+ byeList.innerHTML = '<div class="hist-empty">No upcoming byes on roster (or bye data missing).</div>';
+ } else {
+ weeks.forEach(week => {
+ const ids = new Set(byWeek[week].map(p => String(p.id)));
+ // also treat long-term IR as out that week
+ (team.roster || []).forEach(p => {
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ if(st && injuryUnavailable && injuryUnavailable(st)) ids.add(String(p.id));
+ });
+ const c = coverHolesForRoster(team, ids, week);
+ const names = byWeek[week].map(p => p.fullName).join(', ');
+ let severity = 'Covered';
+ let col = '#3d8f5f';
+ if(c.holes > 0){ severity = c.holes + ' hole(s)'; col = '#c45c52'; }
+ else if(c.need.length){ severity = 'Soft'; col = '#c9a227'; }
+
+ let streamHint = '';
+ if(wantStreams && c.need.length){
+ const posNeed = [...new Set(c.need.map(n => n === 'SF' ? 'QB' : n === 'FLEX' ? 'RB' : n))];
+ streamHint = posNeed.slice(0, 4).map(pos => {
+ const top = bestStreamersForPos(pos, 1, week)[0];
+ return top ? pos + ': ' + top.name : pos;
+ }).join(' · ');
+ }
+
+ const card = document.createElement('div');
+ card.className = 'hist-card';
+ card.innerHTML = `<div class="hist-head">
+ <div class="hist-teams">Week ${week}</div>
+ <div class="hist-date" style="color:${col};font-weight:700;">${severity}</div>
+ </div>
+ <div class="hist-asset">On bye: ${escapeHtml(names)}</div>
+ ${streamHint ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Stream: ${escapeHtml(streamHint)}</div>` : ''}`;
+ byeList.appendChild(card);
+ });
+ }
+ }
+
+ // --- Injury board ---
+ if(injBody){
+ injBody.innerHTML = '';
+ const healthy = optimalStarterLineup(team, counts, counts.flexEligible || ['RB','WR','TE'], counts.sfEligible || ['QB','RB','WR','TE'], {
+ healthyOnly: true,
+ scoreFn: (p) => playerWeeklyPtsForWeek(p, curWeek, curWeek)
+ });
+ const injured = [];
+ (team.roster || []).forEach(p => {
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ if(!st || st === 'ok') return;
+ const wouldStart = healthy.starterIds.has(p.id) || healthy.starterIds.has(String(p.id));
+ injured.push({ p, st, wouldStart });
+ });
+ if(!injured.length){
+ injBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:14px;">No injury designations.</td></tr>';
+ } else {
+ injured.sort((a,b) => (injurySeverity(b.st)||0) - (injurySeverity(a.st)||0));
+ injured.forEach(x => {
+ const unavail = injuryUnavailable && injuryUnavailable(x.st);
+ const ids = unavail ? new Set([String(x.p.id)]) : new Set();
+ const c = coverHolesForRoster(team, ids, curWeek);
+ const rosterCover = c.holes === 0 ? 'Roster can cover' : 'Hole without them';
+ let stream = '—';
+ if(unavail && wantStreams){
+ const pos = x.p.position;
+ const top = bestStreamersForPos(pos, 1, curWeek)[0];
+ if(top) stream = top.name;
+ }
+ const tr = document.createElement('tr');
+ const col = (injurySeverity(x.st)||0) >= 3 ? '#c45c52' : (injurySeverity(x.st)||0) === 2 ? '#c9a227' : 'var(--text-muted)';
+ tr.innerHTML = `<td class="team-name-cell">${escapeHtml(x.p.fullName)}</td>
+ <td>${escapeHtml(x.p.position||'')}</td>
+ <td style="color:${col};font-weight:700;">${injuryLabel(x.st)}</td>
+ <td>${x.wouldStart ? 'Yes' : 'Bench'}</td>
+ <td style="font-size:12px;">${rosterCover}</td>
+ <td style="font-size:12px;">${escapeHtml(stream)}</td>`;
+ injBody.appendChild(tr);
+ });
+ }
+ }
+ }
+
 function renderByes(){
+ if(el('cover-this-week') || el('cover-team-select')){
+ renderCoverStreaming();
+ return;
+ }
+
  const list = el('byes-list');
  const sel = el('byes-team-select');
  if(!list) return;
@@ -8673,28 +9988,376 @@ function renderByes(){
  });
  }
 
+ 
+ 
+ function computeTeamBalance(team){
+ // Ideal share of starter-quality value by position vs actual
+ const counts = getStarterCounts();
+ const slots = {
+ QB: (counts.QB || 0) + (counts.SF || 0) * 0.85,
+ RB: (counts.RB || 0) + (counts.FLEX || 0) * 0.4,
+ WR: (counts.WR || 0) + (counts.FLEX || 0) * 0.4,
+ TE: (counts.TE || 0) + (counts.FLEX || 0) * 0.2
+ };
+ const totalSlots = Object.values(slots).reduce((a,b)=>a+b, 0) || 1;
+ const idealShare = {};
+ Object.keys(slots).forEach(p => { idealShare[p] = slots[p] / totalSlots; });
+
+ const val = { QB:0, RB:0, WR:0, TE:0 };
+ let total = 0;
+ (team.roster || []).forEach(p => {
+ if(p.isIR || p.isTaxi) return;
+ const pos = p.position;
+ if(val[pos] == null) return;
+ let st = playerInjuryStatus(p);
+ // Count injured at ~60% so balance still sees them but slightly reduced
+ const mult = (st && typeof injuryUnavailable === 'function' && injuryUnavailable(st)) ? 0.6 : 1;
+ const v = (p.value || 0) * mult;
+ val[pos] += v;
+ total += v;
+ });
+ if(total < 1) total = 1;
+ const rows = ['QB','RB','WR','TE'].map(pos => {
+ const share = val[pos] / total;
+ const ideal = idealShare[pos] || 0;
+ const diff = share - ideal;
+ let label = 'OK';
+ if(diff <= -0.08) label = 'Thin';
+ else if(diff <= -0.04) label = 'Light';
+ else if(diff >= 0.1) label = 'Heavy';
+ else if(diff >= 0.05) label = 'Stacked';
+ return {
+ pos,
+ value: val[pos],
+ share,
+ ideal,
+ diff,
+ label,
+ count: (team.roster || []).filter(p => p.position === pos && !p.isIR && !p.isTaxi).length
+ };
+ });
+ // Balance score: 100 = matches ideal shares
+ let pen = 0;
+ rows.forEach(r => { pen += Math.abs(r.diff) * 120; });
+ const score = Math.max(0, Math.min(100, Math.round(100 - pen)));
+ return { rows, score, idealShare, total };
+ }
+
+function buildStrategyBrief(){
+ // Single source of truth for "what should this team do next"
+ if(!state.teams || !state.teams.length) return null;
+ const team = state.teams.find(t => t.id === state.myTeamId || String(t.id) === String(state.myTeamId))
+ || state.teams[0];
+ if(!team) return null;
+ if(state.myTeamId == null) state.myTeamId = team.id;
+
+ let rows = [];
+ try{ rows = buildPowerRows(); }catch(e){}
+ const sorted = rows.slice().sort((a,b) => b.power - a.power);
+ const mine = sorted.find(r => r.team.id === team.id || String(r.team.id) === String(team.id));
+ const myRank = mine ? sorted.indexOf(mine) + 1 : null;
+ const n = sorted.length || 1;
+
+ let rate = null;
+ try{ rate = rateTeam(team); }catch(e){}
+
+ const quality = typeof playoffDataQuality === 'function' ? playoffDataQuality() : { ready: false, weeks: 0, label: '' };
+ let playoffPct = null, seed = null;
+ if(quality.ready || state.forcePlayoffOdds){
+ try{
+ const res = simulatePlayoffOdds(null, { force: !!state.forcePlayoffOdds });
+ const r = res && res.odds && res.odds.find(x => x.team.id === team.id || String(x.team.id) === String(team.id));
+ if(r){ playoffPct = r.playoffPct; seed = r.seed; }
+ }catch(e){}
+ }
+
+ let sosPath = null, sosRank = null;
+ try{
+ sosPath = buildTeamSosPath(team);
+ const ranks = state.teams.map(t => {
+ const p = buildTeamSosPath(t);
+ return p && p.sos != null ? { id: t.id, sos: p.sos } : null;
+ }).filter(Boolean).sort((a,b) => a.sos - b.sos);
+ const ri = ranks.findIndex(r => String(r.id) === String(team.id));
+ if(ri >= 0) sosRank = ri + 1;
+ }catch(e){}
+
+ // Needs: weakest positions by surplus
+ let weakPos = [];
+ try{
+ if(mine){
+ weakPos = ['QB','RB','WR','TE']
+ .map(p => ({ pos: p, val: mine[p] != null ? mine[p] : 0 }))
+ .sort((a,b) => a.val - b.val);
+ }
+ }catch(e){}
+
+ // This-week cover holes
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+ let weekHoles = 0, outNames = [];
+ try{
+ const unavail = new Set();
+ (team.roster || []).forEach(p => {
+ const bw = playerByeWeek(p);
+ let st = playerInjuryStatus(p);
+ if(!st && p.isIR) st = 'ir';
+ const onBye = bw != null && Number(bw) === Number(curWeek);
+ const gone = onBye || (st && typeof injuryUnavailable === 'function' && injuryUnavailable(st));
+ if(gone){
+ unavail.add(String(p.id));
+ outNames.push(p.fullName);
+ }
+ });
+ if(typeof coverHolesForRoster === 'function'){
+ const c = coverHolesForRoster(team, unavail, curWeek);
+ weekHoles = c.holes || 0;
+ }
+ }catch(e){}
+
+ // Lineup pressure: count bye/IR among high-value players this week
+ let lineupMoves = 0;
+ try{
+ const counts = getStarterCounts();
+ const flexElig = counts.flexEligible || ['RB','WR','TE'];
+ const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+ const opt = optimalStarterLineup(team, counts, flexElig, sfElig, {
+ healthyOnly: true,
+ scoreFn: (p) => typeof playerWeeklyPtsForWeek === 'function' ? playerWeeklyPtsForWeek(p, curWeek, curWeek) : (p.value || 0)
+ });
+ // If current starters (platform flags) differ from optimal, nudge
+ const currentIds = (team.roster || [])
+ .filter(p => p.isStarter || (p.lineupSlotId != null && p.lineupSlotId !== 20 && p.lineupSlotId !== 21 && p.lineupSlotId !== 22 && !p.isIR))
+ .map(p => String(p.id));
+ if(currentIds.length && opt.starterIds){
+ currentIds.forEach(id => { if(!opt.starterIds.has(id) && !opt.starterIds.has(Number(id))) lineupMoves++; });
+ }
+ }catch(e){}
+
+ const actions = [];
+ // Priority order: week-critical → roster shape → season outlook → trades
+ if(weekHoles > 0){
+ actions.push({
+ id: 'cover',
+ priority: 1,
+ title: weekHoles + ' lineup hole' + (weekHoles > 1 ? 's' : '') + ' this week',
+ why: (outNames.slice(0, 3).join(', ') || 'Bye/injury') + ' — stream or shuffle before lock.',
+ panel: 'panel-byes',
+ label: 'Cover & stream'
+ });
+ }
+ try{
+ const bakNeeds = injuryBackupNeeds(team);
+ const urgent = bakNeeds.filter(n => !n.hasBackup || n.weakBackup);
+ if(urgent.length){
+ const u = urgent[0];
+ actions.push({
+ id: 'inj-backup',
+ priority: 2,
+ title: 'No backup for ' + u.name,
+ why: (typeof injuryLabel === 'function' ? injuryLabel(u.status) : u.status) + ' · pick up ' + u.pos + ' depth on waivers before you get caught.',
+ panel: 'panel-waivers',
+ label: 'Waivers'
+ });
+ }
+ }catch(e){}
+ if(lineupMoves > 0){
+ actions.push({
+ id: 'lineup',
+ priority: 2,
+ title: 'Lineup changes available',
+ why: 'Optimizer disagrees with your current starters for week ' + curWeek + '.',
+ panel: 'panel-sit',
+ label: 'Fix lineup'
+ });
+ }
+ if(weakPos.length && weakPos[0].val < (weakPos[weakPos.length-1].val - 5)){
+ const w = weakPos[0];
+ actions.push({
+ id: 'needs',
+ priority: 3,
+ title: 'Thin at ' + w.pos,
+ why: w.pos + ' is your weakest positional group. Waivers and trades should prefer this slot.',
+ panel: 'panel-needs',
+ label: 'Team needs'
+ });
+ actions.push({
+ id: 'waivers',
+ priority: 4,
+ title: 'Check ' + w.pos + ' on waivers',
+ why: 'Impact sort prefers adds that help power and positional balance.',
+ panel: 'panel-waivers',
+ label: 'Waivers'
+ });
+ }
+ if(myRank != null && myRank > Math.ceil(n * 0.6)){
+ actions.push({
+ id: 'trade',
+ priority: 5,
+ title: 'Power rank #' + myRank + ' — look for upgrades',
+ why: 'Trade finder prioritizes needs, not stacking a strength.',
+ panel: 'panel-finder',
+ label: 'Trade finder'
+ });
+ } else if(myRank != null && myRank <= 3){
+ actions.push({
+ id: 'trade-sell',
+ priority: 6,
+ title: 'Top-tier roster — sell high / fortify depth',
+ why: 'Grade and compare can flag inflated pieces; finder can target depth.',
+ panel: 'panel-rate',
+ label: 'Team grade'
+ });
+ }
+ if(playoffPct != null && playoffPct < 45 && quality.ready){
+ actions.push({
+ id: 'path',
+ priority: 5,
+ title: 'Playoff odds ' + playoffPct.toFixed(0) + '%',
+ why: 'Path + SOS show which remaining games matter most.',
+ panel: 'panel-path',
+ label: 'Playoff path'
+ });
+ }
+ if(sosRank != null && sosRank >= Math.ceil(n * 0.7)){
+ actions.push({
+ id: 'sos',
+ priority: 7,
+ title: 'Hard schedule (SOS #' + sosRank + ')',
+ why: 'Projected path is tough — streaming and matchup leverage matter more.',
+ panel: 'panel-sos',
+ label: 'SOS'
+ });
+ }
+ // Always offer at least outlook
+ if(!actions.length){
+ actions.push({
+ id: 'rank',
+ priority: 9,
+ title: 'Review power snapshot',
+ why: 'No urgent holes — check rankings, grade, and matchups.',
+ panel: 'panel-rankings',
+ label: 'Power rankings'
+ });
+ }
+ actions.sort((a,b) => a.priority - b.priority);
+
+ return {
+ team, mine, myRank, nTeams: n,
+ rate, playoffPct, seed, quality,
+ sosPath, sosRank, curWeek, weekHoles,
+ weakPos, actions: actions.slice(0, 5),
+ record: ((team.wins||0) + '-' + (team.losses||0) + ((team.ties||0) ? '-' + team.ties : ''))
+ };
+ }
+
+ 
+ function renderStrategyStrip(){
+ const strip = el('strategy-strip');
+ if(!strip) return;
+ if(!state.teams || !state.teams.length){
+ strip.classList.remove('show');
+ strip.innerHTML = '';
+ return;
+ }
+ const brief = buildStrategyBrief();
+ if(!brief){
+ strip.classList.remove('show');
+ return;
+ }
+ strip.classList.add('show');
+ const top = brief.actions[0];
+ const bits = [];
+ bits.push('#' + (brief.myRank != null ? brief.myRank : '—'));
+ bits.push(brief.record);
+ if(brief.rate) bits.push(brief.rate.grade);
+ if(brief.playoffPct != null) bits.push(brief.playoffPct.toFixed(0) + '% PO');
+ if(brief.weekHoles > 0) bits.push(brief.weekHoles + ' hole' + (brief.weekHoles > 1 ? 's' : ''));
+
+ strip.innerHTML = `
+ <div class="ss-top">
+ <span class="ss-team">${escapeHtml(brief.team.name)}</span>
+ <span class="ss-meta">${bits.map(b => escapeHtml(String(b))).join(' · ')}</span>
+ ${top ? `<button type="button" class="ss-next" data-panel="${top.panel}">${escapeHtml(top.label || top.title)} →</button>` : ''}
+ </div>`;
+ const btn = strip.querySelector('.ss-next');
+ if(btn) btn.addEventListener('click', () => goToPanel(btn.getAttribute('data-panel'), { teamId: brief.team.id }));
+ }
+
+ function syncStrategyTeamSelectors(teamId){
+ if(teamId == null) return;
+ const ids = [
+ 'path-team','sos-team','rate-team-select','sit-team','byes-team-select',
+ 'inj-team-select','cover-team-select','trade-team-a','finder-team',
+ 'roster-team','luck-team','needs-team'
+ ];
+ ids.forEach(id => {
+ const node = el(id);
+ if(node){
+ try{ node.value = teamId; }catch(e){}
+ }
+ });
+ }
+
  function renderHome(){
  const grid = el('home-grid');
  const charts = el('home-charts');
  const intro = el('home-intro');
+ const pri = el('home-priorities');
+ const flow = el('home-flow');
  if(!grid) return;
+
  if(!state.teams || !state.teams.length){
- grid.innerHTML = '<p class="needs-intro">Load a league to see your dashboard.</p>';
+ grid.innerHTML = '<p class="needs-intro">Load a league to build your game plan.</p>';
  if(charts) charts.innerHTML = '';
+ if(pri) pri.innerHTML = '';
+ if(flow) flow.innerHTML = '';
+ renderStrategyStrip();
  return;
  }
- let rows = [];
- try{ rows = buildPowerRows(); }catch(e){}
- const sorted = rows.slice().sort((a,b) => b.power - a.power);
- const mine = sorted.find(r => state.myTeamId != null && (r.team.id === state.myTeamId || String(r.team.id) === String(state.myTeamId)));
- const top = sorted[0];
- const quality = playoffDataQuality();
- const myRank = mine ? sorted.indexOf(mine) + 1 : null;
- const myTeam = mine ? mine.team : (state.teams.find(t => t.id === state.myTeamId) || state.teams[0]);
+
+ const brief = buildStrategyBrief();
+ renderStrategyStrip();
+ if(!brief){
+ grid.innerHTML = '<p class="needs-intro">Pick your team in settings to personalize the plan.</p>';
+ return;
+ }
+
+ if(intro){
+ intro.textContent = brief.team.name + ' · week ' + brief.curWeek + ' · every tab below uses the same roster, power model, and schedule.';
+ }
+
+ // Priorities
+ if(pri){
+ pri.innerHTML = '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">Do this next</div>' +
+ brief.actions.slice(0, 3).map(a => `
+ <div class="strategy-priority" data-panel="${a.panel}">
+ <div class="sp-title">${escapeHtml(a.title)}</div>
+ <div class="sp-why">${escapeHtml(a.why)}</div>
+ </div>`).join('');
+ pri.querySelectorAll('[data-panel]').forEach(node => {
+ node.addEventListener('click', () => goToPanel(node.getAttribute('data-panel'), { teamId: brief.team.id }));
+ });
+ }
+
+ // Strategy flow chips
+ if(flow){
+ const steps = [
+ { panel: 'panel-sit', label: 'Lineup' },
+ { panel: 'panel-byes', label: 'Cover' },
+ { panel: 'panel-waivers', label: 'Waivers' },
+ { panel: 'panel-finder', label: 'Trades' },
+ { panel: 'panel-rankings', label: 'Rankings' },
+ { panel: 'panel-playoffs', label: 'Playoffs' }
+ ];
+ flow.innerHTML = steps.map(s => `<button type="button" data-panel="${s.panel}">${s.label}</button>`).join('');
+ flow.querySelectorAll('[data-panel]').forEach(btn => {
+ btn.addEventListener('click', () => goToPanel(btn.getAttribute('data-panel'), { teamId: brief.team.id }));
+ });
+ }
 
  function card(title, val, sub, extra, panel){
  const go = panel ? ` data-go-panel="${panel}" style="cursor:pointer;"` : '';
- return `<div class="rec-card"${go} title="${panel ? 'Open ' + panel.replace('panel-','') : ''}">
+ return `<div class="rec-card"${go}>
  <h3>${escapeHtml(title)}</h3>
  <div class="rec-val">${val}</div>
  <div class="rec-who">${sub || ''}</div>
@@ -8702,185 +10365,81 @@ function renderByes(){
  </div>`;
  }
 
- // Record / scoring
- const rec = myTeam ? `${myTeam.wins||0}-${myTeam.losses||0}${(myTeam.ties||0) ? '-' + myTeam.ties : ''}` : '-';
- const avg = myTeam && myTeam.avgPts != null ? fmtPts(myTeam.avgPts) : '-';
- const pf = myTeam && myTeam.pointsFor != null ? fmtPts(myTeam.pointsFor) : '-';
-
- // Rate quality
- let rate = null;
- try{ rate = myTeam ? rateTeam(myTeam) : null; }catch(e){}
-
- // Luck / SOS if available
- let luckLine = '-', sosLine = '-';
- try{
- const graph = scheduleCache || {};
- if(myTeam && myTeam.weeklyScores && myTeam.weeklyScores.length){
- // all-play style expected wins snippet
- let allPlayW = 0, allPlayG = 0;
- const myScores = myTeam.weeklyScores || [];
- state.teams.forEach(o => {
- if(o.id === myTeam.id) return;
- const os = o.weeklyScores || [];
- for(let w = 0; w < Math.min(myScores.length, os.length); w++){
- if(typeof myScores[w] !== 'number' || typeof os[w] !== 'number') continue;
- allPlayG++;
- if(myScores[w] > os[w]) allPlayW++;
- else if(myScores[w] === os[w]) allPlayW += 0.5;
- }
- });
- if(allPlayG){
- const exp = allPlayW / (state.teams.length - 1);
- const actual = (myTeam.wins||0) + 0.5*(myTeam.ties||0);
- const games = (myTeam.wins||0)+(myTeam.losses||0)+(myTeam.ties||0);
- luckLine = (actual - exp >= 0 ? '+' : '') + (actual - exp).toFixed(1) + ' vs all-play';
- }
- }
- if(graph && myTeam){
- const node = graph[myTeam.id] || graph[String(myTeam.id)];
- if(node){
- const oppIds = [...(node.past||[]), ...(node.future||[])];
- const oppAvgs = oppIds.map(id => {
- const t = state.teams.find(x => x.id === id || String(x.id) === String(id));
- return t && t.avgPts != null ? t.avgPts : null;
- }).filter(x => x != null);
- if(oppAvgs.length){
- const avgOpp = oppAvgs.reduce((a,b)=>a+b,0)/oppAvgs.length;
- const leagueAvg = state.teams.reduce((s,t)=>s+(t.avgPts||0),0)/state.teams.length;
- const diff = avgOpp - leagueAvg;
- sosLine = (diff >= 0 ? '+' : '') + diff.toFixed(1) + ' PF vs avg opp';
- }
- }
- }
- }catch(e){}
-
- // Position snapshot for my team
- let posSnap = '';
- if(mine){
- posSnap = ['QB','RB','WR','TE'].map(p => {
- const v = mine[p];
- return p + ' ' + (v != null ? fmt(v) : '-');
- }).join(' · ');
- }
-
- // Next opponent
- let nextOpp = '-';
- try{
- const graph = scheduleCache || {};
- const node = myTeam && (graph[myTeam.id] || graph[String(myTeam.id)]);
- if(node && node.future && node.future.length){
- const oid = node.future[0];
- const o = state.teams.find(t => t.id === oid || String(t.id) === String(oid));
- if(o) nextOpp = o.name;
- }
- }catch(e){}
-
- // Playoff odds if ready
- let playoffPct = '-';
- if(quality.ready){
- try{
- const res = simulatePlayoffOdds(800);
- const r = res && res.odds && res.odds.find(x => myTeam && x.team.id === myTeam.id);
- if(r && r.playoffPct != null) playoffPct = r.playoffPct.toFixed(0) + '%';
- }catch(e){}
- }
-
+ const mine = brief.mine;
+ const team = brief.team;
  const cards = [];
- cards.push(card('Your Power rank', myRank != null ? '#' + myRank : '-', mine ? ('Power ' + mine.power.toFixed(1)) : 'Set My team in settings', mine ? escapeHtml(mine.team.name) : '', 'panel-rankings'));
- cards.push(card('Roster grade', rate ? rate.grade : '-', rate ? ('Quality ' + rate.quality + '/100') : 'Open Rate my team', rate ? 'vs a competitive bar, not league percentile' : '', 'panel-rate'));
- cards.push(card('Record', rec, 'PF ' + pf, 'Avg ' + avg + ' / wk', 'panel-records'));
- cards.push(card('Playoff odds', playoffPct, quality.ready ? quality.label : 'Need more weeks', '~' + quality.weeks.toFixed(0) + ' weeks scored', 'panel-playoffs'));
- cards.push(card('League leader', top ? escapeHtml(top.team.name) : '-', top ? 'Power ' + top.power.toFixed(1) : '', sorted[1] ? ('#2 ' + escapeHtml(sorted[1].team.name)) : '', 'panel-rankings'));
- cards.push(card('Luck (all-play)', luckLine, 'Actual wins vs all-play expected', '', 'panel-luck'));
- cards.push(card('Strength of schedule', sosLine, 'Opponent scoring vs league avg', '', 'panel-luck'));
- cards.push(card('Next opponent', escapeHtml(nextOpp), 'From remaining schedule', posSnap || '', 'panel-matchups'));
- cards.push(card('Format', (state.isDynasty ? 'Dynasty' : 'Redraft') + (state.isSuperflex ? ' · SF' : ' · 1QB'), (state.platform || '') + ' · ' + state.teams.length + ' teams', state.leagueName || '', null));
- if(rate){
- cards.push(card('Starter quality', rate.starterScore.toFixed(0) + '/100', fmt(rate.yourStarter) + ' vs ' + fmt(rate.idealStarter) + ' target', rate.miss ? rate.miss + ' empty slot(s)' : 'Lineup legal', 'panel-rate'));
- cards.push(card('Coverage', rate.coverPts.toFixed(0) + '/100', rate.miss ? 'Fix empty slots first' : 'Starters filled', '', 'panel-rate'));
- cards.push(card('Depth score', rate.depthScore.toFixed(0) + '/100', 'Top bench ' + fmt(rate.yourBench), '', 'panel-depth'));
+ cards.push(card('Power rank', brief.myRank != null ? '#' + brief.myRank : '—', mine ? ('Score ' + mine.power.toFixed(1)) : '', 'Same model as Rankings', 'panel-rankings'));
+ cards.push(card('Roster grade', brief.rate ? brief.rate.grade : '—', brief.rate ? ('Quality ' + brief.rate.quality + '/100') : '', 'vs competitive bar', 'panel-rate'));
+ cards.push(card('Record', brief.record, 'Season results', '', 'panel-luck'));
+ cards.push(card('Playoff', brief.playoffPct != null ? brief.playoffPct.toFixed(0) + '%' : '—', brief.seed != null ? ('Seed #' + brief.seed) : (brief.quality.label || ''), '', 'panel-playoffs'));
+ cards.push(card('SOS rank', brief.sosRank != null ? '#' + brief.sosRank : '—', brief.sosPath && brief.sosPath.finalRecord ? brief.sosPath.finalRecord : '1 = easiest', '', 'panel-sos'));
+ cards.push(card('Week ' + brief.curWeek, brief.weekHoles ? (brief.weekHoles + ' hole(s)') : 'Covered', 'Bye + injury cover', '', 'panel-byes'));
+ if(brief.weakPos && brief.weakPos[0]){
+ cards.push(card('Weakest pos', brief.weakPos[0].pos, 'Then ' + brief.weakPos.slice(1,3).map(x=>x.pos).join(', '), 'Drives waiver & trade bias', 'panel-needs'));
  }
+ cards.push(card('Trade tools', 'Finder + calc', 'Need-based, not lateral', '', 'panel-finder'));
 
  grid.innerHTML = cards.join('');
- grid.querySelectorAll('[data-go-panel]').forEach(node => {
- node.addEventListener('click', () => {
- const id = node.getAttribute('data-go-panel');
- const nav = document.querySelector('.nav-item[data-panel="' + id + '"]');
- if(nav) nav.click();
- });
+ grid.querySelectorAll('[data-go-panel]').forEach(cardEl => {
+ cardEl.addEventListener('click', () => goToPanel(cardEl.getAttribute('data-go-panel'), { teamId: team.id }));
  });
 
- if(intro){
- intro.textContent = (state.leagueName || 'League') + ' dashboard: roster quality, standings, and schedule.';
+ // Positional balance vs ideal build
+ try{
+ const bal = computeTeamBalance(team);
+ const balBox = document.createElement('div');
+ balBox.className = 'card';
+ balBox.style.cssText = 'padding:14px;margin-bottom:14px;';
+ balBox.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">' +
+ '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);">Team balance</div>' +
+ '<div style="font-size:13px;font-weight:600;">Score ' + bal.score + '/100</div></div>' +
+ '<p style="font-size:12px;color:var(--text-secondary);margin:0 0 8px;">Share of roster value by position vs how a legal lineup is built (starters + flex). Thin = underinvested.</p>' +
+ bal.rows.map(r => {
+ const pct = Math.round(r.share * 100);
+ const idealPct = Math.round(r.ideal * 100);
+ const cls = r.label === 'Thin' || r.label === 'Light' ? 'thin' : (r.label === 'Heavy' || r.label === 'Stacked' ? 'heavy' : '');
+ return '<div class="balance-row"><div><strong>' + r.pos + '</strong></div>' +
+ '<div class="balance-track"><div class="balance-fill ' + cls + '" style="width:' + pct + '%;"></div>' +
+ '<div class="balance-ideal" style="left:' + idealPct + '%;"></div></div>' +
+ '<div style="color:var(--text-muted);">' + pct + '% <span style="opacity:0.7;">/' + idealPct + '%</span></div>' +
+ '<div style="font-weight:600;color:' + (cls==='thin'?'#c45c52':cls==='heavy'?'#c9a227':'var(--text-muted)') + ';">' + r.label + '</div></div>';
+ }).join('') +
+ '<div style="margin-top:8px;font-size:12px;"><a href="#" id="home-bal-needs" style="color:var(--accent);">Fix via needs / waivers</a></div>';
+ if(pri && pri.parentNode){
+ const existing = el('home-balance-wrap');
+ if(existing) existing.remove();
+ balBox.id = 'home-balance-wrap';
+ if(grid && grid.parentNode) grid.parentNode.insertBefore(balBox, grid);
+ const a = el('home-bal-needs');
+ if(a) a.onclick = (e) => { e.preventDefault(); goToPanel('panel-needs', { teamId: team.id }); };
  }
+ }catch(e){}
 
+ // Charts: power + scoring — compact league context
  if(charts){
- const powerBars = sorted.map(r => ({
- label: r.team.name,
- value: r.power,
- highlight: mine && r.team.id === mine.team.id
- }));
- const scoreBars = (state.teams || []).map(t => ({
- label: t.name,
- value: t.avgPts || 0,
- highlight: state.myTeamId != null && (t.id === state.myTeamId || String(t.id) === String(state.myTeamId))
- })).sort((a,b) => b.value - a.value);
-
- // Position surplus bars for my team vs league median
- let posHtml = '';
- if(mine && rows.length){
- const med = {
- QB: medianOf(rows.map(r => r.QB || 0)),
- RB: medianOf(rows.map(r => r.RB || 0)),
- WR: medianOf(rows.map(r => r.WR || 0)),
- TE: medianOf(rows.map(r => r.TE || 0))
- };
- const posItems = ['QB','RB','WR','TE'].map(p => ({
- label: p,
- value: (mine[p] || 0) - (med[p] || 0),
- highlight: true
- }));
- posHtml = `<div class="home-chart-card">
- <h3>Your position surplus vs league median</h3>
- ${svgBars(posItems, (it) => it.value >= 0 ? '#4a9b6e' : '#c45c52')}
- <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Positive = above median surplus at that position.</div>
- </div>`;
- }
-
- // Standings mini table
- const standRows = sorted.slice(0, 10).map((r,i) => {
- const t = r.team;
- const isMine = mine && r.team.id === mine.team.id;
- return `<tr style="${isMine ? 'background:var(--accent-muted);' : ''}">
- <td><span class="rank-num">${i+1}</span></td>
- <td class="team-name-cell">${escapeHtml(t.name)}</td>
- <td class="val-cell">${r.power.toFixed(1)}</td>
- <td class="val-cell">${t.wins||0}-${t.losses||0}</td>
- <td class="val-cell">${t.avgPts != null ? fmtPts(t.avgPts) : '-'}</td>
- </tr>`;
+ try{
+ const rows = buildPowerRows().slice().sort((a,b) => b.power - a.power);
+ const maxP = Math.max(...rows.map(r => r.power), 1);
+ const barHtml = rows.map((r,i) => {
+ const isMine = r.team.id === team.id || String(r.team.id) === String(team.id);
+ const w = Math.max(4, (r.power / maxP) * 100);
+ return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px;${isMine?'font-weight:600;':''}">
+ <div style="width:20px;color:var(--text-muted);">#${i+1}</div>
+ <div style="flex:1;min-width:0;">
+ <div style="display:flex;justify-content:space-between;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.team.name)}</span><span>${r.power.toFixed(1)}</span></div>
+ <div style="height:6px;background:var(--surface-2);border-radius:3px;"><div style="height:100%;width:${w}%;background:${isMine?'var(--accent)':'rgba(74,155,110,0.7)'};border-radius:3px;"></div></div>
+ </div></div>`;
  }).join('');
-
- charts.innerHTML = `
- <div class="home-chart-card">
- <h3>Power by team</h3>
- ${svgBars(powerBars, (it) => it.highlight ? '#4a9b6e' : '#6b7280')}
- <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Tallest bar = strongest roster on paper. Yours is highlighted.</div>
- </div>
- <div class="home-chart-card">
- <h3>Scoring average</h3>
- ${svgBars(scoreBars, (it) => it.highlight ? '#4a9b6e' : '#6b7280')}
- <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Season PPG from completed weeks only.</div>
- </div>
- ${posHtml}
- <div class="home-chart-card" style="grid-column:1/-1;">
- <h3>Power standings snapshot</h3>
- <div class="table-wrap"><table class="data-table">
- <thead><tr><th>#</th><th>Team</th><th>Power</th><th>Record</th><th>Avg</th></tr></thead>
- <tbody>${standRows}</tbody>
- </table></div>
+ charts.innerHTML = `<div class="card" style="padding:14px;grid-column:1/-1;">
+ <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">League power (shared with Rankings)</div>
+ ${barHtml}
+ <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">Tap Rankings for full weights and components. All strategy links keep this team selected.</div>
  </div>`;
+ }catch(e){ charts.innerHTML = ''; }
  }
  }
+
+
 
 
  function sitPlayerScore(p, strategy, ctx){
@@ -11136,7 +12695,7 @@ function renderByes(){
 
  let html = '<div class="card" style="padding:14px;">';
  html += '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">This week\'s power mix</div>';
- html += '<p style="font-size:12.5px;color:var(--text-secondary);margin:0 0 10px;line-height:1.45;">After ~' + (w.weeks||0).toFixed(0) + ' scored week(s): roster <strong>' + pct(w.rosterShare) + '</strong> · results <strong>' + pct(w.resultsShare) + '</strong>. Weights shift as more weeks finish.</p>';
+ html += '<p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;">Week ~' + (w.weeks||0).toFixed(0) + ' · roster ' + pct(w.rosterShare) + ' / results ' + pct(w.resultsShare) + '</p>';
  html += '<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px;background:var(--surface-2);">';
  bars.forEach(b => {
  if(!(b.w > 0.005)) return;
@@ -11226,6 +12785,8 @@ function renderByes(){
  return;
  }
  renderPowerSnapshot(rows);
+ const rel = el('rankings-related');
+ if(rel){ rel.innerHTML = relatedLinksHtml(['panel-sit','panel-waivers','panel-needs','panel-finder','panel-playoffs']); bindRelatedLinks(rel); }
  const maxPower = Math.max(...rows.map(r => r.power), 1);
 
  const medians = {
@@ -11442,7 +13003,38 @@ function renderByes(){
  }
 
  /* ---------- tabs ---------- */
- function goToPanel(panelId, opts){
+ 
+ function relatedLinksHtml(keys){
+ // keys: array of panel ids for quick jumps — keeps strategy connected
+ const map = {
+ 'panel-home': 'Home',
+ 'panel-rankings': 'Rankings',
+ 'panel-sit': 'Lineup',
+ 'panel-byes': 'Cover',
+ 'panel-waivers': 'Waivers',
+ 'panel-needs': 'Needs',
+ 'panel-finder': 'Finder',
+ 'panel-trade': 'Trade',
+ 'panel-rate': 'Grade',
+ 'panel-sos': 'Schedule',
+ 'panel-playoffs': 'Playoffs',
+ 'panel-path': 'Path',
+ 'panel-matchups': 'Matchups'
+ };
+ const tid = state.myTeamId;
+ return '<div class="related-links">' +
+ keys.filter(k => map[k]).map(k =>
+ '<button type="button" class="btn btn-ghost btn-sm" data-go="' + k + '">' + map[k] + '</button>'
+ ).join('') + '</div>';
+ }
+ function bindRelatedLinks(root){
+ if(!root) return;
+ root.querySelectorAll('[data-go]').forEach(btn => {
+ btn.addEventListener('click', () => goToPanel(btn.getAttribute('data-go'), { teamId: state.myTeamId }));
+ });
+ }
+
+function goToPanel(panelId, opts){
  opts = opts || {};
  const btn = document.querySelector('.nav-item[data-panel="' + panelId + '"]');
  if(btn) btn.click();
@@ -11454,22 +13046,14 @@ function renderByes(){
  const panel = el(panelId);
  if(panel) panel.classList.add('active');
  }
- // Optional team preselect for connected views
+ // Keep one team context everywhere
  if(opts.teamId != null){
  try{
  state.myTeamId = opts.teamId;
- const map = {
- 'panel-path': 'path-team',
- 'panel-sos': 'sos-team',
- 'panel-rate': 'rate-team-select',
- 'panel-sit': 'sit-team',
- 'panel-byes': 'byes-team-select',
- 'panel-injuries': 'inj-team-select'
- };
- const sid = map[panelId];
- if(sid && el(sid)) el(sid).value = opts.teamId;
+ if(typeof syncStrategyTeamSelectors === 'function') syncStrategyTeamSelectors(opts.teamId);
  }catch(e){}
  }
+ try{ if(typeof renderStrategyStrip === 'function') renderStrategyStrip(); }catch(e){}
  // Re-render target after select settles
  setTimeout(() => {
  try{
@@ -11477,6 +13061,15 @@ function renderByes(){
  if(panelId === 'panel-playoffs') renderPlayoffs();
  if(panelId === 'panel-sos') renderSos();
  if(panelId === 'panel-luck') renderLuck();
+ if(panelId === 'panel-home') renderHome();
+ if(panelId === 'panel-byes') renderByes();
+ if(panelId === 'panel-sit') { try{ renderSitAnalyzer(); }catch(e){} }
+ if(panelId === 'panel-rate') { try{ renderRateTeam(); }catch(e){} }
+ if(panelId === 'panel-waivers') { try{ renderWaivers(); }catch(e){} }
+ if(panelId === 'panel-needs') { try{ renderNeeds(); }catch(e){} }
+ if(panelId === 'panel-rankings') { try{ renderRankings(); }catch(e){} }
+ if(panelId === 'panel-rosters') { try{ renderLeagueRosters(); }catch(e){} }
+ if(panelId === 'panel-finder') { try{ /* finder */ }catch(e){} }
  }catch(e){}
  }, 30);
  }
@@ -11503,7 +13096,7 @@ function renderByes(){
  refreshMatchups();
  }
  if(btn.dataset.panel === 'panel-rate') renderRateTeam();
- if(btn.dataset.panel === 'panel-injuries') renderInjuries();
+ if(btn.dataset.panel === 'panel-injuries') { goToPanel('panel-byes'); return; }
  if(btn.dataset.panel === 'panel-sos'){
  if(!scheduleCache) loadScheduleGraph().then(() => renderSos());
  else renderSos();
@@ -11520,6 +13113,7 @@ function renderByes(){
  }
  if(btn.dataset.panel === 'panel-depth') renderDepth();
  if(btn.dataset.panel === 'panel-byes') renderByes();
+ if(btn.dataset.panel === 'panel-rosters') renderLeagueRosters();
  if(btn.dataset.panel === 'panel-home') renderHome();
  if(btn.dataset.panel === 'panel-compare') renderCompare();
  if(btn.dataset.panel === 'panel-trends') renderTrends();
@@ -11578,7 +13172,7 @@ el('btn-settings').addEventListener('click', () => {
 
  /* ---------- info modals (rankings + needs) ---------- */
  function openInfoModal(which){
- const keys = ['trade','rankings','needs','waivers','history','playoffs','rate','finder','roster','luck','sos','path','matchups','sit','compare','records','injuries','depth','byes','trends','home'];
+ const keys = ['trade','rankings','needs','waivers','history','playoffs','rate','finder','roster','luck','sos','path','matchups','sit','compare','records','injuries','depth','byes','trends','home','rosters'];
  keys.forEach(k => {
  const node = el('info-content-' + k);
  if(node) node.style.display = which === k ? 'block' : 'none';
@@ -11612,7 +13206,7 @@ el('btn-settings').addEventListener('click', () => {
  ['btn-sos-info','sos'],['btn-path-info','path'],['btn-matchups-info','matchups'],
  ['btn-sit-info','sit'],['btn-compare-info','compare'],['btn-records-info','records'],
  ['btn-injuries-info','injuries'],['btn-depth-info','depth'],['btn-byes-info','byes'],
- ['btn-trends-info','trends']
+ ['btn-trends-info','trends'],['btn-home-info','home'],['btn-rosters-info','rosters']
  ];
  infoPairs.forEach(([id, key]) => {
  const b = el(id);
