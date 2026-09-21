@@ -2289,8 +2289,11 @@
  <th>Opponent</th>
  <th>You</th>
  <th>Opp</th>
- <th>Result</th>
- <th>Record after</th>
+ <th>Median</th>
+ <th>H2H%</th>
+ <th>Med%</th>
+ <th>Week exp</th>
+ <th>Record (of ~28)</th>
  <th>Source</th>
  </tr>
  </thead>
@@ -2298,6 +2301,25 @@
  </table>
  </div>
  <p class="tpi-note" id="sos-note" style="margin-top:12px;"></p>
+
+ <div class="section-title" style="margin:22px 0 8px;font-size:15px;">League SOS ranking</div>
+ <p class="needs-intro" style="margin-bottom:10px;">#1 = easiest schedule (lowest average opponent points). Last = hardest. % is difference vs the median team's SOS.</p>
+ <div id="sos-rank-chart" style="margin-bottom:14px;"></div>
+ <div style="overflow-x:auto;">
+ <table>
+ <thead>
+ <tr>
+ <th title="1 = easiest">#</th>
+ <th>Team</th>
+ <th title="Avg H2H opponent points">Opp SOS</th>
+ <th title="Avg league median faced">Avg median</th>
+ <th title="Percent vs median team's Opp SOS">vs med SOS</th>
+ <th title="Projected record after all weeks (H2H + median)">Proj record</th>
+ </tr>
+ </thead>
+ <tbody id="sos-rank-body"></tbody>
+ </table>
+ </div>
  </section>
 
  <!-- ---------- PLAYOFFS ---------- -->
@@ -3954,7 +3976,7 @@
  if(!tbody) return;
 
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
  if(topBox) topBox.innerHTML = '';
  return;
  }
@@ -4026,7 +4048,7 @@
 
  tbody.innerHTML = '';
  if(!list.length){
- tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">No available players match.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">No available players match.</td></tr>';
  return;
  }
  list.forEach((p, i) => {
@@ -5157,43 +5179,75 @@
  return graph;
  }
 
- // Project a team's starter points for a given week (bye-aware).
- // Uses actual weekly score when final; live matchup when current; else proj/value model.
+
+ const POS_WEEKLY_BASE = { QB: 18, RB: 11, WR: 10, TE: 7, K: 7, DST: 7, DEF: 7 };
+
+ function playerWeeklyPtsForWeek(p, week, curWeek){
+ if(!p) return 0;
+ if(week === curWeek){
+ const live = getLiveWeekPoints(p.id, null);
+ const row = getPlayerProjection(p.id, p.fullName || p.name);
+ if(row && row.locked && typeof row.actual === 'number') return Math.max(0, row.actual);
+ if(typeof live === 'number' && live > 0){
+ if(row && typeof row.proj === 'number' && row.proj > live)
+ return live + Math.max(0, row.proj - live) * 0.5;
+ return live;
+ }
+ if(row && typeof row.proj === 'number' && row.proj > 0) return row.proj;
+ if(row && typeof row.actual === 'number' && row.actual > 0) return row.actual;
+ }
+ const row = getPlayerProjection(p.id, p.fullName || p.name);
+ if(row && typeof row.proj === 'number' && row.proj > 0){
+ if(projectionCacheWeek != null && week !== projectionCacheWeek) return row.proj * 0.97;
+ return row.proj;
+ }
+ const pos = p.position || 'WR';
+ const base = POS_WEEKLY_BASE[pos] || 8;
+ const v = p.value || 0;
+ const boost = v > 0 ? Math.min(14, Math.log10(Math.max(100, v)) * 3.2 - 4) : 0;
+ return Math.max(2, base + boost);
+ }
+
+ // Best free agents by position for filling empty starter slots this week
+ function waiverFillPool(week, curWeek){
+ let available = [];
+ try{
+ const built = buildAvailableWaivers();
+ available = built.available || [];
+ }catch(e){ available = []; }
+ // Score each FA for the week
+ return available.map(fa => {
+ const fake = {
+ id: 'FA-' + normalizeName(fa.name),
+ fullName: fa.name,
+ name: fa.name,
+ position: fa.position,
+ value: fa.value || 0,
+ isIR: false,
+ isWaiverFill: true
+ };
+ const pts = playerWeeklyPtsForWeek(fake, week, curWeek);
+ // Waiver adds are slightly less reliable than rostered
+ return { ...fake, weekPts: pts * 0.92 };
+ }).sort((a,b) => b.weekPts - a.weekPts);
+ }
+
  function estimateTeamWeekScore(team, week, opts){
  opts = opts || {};
- if(!team) return { pts: null, source: 'none' };
+ if(!team) return { pts: null, source: 'none', assignments: [], waiverFills: [] };
  const node = (scheduleCache && (scheduleCache[team.id] || scheduleCache[String(team.id)])) || null;
  const wRow = node && node.weeks && node.weeks[week];
  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || week;
 
- // Final week: prefer schedule points, else team.weeklyScores
- if(wRow && wRow.status === 'final' && typeof wRow.myScore === 'number' && wRow.myScore > 0){
- return { pts: wRow.myScore, source: 'final' };
+ // Final: official score (no waiver backfill — what's done is done)
+ if(wRow && wRow.status === 'final' && typeof wRow.myScore === 'number' && (wRow.myScore > 0 || week < curWeek)){
+ return { pts: wRow.myScore, source: 'final', assignments: [], waiverFills: [] };
  }
  const ws = (team.weeklyScores || [])[week - 1];
- if(week < curWeek && typeof ws === 'number' && ws > 0){
- return { pts: ws, source: 'final' };
+ if(week < curWeek && typeof ws === 'number'){
+ return { pts: ws, source: 'final', assignments: [], waiverFills: [] };
  }
 
- // Current week: live or projected from matchup cache
- if(week === curWeek && matchupCache && matchupCache.length){
- const m = matchupCache.find(x =>
- (x.teamA && (x.teamA.id === team.id || String(x.teamA.id) === String(team.id))) ||
- (x.teamB && (x.teamB.id === team.id || String(x.teamB.id) === String(team.id)))
- );
- if(m){
- const isA = m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id));
- const live = isA ? m.pointsA : m.pointsB;
- const proj = isA ? m.projA : m.projB;
- if(typeof live === 'number' && live > 0 && (proj == null || live >= proj * 0.85)){
- return { pts: Math.max(live, proj || 0), source: 'live' };
- }
- if(typeof proj === 'number' && proj > 0) return { pts: proj, source: 'live-proj' };
- if(typeof live === 'number' && live > 0) return { pts: live, source: 'live' };
- }
- }
-
- // Future (or missing): optimal lineup excluding bye-week players, using projections when known
  const counts = getStarterCounts();
  const flexElig = counts.flexEligible || ['RB','WR','TE'];
  const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
@@ -5203,140 +5257,255 @@
  if(bw != null && Number(bw) === Number(week)) return false;
  return true;
  });
+
+ // Rank roster by weekly points
  const trial = { ...team, roster: available };
- const { assignments } = optimalStarterLineup(trial, counts, flexElig, sfElig, { healthyOnly: true });
- if(!assignments.length){
- // Empty / all on bye — use a low placeholder from season avg * 0.35
- const avg = team.avgPts || 0;
- return { pts: avg > 0 ? avg * 0.35 : 40, source: 'bye-thin' };
- }
- let sum = 0;
- let usedProj = 0;
- assignments.forEach(a => {
- const row = getPlayerProjection(a.id, a.name);
- if(row && typeof row.proj === 'number' && row.proj > 0){
- // Scale weekly proj lightly if this is not the projection week
- let pts = row.proj;
- if(projectionCacheWeek != null && week !== projectionCacheWeek){
- // Same season average-ish: blend toward team share of value
- pts = row.proj * 0.92;
- }
- sum += pts;
- usedProj++;
- } else if(row && typeof row.actual === 'number' && row.actual > 0 && week === curWeek){
- sum += row.actual;
- usedProj++;
- } else {
- // Value → rough weekly points: scale FantasyCalc value against team avg
- const v = a.value || 0;
- const teamVal = (team.roster || []).reduce((s,p) => s + (p.value||0), 0) || 1;
- const avg = team.avgPts || 100;
- // Starter share of value * team avg * 1.05 (starters outscore bench share)
- const share = v / teamVal;
- sum += Math.max(4, avg * share * (assignments.length * 0.85));
- }
+ let { assignments, starterIds } = optimalStarterLineup(trial, counts, flexElig, sfElig, {
+ healthyOnly: true,
+ scoreFn: (p) => playerWeeklyPtsForWeek(p, week, curWeek)
  });
- const holes = unfilledSlots(available, counts, { healthyOnly: true });
- if(holes > 0) sum *= Math.max(0.55, 1 - holes * 0.12);
+
+ // Fill empty pure slots (and FLEX/SF) from waivers
+ const waiverFills = [];
+ let holes = unfilledSlots(available, counts, { healthyOnly: true });
+ if(holes > 0){
+ const faPool = waiverFillPool(week, curWeek);
+ const usedFa = new Set();
+ const usedIds = new Set(assignments.map(a => a.id));
+ // Which pure slots are short?
+ const have = { QB:0, RB:0, WR:0, TE:0, DST:0, K:0, SF:0, FLEX:0 };
+ assignments.forEach(a => { if(have[a.slotKind] != null) have[a.slotKind]++; });
+ function takeFa(posList, slotKind){
+ const fa = faPool.find(f => posList.includes(f.position) && !usedFa.has(f.id));
+ if(!fa) return null;
+ usedFa.add(fa.id);
+ const row = {
+ id: fa.id, name: fa.fullName, position: fa.position,
+ value: fa.weekPts, slotKind, isWaiverFill: true
+ };
+ assignments.push(row);
+ waiverFills.push(row);
+ return row;
+ }
+ const needQB = Math.max(0, (counts.QB || 0) - (have.QB || 0));
+ for(let i = 0; i < needQB; i++) takeFa(['QB'], 'QB');
+ const needRB = Math.max(0, (counts.RB || 0) - (have.RB || 0));
+ for(let i = 0; i < needRB; i++) takeFa(['RB'], 'RB');
+ const needWR = Math.max(0, (counts.WR || 0) - (have.WR || 0));
+ for(let i = 0; i < needWR; i++) takeFa(['WR'], 'WR');
+ const needTE = Math.max(0, (counts.TE || 0) - (have.TE || 0));
+ for(let i = 0; i < needTE; i++) takeFa(['TE'], 'TE');
+ const needDST = Math.max(0, (counts.DST || 0) - (have.DST || 0));
+ for(let i = 0; i < needDST; i++) takeFa(['DST'], 'DST');
+ const needK = Math.max(0, (counts.K || 0) - (have.K || 0));
+ for(let i = 0; i < needK; i++) takeFa(['K'], 'K');
+ // recount for SF/FLEX
+ const have2 = { QB:0, RB:0, WR:0, TE:0, SF:0, FLEX:0 };
+ assignments.forEach(a => { if(have2[a.slotKind] != null) have2[a.slotKind]++; });
+ const needSF = Math.max(0, (counts.SF || 0) - (have2.SF || 0));
+ for(let i = 0; i < needSF; i++) takeFa(sfElig, 'SF');
+ const needFX = Math.max(0, (counts.FLEX || 0) - (have2.FLEX || 0));
+ for(let i = 0; i < needFX; i++) takeFa(flexElig, 'FLEX');
+ }
+
+ let pts = assignments.reduce((s, a) => s + (a.value || 0), 0);
+
+ // Blend with host team projection on current week
+ if(week === curWeek && matchupCache && matchupCache.length){
+ const m = matchupCache.find(x =>
+ (x.teamA && (x.teamA.id === team.id || String(x.teamA.id) === String(team.id))) ||
+ (x.teamB && (x.teamB.id === team.id || String(x.teamB.id) === String(team.id)))
+ );
+ if(m){
+ const isA = m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id));
+ const live = isA ? m.pointsA : m.pointsB;
+ const proj = isA ? m.projA : m.projB;
+ if(typeof proj === 'number' && proj > 0 && !waiverFills.length){
+ pts = pts * 0.4 + proj * 0.6;
+ }
+ if(typeof live === 'number' && live > 0) pts = Math.max(pts, live);
+ }
+ }
+ const hasProj = assignments.some(a => {
+ if(a.isWaiverFill) return false;
+ const row = getPlayerProjection(a.id);
+ return row && row.proj > 0;
+ });
+ let source = hasProj ? 'opt-proj' : 'opt-est';
+ if(waiverFills.length) source += '+waivers';
  return {
- pts: Math.round(sum * 10) / 10,
- source: usedProj >= Math.ceil(assignments.length * 0.5) ? 'proj-lineup' : 'value-lineup'
+ pts: Math.round(pts * 10) / 10,
+ source,
+ assignments,
+ waiverFills
  };
  }
 
+ function weekWinProb(myPts, oppPts, status){
+ if(myPts == null || oppPts == null) return null;
+ if(status === 'final'){
+ if(Math.abs(myPts - oppPts) < 0.05) return 0.5;
+ return myPts > oppPts ? 1 : 0;
+ }
+ // Dedicated SOS scale — matchupWinPct treats full proj as "remaining" so a 15-pt
+ // gap only becomes ~55%. Here team weekly noise is ~15-18 pts, so two independent
+ // lineups differ with σ ≈ 22. A 10-pt gap → ~67%, 20-pt → ~81%, 30-pt → ~89%.
+ const gap = myPts - oppPts;
+ const sigma = 16.5;
+ const z = gap / sigma;
+ const p = 1 / (1 + Math.exp(-1.7 * z));
+ return Math.max(0.03, Math.min(0.97, p));
+ }
+
+ // Full SOS path: each regular-season week is TWO results — H2H opponent + league median
+ // (14 weeks × 2 = 28 games). Expected wins are the sum of both win probabilities.
  function buildTeamSosPath(team){
  if(!team) return null;
  const graph = scheduleCache || {};
  const node = graph[team.id] || graph[String(team.id)] || { weeks: {}, past: [], future: [] };
  const curWeek = graph._currentWeek || projectionCacheWeek || 1;
  const playoffStart = (state.playoffSettings && state.playoffSettings.playoffWeekStart) || 15;
- const maxWeek = Math.max(playoffStart - 1, curWeek, 14);
+ const maxWeek = Math.min(17, Math.max(playoffStart - 1, 14));
 
- // Actual record so far from finalized weeks
- let w = 0, l = 0, t = 0;
+ // Cache estimates so median and path share the same numbers
+ const estCache = {}; // key teamId|week
+ function est(t, week){
+ if(!t) return { pts: null, source: 'none', waiverFills: [] };
+ const key = String(t.id) + '|' + week;
+ if(estCache[key]) return estCache[key];
+ const e = estimateTeamWeekScore(t, week);
+ estCache[key] = e;
+ return e;
+ }
+
+ const teamWeekPts = {};
+ for(let week = 1; week <= maxWeek; week++){
+ teamWeekPts[week] = [];
+ (state.teams || []).forEach(t => {
+ const e = est(t, week);
+ if(e.pts != null) teamWeekPts[week].push({ id: t.id, pts: e.pts });
+ });
+ }
+ function medianPts(week){
+ const arr = (teamWeekPts[week] || []).map(x => x.pts).filter(x => x != null).sort((a,b) => a - b);
+ if(!arr.length) return null;
+ const mid = Math.floor(arr.length / 2);
+ return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+ }
+
+ let expWins = 0;
+ let expLosses = 0;
+ let hardW = 0, hardL = 0, hardT = 0; // H2H only hard results
+ let medHardW = 0, medHardL = 0, medHardT = 0;
  const rows = [];
- const weeks = Object.keys(node.weeks || {}).map(Number).sort((a,b) => a - b);
- // Also ensure 1..maxWeek coverage if weeks missing but weeklyScores exist
+
  for(let week = 1; week <= maxWeek; week++){
  const match = node.weeks[week];
- if(!match && week > curWeek + 8) continue; // don't invent far bye-free if no schedule
- if(!match){
- // no opponent listed — skip or bye
- if(week <= curWeek){
- const my = (team.weeklyScores || [])[week - 1];
- if(typeof my === 'number' && my > 0){
- rows.push({
- week, opp: null, oppName: 'Bye / unknown',
- myPts: my, oppPts: null, result: '—',
- record: null, source: 'final', status: 'final'
- });
- }
- }
- continue;
- }
- const opp = state.teams.find(x => x.id === match.oppId || String(x.id) === String(match.oppId));
- const myEst = estimateTeamWeekScore(team, week);
- const oppEst = opp ? estimateTeamWeekScore(opp, week) : { pts: null, source: 'none' };
- let myPts = myEst.pts, oppPts = oppEst.pts;
+ const myEst = est(team, week);
+ let myPts = myEst.pts;
+ let status = (match && match.status) || (week < curWeek ? 'final' : (week === curWeek ? 'live' : 'future'));
  let source = myEst.source;
- let status = match.status || 'future';
- if(match.status === 'final' && typeof match.myScore === 'number'){
- myPts = match.myScore;
- oppPts = match.oppScore;
- source = 'final';
- status = 'final';
+ let opp = null, oppPts = null, oppName = 'BYE';
+
+ if(match){
+ opp = state.teams.find(x => x.id === match.oppId || String(x.id) === String(match.oppId));
+ oppName = opp ? opp.name : 'Unknown';
+ const oppEst = opp ? est(opp, week) : { pts: null };
+ oppPts = oppEst.pts;
+ if(status === 'final' || week < curWeek){
+ if(typeof match.myScore === 'number'){ myPts = match.myScore; source = 'final'; status = 'final'; }
+ if(typeof match.oppScore === 'number') oppPts = match.oppScore;
+ const ws = (team.weeklyScores || [])[week - 1];
+ if((myPts == null || myPts === 0) && typeof ws === 'number') myPts = ws;
  }
- let result = '—';
- let isProj = status !== 'final';
- if(myPts != null && oppPts != null){
- if(Math.abs(myPts - oppPts) < 0.05) result = 'T';
- else if(myPts > oppPts) result = 'W';
- else result = 'L';
- }
- if(status === 'final' && result !== '—'){
- if(result === 'W') w++;
- else if(result === 'L') l++;
- else t++;
- }
- const recAfter = { w, l, t };
- // For projected weeks, show what record would be if this result holds
- let projW = w, projL = l, projT = t;
- if(isProj && result === 'W') projW++;
- else if(isProj && result === 'L') projL++;
- else if(isProj && result === 'T') projT++;
- rows.push({
- week,
- opp,
- oppName: opp ? opp.name : 'Unknown',
- myPts, oppPts, result,
- status, source, isProj,
- recordActual: `${w}-${l}` + (t ? `-${t}` : ''),
- recordAfter: isProj
- ? (`${projW}-${projL}` + (projT ? `-${projT}` : '') + ' (proj)')
- : (`${w}-${l}` + (t ? `-${t}` : ''))
- });
- if(isProj){
- // Advance projected record for subsequent weeks
- w = projW; l = projL; t = projT;
- }
+ } else if(week < curWeek){
+ const ws = (team.weeklyScores || [])[week - 1];
+ if(typeof ws === 'number'){ myPts = ws; source = 'final'; status = 'final'; }
  }
 
- // SOS: mean of opponent projected/actual scores across path
- const oppScores = rows.map(r => r.oppPts).filter(x => x != null && x > 0);
+ const med = medianPts(week);
+ const isProj = status !== 'final';
+
+ // Game 1: H2H
+ let h2hProb = null;
+ if(opp && myPts != null && oppPts != null){
+ h2hProb = weekWinProb(myPts, oppPts, status);
+ } else if(!match){
+ h2hProb = null; // bye — no H2H game
+ }
+
+ // Game 2: vs league median (always, when median exists)
+ let medProb = null;
+ if(myPts != null && med != null){
+ medProb = weekWinProb(myPts, med, status);
+ }
+
+ // Accumulate expected wins from both games (stacks into full projected record)
+ let weekExp = 0;
+ let weekGames = 0;
+ let h2hResult = '—';
+ let medResult = '—';
+
+ if(h2hProb != null){
+ weekGames += 1;
+ if(status === 'final'){
+ if(h2hProb >= 0.99){ hardW++; h2hResult = 'W'; weekExp += 1; }
+ else if(h2hProb <= 0.01){ hardL++; h2hResult = 'L'; }
+ else { hardT++; h2hResult = 'T'; weekExp += 0.5; }
+ } else {
+ weekExp += h2hProb;
+ h2hResult = (h2hProb * 100).toFixed(0) + '%';
+ }
+ }
+ if(medProb != null){
+ weekGames += 1;
+ if(status === 'final'){
+ if(medProb >= 0.99){ medHardW++; medResult = 'W'; weekExp += 1; }
+ else if(medProb <= 0.01){ medHardL++; medResult = 'L'; }
+ else { medHardT++; medResult = 'T'; weekExp += 0.5; }
+ } else {
+ weekExp += medProb;
+ medResult = (medProb * 100).toFixed(0) + '%';
+ }
+ }
+ expWins += weekExp;
+ expLosses += Math.max(0, weekGames - weekExp);
+
+ // Decimal record after this week — last row is full projected W-L
+ const recStr = expWins.toFixed(1) + '-' + expLosses.toFixed(1)
+ + ' (' + (expWins + expLosses).toFixed(0) + 'g)';
+
+ const waiversNote = (myEst.waiverFills && myEst.waiverFills.length)
+ ? myEst.waiverFills.map(f => f.name + ' (' + f.slotKind + ')').join(', ')
+ : '';
+
+ rows.push({
+ week, opp, oppName,
+ myPts, oppPts, median: med,
+ winProb: h2hProb, medianProb: medProb,
+ h2hResult, medResult,
+ result: h2hResult,
+ status, source, isProj,
+ recordAfter: recStr,
+ expWins, weekExp,
+ waiverFills: myEst.waiverFills || [],
+ waiversNote
+ });
+ }
+
+ const oppScores = rows.map(r => r.oppPts).filter(x => x != null);
  const sos = oppScores.length ? oppScores.reduce((a,b)=>a+b,0) / oppScores.length : null;
  return {
- rows,
- sos,
- finalRecord: rows.length ? rows[rows.length - 1].recordAfter : '0-0',
+ rows, sos,
+ finalRecord: expWins.toFixed(1) + '-' + expLosses.toFixed(1) + ' (H2H + median)',
+ expWins, expLosses, hardW, hardL, hardT, medHardW, medHardL, medHardT,
  currentWeek: curWeek
  };
  }
 
- function detectLeagueMedian(){
- // Sleeper: settings.league_average_match or similar; ESPN: scheduleSettings sometimes
+function detectLeagueMedian(){
  try{
  if(state.platform === 'sleeper' && state.league && state.league.settings){
- // common keys: league_average_match, daily_waivers_days unused
  if(state.league.settings.league_average_match === 1) return true;
  if(state.league.settings.league_median_match === 1) return true;
  }
@@ -5351,16 +5520,17 @@
  async function fetchCurrentMatchups(){
  const out = [];
  try{
- if(state.platform === 'sleeper'){
+ if(state.platform === 'sleeper' && state.leagueId){
  let week = 1;
  try{
  const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
  const nfl = await stateRes.json();
  week = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){}
+ if(scheduleCache) scheduleCache._currentWeek = week;
  const res = await robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
  const data = await res.json();
- if(!Array.isArray(data)) return out;
+ if(!Array.isArray(data)) { matchupCache = out; return out; }
  const byMatch = {};
  data.forEach(m => {
  if(m.matchup_id == null) return;
@@ -5369,38 +5539,29 @@
  });
  Object.keys(byMatch).forEach(mid => {
  const pair = byMatch[mid];
- if(pair.length < 2){
- // bye
- const a = pair[0];
- const teamA = teamByRosterId(a.roster_id);
- out.push({
- week,
- teamA, teamB: null,
- pointsA: typeof a.points === 'number' ? a.points : 0,
- pointsB: null,
- projA: null, projB: null,
- startersA: a.starters || [],
- startersB: [],
- playersPointsA: a.players_points || {},
- playersPointsB: {}
- });
- return;
+ if(pair.length < 1) return;
+ const a = teamByRosterId(pair[0].roster_id);
+ const b = pair[1] ? teamByRosterId(pair[1].roster_id) : null;
+ const pointsA = typeof pair[0].points === 'number' ? pair[0].points : 0;
+ const pointsB = pair[1] && typeof pair[1].points === 'number' ? pair[1].points : null;
+ // Sleeper starters projections when present
+ let projA = null, projB = null;
+ try{
+ if(pair[0].starters_points && pair[0].starters){
+ /* live points only */
  }
- const a = pair[0], b = pair[1];
+ }catch(e){}
  out.push({
  week,
- teamA: teamByRosterId(a.roster_id),
- teamB: teamByRosterId(b.roster_id),
- pointsA: typeof a.points === 'number' ? a.points : 0,
- pointsB: typeof b.points === 'number' ? b.points : 0,
- projA: null, projB: null,
- startersA: a.starters || [],
- startersB: b.starters || [],
- playersPointsA: a.players_points || {},
- playersPointsB: b.players_points || {}
+ teamA: a, teamB: b,
+ pointsA, pointsB,
+ projA: pointsA, // sleeper often only has live until end
+ projB: pointsB,
+ playersPointsA: pair[0].players_points || {},
+ playersPointsB: pair[1] ? (pair[1].players_points || {}) : {}
  });
  });
- } else if(state.platform === 'espn' && state.year){
+ } else if(state.platform === 'espn' && state.leagueId && state.year){
  const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore&view=mScoreboard&view=mRoster`;
  const urls = [
  `https://lm-api-reads.fantasy.espn.com${path}`,
@@ -5408,57 +5569,68 @@
  ];
  const res = await robustFetchAny(urls, { timeoutMs: 15000 });
  const data = await res.json();
- const period = data.scoringPeriodId || data.status && data.status.currentMatchupPeriod;
+ const week = data.scoringPeriodId || (data.status && data.status.currentMatchupPeriod) || 1;
+ if(scheduleCache) scheduleCache._currentWeek = week;
  (data.schedule || []).forEach(game => {
  const mp = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
- if(period != null && mp != null && mp !== period) return;
+ if(mp != null && mp !== week) return;
  const home = game.home, away = game.away;
- if(!home || !away) return;
+ if(!home) return;
  const teamA = teamByRosterId(home.teamId);
- const teamB = teamByRosterId(away.teamId);
- const pointsA = home.totalPointsLive != null ? home.totalPointsLive : (home.totalPoints || 0);
- const pointsB = away.totalPointsLive != null ? away.totalPointsLive : (away.totalPoints || 0);
- const projA = home.totalProjectedPointsLive != null ? home.totalProjectedPointsLive : (home.totalProjectedPoints || null);
- const projB = away.totalProjectedPointsLive != null ? away.totalProjectedPointsLive : (away.totalProjectedPoints || null);
+ const teamB = away ? teamByRosterId(away.teamId) : null;
+ let pointsA = typeof home.totalPoints === 'number' ? home.totalPoints : 0;
+ let pointsB = away && typeof away.totalPoints === 'number' ? away.totalPoints : null;
+ let projA = null, projB = null;
+ try{
+ if(home.rosterForCurrentScoringPeriod && typeof home.rosterForCurrentScoringPeriod.appliedStatTotal === 'number')
+ pointsA = home.rosterForCurrentScoringPeriod.appliedStatTotal;
+ if(away && away.rosterForCurrentScoringPeriod && typeof away.rosterForCurrentScoringPeriod.appliedStatTotal === 'number')
+ pointsB = away.rosterForCurrentScoringPeriod.appliedStatTotal;
+ }catch(e){}
+ // projection from entries
+ try{
+ const sumProj = (side) => {
+ if(!side || !side.rosterForCurrentScoringPeriod || !side.rosterForCurrentScoringPeriod.entries) return null;
+ let s = 0;
+ side.rosterForCurrentScoringPeriod.entries.forEach(en => {
+ if(en.lineupSlotId === 20 || en.lineupSlotId === 21 || en.lineupSlotId === 22) return;
+ const pool = en.playerPoolEntry;
+ const stats = pool && pool.player && pool.player.stats;
+ if(!stats) return;
+ const proj = stats.find(st => st.scoringPeriodId === week && st.statSourceId === 1);
+ if(proj && proj.appliedTotal != null) s += proj.appliedTotal;
+ else if(pool.appliedStatTotal) s += 0;
+ });
+ return s > 0 ? s : null;
+ };
+ projA = sumProj(home);
+ projB = away ? sumProj(away) : null;
+ }catch(e){}
+ const playersPointsA = {}, playersPointsB = {};
+ try{
+ (home.rosterForCurrentScoringPeriod && home.rosterForCurrentScoringPeriod.entries || []).forEach(en => {
+ const pid = en.playerId || (en.playerPoolEntry && en.playerPoolEntry.id);
+ if(pid != null && en.playerPoolEntry && typeof en.playerPoolEntry.appliedStatTotal === 'number')
+ playersPointsA[pid] = en.playerPoolEntry.appliedStatTotal;
+ });
+ }catch(e){}
  out.push({
- week: mp || period,
- teamA, teamB,
- pointsA, pointsB,
+ week, teamA, teamB,
+ pointsA: typeof home.totalPoints === 'number' ? home.totalPoints : 0,
+ pointsB: away && typeof away.totalPoints === 'number' ? away.totalPoints : null,
  projA, projB,
- startersA: [], startersB: []
+ playersPointsA, playersPointsB
  });
  });
  }
- }catch(e){}
+ }catch(e){
+ console.warn('fetchCurrentMatchups', e);
+ }
  matchupCache = out;
  return out;
  }
 
- function starterPosSummary(team, starterIds){
- const counts = { QB:0, RB:0, WR:0, TE:0 };
- if(!team || !team.roster) return counts;
- const idSet = new Set((starterIds || []).map(String).filter(Boolean));
- // If no starter list, approximate with optimal lineup
- if(!idSet.size){
- try{
- const countsSlots = getStarterCounts();
- const { starterIds: ids } = optimalStarterLineup(team, countsSlots, countsSlots.flexEligible, countsSlots.sfEligible);
- ids.forEach(id => idSet.add(String(id)));
- }catch(e){}
- }
- team.roster.forEach(p => {
- if(!idSet.has(String(p.id))) return;
- if(counts.hasOwnProperty(p.position)) counts[p.position] += (p.value || 0);
- });
- return counts;
- }
-
- /**
- * Win probability from live score + remaining projected points.
- * Remaining = max(0, proj - live). More remaining → more variance → win% pulled toward 50%.
- * Model: final ~ N(live + remaining, sigma^2) with sigma growing with remaining points.
- */
- function matchupWinPct(liveA, liveB, projA, projB){
+function matchupWinPct(liveA, liveB, projA, projB){
  // Odds from projected finals. Confidence rises as remaining points shrink.
  const muA = projA != null ? projA : (liveA || 0);
  const muB = projB != null ? projB : (liveB || 0);
@@ -5627,7 +5799,7 @@
  async function refreshMatchups(){
  const list = el('matchups-list');
  if(list) list.innerHTML = '<div class="hist-empty">Loading matchups…</div>';
- await fetchCurrentMatchups();
+ try{ await fetchCurrentMatchups(); }catch(e){}
  renderMatchups();
  }
 
@@ -6167,7 +6339,7 @@
  if(!tbody) return;
 
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
  return;
  }
 
@@ -6190,14 +6362,14 @@
 
  const team = state.teams.find(t => String(t.id) === String(sel && sel.value));
  if(!team){
- tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Pick a team.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">Pick a team.</td></tr>';
  return;
  }
 
  function paint(){
  const path = buildTeamSosPath(team);
  if(!path || !path.rows.length){
- tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">No schedule weeks found yet. Wait for schedule load or open Matchups once.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">No schedule weeks found yet. Wait for schedule load or open Matchups once.</td></tr>';
  if(summary) summary.textContent = '';
  return;
  }
@@ -6222,34 +6394,119 @@
  <span>${path.rows.filter(r=>r.status==='final').length} final · ${path.rows.filter(r=>r.isProj).length} projected</span>`;
  }
  if(intro){
- intro.textContent = 'Final weeks use real scores. Current week uses live/proj when available. Future weeks build each team’s optimal lineup excluding bye players, using player projections when loaded (else value-based estimate). Record after each week rolls forward; final weeks are locked to the real W-L.';
+ intro.textContent = 'Each week is two games: H2H + league median. Odds use a tighter weekly model (~10-pt gap ≈ 67% win, not coin-flip). Week exp is 0–2 and stacks into the decimal record on the right; the last row is your full projected W-L. Empty slots use best FA at that position.';
  }
  if(note){
- note.textContent = 'Source: final = official score · live / live-proj = current matchup · proj-lineup = weekly projections · value-lineup = FantasyCalc share of team average. Empty slots and byes lower the projection.';
+ note.textContent = 'Source: final = official · opt-proj = lineup from projections · opt-est = estimate · +waivers = empty slots filled from FA pool. Rank chart #1 = easiest SOS.';
  }
 
  tbody.innerHTML = '';
  path.rows.forEach(r => {
  const tr = document.createElement('tr');
- if(r.status === 'final') tr.style.opacity = '1';
- else tr.style.background = 'var(--surface-2)';
- const resColor = r.result === 'W' ? '#3d8f5f' : r.result === 'L' ? '#c45c52' : 'var(--text-muted)';
+ if(r.status !== 'final') tr.style.background = 'var(--surface-2)';
+ const wp = r.winProb;
+ const mp = r.medianProb;
+ const winStr = r.oppName === 'BYE' ? '—' : (r.h2hResult || (wp != null ? (wp * 100).toFixed(0) + '%' : '—'));
+ const medStr = r.medResult || (mp != null ? (mp * 100).toFixed(0) + '%' : '—');
+ const winColor = wp == null ? 'var(--text-muted)' : wp >= 0.55 ? '#3d8f5f' : wp <= 0.45 ? '#c45c52' : 'var(--text)';
+ const medColor = mp == null ? 'var(--text-muted)' : mp >= 0.55 ? '#3d8f5f' : mp <= 0.45 ? '#c45c52' : 'var(--text)';
  const myStr = r.myPts != null ? fmtPts(r.myPts) : '—';
  const oppStr = r.oppPts != null ? fmtPts(r.oppPts) : '—';
+ const medPtsStr = r.median != null ? fmtPts(r.median) : '—';
+ const weekExp = r.weekExp != null ? r.weekExp.toFixed(2) : '—';
+ const src = (r.source || '') + (r.waiversNote ? ' · FA: ' + r.waiversNote : '');
  tr.innerHTML = `
  <td><strong>${r.week}</strong>${r.week === path.currentWeek ? ' · now' : ''}</td>
  <td class="team-name-cell">${escapeHtml(r.oppName)}</td>
  <td class="val-cell">${myStr}</td>
  <td class="val-cell">${oppStr}</td>
- <td style="color:${resColor};font-weight:700;">${r.result}</td>
- <td class="val-cell">${escapeHtml(r.recordAfter)}</td>
- <td style="font-size:11.5px;color:var(--text-muted);">${escapeHtml(r.source)}</td>`;
+ <td class="val-cell">${medPtsStr}</td>
+ <td style="color:${winColor};font-weight:700;">${winStr}</td>
+ <td style="color:${medColor};font-weight:600;">${medStr}</td>
+ <td class="val-cell">${weekExp}</td>
+ <td class="val-cell">${escapeHtml(r.recordAfter || '')}</td>
+ <td style="font-size:11.5px;color:var(--text-muted);">${escapeHtml(src)}</td>`;
  tbody.appendChild(tr);
  });
+
+ // League SOS ranking: #1 easiest → hardest last
+ const rankBody = el('sos-rank-body');
+ const rankChart = el('sos-rank-chart');
+ const rankRows = state.teams.map(t => {
+ const p = buildTeamSosPath(t);
+ if(!p) return null;
+ // Average median faced
+ const meds = (p.rows || []).map(r => r.median).filter(x => x != null);
+ const avgMed = meds.length ? meds.reduce((a,b)=>a+b,0)/meds.length : null;
+ return {
+ team: t,
+ sos: p.sos,
+ expWins: p.expWins,
+ expLosses: p.expLosses,
+ avgMed,
+ hard: (p.hardW||0) + (p.medHardW||0),
+ hardL: (p.hardL||0) + (p.medHardL||0)
+ };
+ }).filter(r => r && r.sos != null);
+ rankRows.sort((a,b) => a.sos - b.sos);
+ const sosVals = rankRows.map(r => r.sos).sort((a,b) => a - b);
+ let medSos = null;
+ if(sosVals.length){
+ const mid = Math.floor(sosVals.length / 2);
+ medSos = sosVals.length % 2 ? sosVals[mid] : (sosVals[mid-1] + sosVals[mid]) / 2;
+ }
+ if(rankBody){
+ rankBody.innerHTML = '';
+ rankRows.forEach((r, i) => {
+ const tr = document.createElement('tr');
+ const isMine = state.myTeamId != null && (r.team.id === state.myTeamId || String(r.team.id) === String(state.myTeamId));
+ if(isMine) tr.style.background = 'var(--accent-muted)';
+ if(sel && String(r.team.id) === String(sel.value)) tr.style.outline = '1px solid var(--accent)';
+ const pct = medSos > 0 ? ((r.sos / medSos) - 1) * 100 : 0;
+ const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+ const pctCls = pct > 2 ? 'down' : pct < -2 ? 'up' : '';
+ tr.innerHTML = `
+ <td><span class="rank-num">${i+1}</span></td>
+ <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
+ <td class="val-cell">${r.sos.toFixed(1)}</td>
+ <td class="val-cell">${r.avgMed != null ? r.avgMed.toFixed(1) : '—'}</td>
+ <td class="val-cell"><span class="pct-cell ${pctCls}">${pctStr}</span></td>
+ <td class="val-cell">${r.expWins != null ? (r.expWins.toFixed(1) + '-' + (r.expLosses != null ? r.expLosses.toFixed(1) : '?')) : '—'}</td>`;
+ tr.style.cursor = 'pointer';
+ tr.addEventListener('click', () => {
+ if(sel){ sel.value = r.team.id; renderSos(); }
+ });
+ rankBody.appendChild(tr);
+ });
+ }
+ if(rankChart && rankRows.length){
+ const maxS = Math.max(...rankRows.map(r => r.sos));
+ const minS = Math.min(...rankRows.map(r => r.sos));
+ const span = Math.max(1, maxS - minS);
+ rankChart.innerHTML = rankRows.map((r, i) => {
+ const pct = medSos > 0 ? ((r.sos / medSos) - 1) * 100 : 0;
+ const barPct = 12 + ((r.sos - minS) / span) * 88;
+ const hard = pct > 0;
+ const color = hard ? 'rgba(196,92,82,0.75)' : 'rgba(61,143,95,0.75)';
+ const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+ return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12px;">
+ <div style="width:28px;text-align:right;color:var(--text-muted);flex-shrink:0;">#${i+1}</div>
+ <div style="flex:1;min-width:0;">
+ <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px;">
+ <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.team.name)}</span>
+ <span style="flex-shrink:0;color:var(--text-muted);">${r.sos.toFixed(1)} · <span style="color:${hard ? '#c45c52' : '#3d8f5f'}">${pctStr}</span>${r.expWins != null ? ' · ' + r.expWins.toFixed(1) + '-' + (r.expLosses != null ? r.expLosses.toFixed(1) : '') : ''}</span>
+ </div>
+ <div style="height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;">
+ <div style="height:100%;width:${barPct.toFixed(1)}%;background:${color};border-radius:4px;"></div>
+ </div>
+ </div>
+ </div>`;
+ }).join('');
+ }
  }
 
  if(!scheduleCache){
- tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Loading schedule…</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">Loading schedule…</td></tr>';
  loadScheduleGraph().then(() => {
  if(!projectionCache) return loadWeeklyProjections().catch(()=>null);
  }).then(() => paint()).catch(() => paint());
@@ -6892,7 +7149,7 @@
  const intro = el('roster-intro');
  if(!tbody) return;
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
  return;
  }
  const counts = getStarterCounts();
@@ -9919,15 +10176,23 @@
  function optimalStarterLineup(team, counts, flexElig, sfElig, opts){
  // Default: full strength (IR players count as normal assets/starters).
  // Pass { healthyOnly: true } for this-week Start/Sit, bye holes, weekly warnings.
+ // Pass { scoreFn: (player) => number } to rank by weekly points instead of FC value.
  const healthyOnly = !!(opts && opts.healthyOnly);
+ const scoreFn = opts && typeof opts.scoreFn === 'function' ? opts.scoreFn : null;
  const players = (team.roster || [])
  .filter(p => !healthyOnly || !p.isIR)
- .map(p => ({
+ .map(p => {
+ const base = p.value || 0;
+ const sc = scoreFn ? (Number(scoreFn(p)) || 0) : base;
+ return {
  id: p.id,
  name: p.fullName,
  position: p.position,
- value: p.value || 0
- }))
+ value: sc, // used for ranking + assignment totals when scoreFn set
+ marketValue: base,
+ raw: p
+ };
+ })
  .sort((a,b) => b.value - a.value);
 
  const used = new Set();
