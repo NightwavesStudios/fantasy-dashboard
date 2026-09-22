@@ -2663,6 +2663,10 @@
  </button>
 
  <div class="nav-section">More</div>
+ <button class="nav-item" data-panel="panel-rosters">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+ Rosters
+ </button>
  <button class="nav-item" data-panel="panel-rate">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
  Grade
@@ -3353,7 +3357,7 @@
  <div class="drawer-actions">
  <button type="button" class="btn btn-primary" id="btn-apply-settings">Apply &amp; recalculate</button>
  <button type="button" class="btn btn-ghost" id="btn-change-league">Switch league</button>
- <button type="button" class="btn btn-ghost btn-sm" id="btn-copy-debug">Copy debug data</button>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-copy-debug">Copy full analysis (AI paste)</button>
  </div>
 </div>
 
@@ -4244,23 +4248,33 @@
  function fcRanksForPlayer(p){
   // Overall + position rank among FantasyCalc values (1 = best)
   const name = normalizeName(p.fullName || p.name || '');
-  const pos = (p.position || '').toUpperCase();
+  let pos = normalizeFcPosition(p.position || '') || String(p.position || '').toUpperCase();
+  if(pos === 'DEF') pos = 'DST';
   const pool = Array.isArray(state.fcValues) ? state.fcValues.slice() : [];
-  if(!pool.length) return { overall: null, posRank: null, poolSize: 0, posSize: 0 };
+  if(!pool.length || !name) return { overall: null, posRank: null, poolSize: 0, posSize: 0 };
   const scored = pool
-   .filter(e => e && e.player && typeof e.value === 'number')
-   .map(e => ({
-    name: normalizeName(e.player.name),
-    pos: normalizeFcPosition ? normalizeFcPosition(e.player) : (e.player.position || ''),
-    value: e.value
-   }))
+   .filter(e => e && e.player && e.player.name && typeof e.value === 'number' && e.value > 0)
+   .map(e => {
+    const rawPos = e.player.position || e.position || e.player.pos || '';
+    let pp = normalizeFcPosition(rawPos) || String(rawPos).toUpperCase();
+    if(pp === 'DEF') pp = 'DST';
+    return {
+     name: normalizeName(e.player.name),
+     pos: pp,
+     value: e.value
+    };
+   })
    .sort((a,b) => b.value - a.value);
   let overall = null;
-  scored.forEach((e, i) => { if(e.name === name) overall = i + 1; });
-  const posList = scored.filter(e => (e.pos || '').toUpperCase() === pos || (e.pos || '') === pos);
+  for(let i = 0; i < scored.length; i++){
+   if(scored[i].name === name){ overall = i + 1; break; }
+  }
+  const posList = scored.filter(e => e.pos && pos && e.pos === pos);
   let posRank = null;
-  posList.forEach((e, i) => { if(e.name === name) posRank = i + 1; });
-  return { overall, posRank, poolSize: scored.length, posSize: posList.length };
+  for(let i = 0; i < posList.length; i++){
+   if(posList[i].name === name){ posRank = i + 1; break; }
+  }
+  return { overall, posRank, poolSize: scored.length, posSize: posList.length, pos };
  }
 
  function playerWeekOpponent(p, week){
@@ -6233,8 +6247,60 @@ function countPosBodies(roster){
  return roster;
  }
 
- const rosterA = applyTradeToRoster(teamA, sendA, sendB, teamB);
- const rosterB = applyTradeToRoster(teamB, sendB, sendA, teamA);
+ const rosterA0 = applyTradeToRoster(teamA, sendA, sendB, teamB);
+ const rosterB0 = applyTradeToRoster(teamB, sendB, sendA, teamA);
+
+ // Uneven trades: side that nets fewer players can backfill from waivers (best available)
+ function waiverFillRoster(roster, team, netLost){
+  if(!(netLost > 0)) return roster;
+  let avail = [];
+  try{
+   if(typeof buildAvailableWaivers === 'function'){
+    const built = buildAvailableWaivers();
+    avail = (built && built.available) || [];
+   }
+  }catch(e){}
+  if(!avail.length) return roster;
+  const onRoster = new Set(roster.map(p => normalizeName(p.fullName || p.name)));
+  const counts = getStarterCounts();
+  let out = roster.slice();
+  const sorted = avail
+   .filter(fa => fa && fa.name && !onRoster.has(normalizeName(fa.name)))
+   .slice()
+   .sort((a,b) => (b.value || 0) - (a.value || 0));
+  let added = 0;
+  for(const fa of sorted){
+   if(added >= netLost) break;
+   // Prefer fills that reduce empty starter slots when holes exist
+   const trial = out.concat([{
+    id: 'WV-' + normalizeName(fa.name),
+    fullName: fa.name,
+    name: fa.name,
+    position: fa.position,
+    value: fa.value || 0,
+    matched: true,
+    isIR: false,
+    isWaiverFill: true
+   }]);
+   let holesBefore = 0, holesAfter = 0;
+   try{
+    holesBefore = unfilledSlots(out, counts, { healthyOnly: false });
+    holesAfter = unfilledSlots(trial, counts, { healthyOnly: false });
+   }catch(e){}
+   // Always allow depth backfill for net-loss even if no pure hole
+   if(holesAfter <= holesBefore || holesBefore === 0){
+    out = trial;
+    onRoster.add(normalizeName(fa.name));
+    added++;
+   }
+  }
+  return out;
+ }
+
+ const netLostA = sendA.length - sendB.length; // positive if A sent more than received
+ const netLostB = sendB.length - sendA.length;
+ const rosterA = waiverFillRoster(rosterA0, teamA, Math.max(0, netLostA));
+ const rosterB = waiverFillRoster(rosterB0, teamB, Math.max(0, netLostB));
 
  function metricsFor(team, roster){
  const before = rosterMetrics(team, team.roster, ctx);
@@ -7226,21 +7292,13 @@ function countPosBodies(roster){
  if(p.espnId != null) ids.add(String(p.espnId));
  const seen = new Set(); // week key
 
- function playerScoredWeeks(p){
-  // Include real 0-point games. Skip bye-week zeros only.
-  const raw = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
-  let bye = null;
-  try{ bye = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null; }catch(e){}
-  return raw.filter(x => {
-   if(!x || typeof x.pts !== 'number' || !isFinite(x.pts) || x.pts < 0) return false;
-   if(x.pts === 0 && bye != null && Number(x.week) === Number(bye)) return false;
-   return true;
-  });
- }
-
- 
  function push(week, pts){
   if(typeof pts !== 'number' || !(pts >= 0) || !isFinite(pts)) return;
+  // Only completed weeks count — never treat the in-progress week as a final 0
+  const curW = (typeof scheduleCache !== 'undefined' && scheduleCache && scheduleCache._currentWeek)
+   || (typeof projectionCacheWeek !== 'undefined' ? projectionCacheWeek : null)
+   || 0;
+  if(curW && Number(week) >= Number(curW)) return;
   const key = String(week) + '|' + pts.toFixed(2);
   if(seen.has(key)) return;
   seen.add(key);
@@ -7296,6 +7354,22 @@ function countPosBodies(roster){
 
  return scores;
  }
+
+ function playerScoredWeeks(p){
+  // Include real 0-point finished games. Skip bye zeros and the current (incomplete) week.
+  const raw = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
+  const curW = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0;
+  let bye = null;
+  try{ bye = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null; }catch(e){}
+  return raw.filter(x => {
+   if(!x || typeof x.pts !== 'number' || !isFinite(x.pts) || x.pts < 0) return false;
+   if(curW && Number(x.week) >= Number(curW)) return false;
+   if(x.pts === 0 && bye != null && Number(x.week) === Number(bye)) return false;
+   return true;
+  });
+ }
+
+
 
  function estimateInjuryWeeksOut(p, status){
  // Rough return timeline when platforms only give a designation
@@ -9426,7 +9500,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
  const playerHtml = row.players.slice(0, onlyStarters ? 12 : 16).map(x => {
  const pstr = x.pct == null ? '' : ` <span class="pct-cell ${x.pct>2?'up':x.pct<-2?'down':''}" style="font-size:11px;">${x.pct>=0?'+':''}${x.pct.toFixed(0)}%</span>`;
  return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--border-subtle);">
- <span>${x.isStart?'<strong>':''}${escapeHtml(x.p.fullName)}${x.isStart?'</strong>':''} <span style="color:var(--text-muted);">${escapeHtml(x.p.position||'')}</span></span>
+ <span>${x.isStart?'<strong>':''}${playerCardLink(x.p.fullName, x.p.id)}${x.isStart?'</strong>':''} <span style="color:var(--text-muted);">${escapeHtml(x.p.position||'')}</span></span>
  <span class="val-cell">${fmt(x.val)}${pstr}</span>
  </div>`;
  }).join('');
@@ -9778,9 +9852,9 @@ function runTradeFinder(){
  <div class="hist-date">You ${dMe} Power · Them ${dThem}</div>
  </div>
  <div class="hist-sides">
- <div><div class="hist-side-label">You send</div><div class="hist-asset">${escapeHtml(sendStr)}</div></div>
+ <div><div class="hist-side-label">You send</div><div class="hist-asset">${sendStr}</div></div>
  <div class="hist-vs">for</div>
- <div><div class="hist-side-label">You get</div><div class="hist-asset">${escapeHtml(recvStr)}</div></div>
+ <div><div class="hist-side-label">You get</div><div class="hist-asset">${recvStr}</div></div>
  </div>
  <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">
  Lineup value ${lg} · Need ${escapeHtml(needBits)}
@@ -11250,7 +11324,11 @@ function renderByes(){
  const cur = typeof entry.value === 'number' ? entry.value : 0;
  const t30 = typeof entry.trend30Day === 'number' ? entry.trend30Day : 0;
  const prev = cur - t30;
- const pct = prev > 0 ? (t30 / prev) * 100 : 0;
+ let pct = null;
+ if(prev >= 100) pct = (t30 / prev) * 100;
+ else if(prev > 0 && Math.abs(t30) < prev * 3) pct = (t30 / prev) * 100;
+ if(pct != null && (!isFinite(pct) || Math.abs(pct) > 400)) pct = null;
+ if(pct == null) pct = 0; // callers expect number; prefer accurate helper for display
  const age = entry.player && entry.player.maybeAge != null ? Number(entry.player.maybeAge) : null;
  const pos = normalizeFcPosition(entry.player && entry.player.position) || null;
  const vol = typeof entry.maybeMovingStandardDeviation === 'number' ? entry.maybeMovingStandardDeviation : null;
@@ -15283,117 +15361,363 @@ el('btn-settings').addEventListener('click', () => {
  renderRecent();
  });
 
- function buildDebugDump(){
- let levels = null;
- let powerRows = null;
- try{
- powerRows = buildPowerRows();
- levels = state._lastPowerDebug && state._lastPowerDebug.levels;
- }catch(e){
- powerRows = null;
- }
- if(!levels){
- try{ levels = computeReplacementLevels(); }catch(e){ levels = {}; }
+ 
+ function playerTrend30Accurate(p){
+  // FantasyCalc trend30Day is absolute value change (now - 30d ago), not a percent.
+  // Prefer raw FC value so local value-adjustments do not inflate the %.
+  if(!p) return null;
+  let cur = null;
+  let t30 = null;
+  try{
+   if(p.fcRawValue != null && typeof p.fcRawValue === 'number') cur = p.fcRawValue;
+   else if(p.fcEntry && typeof p.fcEntry.value === 'number') cur = p.fcEntry.value;
+   else if(typeof p.value === 'number') cur = p.value;
+   if(typeof p.trend30Day === 'number') t30 = p.trend30Day;
+   else if(typeof p.trend30 === 'number') t30 = p.trend30;
+   else if(p.fcEntry && typeof p.fcEntry.trend30Day === 'number') t30 = p.fcEntry.trend30Day;
+  }catch(e){}
+  if(cur == null || t30 == null || !isFinite(cur) || !isFinite(t30)) return null;
+  const prev = cur - t30;
+  let pct = null;
+  // Need a meaningful prior value or % blows up on dart throws
+  if(prev >= 100) pct = (t30 / prev) * 100;
+  else if(prev > 0 && Math.abs(t30) < prev * 3) pct = (t30 / prev) * 100;
+  else pct = null;
+  if(pct != null && !isFinite(pct)) pct = null;
+  if(pct != null && Math.abs(pct) > 400) pct = null; // guard absurd
+  return {
+   valueNow: Math.round(cur),
+   value30dAgo: Math.round(prev),
+   delta30d: Math.round(t30),
+   pct30d: pct != null ? Math.round(pct * 10) / 10 : null
+  };
  }
 
+function buildDebugDump(){
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || null;
+ let powerRows = [];
+ try{ powerRows = buildPowerRows() || []; }catch(e){}
+ let levels = {};
+ try{ levels = (state._lastPowerDebug && state._lastPowerDebug.levels) || computeReplacementLevels() || {}; }catch(e){}
  const starterRV = levels.starterRV || {};
- const slotRV = levels.slotRV || {};
- const counts = levels.counts || getStarterCounts();
- const starterSlotCount = countStarterSlots(counts);
+ const counts = levels.counts || (typeof getStarterCounts === 'function' ? getStarterCounts() : {});
+ const myId = state.myTeamId;
 
- const ranked = (powerRows || []).slice().sort((a,b) => b.power - a.power);
- const powerSummary = ranked.map((r, i) => ({
- rank: i + 1,
- team: r.team.name,
- rosterSize: (r.team.roster || []).length,
- startingSlots: starterSlotCount,
- power: r.power,
- starterStrength: r.starterVor,
- starterSurplus: r.starterSurplus,
- benchStrength: r.depthVor,
- benchRaw: r.benchRaw,
- lineupValue: r.lineupValue,
- avgPts: r.avgPts,
- medPts: r.medPts,
- record: r.recordStr,
- QB_surplus: r.QB,
- RB_surplus: r.RB,
- WR_surplus: r.WR,
- TE_surplus: r.TE,
- positionalDepth: r.positionalDepth,
- powerComponents: {
- starterScore: r.starterScore,
- benchScore: r.depthScore,
- recordScore: r.recordScore,
- weights: r._weights
- },
- optimalLineup: (r._debug && r._debug.starters) || [],
- benchPlayers: (r._debug && r._debug.bench) || [],
- K: r._debug && r._debug.K,
- benchCount: r._debug && r._debug.benchCount
- }));
+ function playerExport(p){
+  if(!p) return null;
+  let inj = null, bye = null, fc = null, ranks = null, hist = [];
+  try{ inj = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : (p.injuryStatus || null); }catch(e){}
+  try{ bye = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null; }catch(e){}
+  try{ if(typeof playerFloorCeil === 'function') fc = playerFloorCeil(p, curWeek || 1, curWeek || 1); }catch(e){}
+  try{ if(typeof fcRanksForPlayer === 'function') ranks = fcRanksForPlayer(p); }catch(e){}
+  try{
+   if(typeof playerScoredWeeks === 'function') hist = playerScoredWeeks(p);
+   else if(typeof playerHistWeekScores === 'function') hist = playerHistWeekScores(p);
+  }catch(e){}
+  const tr = typeof playerTrend30Accurate === 'function' ? playerTrend30Accurate(p) : null;
+  let weekPts = null, opp = null;
+  try{ if(curWeek && typeof playerWeeklyPtsForWeek === 'function') weekPts = playerWeeklyPtsForWeek(p, curWeek, curWeek); }catch(e){}
+  try{ if(typeof playerWeekOpponent === 'function') opp = playerWeekOpponent(p, curWeek); }catch(e){}
+  return {
+   id: p.id,
+   name: p.fullName || p.name,
+   position: p.position,
+   nflTeam: p.teamAbbr || null,
+   value: tr ? tr.valueNow : (p.value != null ? Math.round(p.value) : null),
+   valueAdjusted: p.value != null && p.fcRawValue != null && p.value !== p.fcRawValue ? Math.round(p.value) : null,
+   value30dAgo: tr ? tr.value30dAgo : null,
+   delta30d: tr ? tr.delta30d : null,
+   pct30d: tr ? tr.pct30d : null,
+   matched: !!p.matched,
+   isIR: !!p.isIR,
+   isTaxi: !!p.isTaxi,
+   injury: inj && inj !== 'ok' ? inj : null,
+   byeWeek: bye,
+   ranks: ranks ? { overall: ranks.overall, position: ranks.posRank } : null,
+   projection: fc ? { proj: fc.proj, floor: fc.floor, ceil: fc.ceil, conf: fc.conf, nHist: fc.nHist } : null,
+   weekPts: weekPts,
+   opponent: opp,
+   scoredWeeks: (hist || []).map(h => ({ week: h.week, pts: Math.round((h.pts || 0) * 10) / 10 })),
+   tradeLocked: !!p.tradeLocked,
+   onTradeBlock: !!p.onTradeBlock
+  };
+ }
 
- const teams = (state.teams || []).map(t => {
- const roster = (t.roster || []).map(p => {
- const v = p.value || 0;
- const sRV = starterRV[p.position] != null ? starterRV[p.position] : null;
- return {
- id: p.id,
- name: p.fullName,
- position: p.position,
- teamAbbr: p.teamAbbr || null,
- fantasyCalcValue: v,
- positionalVOR: sRV != null ? Math.max(0, v - sRV) : null
- };
- }).sort((a,b) => (b.fantasyCalcValue || 0) - (a.fantasyCalcValue || 0));
+ function fmtPct(p){
+  if(p == null || !isFinite(p)) return 'n/a';
+  return (p >= 0 ? '+' : '') + p.toFixed(1) + '%';
+ }
 
- return {
- id: t.id,
- name: t.name,
- owner: t.owner || '',
- record: { wins: t.wins || 0, losses: t.losses || 0, ties: t.ties || 0 },
- avgPts: t.avgPts || null,
- weeklyScores: t.weeklyScores || [],
- rosterSize: roster.length,
- roster
- };
+ const teamsOut = (state.teams || []).map(t => {
+  const isMine = myId != null && (t.id === myId || String(t.id) === String(myId));
+  const roster = (t.roster || []).map(playerExport).filter(Boolean)
+   .sort((a,b) => (b.value || 0) - (a.value || 0));
+  const totalValue = roster.reduce((s,p) => s + (p.value || 0), 0);
+  let diagnose = null, need = null;
+  try{ if(typeof bpDiagnose === 'function') diagnose = bpDiagnose(t); }catch(e){}
+  try{ if(typeof teamPosNeedScores === 'function') need = teamPosNeedScores(t); }catch(e){}
+  return {
+   id: t.id,
+   name: t.name,
+   isMyTeam: isMine,
+   owner: t.owner || null,
+   record: { wins: t.wins || 0, losses: t.losses || 0, ties: t.ties || 0 },
+   avgPts: t.avgPts != null ? Math.round(t.avgPts * 10) / 10 : null,
+   pointsFor: t.pointsFor != null ? t.pointsFor : null,
+   weeklyScores: t.weeklyScores || [],
+   totalMarketValue: Math.round(totalValue),
+   positionalNeed: need,
+   blueprintChecklist: diagnose,
+   roster
+  };
  });
 
- return {
- exportedAt: new Date().toISOString(),
- app: 'FantasyPulse debug dump',
- model: 'starter=optimal lineup market value; bench=top-K non-starter market value (whole-bench curve); VOR diagnostic only',
- league: {
- platform: state.platform,
- leagueId: state.leagueId,
- leagueName: state.leagueName,
- year: state.year,
- isDynasty: state.isDynasty,
- numQBs: state.numQBs,
- ppr: state.ppr,
- numTeams: state.numTeams,
- valueMode: state.valueMode,
- usingCachedValues: !!state.usingCachedValues
- },
- starterCounts: counts,
- starterSlotCount,
- flexEligible: levels.flexElig || counts.flexEligible,
- sfEligible: levels.sfElig || counts.sfEligible,
- replacementLevels: {
- methodology: levels.methodology || null,
- note: 'Replacement/VOR is for positional surplus only, not bench strength',
- starterRV,
- starterRVPlayer: levels.starterRVPlayer || null,
- slotRV,
- slotRVPlayer: levels.slotRVPlayer || null,
- demandFilled: levels.demandFilled,
- poolSize: levels.poolSize
- },
- fantasyCalcPoolSize: Array.isArray(state.fcValues) ? state.fcValues.length : 0,
- powerRankings: powerSummary,
- teams
+ const ranked = powerRows.slice().sort((a,b) => (b.power || 0) - (a.power || 0));
+ const powerRankings = ranked.map((r, i) => ({
+  rank: i + 1,
+  team: r.team && r.team.name,
+  teamId: r.team && r.team.id,
+  power: r.power != null ? Math.round(r.power * 10) / 10 : null,
+  starterStrength: r.starterVor != null ? Math.round(r.starterVor * 10) / 10 : null,
+  starterSurplus: r.starterSurplus != null ? Math.round(r.starterSurplus * 10) / 10 : null,
+  benchStrength: r.depthVor != null ? Math.round(r.depthVor * 10) / 10 : null,
+  avgPts: r.avgPts,
+  medPts: r.medPts,
+  record: r.recordStr,
+  byPositionSurplus: { QB: r.QB, RB: r.RB, WR: r.WR, TE: r.TE }
+ }));
+
+ // —— Tab snapshots ——
+ const tabs = {};
+
+ // Blueprint / Home
+ try{
+  const my = teamsOut.find(t => t.isMyTeam);
+  tabs.blueprint = {
+   name: 'Blueprint / Home',
+   checklist: my && my.blueprintChecklist,
+   myTeam: my ? my.name : null
+  };
+ }catch(e){ tabs.blueprint = { error: String(e.message || e) }; }
+
+ // Rankings
+ tabs.rankings = { name: 'Power rankings', rows: powerRankings };
+
+ // Lineup
+ try{
+  const my = (state.teams || []).find(t => t.id === myId || String(t.id) === String(myId));
+  if(my && typeof buildWeeklyLineup === 'function'){
+   const lu = buildWeeklyLineup(my, 'auto');
+   tabs.lineup = {
+    name: 'Lineup (start/sit)',
+    week: curWeek,
+    starters: (lu.assignments || lu.starters || []).map(a => ({
+     slot: a.slotKind || a.slot, name: a.name, position: a.position,
+     proj: a.proj, floor: a.floor, ceil: a.ceil, locked: a.locked
+    })),
+    bench: (lu.bench || []).map(b => ({ name: b.name || b.fullName, position: b.position, proj: b.proj }))
+   };
+  } else tabs.lineup = { name: 'Lineup', note: 'Team not set or builder unavailable' };
+ }catch(e){ tabs.lineup = { name: 'Lineup', error: String(e.message || e) }; }
+
+ // Matchups
+ try{
+  if(matchupCache && matchupCache.length){
+   tabs.matchups = {
+    name: 'Matchups',
+    games: matchupCache.map(m => ({
+     week: m.week,
+     teamA: m.teamA && m.teamA.name, teamB: m.teamB && m.teamB.name,
+     liveA: m.pointsA, liveB: m.pointsB, projA: m.projA, projB: m.projB
+    }))
+   };
+  } else tabs.matchups = { name: 'Matchups', note: 'No matchup cache loaded' };
+ }catch(e){ tabs.matchups = { error: String(e.message || e) }; }
+
+ // Cover / byes
+ try{
+  tabs.cover = { name: 'Cover & stream', note: 'See blueprint checklist holes and injury flags on each roster player' };
+ }catch(e){}
+
+ // Needs
+ try{
+  const my = teamsOut.find(t => t.isMyTeam);
+  tabs.needs = { name: 'Needs', positionalNeed: my && my.positionalNeed };
+ }catch(e){}
+
+ // Waivers — full pool
+ let allWaivers = [];
+ try{
+  if(typeof buildAvailableWaivers === 'function'){
+   const { available } = buildAvailableWaivers();
+   allWaivers = (available || []).map(p => {
+    const fake = { fullName: p.name, name: p.name, position: p.position, value: p.value, fcRawValue: p.value, trend30Day: p.trend30Day, trend30: p.trend30, fcEntry: p.fcEntry };
+    const tr = playerTrend30Accurate(fake) || playerTrend30Accurate(p);
+    return {
+     name: p.name,
+     position: p.position,
+     value: tr ? tr.valueNow : (p.value != null ? Math.round(p.value) : null),
+     value30dAgo: tr ? tr.value30dAgo : null,
+     delta30d: tr ? tr.delta30d : null,
+     pct30d: tr ? tr.pct30d : null
+    };
+   }).sort((a,b) => (b.value || 0) - (a.value || 0));
+  }
+ }catch(e){}
+ tabs.waivers = { name: 'Waiver wire', count: allWaivers.length, players: allWaivers };
+
+ // Depth / tiers summary
+ try{
+  tabs.depth = { name: 'Depth / tiers', note: 'Positional market ranking available on Depth tab; values in team rosters and waivers' };
+ }catch(e){}
+
+ // SOS
+ try{
+  tabs.sos = { name: 'Strength of schedule', note: scheduleCache ? 'Schedule cache loaded' : 'Schedule not loaded — open SOS tab first for full paths' };
+ }catch(e){}
+
+ // Playoffs / path
+ try{
+  tabs.playoffs = { name: 'Playoffs', note: 'Open Playoffs tab to compute odds before export if needed' };
+  tabs.playoffPath = { name: 'Playoff path' };
+ }catch(e){}
+
+ // Grade
+ try{
+  tabs.grade = { name: 'Rate my team', note: 'Open Grade tab for letter grades; roster quality reflected in power + surplus fields' };
+ }catch(e){}
+
+ // Trends
+ try{
+  tabs.trends = { name: 'Trends', note: '30d value moves are on each player as pct30d / delta30d' };
+ }catch(e){}
+
+ // Rosters
+ tabs.rosters = { name: 'Rosters', teams: teamsOut.map(t => ({ name: t.name, totalMarketValue: t.totalMarketValue, record: t.record })) };
+
+ // Luck
+ tabs.luck = { name: 'Luck / expected wins', note: 'Open Luck tab to populate if empty' };
+
+ // Trade tools
+ tabs.trade = { name: 'Trade calculator', note: 'Use Trade tab for live packages; power model + waiver fill on uneven deals' };
+ tabs.tradeFinder = { name: 'Trade finder', note: 'Run finder for package list' };
+
+ // Text summary
+ const lines = [];
+ lines.push('# Fantasy Blueprint — full league export for AI');
+ lines.push('Exported: ' + new Date().toISOString());
+ lines.push('');
+ lines.push('## League settings');
+ lines.push('- Platform: ' + (state.platform || '?'));
+ lines.push('- League: ' + (state.leagueName || '') + ' / id ' + (state.leagueId || '?'));
+ lines.push('- Year: ' + (state.year || '?'));
+ lines.push('- Teams: ' + (state.numTeams || (state.teams || []).length));
+ lines.push('- Dynasty: ' + !!state.isDynasty);
+ lines.push('- QBs / Superflex: ' + (state.numQBs || '?') + ' / ' + !!state.isSuperflex);
+ lines.push('- PPR: ' + (state.ppr != null ? state.ppr : '?'));
+ lines.push('- Value mode: ' + (state.valueMode || '?'));
+ lines.push('- Current week: ' + (curWeek != null ? curWeek : '?'));
+ lines.push('- My team id: ' + (state.myTeamId != null ? state.myTeamId : '(not set)'));
+ lines.push('- Starter counts: ' + JSON.stringify(counts));
+ lines.push('');
+ lines.push('## Power rankings');
+ powerRankings.forEach(r => {
+  lines.push(r.rank + '. ' + r.team + ' | power ' + r.power + ' | starters ' + r.starterStrength + ' | bench ' + r.benchStrength + (r.record ? ' | ' + r.record : ''));
+ });
+ lines.push('');
+ lines.push('## Every team roster (value and 30-day change)');
+ lines.push('pct30d = (value now − value 30d ago) / value 30d ago using FantasyCalc absolute trend30Day. n/a if prior value too small.');
+ teamsOut.forEach(t => {
+  lines.push('');
+  lines.push('### ' + t.name + (t.isMyTeam ? ' (MY TEAM)' : '') + ' — ' + t.record.wins + '-' + t.record.losses + ' — total value ~' + t.totalMarketValue);
+  t.roster.forEach(p => {
+   let bit = '- ' + p.name + ' | ' + (p.position || '?') + ' | val ' + (p.value != null ? p.value : '—');
+   if(p.delta30d != null) bit += ' | 30d ' + (p.delta30d >= 0 ? '+' : '') + p.delta30d;
+   if(p.pct30d != null) bit += ' (' + fmtPct(p.pct30d) + ')';
+   else bit += ' (30d % n/a)';
+   if(p.injury) bit += ' | inj ' + p.injury;
+   if(p.isIR) bit += ' | IR';
+   if(p.projection) bit += ' | proj ' + p.projection.proj + ' [' + p.projection.floor + '–' + p.projection.ceil + ']';
+   if(p.scoredWeeks && p.scoredWeeks.length)
+    bit += ' | scored ' + p.scoredWeeks.map(w => 'W' + w.week + '=' + w.pts).join(', ');
+   lines.push(bit);
+  });
+ });
+ lines.push('');
+ lines.push('## Tab results snapshot');
+ Object.keys(tabs).forEach(k => {
+  const tab = tabs[k];
+  lines.push('');
+  lines.push('### Tab: ' + (tab.name || k));
+  if(tab.note) lines.push(tab.note);
+  if(tab.error) lines.push('Error: ' + tab.error);
+  if(k === 'rankings' && tab.rows){
+   tab.rows.forEach(r => lines.push(r.rank + '. ' + r.team + ' power=' + r.power));
+  }
+  if(k === 'lineup' && tab.starters){
+   lines.push('Starters:');
+   tab.starters.forEach(s => lines.push('- ' + (s.slot || '') + ' ' + s.name + ' proj ' + s.proj));
+   if(tab.bench && tab.bench.length){
+    lines.push('Bench sample:');
+    tab.bench.slice(0, 12).forEach(b => lines.push('- ' + b.name));
+   }
+  }
+  if(k === 'matchups' && tab.games){
+   tab.games.forEach(g => lines.push((g.teamA || '?') + ' ' + g.liveA + '/' + g.projA + ' vs ' + (g.teamB || '?') + ' ' + g.liveB + '/' + g.projB));
+  }
+  if(k === 'waivers'){
+   lines.push('Free agents: ' + tab.count);
+  }
+  if(k === 'blueprint' && tab.checklist){
+   (tab.checklist || []).forEach(c => lines.push('- [' + c.status + '] ' + (c.title || c.label) + (c.why ? ' — ' + c.why : '')));
+  }
+ });
+ lines.push('');
+ lines.push('## All waiver / free agents (' + allWaivers.length + ')');
+ allWaivers.forEach((p, i) => {
+  let bit = (i + 1) + '. ' + p.name + ' ' + (p.position || '') + ' val ' + (p.value != null ? p.value : '—');
+  if(p.delta30d != null) bit += ' | 30d ' + (p.delta30d >= 0 ? '+' : '') + p.delta30d;
+  if(p.pct30d != null) bit += ' (' + fmtPct(p.pct30d) + ')';
+  lines.push(bit);
+ });
+ lines.push('');
+ lines.push('## Full JSON');
+ lines.push('Complete machine-readable dump follows.');
+
+ const payload = {
+  exportedAt: new Date().toISOString(),
+  purpose: 'Complete league picture for another AI: every tab snapshot, all rosters with accurate 30d value moves, all free agents, settings.',
+  app: 'Fantasy Blueprint',
+  currentWeek: curWeek,
+  trendNote: 'FantasyCalc trend30Day is absolute value change. pct30d = delta / value_30d_ago * 100 using raw FC values. Omitted when prior value is too small to be meaningful.',
+  league: {
+   platform: state.platform,
+   leagueId: state.leagueId,
+   leagueName: state.leagueName,
+   year: state.year,
+   isDynasty: state.isDynasty,
+   numQBs: state.numQBs,
+   isSuperflex: state.isSuperflex,
+   ppr: state.ppr,
+   numTeams: state.numTeams,
+   valueMode: state.valueMode,
+   myTeamId: state.myTeamId,
+   starterCounts: counts
+  },
+  replacementLevels: { starterRV: starterRV },
+  tabs,
+  powerRankings,
+  teams: teamsOut,
+  freeAgents: allWaivers,
+  fantasyCalcPoolSize: Array.isArray(state.fcValues) ? state.fcValues.length : 0
  };
- }
+
+ return { textSummary: lines.join('\n'), json: payload };
+}
+
+
+
+
 
  function showToast(msg){
  const t = el('share-toast');
@@ -15405,32 +15729,32 @@ el('btn-settings').addEventListener('click', () => {
 
  async function copyDebugData(){
  if(!state.teams || !state.teams.length){
- showToast('Load a league first');
- return;
+  showToast('Load a league first');
+  return;
  }
  const dump = buildDebugDump();
- const text = JSON.stringify(dump, null, 2);
+ const textOut = dump.textSummary + '\n\n```json\n' + JSON.stringify(dump.json, null, 2) + '\n```\n';
  try{
- await navigator.clipboard.writeText(text);
- showToast('Debug data copied');
+  await navigator.clipboard.writeText(textOut);
+  showToast('Full analysis copied — paste into any AI');
  }catch(e){
- // fallback
- try{
- const ta = document.createElement('textarea');
- ta.value = text;
- ta.style.position = 'fixed';
- ta.style.left = '-9999px';
- document.body.appendChild(ta);
- ta.select();
- document.execCommand('copy');
- document.body.removeChild(ta);
- showToast('Debug data copied');
- }catch(e2){
- showToast('Copy failed - see console');
- console.log(text);
+  try{
+   const ta = document.createElement('textarea');
+   ta.value = textOut;
+   ta.style.position = 'fixed';
+   ta.style.left = '-9999px';
+   document.body.appendChild(ta);
+   ta.select();
+   document.execCommand('copy');
+   document.body.removeChild(ta);
+   showToast('Full analysis copied — paste into any AI');
+  }catch(e2){
+   showToast('Copy failed');
+   console.error(e2);
+  }
  }
- }
- }
+}
+
 
  const btnCopyDebug = el('btn-copy-debug');
  if(btnCopyDebug) btnCopyDebug.addEventListener('click', copyDebugData);
