@@ -2054,6 +2054,188 @@
 
  .blueprint-move { border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 10px 12px; margin-bottom: 8px; background: var(--surface); border-radius: var(--radius-sm); cursor: pointer; }
  .blueprint-move:hover { background: var(--surface-2); }
+
+ .bp-hero { margin-bottom: 18px; }
+ .bp-kicker {
+ font-size: 11px;
+ font-weight: 700;
+ letter-spacing: 0.1em;
+ text-transform: uppercase;
+ color: var(--accent);
+ margin-bottom: 6px;
+ }
+ .bp-title {
+ font-size: 26px;
+ font-weight: 700;
+ letter-spacing: -0.03em;
+ line-height: 1.15;
+ margin-bottom: 6px;
+ }
+ .bp-sub {
+ font-size: 13.5px;
+ color: var(--text-secondary);
+ max-width: 42ch;
+ line-height: 1.45;
+ }
+ .bp-scorecard {
+ display: grid;
+ grid-template-columns: repeat(4, minmax(0, 1fr));
+ gap: 8px;
+ margin-bottom: 18px;
+ }
+ @media (max-width: 640px) {
+ .bp-scorecard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ }
+ .bp-stat {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ padding: 12px 12px 10px;
+ }
+ .bp-stat .lbl {
+ font-size: 10px;
+ font-weight: 700;
+ text-transform: uppercase;
+ letter-spacing: 0.06em;
+ color: var(--text-muted);
+ margin-bottom: 4px;
+ }
+ .bp-stat .val {
+ font-size: 20px;
+ font-weight: 700;
+ letter-spacing: -0.02em;
+ }
+ .bp-stat .hint {
+ font-size: 11.5px;
+ color: var(--text-muted);
+ margin-top: 2px;
+ }
+ .bp-moves { margin-bottom: 20px; }
+ .bp-moves-head {
+ font-size: 11px;
+ font-weight: 700;
+ text-transform: uppercase;
+ letter-spacing: 0.08em;
+ color: var(--text-muted);
+ margin-bottom: 8px;
+ }
+ .bp-move {
+ display: flex;
+ align-items: flex-start;
+ gap: 12px;
+ padding: 12px 14px;
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ background: var(--surface);
+ margin-bottom: 8px;
+ cursor: pointer;
+ transition: border-color 0.12s ease, background 0.12s ease;
+ }
+ .bp-move:hover { border-color: var(--accent); background: var(--surface-2); }
+ .bp-move .num {
+ flex-shrink: 0;
+ width: 24px;
+ height: 24px;
+ border-radius: 50%;
+ background: var(--accent-muted);
+ color: var(--accent);
+ font-size: 12px;
+ font-weight: 700;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ margin-top: 1px;
+ }
+ .bp-move .body { flex: 1; min-width: 0; }
+ .bp-move .title { font-weight: 650; font-size: 14px; margin-bottom: 2px; }
+ .bp-move .why { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+ .bp-move .go {
+ font-size: 12px;
+ font-weight: 650;
+ color: var(--accent);
+ white-space: nowrap;
+ margin-top: 2px;
+ }
+ .bp-pillars {
+ display: grid;
+ grid-template-columns: repeat(3, minmax(0, 1fr));
+ gap: 8px;
+ }
+ @media (max-width: 720px) {
+ .bp-pillars { grid-template-columns: 1fr; }
+ }
+ .bp-pillar {
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ padding: 14px;
+ background: var(--surface);
+ cursor: pointer;
+ }
+ .bp-pillar:hover { border-color: var(--text-muted); }
+ .bp-pillar .ph {
+ font-size: 13px;
+ font-weight: 700;
+ margin-bottom: 4px;
+ }
+ .bp-pillar .pd {
+ font-size: 12px;
+ color: var(--text-secondary);
+ line-height: 1.4;
+ }
+ .strategy-strip { display: none !important; }
+
+
+ /* Tab polish */
+ .panel .section-title {
+ font-size: 20px !important;
+ font-weight: 700;
+ letter-spacing: -0.02em;
+ }
+ .hist-card {
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ padding: 12px 14px;
+ background: var(--surface);
+ margin-bottom: 10px;
+ }
+ .hist-list .hist-card:last-child { margin-bottom: 0; }
+ #sit-result table {
+ width: 100%;
+ border-collapse: collapse;
+ font-size: 13px;
+ }
+ #sit-result th {
+ text-align: left;
+ font-size: 10px;
+ text-transform: uppercase;
+ letter-spacing: 0.05em;
+ color: var(--text-muted);
+ padding: 6px 8px;
+ border-bottom: 1px solid var(--border);
+ }
+ #sit-result td {
+ padding: 8px;
+ border-bottom: 1px solid var(--border-subtle);
+ }
+ #sit-result tr:last-child td { border-bottom: 0; }
+ .slot-tag {
+ font-size: 10px;
+ font-weight: 700;
+ text-transform: uppercase;
+ letter-spacing: 0.04em;
+ color: var(--text-muted);
+ }
+ .start-tag {
+ color: #3d8f5f;
+ font-weight: 700;
+ font-size: 11px;
+ }
+ .bench-tag {
+ color: #c45c52;
+ font-weight: 700;
+ font-size: 11px;
+ }
+
 </style>
 </head>
 <body>
@@ -2193,10 +2375,6 @@
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
  Grade
  </button>
- <button class="nav-item" data-panel="panel-rosters">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
- League
- </button>
  </nav>
  <div class="sidebar-footer">
  <button class="nav-item" id="btn-refresh" title="Refresh values">
@@ -2217,21 +2395,25 @@
  <div class="content">
  <main>
  <!-- ---------- TRADE ---------- -->
- <div id="strategy-strip" class="strategy-strip" aria-label="Team strategy"></div>
+ <div id="strategy-strip" class="strategy-strip" aria-label="Team strategy" style="display:none!important"></div>
 
  <section class="panel active" id="panel-home">
- <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Blueprint</div>
- <button type="button" class="info-btn" id="btn-home-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <div class="bp-hero">
+ <div class="bp-kicker">Weekly system</div>
+ <div class="bp-title">Your Blueprint</div>
+ <div class="bp-sub" id="bp-sub">Load a league to lock in this week’s plan.</div>
  </div>
- <p class="needs-intro" id="home-intro"></p>
- <div id="home-priorities" style="margin-bottom:14px;"></div>
- <div class="strategy-flow" id="home-flow"></div>
- <div id="home-grid" class="needs-grid"></div>
- <div id="home-charts" class="needs-grid" style="margin-top:14px;"></div>
+ <div id="bp-scorecard" class="bp-scorecard"></div>
+ <div id="bp-moves" class="bp-moves"></div>
+ <div id="bp-pillars" class="bp-pillars"></div>
+ <!-- legacy hooks used by renderHome -->
+ <div id="home-intro" style="display:none"></div>
+ <div id="home-priorities" style="display:none"></div>
+ <div id="home-flow" style="display:none"></div>
+ <div id="home-grid" style="display:none"></div>
+ <div id="home-charts" style="display:none"></div>
  </section>
 
- 
  <section class="panel" id="panel-rosters">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Teams</div>
@@ -2574,19 +2756,26 @@
  <div class="section-title" style="margin:0;">Lineup</div>
  <button type="button" class="info-btn" id="btn-sit-info" title="Info" aria-label="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <p class="needs-intro" id="path-intro">Games that matter most for your seed and bubble, based on current standings and remaining schedule.</p>
- <div class="waiver-toolbar" style="margin-bottom:12px;gap:8px;align-items:center;flex-wrap:wrap;">
- <select id="path-team" style="max-width:240px;"></select>
- <button type="button" class="btn btn-ghost btn-sm" id="btn-path-force">Run path early (override)</button>
- <button type="button" class="btn btn-ghost btn-sm" id="btn-path-to-playoffs">Playoff odds</button>
- <button type="button" class="btn btn-ghost btn-sm" id="btn-path-to-sos">SOS schedule</button>
- <span id="path-force-warn" style="font-size:12px;color:var(--gold);"></span>
+ <div class="waiver-toolbar">
+ <div>
+ <label class="field-label">Team</label>
+ <select id="sit-team" style="max-width:220px;display:block;"></select>
  </div>
- <div id="path-context" class="hist-meta" style="margin-bottom:10px;"></div>
- <div id="path-list" class="hist-list"></div>
+ <div>
+ <label class="field-label">Mode</label>
+ <select id="sit-strategy" style="max-width:180px;display:block;">
+ <option value="auto">Matchup-aware</option>
+ <option value="proj">Highest proj</option>
+ <option value="floor">Safe floor</option>
+ <option value="ceiling">Ceiling chase</option>
+ </select>
+ </div>
+ <button type="button" class="btn btn-primary" id="btn-sit-build">Build</button>
+ </div>
+ <div id="sit-context" class="hist-meta" style="margin-bottom:10px;"></div>
+ <div id="sit-result" class="hist-list"></div>
  </section>
 
- <!-- ---------- LEAGUE DEPTH ---------- -->
  <section class="panel" id="panel-depth">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Depth / rankings</div>
@@ -10757,145 +10946,88 @@ function buildStrategyBrief(){
  }
 
  function renderHome(){
- const grid = el('home-grid');
- const charts = el('home-charts');
- const intro = el('home-intro');
- const pri = el('home-priorities');
- const flow = el('home-flow');
- if(!grid) return;
+ const sub = el('bp-sub');
+ const score = el('bp-scorecard');
+ const moves = el('bp-moves');
+ const pillars = el('bp-pillars');
+ // keep strip hidden
+ try{ const s = el('strategy-strip'); if(s){ s.classList.remove('show'); s.innerHTML = ''; } }catch(e){}
 
  if(!state.teams || !state.teams.length){
- grid.innerHTML = '<p class="needs-intro">Load your league.</p>';
- if(charts) charts.innerHTML = '';
- if(pri) pri.innerHTML = '';
- if(flow) flow.innerHTML = '';
- renderStrategyStrip();
+ if(sub) sub.textContent = 'Load an ESPN or Sleeper league to build this week’s plan.';
+ if(score) score.innerHTML = '';
+ if(moves) moves.innerHTML = '';
+ if(pillars) pillars.innerHTML = '';
  return;
  }
 
  const brief = buildStrategyBrief();
- renderStrategyStrip();
  if(!brief){
- grid.innerHTML = '<p class="needs-intro">Pick your team in settings.</p>';
+ if(sub) sub.textContent = 'Pick your team in Settings.';
  return;
  }
 
- if(intro){
- intro.textContent = brief.team.name + ' · week ' + brief.curWeek + ' · every tab below uses the same roster, power model, and schedule.';
+ const week = brief.curWeek || 1;
+ if(sub){
+ sub.textContent = brief.team.name + ' · Week ' + week + ' · same power model, projections, and schedule on every tab.';
  }
 
- // Priorities
- if(pri){
- pri.innerHTML = '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">Do this next</div>' +
- brief.actions.slice(0, 3).map(a => `
- <div class="blueprint-move" data-panel="${a.panel}">
- <div class="sp-title">${escapeHtml(a.title)}</div>
- <div class="sp-why">${escapeHtml(a.why)}</div>
- </div>`).join('');
- pri.querySelectorAll('[data-panel]').forEach(node => {
+ // Scorecard — lean, number-first
+ if(score){
+ const cells = [
+ { lbl: 'Power', val: brief.myRank != null ? '#' + brief.myRank : '—', hint: brief.record || '' },
+ { lbl: 'Grade', val: (brief.rate && brief.rate.grade) ? brief.rate.grade : '—', hint: 'roster quality' },
+ { lbl: 'Playoffs', val: brief.playoffPct != null ? Math.round(brief.playoffPct) + '%' : '—', hint: 'sim odds' },
+ { lbl: 'Holes', val: String(brief.weekHoles != null ? brief.weekHoles : 0), hint: 'bye / injury' }
+ ];
+ score.innerHTML = cells.map(c =>
+ `<div class="bp-stat"><div class="lbl">${c.lbl}</div><div class="val">${escapeHtml(String(c.val))}</div><div class="hint">${escapeHtml(c.hint)}</div></div>`
+ ).join('');
+ }
+
+ // Ordered moves — the weekly blueprint
+ if(moves){
+ const acts = (brief.actions || []).slice(0, 4);
+ if(!acts.length){
+ moves.innerHTML = '<div class="bp-moves-head">This week</div><div class="bp-move"><div class="num">✓</div><div class="body"><div class="title">No urgent flags</div><div class="why">Lineup still comes first. Then waivers.</div></div></div>';
+ } else {
+ moves.innerHTML = '<div class="bp-moves-head">This week</div>' + acts.map((a, idx) =>
+ `<div class="bp-move" data-panel="${a.panel || ''}">
+ <div class="num">${idx + 1}</div>
+ <div class="body">
+ <div class="title">${escapeHtml(a.title)}</div>
+ <div class="why">${escapeHtml(a.why || '')}</div>
+ </div>
+ <div class="go">${escapeHtml(a.label || 'Open')} →</div>
+ </div>`
+ ).join('');
+ moves.querySelectorAll('.bp-move[data-panel]').forEach(node => {
+ const p = node.getAttribute('data-panel');
+ if(!p) return;
+ node.addEventListener('click', () => goToPanel(p, { teamId: brief.team.id }));
+ });
+ }
+ }
+
+ // Methodology pillars — fixed system, always same order
+ if(pillars){
+ const cols = [
+ { panel: 'panel-sit', ph: '1. Lineup', pd: 'Best legal starters for this week. Locked players stay. Floor or ceiling when the matchup calls for it.' },
+ { panel: 'panel-waivers', ph: '2. Waivers', pd: 'Adds that raise power or cover injury holes. No drop that breaks a starter slot.' },
+ { panel: 'panel-finder', ph: '3. Trades', pd: 'Packages that help both sides. Target or sell by name when you already know the player.' },
+ { panel: 'panel-rankings', ph: '4. Rankings', pd: 'Power = starters + depth + results. Weights shift as real scores stack up.' },
+ { panel: 'panel-sos', ph: '5. Schedule', pd: 'Week-by-week lineup projections, byes, and injury return windows.' },
+ { panel: 'panel-playoffs', ph: '6. Playoffs', pd: 'Odds from the real schedule and week-specific projections — not one flat average.' }
+ ];
+ pillars.innerHTML = cols.map(c =>
+ `<div class="bp-pillar" data-panel="${c.panel}"><div class="ph">${escapeHtml(c.ph)}</div><div class="pd">${escapeHtml(c.pd)}</div></div>`
+ ).join('');
+ pillars.querySelectorAll('[data-panel]').forEach(node => {
  node.addEventListener('click', () => goToPanel(node.getAttribute('data-panel'), { teamId: brief.team.id }));
  });
  }
-
- // Strategy flow chips
- if(flow){
- const steps = [
- { panel: 'panel-sit', label: 'Lineup' },
- { panel: 'panel-byes', label: 'Cover' },
- { panel: 'panel-waivers', label: 'Waivers' },
- { panel: 'panel-finder', label: 'Trades' },
- { panel: 'panel-rankings', label: 'Rankings' },
- { panel: 'panel-playoffs', label: 'Playoffs' }
- ];
- flow.innerHTML = steps.map(s => `<button type="button" data-panel="${s.panel}">${s.label}</button>`).join('');
- flow.querySelectorAll('[data-panel]').forEach(btn => {
- btn.addEventListener('click', () => goToPanel(btn.getAttribute('data-panel'), { teamId: brief.team.id }));
- });
  }
 
- function card(title, val, sub, extra, panel){
- const go = panel ? ` data-go-panel="${panel}" style="cursor:pointer;"` : '';
- return `<div class="rec-card"${go}>
- <h3>${escapeHtml(title)}</h3>
- <div class="rec-val">${val}</div>
- <div class="rec-who">${sub || ''}</div>
- ${extra ? '<div class="rec-who" style="margin-top:4px;">' + extra + '</div>' : ''}
- </div>`;
- }
-
- const mine = brief.mine;
- const team = brief.team;
- const cards = [];
- cards.push(card('Power rank', brief.myRank != null ? '#' + brief.myRank : '—', mine ? ('Score ' + mine.power.toFixed(1)) : '', 'Same model as Rankings', 'panel-rankings'));
- cards.push(card('Roster grade', brief.rate ? brief.rate.grade : '—', brief.rate ? ('Quality ' + brief.rate.quality + '/100') : '', 'vs competitive bar', 'panel-rate'));
- cards.push(card('Record', brief.record, 'Season results', '', 'panel-luck'));
- cards.push(card('Playoff', brief.playoffPct != null ? brief.playoffPct.toFixed(0) + '%' : '—', brief.seed != null ? ('Seed #' + brief.seed) : (brief.quality.label || ''), '', 'panel-playoffs'));
- cards.push(card('SOS rank', brief.sosRank != null ? '#' + brief.sosRank : '—', brief.sosPath && brief.sosPath.finalRecord ? brief.sosPath.finalRecord : '1 = easiest', '', 'panel-sos'));
- cards.push(card('Week ' + brief.curWeek, brief.weekHoles ? (brief.weekHoles + ' hole(s)') : 'Covered', 'Bye + injury cover', '', 'panel-byes'));
- if(brief.weakPos && brief.weakPos[0]){
- cards.push(card('Weakest pos', brief.weakPos[0].pos, 'Then ' + brief.weakPos.slice(1,3).map(x=>x.pos).join(', '), 'Drives waiver & trade bias', 'panel-needs'));
- }
- cards.push(card('Trade tools', 'Finder + calc', 'Need-based, not lateral', '', 'panel-finder'));
-
- grid.innerHTML = cards.join('');
- grid.querySelectorAll('[data-go-panel]').forEach(cardEl => {
- cardEl.addEventListener('click', () => goToPanel(cardEl.getAttribute('data-go-panel'), { teamId: team.id }));
- });
-
- // Positional balance vs ideal build
- try{
- const bal = computeTeamBalance(team);
- const balBox = document.createElement('div');
- balBox.className = 'card';
- balBox.style.cssText = 'padding:14px;margin-bottom:14px;';
- balBox.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">' +
- '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);">Team balance</div>' +
- '<div style="font-size:13px;font-weight:600;">Score ' + bal.score + '/100</div></div>' +
- '<p style="font-size:12px;color:var(--text-secondary);margin:0 0 8px;">Share of roster value by position vs how a legal lineup is built (starters + flex). Thin = underinvested.</p>' +
- bal.rows.map(r => {
- const pct = Math.round(r.share * 100);
- const idealPct = Math.round(r.ideal * 100);
- const cls = r.label === 'Thin' || r.label === 'Light' ? 'thin' : (r.label === 'Heavy' || r.label === 'Stacked' ? 'heavy' : '');
- return '<div class="balance-row"><div><strong>' + r.pos + '</strong></div>' +
- '<div class="balance-track"><div class="balance-fill ' + cls + '" style="width:' + pct + '%;"></div>' +
- '<div class="balance-ideal" style="left:' + idealPct + '%;"></div></div>' +
- '<div style="color:var(--text-muted);">' + pct + '% <span style="opacity:0.7;">/' + idealPct + '%</span></div>' +
- '<div style="font-weight:600;color:' + (cls==='thin'?'#c45c52':cls==='heavy'?'#c9a227':'var(--text-muted)') + ';">' + r.label + '</div></div>';
- }).join('') +
- '<div style="margin-top:8px;font-size:12px;"><a href="#" id="home-bal-needs" style="color:var(--accent);">Fix via needs / waivers</a></div>';
- if(pri && pri.parentNode){
- const existing = el('home-balance-wrap');
- if(existing) existing.remove();
- balBox.id = 'home-balance-wrap';
- if(grid && grid.parentNode) grid.parentNode.insertBefore(balBox, grid);
- const a = el('home-bal-needs');
- if(a) a.onclick = (e) => { e.preventDefault(); goToPanel('panel-needs', { teamId: team.id }); };
- }
- }catch(e){}
-
- // Charts: power + scoring — compact league context
- if(charts){
- try{
- const rows = buildPowerRows().slice().sort((a,b) => b.power - a.power);
- const maxP = Math.max(...rows.map(r => r.power), 1);
- const barHtml = rows.map((r,i) => {
- const isMine = r.team.id === team.id || String(r.team.id) === String(team.id);
- const w = Math.max(4, (r.power / maxP) * 100);
- return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px;${isMine?'font-weight:600;':''}">
- <div style="width:20px;color:var(--text-muted);">#${i+1}</div>
- <div style="flex:1;min-width:0;">
- <div style="display:flex;justify-content:space-between;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.team.name)}</span><span>${r.power.toFixed(1)}</span></div>
- <div style="height:6px;background:var(--surface-2);border-radius:3px;"><div style="height:100%;width:${w}%;background:${isMine?'var(--accent)':'rgba(74,155,110,0.7)'};border-radius:3px;"></div></div>
- </div></div>`;
- }).join('');
- charts.innerHTML = `<div class="card" style="padding:14px;grid-column:1/-1;">
- <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">League power (shared with Rankings)</div>
- ${barHtml}
- <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">Tap Rankings for full weights and components. All strategy links keep this team selected.</div>
- </div>`;
- }catch(e){ charts.innerHTML = ''; }
- }
- }
 
 
 
@@ -11181,14 +11313,31 @@ function buildStrategyBrief(){
  const out = el('sit-result');
  const teamSel = el('sit-team');
  const stratSel = el('sit-strategy');
+ const ctxEl = el('sit-context');
  if(!out || !teamSel) return;
+ if(!state.teams || !state.teams.length){
+ out.innerHTML = '<div class="hist-empty">Load a league first.</div>';
+ if(ctxEl) ctxEl.textContent = '';
+ return;
+ }
  const team = state.teams.find(t => String(t.id) === String(teamSel.value));
  if(!team){
- out.innerHTML = '<div class="hist-empty">Load a league first.</div>';
+ out.innerHTML = '<div class="hist-empty">Pick a team.</div>';
  return;
  }
  const strategy = stratSel ? stratSel.value : 'auto';
- const res = buildWeeklyLineup(team, strategy);
+ let res;
+ try{
+ res = buildWeeklyLineup(team, strategy);
+ }catch(e){
+ console.warn('runSitLineup', e);
+ out.innerHTML = '<div class="hist-empty">Could not build lineup. Try Refresh.</div>';
+ return;
+ }
+ if(!res){
+ out.innerHTML = '<div class="hist-empty">No lineup data.</div>';
+ return;
+ }
 
  let contextBits = [];
  if(res.oppName){
@@ -11202,8 +11351,9 @@ function buildStrategyBrief(){
  }
  if(res.medianNote) contextBits.push(res.medianNote);
  if(strategy === 'auto'){
- contextBits.push(res.tilt === 'ceiling' ? 'tilted to ceiling' : res.tilt === 'floor' ? 'tilted to floor' : 'balanced');
+ contextBits.push(res.tilt === 'ceiling' ? 'ceiling lean' : res.tilt === 'floor' ? 'floor lean' : 'balanced');
  }
+ if(ctxEl) ctxEl.textContent = contextBits.join(' · ');
 
  const benchRows = res.bench.map(b => `
  <tr>
