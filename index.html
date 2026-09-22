@@ -6636,16 +6636,18 @@ function countPosBodies(roster){
  }
 
  function playerFloorCeil(p, week, curWeek){
- // Player-specific range. Real scores dominate when we have them.
- // Boom/bust (high CV) → wider band. Steady (low CV) → tighter.
- // Ceiling is never below an observed high. Floor is never a fixed % of proj.
+ // Player-specific range from real scores when available.
+ // Floor stays a realistic "bad but played" outcome — not 0 for every starter.
+ // Ceiling tracks observed highs and boom variance.
  const row = getPlayerProjection(p.id, p.fullName || p.name) || {};
- const hist = playerHistWeekScores(p).map(x => x.pts).filter(v => typeof v === 'number' && isFinite(v));
+ // Drop zero/DNP noise so one empty week does not force floor to 0
+ const hist = playerHistWeekScores(p)
+  .map(x => x.pts)
+  .filter(v => typeof v === 'number' && isFinite(v) && v > 0.5);
  const pos = p.position || 'WR';
 
- // Default coefficient of variation by position (no history yet)
- const POS_CV = { QB: 0.30, RB: 0.34, WR: 0.42, TE: 0.38, DST: 0.50, K: 0.42, DEF: 0.50 };
- let defaultCv = POS_CV[pos] || 0.36;
+ const POS_CV = { QB: 0.28, RB: 0.32, WR: 0.38, TE: 0.34, DST: 0.45, K: 0.40, DEF: 0.45 };
+ const defaultCv = POS_CV[pos] || 0.34;
 
  let proj = typeof row.proj === 'number' && row.proj > 0 ? row.proj : null;
  if(proj == null){
@@ -6655,70 +6657,77 @@ function countPosBodies(roster){
   proj = Math.max(2, base + boost);
  }
 
- // Ignore host floor/ceil if they were the synthetic ±35% estimate
- let hostFloor = (typeof row.floor === 'number' && !row.rangeEst) ? row.floor : null;
- let hostCeil = (typeof row.ceil === 'number' && !row.rangeEst) ? row.ceil : null;
+ const hostFloor = (typeof row.floor === 'number' && !row.rangeEst && row.floor > 0) ? row.floor : null;
+ const hostCeil = (typeof row.ceil === 'number' && !row.rangeEst && row.ceil > proj) ? row.ceil : null;
 
- let floor, ceil;
  const n = hist.length;
+ let floor, ceil;
 
  if(n >= 1){
   const mean = hist.reduce((a,b) => a + b, 0) / n;
   const maxPts = Math.max(...hist);
   const minPts = Math.min(...hist);
-  let sd = 0;
-  if(n >= 2){
-   sd = Math.sqrt(hist.reduce((s,x) => s + (x - mean) * (x - mean), 0) / (n - 1));
-  } else {
-   // One game: use pos default CV around that score
-   sd = Math.max(3, mean * defaultCv);
-  }
-  const cv = mean > 1 ? sd / mean : defaultCv;
+  let sd = n >= 2
+   ? Math.sqrt(hist.reduce((s,x) => s + (x - mean) * (x - mean), 0) / (n - 1))
+   : Math.max(2.5, mean * defaultCv);
+  // Cap extreme CV from tiny samples so floor does not collapse
+  let cv = mean > 1 ? sd / mean : defaultCv;
+  cv = Math.min(0.55, Math.max(0.12, cv));
+  sd = cv * mean;
 
-  // How hard we trust the sample (more games → more weight on reality)
-  const sampleW = n / (n + 2);           // 1 game ~0.33, 2 ~0.5, 4 ~0.67, 8 ~0.8
+  const sampleW = n / (n + 2);
   const seasonW = Math.min(1, Math.max(0, (Number(curWeek) || n) - 1) / 8);
-  const w = Math.min(0.95, sampleW * 0.7 + seasonW * 0.3);
+  const w = Math.min(0.92, sampleW * 0.7 + seasonW * 0.3);
 
-  // Empirical band: mean ± k*sd; k shrinks slightly with more games (confidence)
-  const k = n >= 6 ? 1.0 : n >= 3 ? 1.15 : 1.35;
-  let histFloor = Math.max(0, mean - k * sd);
-  let histCeil = mean + k * sd;
+  const sorted = hist.slice().sort((a,b) => a - b);
+  const p20 = sorted[Math.max(0, Math.floor((n - 1) * 0.2))];
+  const p80 = sorted[Math.min(n - 1, Math.ceil((n - 1) * 0.8))];
 
-  // Hard anchors to what actually happened
-  // Ceiling must clear the best game we have seen (slightly padded early)
-  histCeil = Math.max(histCeil, maxPts * (n >= 3 ? 1.0 : 1.05));
-  // Floor can sit near the low game but not below 0; with 1-2 games keep soft floor
-  if(n >= 3) histFloor = Math.min(histFloor, minPts);
-  else histFloor = Math.max(0, Math.min(histFloor, minPts * 0.85));
+  // Floor: ~20th percentile / mean−0.85σ, but never below a solid share of mean/proj
+  let histFloor = Math.min(p20, mean - 0.85 * sd);
+  const floorGuard = Math.max(mean * 0.42, proj * 0.40, 3);
+  histFloor = Math.max(histFloor, floorGuard);
+  // Do not force floor down to a fluke low if that low is far below guard
+  if(minPts >= floorGuard * 0.75) histFloor = Math.min(histFloor, minPts);
 
-  // Blend with projection center; range width still from player CV
-  const blendMean = (1 - w * 0.75) * proj + (w * 0.75) * mean;
-  const projFloor = Math.max(0, blendMean * (1 - 1.1 * Math.max(cv, defaultCv * 0.8)));
-  const projCeil = blendMean * (1 + 1.2 * Math.max(cv, defaultCv * 0.8));
+  // Ceiling: observed max and upper tail
+  let histCeil = Math.max(p80, mean + 1.05 * sd, maxPts);
+  if(n < 3) histCeil = Math.max(histCeil, maxPts * 1.04);
+
+  const blendMean = (1 - w * 0.7) * proj + (w * 0.7) * mean;
+  // Projection-side band uses capped CV (not 1.1*raw which hit zero)
+  const spreadLo = Math.min(0.50, 0.95 * cv);
+  const spreadHi = Math.min(0.70, 1.15 * cv);
+  const projFloor = Math.max(floorGuard * 0.9, blendMean * (1 - spreadLo));
+  const projCeil = blendMean * (1 + spreadHi);
 
   floor = (1 - w) * projFloor + w * histFloor;
   ceil = (1 - w) * projCeil + w * histCeil;
   proj = blendMean;
 
-  // Final hard rules from observed scores
-  ceil = Math.max(ceil, maxPts);
-  if(n >= 2) floor = Math.min(floor, mean); // floor should not sit above average
+  // Hard anchors
+  ceil = Math.max(ceil, maxPts, proj + 2);
+  floor = Math.max(floor, Math.min(floorGuard, proj * 0.45));
+  floor = Math.min(floor, proj * 0.92); // floor below middle
  } else {
-  // No history: position-based width, not flat 65/135 on every player
-  // Higher value / QB still wide; WR/TE wider than workhorse RB defaults already in POS_CV
-  floor = Math.max(0, proj * (1 - 1.05 * defaultCv));
-  ceil = proj * (1 + 1.25 * defaultCv);
-  if(hostFloor != null) floor = 0.5 * floor + 0.5 * hostFloor;
-  if(hostCeil != null) ceil = 0.5 * ceil + 0.5 * hostCeil;
+  const spreadLo = Math.min(0.48, 0.95 * defaultCv);
+  const spreadHi = Math.min(0.65, 1.2 * defaultCv);
+  floor = Math.max(3, proj * (1 - spreadLo));
+  ceil = proj * (1 + spreadHi);
+  if(hostFloor != null) floor = 0.4 * floor + 0.6 * hostFloor;
+  if(hostCeil != null) ceil = 0.4 * ceil + 0.6 * hostCeil;
  }
 
- if(floor > proj) floor = Math.max(0, proj * 0.55);
+ if(!(floor > 0)) floor = Math.max(3, proj * 0.45);
  if(ceil < proj) ceil = proj * (1 + defaultCv);
- if(ceil < floor + 1) ceil = floor + Math.max(4, proj * 0.2);
+ if(ceil < floor + 2) ceil = floor + Math.max(5, proj * 0.25);
+ // Final sanity: productive proj cannot show ~0 floor
+ if(proj >= 8) floor = Math.max(floor, proj * 0.38);
+ if(proj >= 15) floor = Math.max(floor, proj * 0.42);
+ if(proj >= 20) floor = Math.max(floor, proj * 0.45);
 
  return {
-  proj,
+  proj: Math.round(proj * 10) / 10,
   floor: Math.round(floor * 10) / 10,
   ceil: Math.round(ceil * 10) / 10,
   nHist: n
@@ -11672,8 +11681,8 @@ function buildStrategyBrief(){
    }
   }catch(e){}
  }
- if(floor == null) floor = Math.max(0, proj * 0.5);
- if(ceil == null) ceil = proj * 1.4;
+ if(floor == null || !(floor > 0)) floor = Math.max(3, proj * 0.45);
+ if(ceil == null || ceil < proj) ceil = proj * 1.35;
 
  let score = proj;
  if(!locked){
