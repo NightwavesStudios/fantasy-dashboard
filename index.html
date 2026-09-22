@@ -6241,8 +6241,8 @@ function countPosBodies(roster){
  proj = Number(proj);
  map[pid] = {
  proj,
- floor: Math.max(0, proj * 0.65),
- ceil: proj * 1.35,
+ floor: null,
+ ceil: null,
  source: 'sleeper',
  rangeEst: true,
  player_id: pid
@@ -6297,8 +6297,8 @@ function countPosBodies(roster){
  const locked = actual != null && actual > 0 && (liveProj == null || liveProj <= actual + 0.05) && (proj == null || actual >= proj * 0.92);
  map[pid] = {
  proj: useProj != null ? useProj : (actual != null ? actual : 0),
- floor: useProj != null ? Math.max(0, useProj * 0.65) : (prev.floor || 0),
- ceil: useProj != null ? useProj * 1.35 : (prev.ceil || 0),
+ floor: prev.floor != null && !prev.rangeEst ? prev.floor : null,
+ ceil: prev.ceil != null && !prev.rangeEst ? prev.ceil : null,
  source: prev.source && prev.source !== 'espn' ? 'espn+sleeper' : 'espn',
  rangeEst: !locked,
  actual: actual,
@@ -6528,19 +6528,69 @@ function countPosBodies(roster){
  }
 
  function playerHistWeekScores(p){
- // Past actual scores for this player from roster week cache
+ // Actual weekly scores from every source we have
  const scores = [];
- if(!p || !rosterWeekCache) return scores;
- const pid = String(p.id);
- const alt = p.sleeperId != null ? String(p.sleeperId) : null;
- Object.keys(rosterWeekCache).forEach(tid => {
- (rosterWeekCache[tid] || []).forEach(w => {
- const pp = w.players_points || w.playersPoints || {};
- let pts = pp[pid];
- if(pts == null && alt) pts = pp[alt];
- if(typeof pts === 'number' && pts >= 0) scores.push({ week: w.week, pts });
- });
- });
+ if(!p) return scores;
+ const ids = new Set([String(p.id)]);
+ if(p.sleeperId != null) ids.add(String(p.sleeperId));
+ if(p.espnId != null) ids.add(String(p.espnId));
+ const seen = new Set(); // week key
+
+ function push(week, pts){
+  if(typeof pts !== 'number' || !(pts >= 0) || !isFinite(pts)) return;
+  const key = String(week) + '|' + pts.toFixed(2);
+  if(seen.has(key)) return;
+  seen.add(key);
+  scores.push({ week: week, pts: pts });
+ }
+
+ // 1) Roster week cache (host scoring by week)
+ if(rosterWeekCache){
+  Object.keys(rosterWeekCache).forEach(tid => {
+   (rosterWeekCache[tid] || []).forEach(w => {
+    const pp = w.players_points || w.playersPoints || {};
+    ids.forEach(id => {
+     if(pp[id] != null) push(w.week, Number(pp[id]));
+     if(pp[Number(id)] != null) push(w.week, Number(pp[Number(id)]));
+    });
+   });
+  });
+ }
+
+ // 2) Matchup player points (completed / live)
+ try{
+  (matchupCache || []).forEach(m => {
+   const week = m.week;
+   [m.playersPointsA, m.playersPointsB].forEach(pp => {
+    if(!pp) return;
+    ids.forEach(id => {
+     if(pp[id] != null) push(week, Number(pp[id]));
+     if(pp[Number(id)] != null) push(week, Number(pp[Number(id)]));
+    });
+   });
+  });
+ }catch(e){}
+
+ // 3) Projection cache actual when locked
+ try{
+  ids.forEach(id => {
+   const row = projectionCache && projectionCache[id];
+   if(row && typeof row.actual === 'number' && row.actual > 0)
+    push(projectionCacheWeek || 0, row.actual);
+  });
+ }catch(e){}
+
+ // 4) Live points map
+ try{
+  if(typeof getLiveWeekPoints === 'function'){
+   ids.forEach(id => {
+    const live = getLiveWeekPoints(id, null);
+    if(typeof live === 'number' && live > 0)
+     push(projectionCacheWeek || 0, live);
+   });
+  }
+ }catch(e){}
+
  return scores;
  }
 
@@ -6586,45 +6636,93 @@ function countPosBodies(roster){
  }
 
  function playerFloorCeil(p, week, curWeek){
- // Blend projection floor/ceil with real weekly variance as sample grows
+ // Player-specific range. Real scores dominate when we have them.
+ // Boom/bust (high CV) → wider band. Steady (low CV) → tighter.
+ // Ceiling is never below an observed high. Floor is never a fixed % of proj.
  const row = getPlayerProjection(p.id, p.fullName || p.name) || {};
- const hist = playerHistWeekScores(p).map(x => x.pts).filter(v => typeof v === 'number');
- let proj = typeof row.proj === 'number' ? row.proj : null;
- let floor = typeof row.floor === 'number' ? row.floor : null;
- let ceil = typeof row.ceil === 'number' ? row.ceil : null;
- if(proj == null || !(proj > 0)){
+ const hist = playerHistWeekScores(p).map(x => x.pts).filter(v => typeof v === 'number' && isFinite(v));
  const pos = p.position || 'WR';
- const base = (typeof POS_WEEKLY_BASE !== 'undefined' && POS_WEEKLY_BASE[pos]) || 8;
- const v = p.value || 0;
- const boost = v > 0 ? Math.min(14, Math.log10(Math.max(100, v)) * 3.2 - 4) : 0;
- proj = Math.max(2, base + boost);
- }
- if(floor == null) floor = Math.max(0, proj * 0.62);
- if(ceil == null) ceil = proj * 1.38;
 
- if(hist.length >= 1){
- const mean = hist.reduce((a,b)=>a+b,0) / hist.length;
- let sd = 6;
- if(hist.length >= 2){
-  sd = Math.sqrt(hist.reduce((s,x)=>s+(x-mean)*(x-mean),0) / Math.max(1, hist.length - 1));
+ // Default coefficient of variation by position (no history yet)
+ const POS_CV = { QB: 0.30, RB: 0.34, WR: 0.42, TE: 0.38, DST: 0.50, K: 0.42, DEF: 0.50 };
+ let defaultCv = POS_CV[pos] || 0.36;
+
+ let proj = typeof row.proj === 'number' && row.proj > 0 ? row.proj : null;
+ if(proj == null){
+  const base = (typeof POS_WEEKLY_BASE !== 'undefined' && POS_WEEKLY_BASE[pos]) || 8;
+  const v = p.value || 0;
+  const boost = v > 0 ? Math.min(14, Math.log10(Math.max(100, v)) * 3.2 - 4) : 0;
+  proj = Math.max(2, base + boost);
  }
- const sorted = hist.slice().sort((a,b)=>a-b);
- const p10 = sorted[Math.max(0, Math.floor((sorted.length - 1) * 0.1))];
- const p90 = sorted[Math.min(sorted.length - 1, Math.ceil((sorted.length - 1) * 0.9))];
- const histFloor = hist.length >= 2 ? Math.max(0, Math.min(p10, mean - 1.15 * sd)) : Math.max(0, mean * 0.7);
- const histCeil = hist.length >= 2 ? Math.max(histFloor + 1, Math.max(p90, mean + 1.15 * sd)) : mean * 1.3;
- // Weight real scores more as (a) sample grows and (b) season week advances
- const sampleW = hist.length / (hist.length + 3);
- const seasonW = Math.min(0.85, Math.max(0, (Number(curWeek) || 1) - 1) / 10); // ~0 at wk1, ~0.85 by wk10+
- const w = Math.min(0.92, sampleW * 0.55 + seasonW * 0.45 + sampleW * seasonW * 0.25);
- floor = (1 - w) * floor + w * histFloor;
- ceil = (1 - w) * ceil + w * histCeil;
- proj = (1 - w * 0.7) * proj + (w * 0.7) * mean;
+
+ // Ignore host floor/ceil if they were the synthetic ±35% estimate
+ let hostFloor = (typeof row.floor === 'number' && !row.rangeEst) ? row.floor : null;
+ let hostCeil = (typeof row.ceil === 'number' && !row.rangeEst) ? row.ceil : null;
+
+ let floor, ceil;
+ const n = hist.length;
+
+ if(n >= 1){
+  const mean = hist.reduce((a,b) => a + b, 0) / n;
+  const maxPts = Math.max(...hist);
+  const minPts = Math.min(...hist);
+  let sd = 0;
+  if(n >= 2){
+   sd = Math.sqrt(hist.reduce((s,x) => s + (x - mean) * (x - mean), 0) / (n - 1));
+  } else {
+   // One game: use pos default CV around that score
+   sd = Math.max(3, mean * defaultCv);
+  }
+  const cv = mean > 1 ? sd / mean : defaultCv;
+
+  // How hard we trust the sample (more games → more weight on reality)
+  const sampleW = n / (n + 2);           // 1 game ~0.33, 2 ~0.5, 4 ~0.67, 8 ~0.8
+  const seasonW = Math.min(1, Math.max(0, (Number(curWeek) || n) - 1) / 8);
+  const w = Math.min(0.95, sampleW * 0.7 + seasonW * 0.3);
+
+  // Empirical band: mean ± k*sd; k shrinks slightly with more games (confidence)
+  const k = n >= 6 ? 1.0 : n >= 3 ? 1.15 : 1.35;
+  let histFloor = Math.max(0, mean - k * sd);
+  let histCeil = mean + k * sd;
+
+  // Hard anchors to what actually happened
+  // Ceiling must clear the best game we have seen (slightly padded early)
+  histCeil = Math.max(histCeil, maxPts * (n >= 3 ? 1.0 : 1.05));
+  // Floor can sit near the low game but not below 0; with 1-2 games keep soft floor
+  if(n >= 3) histFloor = Math.min(histFloor, minPts);
+  else histFloor = Math.max(0, Math.min(histFloor, minPts * 0.85));
+
+  // Blend with projection center; range width still from player CV
+  const blendMean = (1 - w * 0.75) * proj + (w * 0.75) * mean;
+  const projFloor = Math.max(0, blendMean * (1 - 1.1 * Math.max(cv, defaultCv * 0.8)));
+  const projCeil = blendMean * (1 + 1.2 * Math.max(cv, defaultCv * 0.8));
+
+  floor = (1 - w) * projFloor + w * histFloor;
+  ceil = (1 - w) * projCeil + w * histCeil;
+  proj = blendMean;
+
+  // Final hard rules from observed scores
+  ceil = Math.max(ceil, maxPts);
+  if(n >= 2) floor = Math.min(floor, mean); // floor should not sit above average
+ } else {
+  // No history: position-based width, not flat 65/135 on every player
+  // Higher value / QB still wide; WR/TE wider than workhorse RB defaults already in POS_CV
+  floor = Math.max(0, proj * (1 - 1.05 * defaultCv));
+  ceil = proj * (1 + 1.25 * defaultCv);
+  if(hostFloor != null) floor = 0.5 * floor + 0.5 * hostFloor;
+  if(hostCeil != null) ceil = 0.5 * ceil + 0.5 * hostCeil;
  }
- // Ensure order
- if(floor > proj) floor = proj * 0.75;
- if(ceil < proj) ceil = proj * 1.2;
- return { proj, floor, ceil, nHist: hist.length };
+
+ if(floor > proj) floor = Math.max(0, proj * 0.55);
+ if(ceil < proj) ceil = proj * (1 + defaultCv);
+ if(ceil < floor + 1) ceil = floor + Math.max(4, proj * 0.2);
+
+ return {
+  proj,
+  floor: Math.round(floor * 10) / 10,
+  ceil: Math.round(ceil * 10) / 10,
+  nHist: n
+ };
  }
 
  function playerWeeklyPtsForWeek(p, week, curWeek, opts){
@@ -11522,8 +11620,8 @@ function buildStrategyBrief(){
 
  if(row && row.proj != null && row.proj > 0){
  proj = row.proj;
- floor = row.floor != null ? row.floor : proj * 0.65;
- ceil = row.ceil != null ? row.ceil : proj * 1.35;
+ floor = row.floor != null && !row.rangeEst ? row.floor : null;
+ ceil = row.ceil != null && !row.rangeEst ? row.ceil : null;
  source = row.source || 'host';
  if(row.locked && row.actual != null){
  actual = row.actual;
@@ -11559,6 +11657,23 @@ function buildStrategyBrief(){
  if(proj == null || !(proj >= 0)){
  return { proj: null, floor: null, ceil: null, score: -1, onBye: false, source: 'none', locked: false, noProj: true };
  }
+
+ // Player-specific floor/ceiling from real weekly scores + position variance
+ if(!locked && (floor == null || ceil == null || row.rangeEst)){
+  try{
+   const curWeek = (ctx && ctx.byeWeek != null) ? ctx.byeWeek : ((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1);
+   const fc = playerFloorCeil(p, curWeek, curWeek);
+   if(fc){
+    if(floor == null || row.rangeEst) floor = fc.floor;
+    if(ceil == null || row.rangeEst) ceil = fc.ceil;
+    // Soft pull proj toward blended mean when we have history
+    if(fc.nHist >= 1 && typeof fc.proj === 'number')
+     proj = 0.55 * proj + 0.45 * fc.proj;
+   }
+  }catch(e){}
+ }
+ if(floor == null) floor = Math.max(0, proj * 0.5);
+ if(ceil == null) ceil = proj * 1.4;
 
  let score = proj;
  if(!locked){
