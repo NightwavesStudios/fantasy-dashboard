@@ -2382,6 +2382,127 @@
  }
  .tb-badge.block { background: rgba(61,143,95,0.2); color: #3d8f5f; }
  .tb-badge.locked { background: rgba(196,92,82,0.15); color: #c45c52; }
+
+ .player-card-link {
+ background: none;
+ border: none;
+ padding: 0;
+ margin: 0;
+ font: inherit;
+ color: inherit;
+ font-weight: 650;
+ cursor: pointer;
+ text-align: left;
+ border-bottom: 1px dashed transparent;
+ }
+ .player-card-link:hover {
+ color: var(--accent);
+ border-bottom-color: var(--accent);
+ }
+ .pc-overlay {
+ display: none;
+ position: fixed;
+ inset: 0;
+ background: rgba(0,0,0,0.45);
+ z-index: 9000;
+ align-items: flex-end;
+ justify-content: center;
+ padding: 12px;
+ }
+ .pc-overlay.show { display: flex; }
+ @media (min-width: 640px) {
+ .pc-overlay { align-items: center; }
+ }
+ .pc-sheet {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: 12px;
+ width: min(440px, 100%);
+ max-height: min(88vh, 720px);
+ overflow: auto;
+ box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+ padding: 0;
+ }
+ .pc-head {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-start;
+ gap: 12px;
+ padding: 16px 16px 12px;
+ border-bottom: 1px solid var(--border);
+ position: sticky;
+ top: 0;
+ background: var(--surface);
+ z-index: 1;
+ }
+ .pc-head h2 {
+ margin: 0;
+ font-size: 18px;
+ font-weight: 700;
+ letter-spacing: -0.02em;
+ }
+ .pc-meta { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+ .pc-close {
+ background: var(--surface-2);
+ border: 1px solid var(--border);
+ border-radius: 8px;
+ width: 32px; height: 32px;
+ cursor: pointer;
+ font-size: 18px;
+ line-height: 1;
+ color: var(--text);
+ }
+ .pc-body { padding: 14px 16px 18px; }
+ .pc-stats {
+ display: grid;
+ grid-template-columns: repeat(3, 1fr);
+ gap: 8px;
+ margin-bottom: 14px;
+ }
+ .pc-stat {
+ background: var(--surface-2);
+ border-radius: 8px;
+ padding: 10px 8px;
+ text-align: center;
+ }
+ .pc-stat .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+ .pc-stat .val { font-size: 18px; font-weight: 700; margin-top: 2px; }
+ .pc-ratings {
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 10px;
+ margin-bottom: 14px;
+ }
+ .pc-rate {
+ border: 1px solid var(--border);
+ border-radius: 8px;
+ padding: 10px 12px;
+ }
+ .pc-rate .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 4px; }
+ .pc-stars { color: var(--accent); font-size: 15px; letter-spacing: 1px; }
+ .pc-rate .hint { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.35; }
+ .pc-section-title {
+ font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+ color: var(--text-muted); margin: 12px 0 8px;
+ }
+ .pc-bars { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 4px 0 0; }
+ .pc-bar-wrap {
+ flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;
+ justify-content: flex-end; min-width: 0;
+ }
+ .pc-bar {
+ width: 100%; max-width: 28px; border-radius: 4px 4px 0 0;
+ background: var(--accent); min-height: 2px;
+ }
+ .pc-bar-lbl { font-size: 9px; color: var(--text-muted); margin-top: 4px; }
+ .pc-bar-pts { font-size: 10px; font-weight: 650; margin-bottom: 2px; }
+ .pc-sources {
+ font-size: 12px; color: var(--text-secondary); line-height: 1.45;
+ background: var(--surface-2); border-radius: 8px; padding: 10px 12px;
+ }
+ .pc-sources li { margin: 0 0 4px 0; }
+ .pc-empty { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
+
 </style>
 </head>
 <body>
@@ -3426,6 +3547,20 @@
  </div>
 </div>
 
+
+<div class="pc-overlay" id="player-card-overlay" role="dialog" aria-modal="true" aria-labelledby="pc-title">
+ <div class="pc-sheet" id="player-card-sheet">
+ <div class="pc-head">
+ <div>
+ <h2 id="pc-title">Player</h2>
+ <div class="pc-meta" id="pc-meta"></div>
+ </div>
+ <button type="button" class="pc-close" id="pc-close" aria-label="Close">×</button>
+ </div>
+ <div class="pc-body" id="pc-body"></div>
+ </div>
+</div>
+
 <script>
 (function(){
  "use strict";
@@ -3810,7 +3945,197 @@
  });
  }
 
- function escapeHtml(s){
+ 
+ function playerCardLink(name, id){
+  if(!name) return '';
+  const n = String(name);
+  const i = id != null ? String(id) : '';
+  return `<button type="button" class="player-card-link" data-player-card="${escapeHtml(n)}" data-player-id="${escapeHtml(i)}">${escapeHtml(n)}</button>`;
+ }
+
+ function resolvePlayerForCard(name, id){
+  const wantId = id != null && id !== '' ? String(id) : null;
+  const wantName = normalizeName(name || '');
+  let found = null;
+  (state.teams || []).forEach(t => {
+   (t.roster || []).forEach(p => {
+    if(found) return;
+    if(wantId && (String(p.id) === wantId || String(p.sleeperId) === wantId)) found = { player: p, team: t };
+    else if(wantName && normalizeName(p.fullName || p.name) === wantName) found = { player: p, team: t };
+   });
+  });
+  if(found) return found;
+  // FA / FC pool
+  try{
+   const pool = state.fcValues || [];
+   const entry = pool.find(e => e.player && (
+    (wantName && normalizeName(e.player.name) === wantName) ||
+    (wantId && String(e.player.sleeperId) === wantId)
+   ));
+   if(entry && entry.player){
+    return {
+     player: {
+      id: entry.player.sleeperId || entry.player.id || wantId,
+      fullName: entry.player.name,
+      name: entry.player.name,
+      position: entry.player.position || entry.position,
+      value: entry.value,
+      teamAbbr: entry.player.maybeTeam || entry.player.team,
+      injuryStatus: entry.player.injuryStatus || null,
+      fcEntry: entry
+     },
+     team: null
+    };
+   }
+  }catch(e){}
+  return {
+   player: { id: wantId, fullName: name, name: name, position: '—', value: null },
+   team: null
+  };
+ }
+
+ function starRow(n){
+  const full = Math.max(0, Math.min(5, Math.round(n)));
+  return '★'.repeat(full) + '☆'.repeat(5 - full);
+ }
+
+ function playerUpsideBust(p, fc){
+  // 1–5 scores from range shape + sample confidence
+  const proj = fc && fc.proj > 0 ? fc.proj : 10;
+  const floor = fc && fc.floor != null ? fc.floor : proj * 0.45;
+  const ceil = fc && fc.ceil != null ? fc.ceil : proj * 1.3;
+  const conf = fc && fc.conf != null ? fc.conf : 0.3;
+  const upRatio = (ceil - proj) / Math.max(1, proj);
+  const downRatio = (proj - floor) / Math.max(1, proj);
+  // Upside: how much ceiling sticks out
+  let upside = 1 + upRatio / 0.12; // ~0.12 relative → +1 star
+  upside = Math.max(1, Math.min(5, upside));
+  // Bust: how soft the floor is vs proj
+  let bust = 1 + downRatio / 0.14;
+  bust = Math.max(1, Math.min(5, bust));
+  // Low conf → pull both toward middle (less certain call)
+  if(conf < 0.35){
+   upside = 0.55 * upside + 0.45 * 3;
+   bust = 0.55 * bust + 0.45 * 3;
+  }
+  return {
+   upside: Math.round(upside * 10) / 10,
+   bust: Math.round(bust * 10) / 10,
+   conf
+  };
+ }
+
+ function openPlayerCard(name, id){
+  const overlay = el('player-card-overlay');
+  const body = el('pc-body');
+  const title = el('pc-title');
+  const meta = el('pc-meta');
+  if(!overlay || !body) return;
+
+  const resolved = resolvePlayerForCard(name, id);
+  const p = resolved.player;
+  const team = resolved.team;
+  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+  let fc = { proj: null, floor: null, ceil: null, nHist: 0, conf: 0 };
+  try{ fc = playerFloorCeil(p, curWeek, curWeek) || fc; }catch(e){}
+  const hist = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
+  const scores = hist.filter(h => h.pts > 0.5).sort((a,b) => (a.week || 0) - (b.week || 0));
+  const ratings = playerUpsideBust(p, fc);
+  const inj = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : (p.injuryStatus || null);
+  const injLab = inj && inj !== 'ok' && typeof injuryLabel === 'function' ? injuryLabel(inj) : (inj && inj !== 'ok' ? String(inj) : null);
+
+  if(title) title.textContent = p.fullName || p.name || name || 'Player';
+  if(meta){
+   const bits = [];
+   if(p.position) bits.push(p.position);
+   if(p.teamAbbr) bits.push(p.teamAbbr);
+   if(team) bits.push(team.name);
+   else bits.push('Free agent');
+   if(p.value != null) bits.push('FC ' + Math.round(p.value));
+   if(injLab) bits.push(injLab);
+   meta.textContent = bits.join(' · ');
+  }
+
+  const maxBar = Math.max(10, ...scores.map(s => s.pts), fc.ceil || 0, fc.proj || 0);
+  let bars = '';
+  if(scores.length){
+   bars = `<div class="pc-bars">` + scores.map(s => {
+    const h = Math.max(4, Math.round((s.pts / maxBar) * 88));
+    return `<div class="pc-bar-wrap">
+     <div class="pc-bar-pts">${s.pts.toFixed(1)}</div>
+     <div class="pc-bar" style="height:${h}px"></div>
+     <div class="pc-bar-lbl">W${s.week != null ? s.week : '?'}</div>
+    </div>`;
+   }).join('') + `</div>`;
+  } else {
+   bars = `<div class="pc-empty">No weekly scores stored yet. Played games will show here after load / refresh.</div>`;
+  }
+
+  const confPct = Math.round((ratings.conf || 0) * 100);
+  const sources = [];
+  sources.push('Projection: ' + ((getPlayerProjection(p.id, p.fullName || p.name) || {}).source || 'estimate / host'));
+  sources.push('Weekly scores: host matchups + roster week cache (' + scores.length + ' game' + (scores.length === 1 ? '' : 's') + ')');
+  sources.push('Floor/ceiling confidence: ' + confPct + '% (more games and fewer missed weeks → higher)');
+  if(p.value != null) sources.push('Market value: FantasyCalc');
+  if(p.onTradeBlock) sources.push('Listed on a trade block (host data)');
+  if(p.tradeLocked) sources.push('Trade locked (host)');
+
+  body.innerHTML = `
+   <div class="pc-stats">
+    <div class="pc-stat"><div class="lbl">Proj</div><div class="val">${fc.proj != null ? fc.proj : '—'}</div></div>
+    <div class="pc-stat"><div class="lbl">Floor</div><div class="val">${fc.floor != null ? fc.floor : '—'}</div></div>
+    <div class="pc-stat"><div class="lbl">Ceiling</div><div class="val">${fc.ceil != null ? fc.ceil : '—'}</div></div>
+   </div>
+   <div class="pc-ratings">
+    <div class="pc-rate">
+     <div class="lbl">Upside</div>
+     <div class="pc-stars">${starRow(ratings.upside)} <span style="font-size:12px;color:var(--text-muted)">${ratings.upside}/5</span></div>
+     <div class="hint">Room above projection (boom range).</div>
+    </div>
+    <div class="pc-rate">
+     <div class="lbl">Bust risk</div>
+     <div class="pc-stars">${starRow(ratings.bust)} <span style="font-size:12px;color:var(--text-muted)">${ratings.bust}/5</span></div>
+     <div class="hint">How soft the floor is vs the middle.</div>
+    </div>
+   </div>
+   <div class="pc-section-title">Points by week</div>
+   ${bars}
+   <div class="pc-section-title">Where this comes from</div>
+   <ul class="pc-sources">${sources.map(s => '<li>' + escapeHtml(s) + '</li>').join('')}</ul>
+  `;
+
+  overlay.classList.add('show');
+ }
+
+ function closePlayerCard(){
+  const overlay = el('player-card-overlay');
+  if(overlay) overlay.classList.remove('show');
+ }
+
+ function bindPlayerCardUi(){
+  if(window._pcBound) return;
+  window._pcBound = true;
+  document.addEventListener('click', (ev) => {
+   const hit = ev.target.closest && ev.target.closest('[data-player-card]');
+   if(hit){
+    ev.preventDefault();
+    openPlayerCard(hit.getAttribute('data-player-card'), hit.getAttribute('data-player-id'));
+    return;
+   }
+   if(ev.target.id === 'pc-close' || ev.target.classList.contains('pc-close')){
+    closePlayerCard();
+    return;
+   }
+   if(ev.target.id === 'player-card-overlay') closePlayerCard();
+  });
+  document.addEventListener('keydown', (ev) => {
+   if(ev.key === 'Escape') closePlayerCard();
+  });
+ }
+ try{ bindPlayerCardUi(); }catch(e){}
+
+
+function escapeHtml(s){
  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  }
 
@@ -4998,7 +5323,7 @@
      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;">
       <div>
        <span style="color:var(--text-muted);font-size:12px;margin-right:6px;">#${idx+1}</span>
-       <strong>${escapeHtml(fa.name)}</strong>
+       ${playerCardLink(fa.name, fa.id)}
        <span style="color:var(--text-muted);"> · ${escapeHtml(fa.position || '')}</span>
        <span style="margin-left:8px;font-weight:650;">${metric}</span>
       </div>
@@ -5024,7 +5349,7 @@
    : (fa.value != null ? Math.round(fa.value) : '—');
   return `<tr>
    <td>${i + 1}</td>
-   <td><strong>${escapeHtml(fa.name)}</strong></td>
+   <td>${playerCardLink(fa.name, fa.id)}</td>
    <td>${escapeHtml(fa.position || '')}</td>
    <td class="val-cell">${cell}</td>
    <td style="color:#c45c52;font-size:12.5px;">${escapeHtml(dropName)}</td>
@@ -6636,15 +6961,16 @@ function countPosBodies(roster){
  }
 
  function playerFloorCeil(p, week, curWeek){
- // Player-specific range from real scores when available.
- // Floor stays a realistic "bad but played" outcome — not 0 for every starter.
- // Ceiling tracks observed highs and boom variance.
+ // Floor/ceiling width = confidence.
+ // More real games → tighter band, more weight on history.
+ // Few games (early season or missed weeks / injury) → wider band, lean on proj.
  const row = getPlayerProjection(p.id, p.fullName || p.name) || {};
- // Drop zero/DNP noise so one empty week does not force floor to 0
- const hist = playerHistWeekScores(p)
+ const histRaw = playerHistWeekScores(p);
+ const hist = histRaw
   .map(x => x.pts)
   .filter(v => typeof v === 'number' && isFinite(v) && v > 0.5);
  const pos = p.position || 'WR';
+ const cw = Number(curWeek) || Number(week) || 1;
 
  const POS_CV = { QB: 0.28, RB: 0.32, WR: 0.38, TE: 0.34, DST: 0.45, K: 0.40, DEF: 0.45 };
  const defaultCv = POS_CV[pos] || 0.34;
@@ -6661,6 +6987,19 @@ function countPosBodies(roster){
  const hostCeil = (typeof row.ceil === 'number' && !row.rangeEst && row.ceil > proj) ? row.ceil : null;
 
  const n = hist.length;
+ // Expected games by now (~1 per week). Missing weeks (injury/DNP) lower confidence.
+ const expectedGames = Math.max(1, cw - 1);
+ const availability = Math.min(1, n / expectedGames);
+ // Sample confidence: 0 with no games → ~0.85 with 8+ games
+ const sampleConf = n <= 0 ? 0 : n / (n + 3);
+ // Season confidence: early weeks stay uncertain even with data
+ const seasonConf = Math.min(1, Math.max(0, (cw - 1) / 10));
+ // Combined: need both sample and calendar; availability penalizes injury gaps
+ let conf = sampleConf * (0.45 + 0.55 * seasonConf) * (0.55 + 0.45 * availability);
+ conf = Math.max(0, Math.min(0.92, conf));
+ // Low confidence inflates spread; high confidence tightens toward empirical band
+ const widen = 1 + (1 - conf) * 0.85;  // conf 0 → 1.85× width; conf 0.9 → ~1.08×
+
  let floor, ceil;
 
  if(n >= 1){
@@ -6670,67 +7009,66 @@ function countPosBodies(roster){
   let sd = n >= 2
    ? Math.sqrt(hist.reduce((s,x) => s + (x - mean) * (x - mean), 0) / (n - 1))
    : Math.max(2.5, mean * defaultCv);
-  // Cap extreme CV from tiny samples so floor does not collapse
   let cv = mean > 1 ? sd / mean : defaultCv;
   cv = Math.min(0.55, Math.max(0.12, cv));
-  sd = cv * mean;
-
-  const sampleW = n / (n + 2);
-  const seasonW = Math.min(1, Math.max(0, (Number(curWeek) || n) - 1) / 8);
-  const w = Math.min(0.92, sampleW * 0.7 + seasonW * 0.3);
+  // When uncertain, allow wider CV for the band only
+  const bandCv = Math.min(0.65, cv * widen);
+  sd = bandCv * mean;
 
   const sorted = hist.slice().sort((a,b) => a - b);
-  const p20 = sorted[Math.max(0, Math.floor((n - 1) * 0.2))];
-  const p80 = sorted[Math.min(n - 1, Math.ceil((n - 1) * 0.8))];
+  const loIdx = Math.max(0, Math.floor((n - 1) * (0.15 + (1 - conf) * 0.1))); // more uncertain → lower percentile
+  const hiIdx = Math.min(n - 1, Math.ceil((n - 1) * (0.85 - (1 - conf) * 0.05)));
+  const pLo = sorted[loIdx];
+  const pHi = sorted[hiIdx];
 
-  // Floor: ~20th percentile / mean−0.85σ, but never below a solid share of mean/proj
-  let histFloor = Math.min(p20, mean - 0.85 * sd);
-  const floorGuard = Math.max(mean * 0.42, proj * 0.40, 3);
-  histFloor = Math.max(histFloor, floorGuard);
-  // Do not force floor down to a fluke low if that low is far below guard
-  if(minPts >= floorGuard * 0.75) histFloor = Math.min(histFloor, minPts);
+  const sigmaK = 0.7 + (1 - conf) * 0.55; // more σ when unsure
+  let histFloor = Math.min(pLo, mean - sigmaK * (cv * mean));
+  const floorGuard = Math.max(mean * (0.38 + conf * 0.08), proj * (0.36 + conf * 0.08), 3);
+  histFloor = Math.max(histFloor, floorGuard * (0.9 + conf * 0.1));
+  if(minPts >= floorGuard * 0.8) histFloor = Math.max(histFloor, Math.min(minPts, mean * 0.7));
 
-  // Ceiling: observed max and upper tail
-  let histCeil = Math.max(p80, mean + 1.05 * sd, maxPts);
-  if(n < 3) histCeil = Math.max(histCeil, maxPts * 1.04);
+  let histCeil = Math.max(pHi, mean + sigmaK * (cv * mean), maxPts);
+  if(conf < 0.45) histCeil = Math.max(histCeil, maxPts * (1.06 + (1 - conf) * 0.08));
 
-  const blendMean = (1 - w * 0.7) * proj + (w * 0.7) * mean;
-  // Projection-side band uses capped CV (not 1.1*raw which hit zero)
-  const spreadLo = Math.min(0.50, 0.95 * cv);
-  const spreadHi = Math.min(0.70, 1.15 * cv);
-  const projFloor = Math.max(floorGuard * 0.9, blendMean * (1 - spreadLo));
+  // Blend center: low conf → keep host proj; high conf → pull to mean
+  const blendMean = (1 - conf * 0.8) * proj + (conf * 0.8) * mean;
+  const spreadLo = Math.min(0.52, 0.9 * bandCv);
+  const spreadHi = Math.min(0.75, 1.2 * bandCv);
+  const projFloor = Math.max(floorGuard * 0.85, blendMean * (1 - spreadLo));
   const projCeil = blendMean * (1 + spreadHi);
 
-  floor = (1 - w) * projFloor + w * histFloor;
-  ceil = (1 - w) * projCeil + w * histCeil;
+  floor = (1 - conf) * projFloor + conf * histFloor;
+  ceil = (1 - conf) * projCeil + conf * histCeil;
   proj = blendMean;
 
-  // Hard anchors
   ceil = Math.max(ceil, maxPts, proj + 2);
-  floor = Math.max(floor, Math.min(floorGuard, proj * 0.45));
-  floor = Math.min(floor, proj * 0.92); // floor below middle
+  floor = Math.max(floor, Math.min(floorGuard, proj * (0.40 + conf * 0.05)));
+  floor = Math.min(floor, proj * 0.90);
  } else {
-  const spreadLo = Math.min(0.48, 0.95 * defaultCv);
-  const spreadHi = Math.min(0.65, 1.2 * defaultCv);
+  // No scores yet — maximum uncertainty
+  conf = Math.min(conf, 0.12);
+  const spreadLo = Math.min(0.52, defaultCv * widen);
+  const spreadHi = Math.min(0.72, defaultCv * 1.35 * widen);
   floor = Math.max(3, proj * (1 - spreadLo));
   ceil = proj * (1 + spreadHi);
-  if(hostFloor != null) floor = 0.4 * floor + 0.6 * hostFloor;
-  if(hostCeil != null) ceil = 0.4 * ceil + 0.6 * hostCeil;
+  if(hostFloor != null) floor = 0.35 * floor + 0.65 * hostFloor;
+  if(hostCeil != null) ceil = 0.35 * ceil + 0.65 * hostCeil;
  }
 
- if(!(floor > 0)) floor = Math.max(3, proj * 0.45);
- if(ceil < proj) ceil = proj * (1 + defaultCv);
+ if(!(floor > 0)) floor = Math.max(3, proj * 0.42);
+ if(ceil < proj) ceil = proj * (1 + defaultCv * widen);
  if(ceil < floor + 2) ceil = floor + Math.max(5, proj * 0.25);
- // Final sanity: productive proj cannot show ~0 floor
- if(proj >= 8) floor = Math.max(floor, proj * 0.38);
- if(proj >= 15) floor = Math.max(floor, proj * 0.42);
- if(proj >= 20) floor = Math.max(floor, proj * 0.45);
+ if(proj >= 8) floor = Math.max(floor, proj * 0.36);
+ if(proj >= 15) floor = Math.max(floor, proj * 0.40);
+ if(proj >= 20) floor = Math.max(floor, proj * 0.43);
 
  return {
   proj: Math.round(proj * 10) / 10,
   floor: Math.round(floor * 10) / 10,
   ceil: Math.round(ceil * 10) / 10,
-  nHist: n
+  nHist: n,
+  conf: Math.round(conf * 100) / 100,
+  availability: Math.round(availability * 100) / 100
  };
  }
 
@@ -9833,7 +10171,7 @@ function runTradeFinder(){
  const col = injurySeverity(x.status) >= 3 ? '#c45c52' : injurySeverity(x.status) === 2 ? '#c9a227' : 'var(--text-muted)';
  return `<div class="hist-card" style="padding:10px 12px;margin-bottom:8px;">
  <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
- <div><strong>${escapeHtml(x.player.fullName)}</strong>
+ <div><strong>${playerCardLink(x.player.fullName, x.player.id)}</strong>
  <span style="color:var(--text-muted);"> · ${escapeHtml(x.player.position||'')}</span>
  ${x.wouldStart ? ' <span style="color:var(--accent);font-size:11px;font-weight:600;">STARTER</span>' : ' <span style="color:var(--text-muted);font-size:11px;">bench</span>'}
  </div>
@@ -10027,9 +10365,9 @@ function runTradeFinder(){
    return true;
   });
   if(backups.length){
-   steps.push(`<div class="cover-step"><strong>Bench cover for ${escapeHtml(x.player.fullName)}</strong>: start ${escapeHtml(backups[0].fullName)} (${escapeHtml(pos)}).</div>`);
+   steps.push(`<div class="cover-step"><strong>Bench cover for ${playerCardLink(x.player.fullName, x.player.id)}</strong>: start ${escapeHtml(backups[0].fullName)} (${escapeHtml(pos)}).</div>`);
   } else {
-   steps.push(`<div class="cover-step warn"><strong>No bench ${escapeHtml(pos)}</strong> behind ${escapeHtml(x.player.fullName)}. Grab one on waivers.</div>`);
+   steps.push(`<div class="cover-step warn"><strong>No bench ${escapeHtml(pos)}</strong> behind ${playerCardLink(x.player.fullName, x.player.id)}. Grab one on waivers.</div>`);
   }
  });
  steps.push(`<div class="cover-step"><button type="button" class="btn btn-primary btn-sm" id="btn-cover-go-waivers">Open waivers</button> <button type="button" class="btn btn-ghost btn-sm" id="btn-cover-go-lineup">Then set lineup</button></div>`);
@@ -10057,7 +10395,7 @@ function runTradeFinder(){
  const col = x.unavail ? '#c45c52' : '#c9a227';
  return `<div class="hist-card" style="padding:10px 12px;">
  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
- <div><strong>${escapeHtml(x.player.fullName)}</strong>
+ <div><strong>${playerCardLink(x.player.fullName, x.player.id)}</strong>
  <span style="color:var(--text-muted);"> · ${escapeHtml(x.player.position||'')}</span></div>
  <div style="color:${col};font-weight:700;">${escapeHtml(reason)}</div>
  </div>
@@ -11986,7 +12324,7 @@ function buildStrategyBrief(){
 
  const benchRows = res.bench.map(b => `
  <tr>
- <td>${escapeHtml(b.name)}</td>
+ <td>${playerCardLink(b.name, b.id)}</td>
  <td>${escapeHtml(b.position)}</td>
  <td class="val-cell">${fmtPts(b.proj)}</td>
  <td class="val-cell">${fmtPts(b.floor)}</td>
@@ -11999,7 +12337,7 @@ function buildStrategyBrief(){
  `<div style="color:#c45c52;font-weight:700;">BENCH ${escapeHtml(p.name)}${p.position ? ' (' + escapeHtml(p.position) + ')' : ''}</div>`
  ).join('');
  const startRows = (res.startThem || []).filter(a => !a.locked).map(a =>
- `<div style="color:#3d8f5f;font-weight:700;">Start ${escapeHtml(a.name)} <span style="font-weight:500;color:#888;">(${escapeHtml(a.slotKind)})</span></div>`
+ `<div style="color:#3d8f5f;font-weight:700;">Start ${playerCardLink(a.name, a.id)} <span style="font-weight:500;color:#888;">(${escapeHtml(a.slotKind)})</span></div>`
  ).join('');
  const keepN = (res.currentPlayers || []).filter(p => p.keep).length;
  if(!sitRows && !startRows){
@@ -12034,7 +12372,7 @@ function buildStrategyBrief(){
  : (a.proj == null ? '-' : fmtPts(a.proj));
  return `<tr style="${bg}">
  <td>${escapeHtml(a.slotKind)}</td>
- <td>${escapeHtml(a.name)}${tag} <span style="color:var(--text-muted);font-size:11px;">${escapeHtml(a.position)}</span></td>
+ <td>${playerCardLink(a.name, a.id)}${tag} <span style="color:var(--text-muted);font-size:11px;">${escapeHtml(a.position)}</span></td>
  <td class="val-cell">${projLabel}</td>
  <td class="val-cell">${a.locked || a.proj == null ? '-' : fmtPts(a.floor)}</td>
  <td class="val-cell">${a.locked || a.proj == null ? '-' : fmtPts(a.ceil)}</td>
@@ -12710,7 +13048,7 @@ function buildStrategyBrief(){
 
  function assetsHtml(assets){
  if(!assets || !assets.length) return '<div class="hist-asset" style="color:var(--text-muted);">-</div>';
- return assets.map(a => `<div class="hist-asset">${escapeHtml(a.name)}${a.isPick ? ' <span style="color:var(--text-muted)">(pick)</span>' : ''}</div>`).join('');
+ return assets.map(a => `<div class="hist-asset">${playerCardLink(a.name, a.id)}${a.isPick ? ' <span style="color:var(--text-muted)">(pick)</span>' : ''}</div>`).join('');
  }
 
  function impactHtml(trade){
