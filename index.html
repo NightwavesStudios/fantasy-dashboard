@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fantasy Dashboard</title>
+<title>Fantasy Blueprint</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1697,7 +1697,7 @@
  color: var(--text-muted);
  margin-top: 2px;
  }
- .strategy-priority {
+ .blueprint-move {
  border-left: 3px solid var(--accent);
  padding: 10px 12px;
  margin-bottom: 8px;
@@ -1705,9 +1705,9 @@
  border-radius: var(--radius-sm);
  cursor: pointer;
  }
- .strategy-priority:hover { background: var(--surface-2); }
- .strategy-priority .sp-title { font-weight: 600; font-size: 14px; }
- .strategy-priority .sp-why { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
+ .blueprint-move:hover { background: var(--surface-2); }
+ .blueprint-move .sp-title { font-weight: 600; font-size: 14px; }
+ .blueprint-move .sp-why { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
  .strategy-flow {
  display: flex;
  flex-wrap: wrap;
@@ -1852,7 +1852,7 @@
  max-width: 62ch;
  }
 
- .strategy-priority {
+ .blueprint-move {
  border: 1px solid var(--border);
  border-left: 3px solid var(--accent);
  padding: 10px 12px;
@@ -1861,7 +1861,7 @@
  border-radius: var(--radius-sm);
  cursor: pointer;
  }
- .strategy-priority:hover { background: var(--surface-2); }
+ .blueprint-move:hover { background: var(--surface-2); }
 
  .strategy-flow {
  display: flex;
@@ -2029,6 +2029,31 @@
  .hist-meta { font-size: 12px; margin-bottom: 8px; }
  .strategy-strip { padding: 6px 14px !important; }
 
+
+ .sidebar-brand h1 {
+ font-size: 14px !important;
+ font-weight: 700;
+ letter-spacing: 0.02em;
+ text-transform: uppercase;
+ }
+ .sidebar-brand .league-chip {
+ font-size: 10.5px;
+ opacity: 0.85;
+ }
+ .nav-section {
+ font-size: 9px !important;
+ letter-spacing: 0.08em;
+ }
+ /* Blueprint home: less chrome */
+ #panel-home .strategy-flow { display: none !important; }
+ #panel-home .needs-intro { display: none !important; }
+ .strategy-strip {
+ border-bottom: 1px solid var(--border);
+ background: var(--surface);
+ }
+
+ .blueprint-move { border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 10px 12px; margin-bottom: 8px; background: var(--surface); border-radius: var(--radius-sm); cursor: pointer; }
+ .blueprint-move:hover { background: var(--surface-2); }
 </style>
 </head>
 <body>
@@ -2037,7 +2062,7 @@
 <div id="setup-screen">
  <div class="setup-wrap">
  <div class="setup-header">
- <h1>Fantasy Dashboard</h1>
+ <h1>Fantasy Blueprint</h1>
  <p>Load your league to value rosters and check trades against current market prices.</p>
  </div>
 
@@ -2104,7 +2129,7 @@
  <aside class="sidebar" id="app-sidebar">
  <div class="sidebar-brand">
  <div>
- <h1>Fantasy Dashboard</h1>
+ <h1>Fantasy Blueprint</h1>
  <span class="league-chip" id="league-chip">-</span>
  </div>
  <button type="button" class="nav-toggle" id="btn-nav-toggle" aria-label="Menu" title="Menu">
@@ -2114,13 +2139,17 @@
  <nav class="sidebar-nav">
  <button class="nav-item active" data-panel="panel-home">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></span>
- Game plan
+ Blueprint
  </button>
 
  <div class="nav-section">This week</div>
  <button class="nav-item" data-panel="panel-sit">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
  Lineup
+ </button>
+ <button class="nav-item" data-panel="panel-waivers">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="15" r="3"/><path d="M18 14v2M17 15h2"/></svg></span>
+ Waivers
  </button>
  <button class="nav-item" data-panel="panel-matchups">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 3v4M7 3v4M3 9h18M5 7h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/></svg></span>
@@ -2130,23 +2159,11 @@
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
  Cover
  </button>
- <button class="nav-item" data-panel="panel-waivers">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="15" r="3"/><path d="M18 14v2M17 15h2"/></svg></span>
- Waivers
- </button>
 
- <div class="nav-section">Build the roster</div>
+ <div class="nav-section">Roster</div>
  <button class="nav-item" data-panel="panel-rankings">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h4V9H4v10zM10 19h4V5h-4v14zM16 19h4v-7h-4v7z"/></svg></span>
  Rankings
- </button>
- <button class="nav-item" data-panel="panel-rate">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
- Grade
- </button>
- <button class="nav-item" data-panel="panel-needs">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg></span>
- Needs
  </button>
  <button class="nav-item" data-panel="panel-finder">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
@@ -2154,51 +2171,31 @@
  </button>
  <button class="nav-item" data-panel="panel-trade">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4"/></svg></span>
- Trade calc
- </button>
-
- <div class="nav-section">League</div>
- <button class="nav-item" data-panel="panel-rosters">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
- All teams
- </button>
- <button class="nav-item" data-panel="panel-playoffs">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
- Playoffs
- </button>
- <button class="nav-item" data-panel="panel-sos">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
- Schedule
- </button>
-
- <div class="nav-section">More</div>
- <button class="nav-item" data-panel="panel-path">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-8 4 5 4-9"/></svg></span>
- Path
- </button>
- <button class="nav-item" data-panel="panel-compare">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
- Compare
- </button>
- <button class="nav-item" data-panel="panel-trends">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
- Trends
- </button>
- <button class="nav-item" data-panel="panel-luck">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>
- Luck
- </button>
- <button class="nav-item" data-panel="panel-roster">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg></span>
- Accuracy
+ Trade board
  </button>
  <button class="nav-item" data-panel="panel-depth">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></svg></span>
  Tiers
  </button>
- <button class="nav-item" data-panel="panel-records">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 7h12v13H6z"/></svg></span>
- Records
+
+ <div class="nav-section">Season</div>
+ <button class="nav-item" data-panel="panel-sos">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
+ Schedule
+ </button>
+ <button class="nav-item" data-panel="panel-playoffs">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
+ Playoffs
+ </button>
+
+ <div class="nav-section">More</div>
+ <button class="nav-item" data-panel="panel-rate">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
+ Grade
+ </button>
+ <button class="nav-item" data-panel="panel-rosters">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+ League
  </button>
  </nav>
  <div class="sidebar-footer">
@@ -2224,8 +2221,8 @@
 
  <section class="panel active" id="panel-home">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Your game plan</div>
- <button type="button" class="info-btn" id="btn-home-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <div class="section-title" style="margin:0;">Blueprint</div>
+ <button type="button" class="info-btn" id="btn-home-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="home-intro"></p>
  <div id="home-priorities" style="margin-bottom:14px;"></div>
@@ -2238,7 +2235,7 @@
  <section class="panel" id="panel-rosters">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Teams</div>
- <button type="button" class="info-btn" id="btn-rosters-info" title="How it works" aria-label="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-rosters-info" title="Info" aria-label="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Every roster with market value and recent value move. Sort teams by total value change to see who is rising or falling.</p>
  <div class="waiver-toolbar">
@@ -2259,7 +2256,7 @@
  <section class="panel" id="panel-trends">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">League trends</div>
- <button type="button" class="info-btn" id="btn-trends-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-trends-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Risers and fallers from saved FantasyCalc values and Power ranks on this device. Open the app over a few days to build history (1d / 1w / 1m windows).</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;">
@@ -2450,7 +2447,7 @@
  <section class="panel" id="panel-records">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Records</div>
- <button type="button" class="info-btn" id="btn-records-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-records-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Season highs and lows from completed weeks only. Incomplete weeks are ignored.</p>
  <div id="records-grid" class="needs-grid"></div>
@@ -2460,7 +2457,7 @@
  <section class="panel" id="panel-rate">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Rate my team</div>
- <button type="button" class="info-btn" id="btn-rate-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-rate-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="waiver-toolbar" style="margin-bottom:14px;">
  <label class="field-label" style="margin:0;">Team</label>
@@ -2474,7 +2471,7 @@
  <section class="panel" id="panel-compare">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Player compare</div>
- <button type="button" class="info-btn" id="btn-compare-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-compare-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Pick 2–4 players and compare value, trend, age, position rank, and roster context.</p>
  <div class="waiver-toolbar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px;">
@@ -2487,7 +2484,7 @@
 <section class="panel" id="panel-finder">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Trades</div>
- <button type="button" class="info-btn" id="btn-finder-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-finder-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:flex-end;">
  <div>
@@ -2549,7 +2546,7 @@
  <section class="panel" id="panel-roster">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Start/sit accuracy</div>
- <button type="button" class="info-btn" id="btn-roster-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-roster-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="roster-intro">Compares who was started to the best lineup that week from actual player points. Works on Sleeper and ESPN (week-by-week box scores).</p>
  <div style="overflow-x:auto;">
@@ -2575,7 +2572,7 @@
  <section class="panel" id="panel-sit">
  <div class="section-title-row">
  <div class="section-title" style="margin:0;">Lineup</div>
- <button type="button" class="info-btn" id="btn-sit-info" title="How it works" aria-label="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-sit-info" title="Info" aria-label="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="path-intro">Games that matter most for your seed and bubble, based on current standings and remaining schedule.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2593,7 +2590,7 @@
  <section class="panel" id="panel-depth">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Depth / rankings</div>
- <button type="button" class="info-btn" id="btn-depth-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-depth-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Rankings by FantasyCalc value. Tiers cut where values drop off in this list.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;">
@@ -2625,7 +2622,7 @@
  <section class="panel" id="panel-byes">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Cover</div>
- <button type="button" class="info-btn" id="btn-byes-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-byes-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Bye weeks and injuries create short-term holes. This page shows who is out, who on your roster can cover, and which waiver streams fill the rest — including DST/K and cross-position bench fills.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2684,7 +2681,7 @@
  <section class="panel" id="panel-luck">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Expected wins &amp; luck</div>
- <button type="button" class="info-btn" id="btn-luck-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-luck-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="luck-intro">Expected wins from weekly scores vs the field. Luck is actual wins minus expected. SOS uses opponents' average points for when weekly matchup data exists.</p>
  <div style="overflow-x:auto;">
@@ -2711,7 +2708,7 @@
  <section class="panel" id="panel-sos">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Schedule</div>
- <button type="button" class="info-btn" id="btn-sos-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-sos-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="sos-intro">Week-by-week opponents with actual scores when final, live/proj for the current week, and projected lineup scores (byes excluded) for remaining weeks. Running record uses real results first, then projected outcomes.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2801,7 +2798,7 @@
  <section class="panel" id="panel-matchups">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Matchups</div>
- <button type="button" class="info-btn" id="btn-matchups-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <button type="button" class="info-btn" id="btn-matchups-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  <button type="button" class="btn btn-ghost btn-sm" id="btn-matchups-refresh">Refresh scores</button>
  </div>
  <p class="needs-intro" id="matchups-intro">Live and projected scores. Win % uses current points plus remaining projection gap (more uncertainty when a team still has more left to score).</p>
@@ -3147,7 +3144,7 @@
  return { swid: normalizeEspnSwid(sw), espnS2: normalizeEspnS2(s2) };
  }
 
- async function robustFetch(url, {credentials, timeoutMs=15000, headers, cookieHeader}={}){
+ async function solidFetch(url, {credentials, timeoutMs=15000, headers, cookieHeader}={}){
  // Browsers strip the Cookie header from every fetch(). For private ESPN leagues
  // we put SWID + espn_s2 into corsproxy's reqHeaders query so the proxy can
  // attach Cookie upstream.
@@ -3186,7 +3183,7 @@
  throw lastErr || new Error('Failed to fetch');
  }
 
- async function robustFetchAny(urls, opts={}){
+ async function solidFetchAny(urls, opts={}){
  // Auto-attach ESPN private cookies for any fantasy.espn.com call this session
  const opts2 = Object.assign({}, opts);
  const looksEspn = (urls || []).some(u => /fantasy\.espn\.com/i.test(u));
@@ -3197,7 +3194,7 @@
  }
  let lastErr;
  for(const url of urls){
- try{ return await robustFetch(url, opts2); }
+ try{ return await solidFetch(url, opts2); }
  catch(e){
  lastErr = e;
  // With cookies, try every host; without, stop on auth errors
@@ -3216,7 +3213,7 @@
  ] : [pathOrUrl];
  const { swid, espnS2 } = getEspnAuth();
  const cookie = buildEspnCookieHeader(swid, espnS2);
- return robustFetchAny(candidates, {
+ return solidFetchAny(candidates, {
  credentials: cookie ? 'omit' : 'include',
  cookieHeader: cookie || undefined,
  timeoutMs: 20000
@@ -3620,18 +3617,18 @@
  /* ---------- Sleeper ---------- */
  async function fetchSleeperLeague(leagueId){
  try{
- const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}`);
+ const res = await solidFetch(`https://api.sleeper.app/v1/league/${leagueId}`);
  const data = await res.json();
  if(!data) throw new Error();
  return data;
  }catch(e){ throw new Error('League not found. Double-check the Sleeper League ID.'); }
  }
  async function fetchSleeperRosters(leagueId){
- const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`);
+ const res = await solidFetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`);
  return res.json();
  }
  async function fetchSleeperUsers(leagueId){
- const res = await robustFetch(`https://api.sleeper.app/v1/league/${leagueId}/users`);
+ const res = await solidFetch(`https://api.sleeper.app/v1/league/${leagueId}/users`);
  return res.json();
  }
  async function fetchSleeperPlayers(){
@@ -3642,7 +3639,7 @@
  if(Date.now() - parsed.ts < SLEEPER_PLAYERS_TTL) return parsed.data;
  }
  }catch(e){}
- const res = await robustFetch('https://api.sleeper.app/v1/players/nfl');
+ const res = await solidFetch('https://api.sleeper.app/v1/players/nfl');
  const data = await res.json();
  try{ localStorage.setItem(SLEEPER_PLAYERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); }catch(e){}
  return data;
@@ -3755,7 +3752,7 @@
  let currentWeek = 1;
  let lastCompleted = 0;
  try{
- const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+ const stateRes = await solidFetch('https://api.sleeper.app/v1/state/nfl');
  const nflState = await stateRes.json();
  currentWeek = Math.min(Math.max(1, Number(nflState.leg || nflState.week || nflState.display_week) || 1), 18);
  // leg/week is the in-progress NFL week; scores for that week are not final yet
@@ -3774,7 +3771,7 @@
  const batch = [];
  for(let w = i; w < i + 5 && w <= lastCompleted; w++) batch.push(w);
  const results = await Promise.all(batch.map(w =>
- robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${w}`)
+ solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${w}`)
  .then(r => r.json())
  .catch(() => null)
  ));
@@ -3803,7 +3800,7 @@
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ];
- const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+ const res = await solidFetchAny(urls, { timeoutMs: 15000 });
  const data = await res.json();
  (data.schedule || []).forEach(game => {
  const period = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
@@ -3876,7 +3873,7 @@
  });
  const url = `https://api.fantasycalc.com/values/current?${qs.toString()}`;
  try{
- const res = await robustFetch(url, { timeoutMs: 15000 });
+ const res = await solidFetch(url, { timeoutMs: 15000 });
  const data = await res.json();
  if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
  saveFcCache(params, data);
@@ -4531,7 +4528,7 @@
  }
  }catch(e){}
  bits.push('Impact sort rewards balance + injury backups');
- n.innerHTML = 'Strategy: ' + bits.join('. ') + '. <a href="#" id="waivers-to-needs" style="color:var(--accent);">Team needs</a> · <a href="#" id="waivers-to-cover" style="color:var(--accent);">Cover &amp; stream</a>';
+ n.innerHTML = ' ' + bits.join('. ') + '. <a href="#" id="waivers-to-needs" style="color:var(--accent);">Team needs</a> · <a href="#" id="waivers-to-cover" style="color:var(--accent);">Cover &amp; stream</a>';
  const a1 = el('waivers-to-needs'); if(a1) a1.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-needs', { teamId: brief.team.id }); };
  const a2 = el('waivers-to-cover'); if(a2) a2.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-byes', { teamId: brief.team.id }); };
  }
@@ -5819,7 +5816,7 @@ function countPosBodies(roster){
  const map = {};
  let week = 1, season = String(state.year || new Date().getFullYear());
  try{
- const st = await robustFetch('https://api.sleeper.app/v1/state/nfl').then(r => r.json());
+ const st = await solidFetch('https://api.sleeper.app/v1/state/nfl').then(r => r.json());
  week = Math.min(18, Math.max(1, Number(st.leg || st.week || st.display_week || 1)));
  season = String(st.league_season || st.season || season);
  }catch(e){}
@@ -5835,7 +5832,7 @@ function countPosBodies(roster){
  const positions = ['QB','RB','WR','TE','K','DEF'];
  const batches = await Promise.all(positions.map(async pos => {
  try{
- const r = await robustFetch(
+ const r = await solidFetch(
  `https://api.sleeper.app/projections/nfl/${season}/${week}?season_type=regular&position[]=${pos}`
  );
  const data = await r.json();
@@ -5871,7 +5868,7 @@ function countPosBodies(roster){
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ];
- const res = await robustFetchAny(urls, { timeoutMs: 18000 });
+ const res = await solidFetchAny(urls, { timeoutMs: 18000 });
  const data = await res.json();
  const period = data.scoringPeriodId || week;
  (data.schedule || []).forEach(game => {
@@ -5929,7 +5926,7 @@ function countPosBodies(roster){
  // 3) Overlay live actuals from current Sleeper matchups (league-scoring points)
  try{
  if(state.platform === 'sleeper' && state.leagueId){
- const res = await robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
+ const res = await solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
  const data = await res.json();
  if(Array.isArray(data)){
  data.forEach(m => {
@@ -6055,7 +6052,7 @@ function countPosBodies(roster){
  if(state.platform === 'sleeper' && state.leagueId){
  let cur = 1;
  try{
- const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+ const stateRes = await solidFetch('https://api.sleeper.app/v1/state/nfl');
  const nfl = await stateRes.json();
  cur = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){}
@@ -6064,7 +6061,7 @@ function countPosBodies(roster){
  const batch = [];
  for(let i = w; i < w + 4 && i <= 17; i++) batch.push(i);
  const results = await Promise.all(batch.map(week =>
- robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`)
+ solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`)
  .then(r => r.json()).then(data => ({ week, data })).catch(() => ({ week, data: [] }))
  ));
  results.forEach(({ week, data }) => {
@@ -6097,7 +6094,7 @@ function countPosBodies(roster){
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ];
- const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+ const res = await solidFetchAny(urls, { timeoutMs: 15000 });
  const data = await res.json();
  const cur = data.scoringPeriodId || (data.status && data.status.currentMatchupPeriod) || 1;
  graph._currentWeek = cur;
@@ -6641,12 +6638,12 @@ function detectLeagueMedian(){
  if(state.platform === 'sleeper' && state.leagueId){
  let week = 1;
  try{
- const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+ const stateRes = await solidFetch('https://api.sleeper.app/v1/state/nfl');
  const nfl = await stateRes.json();
  week = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){}
  if(scheduleCache) scheduleCache._currentWeek = week;
- const res = await robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
+ const res = await solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
  const data = await res.json();
  if(!Array.isArray(data)) { matchupCache = out; return out; }
  const byMatch = {};
@@ -6697,7 +6694,7 @@ function detectLeagueMedian(){
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ];
- const res = await robustFetchAny(urls, { timeoutMs: 18000 });
+ const res = await solidFetchAny(urls, { timeoutMs: 18000 });
  const data = await res.json();
  const week = Number(
  (data.status && (data.status.currentMatchupPeriod || data.status.latestScoringPeriod)) ||
@@ -8620,7 +8617,7 @@ function runTradeFinder(){
  let cur = 2;
  try{
  const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mStatus&view=mSettings`;
- const res = await robustFetchAny([
+ const res = await solidFetchAny([
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ], { timeoutMs: 10000 });
@@ -8634,7 +8631,7 @@ function runTradeFinder(){
  // x-fantasy-filter forces schedule rows for this matchup period
  const filter = JSON.stringify({ schedule: { filterMatchupPeriodIds: { value: [w] } } });
  const headers = { 'x-fantasy-filter': filter };
- const res = await robustFetchAny([
+ const res = await solidFetchAny([
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ], { timeoutMs: 15000, headers });
@@ -8696,7 +8693,7 @@ function runTradeFinder(){
  }
  let cur = 1;
  try{
- const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+ const stateRes = await solidFetch('https://api.sleeper.app/v1/state/nfl');
  const nfl = await stateRes.json();
  cur = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || 1)));
  }catch(e){}
@@ -8704,7 +8701,7 @@ function runTradeFinder(){
  const batch = [];
  for(let i = w; i < w + 4 && i < cur; i++) batch.push(i);
  const results = await Promise.all(batch.map(week =>
- robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`)
+ solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`)
  .then(r => r.json()).catch(() => [])
  ));
  results.forEach((list, idx) => {
@@ -10600,8 +10597,8 @@ function buildStrategyBrief(){
  actions.push({
  id: 'cover',
  priority: 1,
- title: weekHoles + ' lineup hole' + (weekHoles > 1 ? 's' : '') + ' this week',
- why: (outNames.slice(0, 3).join(', ') || 'Bye/injury') + ' — stream or shuffle before lock.',
+ title: weekHoles + ' hole' + (weekHoles > 1 ? 's' : '') + ' this week',
+ why: (outNames.slice(0, 3).join(', ') || 'Bye/injury') + ' — fix before lock.',
  panel: 'panel-byes',
  label: 'Cover & stream'
  });
@@ -10615,7 +10612,7 @@ function buildStrategyBrief(){
  id: 'inj-backup',
  priority: 2,
  title: 'No backup for ' + u.name,
- why: (typeof injuryLabel === 'function' ? injuryLabel(u.status) : u.status) + ' · pick up ' + u.pos + ' depth on waivers before you get caught.',
+ why: (typeof injuryLabel === 'function' ? injuryLabel(u.status) : u.status) + ' · grab ' + u.pos + ' depth on waivers.',
  panel: 'panel-waivers',
  label: 'Waivers'
  });
@@ -10625,7 +10622,7 @@ function buildStrategyBrief(){
  actions.push({
  id: 'lineup',
  priority: 2,
- title: 'Lineup changes available',
+ title: 'Set your lineup',
  why: 'Optimizer disagrees with your current starters for week ' + curWeek + '.',
  panel: 'panel-sit',
  label: 'Fix lineup'
@@ -10636,7 +10633,7 @@ function buildStrategyBrief(){
  actions.push({
  id: 'needs',
  priority: 3,
- title: 'Thin at ' + w.pos,
+ title: 'Need help at ' + w.pos,
  why: w.pos + ' is your weakest positional group. Waivers and trades should prefer this slot.',
  panel: 'panel-needs',
  label: 'Team needs'
@@ -10684,7 +10681,7 @@ function buildStrategyBrief(){
  id: 'sos',
  priority: 7,
  title: 'Hard schedule (SOS #' + sosRank + ')',
- why: 'Projected path is tough — streaming and matchup leverage matter more.',
+ why: 'Projected path is tough — streaming and matchup use matter more.',
  panel: 'panel-sos',
  label: 'SOS'
  });
@@ -10768,7 +10765,7 @@ function buildStrategyBrief(){
  if(!grid) return;
 
  if(!state.teams || !state.teams.length){
- grid.innerHTML = '<p class="needs-intro">Load a league to build your game plan.</p>';
+ grid.innerHTML = '<p class="needs-intro">Load your league.</p>';
  if(charts) charts.innerHTML = '';
  if(pri) pri.innerHTML = '';
  if(flow) flow.innerHTML = '';
@@ -10779,7 +10776,7 @@ function buildStrategyBrief(){
  const brief = buildStrategyBrief();
  renderStrategyStrip();
  if(!brief){
- grid.innerHTML = '<p class="needs-intro">Pick your team in settings to personalize the plan.</p>';
+ grid.innerHTML = '<p class="needs-intro">Pick your team in settings.</p>';
  return;
  }
 
@@ -10791,7 +10788,7 @@ function buildStrategyBrief(){
  if(pri){
  pri.innerHTML = '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">Do this next</div>' +
  brief.actions.slice(0, 3).map(a => `
- <div class="strategy-priority" data-panel="${a.panel}">
+ <div class="blueprint-move" data-panel="${a.panel}">
  <div class="sp-title">${escapeHtml(a.title)}</div>
  <div class="sp-why">${escapeHtml(a.why)}</div>
  </div>`).join('');
@@ -11692,7 +11689,7 @@ function buildStrategyBrief(){
  const maxWeek = 18;
  let weekCap = 2;
  try{
- const stateRes = await robustFetch('https://api.sleeper.app/v1/state/nfl');
+ const stateRes = await solidFetch('https://api.sleeper.app/v1/state/nfl');
  const nfl = await stateRes.json();
  weekCap = Math.min(maxWeek, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){
@@ -11707,7 +11704,7 @@ function buildStrategyBrief(){
  for(let i = 0; i < rounds.length; i += 5){
  const batch = rounds.slice(i, i + 5);
  const results = await Promise.all(batch.map(round =>
- robustFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/transactions/${round}`)
+ solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/transactions/${round}`)
  .then(r => r.json())
  .catch(() => [])
  ));
@@ -11735,7 +11732,7 @@ function buildStrategyBrief(){
  ];
  const out = { complete: [], pending: [] };
  try{
- const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+ const res = await solidFetchAny(urls, { timeoutMs: 15000 });
  const data = await res.json();
  (data.transactions || []).forEach(tx => {
  // ESPN type: TRADE = 2 sometimes; look at type string if present
@@ -11775,7 +11772,7 @@ function buildStrategyBrief(){
  `https://lm-api-reads.fantasy.espn.com${pendingPath}`,
  `https://fantasy.espn.com${pendingPath}`
  ];
- const res = await robustFetchAny(purls, { timeoutMs: 12000 });
+ const res = await solidFetchAny(purls, { timeoutMs: 12000 });
  const data = await res.json();
  // structure varies; collect trade-like pending
  const list = data.transactions || data.pendingTransactions || [];
