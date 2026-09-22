@@ -2503,6 +2503,11 @@
  .pc-sources li { margin: 0 0 4px 0; }
  .pc-empty { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
 
+
+ .pc-spark { display: block; width: 100%; height: 72px; margin: 4px 0; }
+ .pc-spark-labels { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+ .pc-ratings { margin-bottom: 8px; }
+
 </style>
 </head>
 <body>
@@ -4000,29 +4005,178 @@
  }
 
  function playerUpsideBust(p, fc){
-  // 1–5 scores from range shape + sample confidence
-  const proj = fc && fc.proj > 0 ? fc.proj : 10;
-  const floor = fc && fc.floor != null ? fc.floor : proj * 0.45;
-  const ceil = fc && fc.ceil != null ? fc.ceil : proj * 1.3;
-  const conf = fc && fc.conf != null ? fc.conf : 0.3;
-  const upRatio = (ceil - proj) / Math.max(1, proj);
-  const downRatio = (proj - floor) / Math.max(1, proj);
-  // Upside: how much ceiling sticks out
-  let upside = 1 + upRatio / 0.12; // ~0.12 relative → +1 star
-  upside = Math.max(1, Math.min(5, upside));
-  // Bust: how soft the floor is vs proj
-  let bust = 1 + downRatio / 0.14;
-  bust = Math.max(1, Math.min(5, bust));
-  // Low conf → pull both toward middle (less certain call)
-  if(conf < 0.35){
-   upside = 0.55 * upside + 0.45 * 3;
-   bust = 0.55 * bust + 0.45 * 3;
+  // Continuous 1–5 (one decimal). Week = next outing; Season = rest-of-year profile.
+  // High recent floors (e.g. 38 & 40) → low bust. Wide ceiling gap → high upside.
+  const hist = (typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [])
+   .map(x => x.pts)
+   .filter(v => typeof v === 'number' && v > 0.5);
+  const n = hist.length;
+  const proj = (fc && fc.proj > 0) ? fc.proj : 10;
+  const floor = (fc && fc.floor != null) ? fc.floor : proj * 0.45;
+  const ceil = (fc && fc.ceil != null) ? fc.ceil : proj * 1.3;
+  const conf = (fc && fc.conf != null) ? fc.conf : (n ? Math.min(0.7, n / (n + 3)) : 0.15);
+
+  const mean = n ? hist.reduce((a,b)=>a+b,0) / n : proj;
+  const maxP = n ? Math.max(...hist) : ceil;
+  const minP = n ? Math.min(...hist) : floor;
+  let sd = 0;
+  if(n >= 2){
+   sd = Math.sqrt(hist.reduce((s,x)=>s+(x-mean)*(x-mean),0) / (n-1));
   }
+
+  function clamp15(x){
+   return Math.max(1, Math.min(5, x));
+  }
+  function oneDec(x){
+   return Math.round(clamp15(x) * 10) / 10;
+  }
+
+  // —— Week (next game) ——
+  // Upside: how far ceiling sits above this week's middle
+  const weekUpGap = (ceil - proj) / Math.max(6, proj);
+  let weekUpside = 1.2 + weekUpGap * 6.5; // 0.25 gap → ~2.8; 0.55 gap → ~4.8
+  if(n >= 1 && maxP > proj * 1.15)
+   weekUpside += Math.min(1.2, (maxP / proj - 1) * 2.2);
+  // Bust: soft floor and/or soft recent lows vs this week's middle
+  const weekFloorShare = floor / Math.max(1, proj); // 0.45 soft, 0.7 safe
+  let weekBust = 5.2 - weekFloorShare * 6.5; // 0.45→2.3, 0.7→0.65→clamp 1
+  if(n >= 1){
+   const minShare = minP / Math.max(1, mean);
+   // min near mean (Allen 38/39) → strong cut to bust
+   weekBust -= Math.min(2.4, Math.max(0, (minShare - 0.55) * 5.5));
+   // min already high in absolute fantasy points
+   if(minP >= 20) weekBust -= 0.8;
+   if(minP >= 28) weekBust -= 0.7;
+  }
+  // Low conf → modest regression toward 3, not a hard 4
+  if(conf < 0.4){
+   const pull = (0.4 - conf) * 1.1;
+   weekUpside = weekUpside * (1 - pull) + 3 * pull;
+   weekBust = weekBust * (1 - pull) + 3 * pull;
+  }
+
+  // —— Season (ROS profile) ——
+  // Uses sample variance + value tier
+  let seasonUpside = 2.2;
+  let seasonBust = 2.5;
+  if(n >= 2){
+   const cv = mean > 1 ? sd / mean : 0.3;
+   seasonUpside = 1.4 + cv * 7 + Math.min(1.5, (maxP - mean) / Math.max(6, mean) * 3);
+   seasonBust = 1.3 + cv * 6 + Math.min(1.5, (mean - minP) / Math.max(6, mean) * 3);
+  } else if(n === 1){
+   seasonUpside = 2.4 + Math.min(1.5, (maxP / proj - 1) * 2);
+   seasonBust = 2.6 - Math.min(1.2, (minP / proj - 0.5) * 2);
+  } else {
+   const pos = (p && p.position) || 'WR';
+   const POS_U = { QB: 2.6, RB: 3.1, WR: 3.5, TE: 3.0, DST: 3.4, K: 2.8 };
+   const POS_B = { QB: 2.4, RB: 3.0, WR: 3.3, TE: 2.9, DST: 3.5, K: 3.0 };
+   seasonUpside = POS_U[pos] || 3.1;
+   seasonBust = POS_B[pos] || 3.0;
+  }
+  // High absolute production lowers season bust
+  if(mean >= 22) seasonBust -= 0.9;
+  if(mean >= 28) seasonBust -= 0.7;
+  if(minP >= 24) seasonBust -= 0.8;
+  // Elite ceiling sample raises season upside
+  if(maxP >= 30) seasonUpside += 0.5;
+  if(maxP >= 38) seasonUpside += 0.6;
+
+  if(conf < 0.35){
+   const pull = (0.35 - conf) * 0.9;
+   seasonUpside = seasonUpside * (1 - pull) + 3 * pull;
+   seasonBust = seasonBust * (1 - pull) + 3 * pull;
+  }
+
   return {
-   upside: Math.round(upside * 10) / 10,
-   bust: Math.round(bust * 10) / 10,
-   conf
+   weekUpside: oneDec(weekUpside),
+   weekBust: oneDec(weekBust),
+   seasonUpside: oneDec(seasonUpside),
+   seasonBust: oneDec(seasonBust),
+   conf,
+   n
   };
+ }
+
+ function playerValueHistoryPoints(p){
+  // Build a small series for the value chart: estimated past → now
+  const pts = [];
+  const key = normalizeName(p.fullName || p.name || '');
+  let cur = typeof p.value === 'number' ? p.value : null;
+  let t30 = typeof p.trend30Day === 'number' ? p.trend30Day : (typeof p.trend30 === 'number' ? p.trend30 : null);
+  try{
+   const bundle = typeof getFcTrendBundle === 'function' ? getFcTrendBundle(p) : null;
+   if(bundle){
+    if(cur == null && typeof bundle.cur === 'number') cur = bundle.cur;
+    if(t30 == null && typeof bundle.t30 === 'number') t30 = bundle.t30;
+   }
+  }catch(e){}
+  // Local snapshots if the app stored them
+  try{
+   const hist = state.valueHistory || state.fcHistory;
+   if(hist && Array.isArray(hist)){
+    hist.forEach(h => {
+     const map = h.values || h.byName || h;
+     let v = null;
+     if(map && typeof map === 'object'){
+      if(typeof map[key] === 'number') v = map[key];
+      else if(map[p.id] != null) v = Number(map[p.id]);
+     }
+     if(typeof v === 'number' && v > 0){
+      pts.push({ t: h.ts || h.date || h.when || pts.length, v, label: h.label || '' });
+     }
+    });
+   }
+  }catch(e){}
+  pts.sort((a,b) => (a.t > b.t ? 1 : -1));
+  // Always add synthetic 30d ago + now so the chart is never empty when we have FC
+  if(cur != null && cur > 0){
+   if(t30 != null){
+    const prev = Math.max(0, cur - t30);
+    pts.unshift({ t: '30d', v: prev, label: '≈30d ago' });
+   }
+   pts.push({ t: 'now', v: cur, label: 'Now' });
+  }
+  // Dedupe near-identical trailing points
+  const out = [];
+  pts.forEach(pt => {
+   const last = out[out.length - 1];
+   if(last && Math.abs(last.v - pt.v) < 0.5 && last.label === pt.label) return;
+   out.push(pt);
+  });
+  return out;
+ }
+
+ function renderSparkline(points, color){
+  if(!points || points.length < 2){
+   if(points && points.length === 1){
+    return `<div class="pc-empty">Value ${Math.round(points[0].v)} (only one point).</div>`;
+   }
+   return `<div class="pc-empty">No value history yet. Open the app over a few days to build a local trend, or wait on FantasyCalc 30d move.</div>`;
+  }
+  const vals = points.map(p => p.v);
+  const minV = Math.min(...vals);
+  const maxV = Math.max(...vals);
+  const span = Math.max(1, maxV - minV);
+  const w = 320, h = 72, pad = 6;
+  const coords = points.map((p, i) => {
+   const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+   const y = h - pad - ((p.v - minV) / span) * (h - pad * 2);
+   return [x, y, p];
+  });
+  const d = coords.map((c,i) => (i ? 'L' : 'M') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
+  const dots = coords.map(c =>
+   `<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="3" fill="${color || 'var(--accent)'}" />`
+  ).join('');
+  const labels = points.map((p,i) => {
+   if(i === 0 || i === points.length - 1 || p.label)
+    return `<span>${escapeHtml(p.label || '')} ${Math.round(p.v)}</span>`;
+   return '';
+  }).filter(Boolean).join(' · ');
+  return `<svg class="pc-spark" viewBox="0 0 ${w} ${h}" width="100%" height="72" preserveAspectRatio="none">
+   <path d="${d}" fill="none" stroke="${color || 'var(--accent)'}" stroke-width="2.5" stroke-linejoin="round" />
+   ${dots}
+  </svg>
+  <div class="pc-spark-labels">${labels}</div>`;
  }
 
  function openPlayerCard(name, id){
@@ -4072,6 +4226,9 @@
   }
 
   const confPct = Math.round((ratings.conf || 0) * 100);
+  const valuePts = playerValueHistoryPoints(p);
+  const valueChart = renderSparkline(valuePts, 'var(--accent)');
+
   const sources = [];
   sources.push('Projection: ' + ((getPlayerProjection(p.id, p.fullName || p.name) || {}).source || 'estimate / host'));
   sources.push('Weekly scores: host matchups + roster week cache (' + scores.length + ' game' + (scores.length === 1 ? '' : 's') + ')');
@@ -4086,20 +4243,36 @@
     <div class="pc-stat"><div class="lbl">Floor</div><div class="val">${fc.floor != null ? fc.floor : '—'}</div></div>
     <div class="pc-stat"><div class="lbl">Ceiling</div><div class="val">${fc.ceil != null ? fc.ceil : '—'}</div></div>
    </div>
+   <div class="pc-section-title">This week</div>
    <div class="pc-ratings">
     <div class="pc-rate">
-     <div class="lbl">Upside</div>
-     <div class="pc-stars">${starRow(ratings.upside)} <span style="font-size:12px;color:var(--text-muted)">${ratings.upside}/5</span></div>
-     <div class="hint">Room above projection (boom range).</div>
+     <div class="lbl">Boom</div>
+     <div class="pc-stars">${starRow(ratings.weekUpside)} <span style="font-size:12px;color:var(--text-muted)">${ratings.weekUpside}/5</span></div>
+     <div class="hint">Ceiling vs this week's middle.</div>
     </div>
     <div class="pc-rate">
-     <div class="lbl">Bust risk</div>
-     <div class="pc-stars">${starRow(ratings.bust)} <span style="font-size:12px;color:var(--text-muted)">${ratings.bust}/5</span></div>
-     <div class="hint">How soft the floor is vs the middle.</div>
+     <div class="lbl">Bust</div>
+     <div class="pc-stars">${starRow(ratings.weekBust)} <span style="font-size:12px;color:var(--text-muted)">${ratings.weekBust}/5</span></div>
+     <div class="hint">Floor / recent lows vs middle. High floors cut this.</div>
+    </div>
+   </div>
+   <div class="pc-section-title">Season profile</div>
+   <div class="pc-ratings">
+    <div class="pc-rate">
+     <div class="lbl">Boom</div>
+     <div class="pc-stars">${starRow(ratings.seasonUpside)} <span style="font-size:12px;color:var(--text-muted)">${ratings.seasonUpside}/5</span></div>
+     <div class="hint">Variance and top-end sample over the year.</div>
+    </div>
+    <div class="pc-rate">
+     <div class="lbl">Bust</div>
+     <div class="pc-stars">${starRow(ratings.seasonBust)} <span style="font-size:12px;color:var(--text-muted)">${ratings.seasonBust}/5</span></div>
+     <div class="hint">How often they come in soft relative to their mean.</div>
     </div>
    </div>
    <div class="pc-section-title">Points by week</div>
    ${bars}
+   <div class="pc-section-title">Market value</div>
+   <div id="pc-value-chart">${valueChart}</div>
    <div class="pc-section-title">Where this comes from</div>
    <ul class="pc-sources">${sources.map(s => '<li>' + escapeHtml(s) + '</li>').join('')}</ul>
   `;
@@ -4119,6 +4292,7 @@
    const hit = ev.target.closest && ev.target.closest('[data-player-card]');
    if(hit){
     ev.preventDefault();
+    ev.stopPropagation();
     openPlayerCard(hit.getAttribute('data-player-card'), hit.getAttribute('data-player-id'));
     return;
    }
@@ -8401,7 +8575,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
  const cls = s.slotScore >= 72 ? 'var(--accent)' : s.slotScore < 50 ? 'var(--red)' : 'var(--text-secondary)';
  return `<tr>
  <td>${escapeHtml(s.slot)}</td>
- <td>${escapeHtml(s.name)}</td>
+ <td>${playerCardLink(s.name, s.id)}</td>
  <td class="val-cell">${fmt(s.value)}</td>
  <td class="val-cell">${fmt(s.rv)}</td>
  <td class="val-cell">${s.ratio.toFixed(2)}×</td>
@@ -8410,7 +8584,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
  }).join('');
 
  const benchRows = (report.benchPlayers || []).map(p =>
- `<tr><td>${escapeHtml(p.name)}${p.isIR ? ' <span style="color:var(--text-muted);font-size:11px;">IR</span>' : ''}</td>
+ `<tr><td>${playerCardLink(p.name, p.id)}${p.isIR ? ' <span style="color:var(--text-muted);font-size:11px;">IR</span>' : ''}</td>
  <td>${escapeHtml(p.pos || '')}</td>
  <td class="val-cell">${fmt(p.value)}</td></tr>`
  ).join('');
@@ -9375,8 +9549,8 @@ function runTradeFinder(){
  top.forEach((h, idx) => {
  const card = document.createElement('div');
  card.className = 'hist-card';
- const sendStr = h.send.map(p => p.fullName + ' (' + p.position + ')').join(' + ');
- const recvStr = h.recv.map(p => p.fullName + ' (' + p.position + ')').join(' + ');
+ const sendStr = h.send.map(p => playerCardLink(p.fullName, p.id) + ' (' + p.position + ')').join(' + ');
+ const recvStr = h.recv.map(p => playerCardLink(p.fullName, p.id) + ' (' + p.position + ')').join(' + ');
  const dMe = (h.deltaMe >= 0 ? '+' : '') + h.deltaMe.toFixed(1);
  const dThem = (h.deltaThem >= 0 ? '+' : '') + h.deltaThem.toFixed(1);
  const lg = (h.lineupGain >= 0 ? '+' : '') + Math.round(h.lineupGain);
@@ -9842,7 +10016,8 @@ function runTradeFinder(){
           teamId: t.id,
           value: p.value || 0,
           position: p.position || '-',
-          player: p.fullName
+          player: p.fullName,
+          playerId: p.id
         };
       });
     });
@@ -9864,6 +10039,7 @@ function runTradeFinder(){
         market.push({
           key: k,
           player: p.name,
+          playerId: onRoster ? onRoster.playerId : (p.sleeperId || p.id || ''),
           position,
           team: onRoster ? onRoster.teamName : 'Free agent',
           teamId: onRoster ? onRoster.teamId : null,
@@ -9880,6 +10056,7 @@ function runTradeFinder(){
         market.push({
           key: k,
           player: r.player,
+          playerId: r.playerId || r.id || '',
           position: r.position,
           team: r.teamName,
           teamId: r.teamId,
@@ -9949,7 +10126,7 @@ function runTradeFinder(){
         : `<span style="color:var(--text-muted);font-style:italic;">Free agent</span>`;
       tr.innerHTML = `<td><span class="rank-num">${i+1}</span></td>
         <td><span style="${tierBadgeStyle(r.tier)}">T${r.tier}</span></td>
-        <td class="team-name-cell">${escapeHtml(r.player)}${isMine ? ' <span style="color:var(--accent);font-size:11px;">you</span>' : ''}</td>
+        <td class="team-name-cell">${playerCardLink(r.player, r.playerId || r.id || '')}${isMine ? ' <span style="color:var(--accent);font-size:11px;">you</span>' : ''}</td>
         <td>${escapeHtml(r.position)}</td>
         <td>${teamCell}</td>
         <td class="val-cell">${fmt(r.value)}</td>`;
@@ -11071,7 +11248,7 @@ function renderByes(){
  const tagStr = tag.label ? ' <span style="font-size:10px;color:var(--text-muted);">'+escapeHtml(tag.label)+'</span>' : '';
  const tip = tag.advice || detail;
  return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border-subtle);">
-            <span>${i+1}. ${escapeHtml(r.name)}${r.pos ? ' <span style="color:var(--text-muted)">'+escapeHtml(r.pos)+'</span>' : ''}</span>
+            <span>${i+1}. ${playerCardLink(r.name, r.id)}${r.pos ? ' <span style="color:var(--text-muted)">'+escapeHtml(r.pos)+'</span>' : ''}</span>
             <span class="pct-cell ${cls}" title="${escapeHtml(detail)}">${sign}${isPower ? r.delta.toFixed(1) : fmt(r.delta)}${pctStr}</span>
           </div>`;
         }).join('') + `</div>`;
@@ -11277,7 +11454,7 @@ function renderByes(){
  if(selBox){
  selBox.className = 'compare-picks';
  selBox.innerHTML = state._compareList.map((p,i) =>
- `<span class="asset-chip" style="cursor:pointer;" data-rm="${i}"><span class="pos-badge pos-${p.position||''}">${escapeHtml(p.position||'')}</span> <span class="chip-name">${escapeHtml(p.fullName)}</span> <span class="val">${fmt(p.value)}</span></span>`
+ `<span class="asset-chip" style="cursor:pointer;" data-rm="${i}"><span class="pos-badge pos-${p.position||''}">${escapeHtml(p.position||'')}</span> <span class="chip-name">${playerCardLink(p.fullName, p.id)}</span> <span class="val">${fmt(p.value)}</span></span>`
  ).join('') || '<span style="color:var(--text-muted);font-size:13px;">Selected players appear here (up to 4). Click a chip to remove.</span>';
  selBox.querySelectorAll('[data-rm]').forEach(node => {
  node.addEventListener('click', () => {
@@ -11293,8 +11470,8 @@ function renderByes(){
  html += '<div class="compare-search-panel"><h3>Search results</h3>';
  pool.slice(0, 12).forEach(p => {
  const on = state._compareList.some(x => normalizeName(x.fullName) === normalizeName(p.fullName));
- html += `<div class="roster-row" style="cursor:pointer;padding:8px 12px;" data-add="${escapeHtml(p.fullName)}">
- <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span> ${escapeHtml(p.fullName)} <span style="color:var(--text-muted);font-size:12px;">${escapeHtml(p.ownerTeam||'')}</span></span>
+ html += `<div class="roster-row" style="cursor:pointer;padding:8px 12px;" data-add="${playerCardLink(p.fullName, p.id)}">
+ <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span> ${playerCardLink(p.fullName, p.id)} <span style="color:var(--text-muted);font-size:12px;">${escapeHtml(p.ownerTeam||'')}</span></span>
  <span class="rval">${fmt(p.value)} ${on ? '✓' : '+'}</span></div>`;
  });
  html += '</div>';
@@ -11305,7 +11482,7 @@ function renderByes(){
  if(state._compareList.length >= 2){
  const cols = state._compareList;
  const rows = [
- ['Name', p => escapeHtml(p.fullName)],
+ ['Name', p => playerCardLink(p.fullName, p.id)],
  ['Pos', p => p.position || '-'],
  ['Owner', p => escapeHtml(p.ownerTeam || '-')],
  ['Value', p => '<strong>' + fmt(p.value) + '</strong>'],
@@ -12334,7 +12511,7 @@ function buildStrategyBrief(){
  let changesHtml = '';
  if(res.hasCurrent){
  const sitRows = (res.sitThem || []).filter(p => !p.locked).map(p =>
- `<div style="color:#c45c52;font-weight:700;">BENCH ${escapeHtml(p.name)}${p.position ? ' (' + escapeHtml(p.position) + ')' : ''}</div>`
+ `<div style="color:#c45c52;font-weight:700;">BENCH ${playerCardLink(p.name, p.id)}${p.position ? ' (' + escapeHtml(p.position) + ')' : ''}</div>`
  ).join('');
  const startRows = (res.startThem || []).filter(a => !a.locked).map(a =>
  `<div style="color:#3d8f5f;font-weight:700;">Start ${playerCardLink(a.name, a.id)} <span style="font-weight:500;color:#888;">(${escapeHtml(a.slotKind)})</span></div>`
@@ -13279,7 +13456,7 @@ function buildStrategyBrief(){
  const already = alreadyIdx >= 0;
  const row = document.createElement('div');
  row.className = 'roster-row' + (already ? ' added' : '');
- row.innerHTML = `<span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span><span class="rname-text">${escapeHtml(p.fullName)}${p.matched ? '' : ' <span class="no-match">(unmatched)</span>'}${trendChipHtml(p)}</span></span><span class="add-hint">${already ? '' : '+ add'}</span><span class="rval">${p.matched || p.value ? fmt(p.value) : '-'}</span>`;
+ row.innerHTML = `<span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span><span class="rname-text">${playerCardLink(p.fullName, p.id)}${p.matched ? '' : ' <span class="no-match">(unmatched)</span>'}${trendChipHtml(p)}</span></span><span class="add-hint">${already ? '' : '+ add'}</span><span class="rval">${p.matched || p.value ? fmt(p.value) : '-'}</span>`;
  row.addEventListener('click', () => {
  if(already){
  tradeList.splice(alreadyIdx, 1);
@@ -13299,7 +13476,7 @@ function buildStrategyBrief(){
  chip.innerHTML = `
  <span class="chip-left">
  <span class="pos-badge pos-${a.position}">${a.position}</span>
- <span class="chip-name">${escapeHtml(a.name)}${trendChipHtml(a)}</span>
+ <span class="chip-name">${playerCardLink(a.name, a.id)}${trendChipHtml(a)}</span>
  </span>
  <span class="val">${fmt(a.value)}</span>`;
  const rm = document.createElement('button');
