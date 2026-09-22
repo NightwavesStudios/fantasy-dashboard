@@ -2374,6 +2374,14 @@
  min-width: 0;
  }
 
+
+ .tb-badge {
+ font-size: 10px; font-weight: 700; text-transform: uppercase;
+ letter-spacing: 0.04em; margin-left: 6px;
+ padding: 1px 5px; border-radius: 4px;
+ }
+ .tb-badge.block { background: rgba(61,143,95,0.2); color: #3d8f5f; }
+ .tb-badge.locked { background: rgba(196,92,82,0.15); color: #c45c52; }
 </style>
 </head>
 <body>
@@ -2745,21 +2753,27 @@
 
  <!-- ---------- WAIVERS ---------- -->
  <section class="panel" id="panel-waivers">
- <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Waiver wire</div>
- <button type="button" class="info-btn" id="btn-waivers-info" title="How waivers work"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ <div class="section-title-row">
+ <div class="section-title" style="margin:0;">Waivers</div>
+ <button type="button" class="info-btn" id="btn-waivers-info" title="Info" aria-label="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <div id="waiver-balance" class="waiver-balance"></div>
- <div id="waiver-priority-note" class="waiver-priority-note" style="display:none;"></div>
- <div id="waiver-top-by-pos" class="waiver-top-grid"></div>
  <div class="waiver-toolbar">
+ <div>
+ <label class="field-label">Mode</label>
+ <select id="waiver-mode" style="display:block;max-width:200px;">
+ <option value="season">Rest of season</option>
+ <option value="stream">This week (stream)</option>
+ </select>
+ </div>
  <div class="pos-filters" id="waiver-pos-filters"></div>
  <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;white-space:nowrap;">
-            <input type="checkbox" id="waiver-ir-only" />
-            IR eligible only
-          </label>
-          <input type="search" id="waiver-search" class="waiver-search" placeholder="Search player…" autocomplete="off" />
+ <input type="checkbox" id="waiver-ir-only" /> IR only
+ </label>
+ <input type="search" id="waiver-search" class="waiver-search" placeholder="Search…" autocomplete="off" />
  </div>
+ <div class="section-title" style="font-size:14px;margin:4px 0 8px;">Suggested adds</div>
+ <div id="waiver-suggestions" class="hist-list"></div>
+ <div class="section-title" style="font-size:14px;margin:16px 0 8px;">Full rankings</div>
  <div style="overflow-x:auto;">
  <table>
  <thead>
@@ -2767,20 +2781,16 @@
  <th>#</th>
  <th>Player</th>
  <th>Pos</th>
- <th id="th-waiver-val">VORP</th>
  <th>Value</th>
- <th>vs RV</th>
- <th>Tier</th>
- <th title="Change in your team's Power score if you added this player and dropped the best-fit roster spot for it (simulated; click &quot;Simulate power impact&quot;)">Δ Power</th>
- <th>Suggested drop</th>
+ <th>Drop</th>
  </tr>
  </thead>
  <tbody id="waivers-body"></tbody>
  </table>
  </div>
+ <div class="bp-source" id="source-waivers"></div>
  </section>
 
- <!-- ---------- LEAGUE RECORDS ---------- -->
  <section class="panel" id="panel-records">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Records</div>
@@ -3886,6 +3896,10 @@
  // 20=bench, 21/22=IR. Everything else is a starter slot (incl FLEX 23)
  const isStarter = slot != null && slot !== 20 && slot !== 21 && slot !== 22;
  const injuryStatus = (p.injuryStatus || p.injury_status || null);
+ const ownership = (entry.playerPoolEntry && entry.playerPoolEntry.player && entry.playerPoolEntry.player.ownership) || p.ownership || {};
+ // ESPN sometimes flags lineup lock mid-game; trade block is often on the team object
+ let tradeLocked = !!(entry.playerPoolEntry && (entry.playerPoolEntry.lineupLocked || entry.lineupLocked));
+ if(ownership && ownership.tradeLocked) tradeLocked = true;
  return {
  id: p.id,
  fullName: p.fullName,
@@ -3895,9 +3909,24 @@
  isTaxi: !!isTaxi,
  injuryStatus,
  lineupSlotId: slot,
- isStarter: !!isStarter
+ isStarter: !!isStarter,
+ tradeLocked: !!tradeLocked,
+ onTradeBlock: false
  };
  });
+ // Team-level trade block (ESPN mTeam may include tradeBlock.players or tradeBlock array)
+ try{
+  const tb = t.tradeBlock || (t.valuesByStat && t.valuesByStat.tradeBlock) || null;
+  const ids = new Set();
+  if(Array.isArray(tb)) tb.forEach(x => ids.add(String(x.playerId || x.id || x)));
+  else if(tb && Array.isArray(tb.players)) tb.players.forEach(x => ids.add(String(x.playerId || x.id || x)));
+  else if(tb && typeof tb === 'object') Object.keys(tb).forEach(k => { if(tb[k]) ids.add(String(k)); });
+  if(ids.size){
+   roster.forEach(pl => {
+    if(ids.has(String(pl.id))) pl.onTradeBlock = true;
+   });
+  }
+ }catch(e){}
  const overall = (t.record && t.record.overall) || {};
  const wins = overall.wins || 0;
  const losses = overall.losses || 0;
@@ -4006,9 +4035,23 @@
  teamAbbr: isDef ? pid : (p.team || null),
  isIR: !!isIR,
  isTaxi: !!isTaxi,
- injuryStatus: p.injury_status || p.injuryStatus || null
+ injuryStatus: p.injury_status || p.injuryStatus || null,
+ tradeLocked: false,
+ onTradeBlock: false
  };
  }).filter(Boolean);
+ // Sleeper has no official trade-block field; some leagues stash ids in roster.metadata
+ try{
+  const meta = r.metadata || {};
+  const raw = meta.trade_block || meta.tradeBlock || meta.players_on_trade_block || '';
+  const ids = new Set();
+  if(typeof raw === 'string' && raw){
+   raw.split(/[,\s]+/).forEach(x => { if(x) ids.add(String(x)); });
+  } else if(Array.isArray(raw)) raw.forEach(x => ids.add(String(x)));
+  if(ids.size){
+   roster.forEach(pl => { if(ids.has(String(pl.id))) pl.onTradeBlock = true; });
+  }
+ }catch(e){}
  const s = r.settings || {};
  const wins = s.wins || 0;
  const losses = s.losses || 0;
@@ -4823,220 +4866,172 @@
  }
 
  function renderWaivers(){
- try{ bpSetSource('source-waivers', 'Waivers data', 'Free agents = FantasyCalc pool minus rostered names. Impact sim uses the same power model as Rankings. Injury backup tags use host injury designations.'); }catch(e){}
+ try{
+  bpSetSource('source-waivers', 'Waivers data', 'Free agents from FantasyCalc names not on a roster in this league. Values are market ranks, not a power sim. Suggested drop = lowest-value roster player you can cut without emptying a starter slot.');
+ }catch(e){}
 
  const tbody = el('waivers-body');
+ const sug = el('waiver-suggestions');
  const filters = el('waiver-pos-filters');
- const topBox = el('waiver-top-by-pos');
  if(!tbody) return;
 
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
- if(topBox) topBox.innerHTML = '';
- const wb = el('waiver-balance'); if(wb) wb.innerHTML = '';
- const wn = el('waiver-priority-note'); if(wn) wn.style.display = 'none';
- return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+  if(sug) sug.innerHTML = '';
+  return;
  }
 
- const { available, starterRV } = buildAvailableWaivers();
+ const my = state.teams.find(t => t.id === state.myTeamId || String(t.id) === String(state.myTeamId)) || state.teams[0];
+ const { available } = buildAvailableWaivers();
 
- // Positional balance board for my team
- let thinPos = [];
- let balMap = {};
- try{
-  const my = state.teams.find(t => t.id === state.myTeamId || String(t.id) === String(state.myTeamId)) || state.teams[0];
-  const board = el('waiver-balance');
-  const note = el('waiver-priority-note');
-  if(my && typeof posSurplusMap === 'function'){
-   const counts = getStarterCounts();
-   balMap = posSurplusMap(my.roster || [], counts);
-   const have = typeof countPosBodies === 'function' ? countPosBodies(my.roster || []) : {};
-   const ideal = typeof idealPosTargets === 'function' ? idealPosTargets(counts) : {};
-   thinPos = ['QB','RB','WR','TE'].filter(pos => (balMap[pos] || 0) < 0);
-   if(board){
-    board.innerHTML = ['QB','RB','WR','TE'].map(pos => {
-     const sur = balMap[pos] || 0;
-     const h = have[pos] || 0;
-     const idn = ideal[pos] || 0;
-     const cls = sur < 0 ? 'thin' : sur > 0 ? 'surplus' : 'ok';
-     const tag = sur < 0 ? ('short ' + (-sur)) : sur > 0 ? ('extra ' + sur) : 'ok';
-     return `<div class="wb-cell ${cls}" data-pos="${pos}"><div class="wb-pos">${pos}</div><div class="wb-count">${h}<span style="font-size:11px;font-weight:500;color:var(--text-muted)"> / ${idn}</span></div><div class="wb-tag">${tag}</div></div>`;
-    }).join('');
-    board.querySelectorAll('.wb-cell').forEach(cell => {
-     cell.style.cursor = 'pointer';
-     cell.onclick = () => {
-      const pos = cell.getAttribute('data-pos');
-      waiverPosFilter = pos;
-      renderWaivers();
-     };
-    });
+ // Pos filters
+ if(filters && !filters._bound){
+  filters._bound = true;
+  const poses = ['ALL','QB','RB','WR','TE','DST','K'];
+  filters.innerHTML = poses.map(p =>
+   `<button type="button" class="pos-chip${p===waiverPosFilter?' active':''}" data-pos="${p}">${p === 'ALL' ? 'All' : p}</button>`
+  ).join('');
+  filters.querySelectorAll('.pos-chip').forEach(btn => {
+   btn.addEventListener('click', () => {
+    waiverPosFilter = btn.getAttribute('data-pos');
+    filters.querySelectorAll('.pos-chip').forEach(b => b.classList.toggle('active', b === btn));
+    renderWaivers();
+   });
+  });
+ }
+ const searchEl = el('waiver-search');
+ if(searchEl && !searchEl._bound){
+  searchEl._bound = true;
+  searchEl.addEventListener('input', () => { waiverSearch = (searchEl.value || '').trim().toLowerCase(); renderWaivers(); });
+ }
+ const irEl = el('waiver-ir-only');
+ if(irEl && !irEl._bound){
+  irEl._bound = true;
+  irEl.addEventListener('change', () => renderWaivers());
+ }
+
+ let list = available.slice();
+ if(waiverPosFilter && waiverPosFilter !== 'ALL')
+  list = list.filter(p => p.position === waiverPosFilter);
+ if(waiverSearch)
+  list = list.filter(p => (p.name || '').toLowerCase().includes(waiverSearch));
+ if(irEl && irEl.checked){
+  list = list.filter(p => {
+   try{
+    const pool = state.fcValues || [];
+    const entry = pool.find(e => e.player && normalizeName(e.player.name) === normalizeName(p.name));
+    const st = playerInjuryStatus(entry || p);
+    return isIrEligibleInjury(st);
+   }catch(e){ return false; }
+  });
+ }
+ const modeEl = el('waiver-mode');
+ if(modeEl && !modeEl._bound){
+  modeEl._bound = true;
+  modeEl.addEventListener('change', () => renderWaivers());
+ }
+ const mode = modeEl ? modeEl.value : 'season';
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+
+ // Attach this-week estimate for stream mode
+ list = list.map(fa => {
+  let weekPts = null;
+  try{
+   const fake = { id: 'FA-' + normalizeName(fa.name), fullName: fa.name, name: fa.name, position: fa.position, value: fa.value || 0 };
+   weekPts = typeof playerWeeklyPtsForWeek === 'function'
+    ? playerWeeklyPtsForWeek(fake, curWeek, curWeek)
+    : null;
+   if(!(weekPts > 0) && fa.value){
+    // rough from value if no proj
+    weekPts = Math.max(2, Math.log10(Math.max(100, fa.value)) * 3);
    }
-   if(note){
-    if(thinPos.length){
-     note.style.display = 'block';
-     note.innerHTML = 'Your roster is <strong>short at ' + thinPos.join(', ') + '</strong>. Claims at those spots sort higher. Green = surplus you can trade or drop from.';
-    } else {
-     note.style.display = 'block';
-     note.innerHTML = 'Depth looks even. Prefer adds that raise power — not stacking a position you already cover.';
-    }
-   }
-  } else if(board){ board.innerHTML = ''; }
- }catch(e){ console.warn('waiver balance', e); }
+  }catch(e){}
+  return { ...fa, weekPts: weekPts || 0 };
+ });
 
- // Strategy cohesion note
- try{
- const note = el('waivers-strategy-note');
- const brief = typeof buildStrategyBrief === 'function' ? buildStrategyBrief() : null;
- if(brief){
- let n = el('waivers-strategy-note');
- if(!n){
- n = document.createElement('p');
- n.id = 'waivers-strategy-note';
- n.className = 'needs-intro';
- n.style.marginBottom = '10px';
- const top = el('waiver-top-by-pos');
- if(top && top.parentNode) top.parentNode.insertBefore(n, top);
- }
- let bits = [];
- if(brief.weakPos && brief.weakPos[0]){
- bits.push('Prioritize <strong>' + escapeHtml(brief.weakPos[0].pos) + '</strong> (weakest group)');
- }
- try{
- const needs = injuryBackupNeeds(brief.team);
- if(needs.length){
- const topN = needs.slice(0, 3).map(x => escapeHtml(x.name) + ' (' + escapeHtml(x.pos) + ', ' + (typeof injuryLabel === 'function' ? injuryLabel(x.status) : x.status) + ')').join('; ');
- bits.push('Injury cover: <strong>' + topN + '</strong>' + (needs[0].hasBackup ? ' — backup is weak' : ' — no healthy backup'));
- }
- }catch(e){}
- bits.push('Blueprint: only claim if power rises or a hole closes');
- n.innerHTML = ' ' + bits.join('. ') + '. <a href="#" id="waivers-to-needs" style="color:var(--accent);">Team needs</a> · <a href="#" id="waivers-to-cover" style="color:var(--accent);">Cover &amp; stream</a>';
- const a1 = el('waivers-to-needs'); if(a1) a1.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-needs', { teamId: brief.team.id }); };
- const a2 = el('waivers-to-cover'); if(a2) a2.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-byes', { teamId: brief.team.id }); };
- }
- }catch(e){}
-
-
- // Top available by position cards
- if(topBox){
- topBox.innerHTML = '';
- ['QB','RB','WR','TE'].forEach(pos => {
- const best = available.find(p => p.position === pos);
- const card = document.createElement('div');
- card.className = 'waiver-pos-card';
- if(best){
- const tier = waiverTier(best, starterRV);
- card.innerHTML = `<h4>Best ${pos}</h4>
- <div class="wp-player">${escapeHtml(best.name)}</div>
- <div class="wp-meta">${fmt(best.value)} val · ${fmt(best.vorp)} VORP · <span class="tier-badge ${tier.cls}">${tier.label}</span></div>`;
+ if(mode === 'stream'){
+  list.sort((a,b) => (b.weekPts || 0) - (a.weekPts || 0) || (b.value || 0) - (a.value || 0));
  } else {
- card.innerHTML = `<h4>Best ${pos}</h4><div class="wp-meta">None in pool</div>`;
- }
- topBox.appendChild(card);
- });
+  list.sort((a,b) => (b.value || 0) - (a.value || 0));
  }
 
- renderWaiverToolbar(available);
-
- const thVal = el('th-waiver-val');
- if(thVal) thVal.textContent = isVorpMode() ? 'VORP' : 'Value';
-
- let list = available.filter(p => waiverPosFilter === 'ALL' || p.position === waiverPosFilter);
- if(waiverSearch){
- list = list.filter(p => p.name.toLowerCase().includes(waiverSearch));
- }
- const irOnly = el('waiver-ir-only') && el('waiver-ir-only').checked;
- if(irOnly){
- list = list.filter(p => {
- // Match FC entry injury via sleeper id / name through playersMap
- let st = null;
- try{
- const pool = state.fcValues || [];
- const entry = pool.find(e => e.player && normalizeName(e.player.name) === normalizeName(p.name));
- st = playerInjuryStatus(entry || p);
- if(!st && entry && entry.player && entry.player.sleeperId && state.playersMap){
- st = playerInjuryStatus(state.playersMap[entry.player.sleeperId]);
- }
- }catch(e){}
- return isIrEligibleInjury(st);
- });
- }
-
- // Attach cached impact numbers (if a simulation has been run) before sort/slice
- const impactMap = (waiverImpactCache && waiverImpactCache.myTeamId === state.myTeamId) ? waiverImpactCache.byName : null;
- list = list.map(p => {
- const hit = impactMap ? impactMap.get(normalizeName(p.name)) : null;
- return hit ? { ...p, impact: hit } : { ...p, impact: null };
- });
-
- // Prefer thin positions (team balance) on every sort mode
- const thinBoost = (p) => thinPos.includes(p.position) ? 1 : 0;
- if(waiverSortMode === 'impact'){
- list.sort((a,b) => {
- const av = (a.impact ? a.impact.delta : -999) + thinBoost(a) * 1.5;
- const bv = (b.impact ? b.impact.delta : -999) + thinBoost(b) * 1.5;
- if(av !== bv) return bv - av;
- if(thinBoost(b) !== thinBoost(a)) return thinBoost(b) - thinBoost(a);
- return (b.vorp - a.vorp) || (b.value - a.value);
- });
- } else {
- list.sort((a,b) => {
- if(thinBoost(b) !== thinBoost(a)) return thinBoost(b) - thinBoost(a);
- if(waiverSortMode === 'value') return (b.value - a.value) || (b.vorp - a.vorp);
- return (b.vorp - a.vorp) || (b.value - a.value);
- });
+ function suggestedDrop(fa){
+  if(!my) return null;
+  const counts = getStarterCounts();
+  const roster = (my.roster || []).filter(p => !p.isTaxi);
+  // Prefer cutting lowest value while still filling starters
+  const ranked = roster.slice().sort((a,b) => (a.value || 0) - (b.value || 0));
+  for(const cand of ranked){
+   const left = roster.filter(p => String(p.id) !== String(cand.id));
+   const trial = left.concat([{
+    id: 'FA-' + normalizeName(fa.name),
+    fullName: fa.name,
+    name: fa.name,
+    position: fa.position,
+    value: fa.value || 0,
+    isIR: false
+   }]);
+   let holes = 0;
+   try{
+    holes = unfilledSlots(trial, counts, { healthyOnly: false });
+   }catch(e){ holes = 0; }
+   if(holes === 0) return cand;
+  }
+  // Fallback: lowest value on roster
+  return ranked[0] || null;
  }
 
- list = list.slice(0, 120);
-
- tbody.innerHTML = '';
- if(!list.length){
- tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">No available players match.</td></tr>';
- return;
- }
- list.forEach((p, i) => {
- const tr = document.createElement('tr');
- if(thinPos.includes(p.position)){
-  tr.style.background = 'rgba(196,92,82,0.06)';
-  tr.title = 'Fits a thin position on your roster';
- }
- const metric = isVorpMode() ? p.vorp : p.value;
- const tier = waiverTier(p, starterRV);
- const vsRv = p.rv > 0 ? ((p.value / p.rv - 1) * 100) : null;
- const vsStr = vsRv == null ? '-' : ((vsRv >= 0 ? '+' : '') + vsRv.toFixed(0) + '%');
- const vsCls = vsRv == null ? '' : vsRv > 5 ? 'up' : vsRv < -5 ? 'down' : '';
-
- let impactCell, dropCell;
- if(p.impact){
- const d = p.impact.delta;
- const dCls = d > 0.3 ? 'up' : d < -0.3 ? 'down' : '';
- const dStr = (d >= 0 ? '+' : '') + d.toFixed(1);
- impactCell = `<span class="pct-cell ${dCls}" style="font-weight:600;">${dStr}</span>`;
- if(p.impact.dropName){
- const balTag = p.impact.balanceNote
- ? ` <span style="color:${p.impact.injuryBackup ? '#c9a227' : 'var(--accent)'};font-size:11px;">· ${escapeHtml(p.impact.balanceNote)}</span>`
- : (p.impact.crossPos ? ' <span style="color:var(--text-muted);font-size:11px;">· cross-pos</span>' : '');
- dropCell = `${escapeHtml(p.impact.dropName)} <span style="color:var(--text-muted);">(${p.impact.dropPos})</span>${balTag}`;
- } else {
- dropCell = '<span style="color:var(--text-muted);">-</span>';
- }
- } else {
- impactCell = '<span style="color:var(--text-muted);">-</span>';
- dropCell = '<span style="color:var(--text-muted);">-</span>';
+ // Suggested adds: top 8 overall (or filtered)
+ const top = list.slice(0, 8);
+ if(sug){
+  if(!top.length){
+   sug.innerHTML = '<div class="hist-empty">No free agents match.</div>';
+  } else {
+   sug.innerHTML = top.map((fa, idx) => {
+    const drop = suggestedDrop(fa);
+    const dropName = drop ? (drop.fullName || drop.name) : '—';
+    const dropVal = drop && drop.value != null ? Math.round(drop.value) : '';
+    const metric = mode === 'stream'
+     ? (fa.weekPts != null ? fa.weekPts.toFixed(1) + ' wk' : '—')
+     : (fa.value != null ? Math.round(fa.value) : '—');
+    return `<div class="hist-card waiver-sug-card">
+     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;">
+      <div>
+       <span style="color:var(--text-muted);font-size:12px;margin-right:6px;">#${idx+1}</span>
+       <strong>${escapeHtml(fa.name)}</strong>
+       <span style="color:var(--text-muted);"> · ${escapeHtml(fa.position || '')}</span>
+       <span style="margin-left:8px;font-weight:650;">${metric}</span>
+      </div>
+      <div style="font-size:13px;">
+       <span style="color:var(--text-muted);">Drop</span>
+       <strong style="color:#c45c52;margin-left:6px;">${escapeHtml(dropName)}</strong>
+       ${dropVal !== '' ? `<span style="color:var(--text-muted);font-size:12px;"> (${dropVal})</span>` : ''}
+      </div>
+     </div>
+    </div>`;
+   }).join('');
+  }
  }
 
- tr.innerHTML = `
- <td><span class="rank-num">${i + 1}</span></td>
- <td class="team-name-cell">${escapeHtml(p.name)}${p.team ? ' <span style="color:var(--text-muted);font-size:11px;">' + escapeHtml(p.team) + '</span>' : ''}</td>
- <td>${p.position}</td>
- <td class="val-cell">${fmt(metric)}</td>
- <td class="val-cell" style="color:var(--text-muted)">${fmt(p.value)}</td>
- <td class="val-cell"><span class="pct-cell ${vsCls}">${vsStr}</span></td>
- <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>
- <td class="val-cell">${impactCell}</td>
- <td class="val-cell">${dropCell}</td>`;
- tbody.appendChild(tr);
- });
- }
+ // Full ranking table
+ const th = document.querySelector('#panel-waivers th:nth-child(4)');
+ if(th) th.textContent = mode === 'stream' ? 'This week' : 'Value';
+ tbody.innerHTML = list.slice(0, 150).map((fa, i) => {
+  const drop = suggestedDrop(fa);
+  const dropName = drop ? (drop.fullName || drop.name) : '—';
+  const cell = mode === 'stream'
+   ? (fa.weekPts != null ? fa.weekPts.toFixed(1) : '—')
+   : (fa.value != null ? Math.round(fa.value) : '—');
+  return `<tr>
+   <td>${i + 1}</td>
+   <td><strong>${escapeHtml(fa.name)}</strong></td>
+   <td>${escapeHtml(fa.position || '')}</td>
+   <td class="val-cell">${cell}</td>
+   <td style="color:#c45c52;font-size:12.5px;">${escapeHtml(dropName)}</td>
+  </tr>`;
+ }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:16px;">No players.</td></tr>';
+}
+
 
  function renderWaiverToolbar(available){
  const filters = el('waiver-pos-filters');
@@ -8622,6 +8617,15 @@ function matchupWinPct(liveA, liveB, projA, projB){
  });
  }
 
+function playerTradeable(p){
+ if(!p) return false;
+ if(p.tradeLocked) return false;
+ return true;
+}
+function playerOnBlock(p){
+ return !!(p && p.onTradeBlock);
+}
+
 function runTradeFinder(){
  const status = el('finder-status');
  const results = el('finder-results');
@@ -8738,16 +8742,18 @@ function runTradeFinder(){
  const need = teamPosNeedScores(team);
  return (team.roster || [])
  .filter(p => p.matched && (p.value || 0) > 80 && !p.isIR && !p.isTaxi)
+ .filter(p => typeof playerTradeable === 'function' ? playerTradeable(p) : !p.tradeLocked)
  .filter(p => !posAllow || !posAllow.length || posAllow.includes(p.position))
  .slice()
  .sort((a,b) => {
+ // Players listed on trade block float up when getting from a partner
+ const ba = playerOnBlock(a) ? 1 : 0, bb = playerOnBlock(b) ? 1 : 0;
+ if(mode === 'get' && ba !== bb) return bb - ba;
  if(mode === 'send'){
- // Prefer sending from low-need positions (surplus)
  const na = need[a.position] || 40, nb = need[b.position] || 40;
- if(na !== nb) return na - nb; // low need first
+ if(na !== nb) return na - nb;
  return (b.value||0) - (a.value||0);
  }
- // get: high value first, slight boost if we need that pos later applied in scoring
  return (b.value||0) - (a.value||0);
  })
  .slice(0, n);
@@ -11104,19 +11110,30 @@ function renderByes(){
    (team.roster || []).forEach(p => {
     let st = playerInjuryStatus(p);
     if(!st && p.isIR) st = 'ir';
-    if(st && typeof injuryUnavailable === 'function' && injuryUnavailable(st))
-     holeNames.push(p.fullName || p.name);
     const bw = playerByeWeek(p);
-    if(bw != null && Number(bw) === Number(curWeek)) holeNames.push((p.fullName || p.name) + ' (bye)');
+    const onBye = bw != null && Number(bw) === Number(curWeek);
+    const unavail = onBye || (st && typeof injuryUnavailable === 'function' && injuryUnavailable(st));
+    if(unavail) holeNames.push(p.fullName || p.name);
    });
   }catch(e){}
-  if(holes > 0 || holeNames.length){
+  // Only BLOCK when starters cannot be filled. Injured names with backups = watch, not block.
+  if(holes > 0){
    items.push({
     stage: 'cover',
     priority: 1,
     status: 'block',
-    title: holes > 0 ? (holes + ' lineup hole' + (holes > 1 ? 's' : '')) : 'Cover needed',
-    why: holeNames.slice(0, 3).join(', ') || 'Bye or injury — fill before lock.',
+    title: holes + ' lineup hole' + (holes > 1 ? 's' : ''),
+    why: (holeNames.slice(0, 3).join(', ') || 'Bye/injury') + ' — empty starter slot.',
+    panel: 'panel-byes',
+    label: 'Cover'
+   });
+  } else if(holeNames.length){
+   items.push({
+    stage: 'cover',
+    priority: 7,
+    status: 'ok',
+    title: 'Covered (watch list)',
+    why: holeNames.slice(0, 3).join(', ') + ' out/bye, but a legal lineup still fills.',
     panel: 'panel-byes',
     label: 'Cover'
    });
