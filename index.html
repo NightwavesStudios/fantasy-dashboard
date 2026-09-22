@@ -3896,9 +3896,9 @@
  // 20=bench, 21/22=IR. Everything else is a starter slot (incl FLEX 23)
  const isStarter = slot != null && slot !== 20 && slot !== 21 && slot !== 22;
  const injuryStatus = (p.injuryStatus || p.injury_status || null);
- const ownership = (entry.playerPoolEntry && entry.playerPoolEntry.player && entry.playerPoolEntry.player.ownership) || p.ownership || {};
+ const ownership = (e.playerPoolEntry && e.playerPoolEntry.player && e.playerPoolEntry.player.ownership) || p.ownership || {};
  // ESPN sometimes flags lineup lock mid-game; trade block is often on the team object
- let tradeLocked = !!(entry.playerPoolEntry && (entry.playerPoolEntry.lineupLocked || entry.lineupLocked));
+ let tradeLocked = !!(e.playerPoolEntry && (e.playerPoolEntry.lineupLocked || e.lineupLocked));
  if(ownership && ownership.tradeLocked) tradeLocked = true;
  return {
  id: p.id,
