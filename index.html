@@ -2508,6 +2508,14 @@
  .pc-spark-labels { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
  .pc-ratings { margin-bottom: 8px; }
 
+
+ .pc-spark-wrap { position: relative; }
+ .pc-spark-hover {
+ font-size: 12px; color: var(--text-secondary);
+ margin-top: 4px; min-height: 1.2em; opacity: 0.7;
+ }
+ .pc-dot:hover { r: 6; }
+
 </style>
 </head>
 <body>
@@ -4005,11 +4013,9 @@
  }
 
  function playerUpsideBust(p, fc){
-  // Continuous 1–5 (one decimal). Week = next outing; Season = rest-of-year profile.
-  // High recent floors (e.g. 38 & 40) → low bust. Wide ceiling gap → high upside.
-  const hist = (typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [])
-   .map(x => x.pts)
-   .filter(v => typeof v === 'number' && v > 0.5);
+  // Continuous 1–5. Real 0s count (bust up). Elite floors (38/40) cut bust hard.
+  const scored = typeof playerScoredWeeks === 'function' ? playerScoredWeeks(p) : [];
+  const hist = scored.map(x => x.pts).filter(v => typeof v === 'number' && v >= 0);
   const n = hist.length;
   const proj = (fc && fc.proj > 0) ? fc.proj : 10;
   const floor = (fc && fc.floor != null) ? fc.floor : proj * 0.45;
@@ -4024,67 +4030,70 @@
    sd = Math.sqrt(hist.reduce((s,x)=>s+(x-mean)*(x-mean),0) / (n-1));
   }
 
-  function clamp15(x){
-   return Math.max(1, Math.min(5, x));
-  }
   function oneDec(x){
-   return Math.round(clamp15(x) * 10) / 10;
+   return Math.round(Math.max(1, Math.min(5, x)) * 10) / 10;
   }
 
-  // —— Week (next game) ——
-  // Upside: how far ceiling sits above this week's middle
-  const weekUpGap = (ceil - proj) / Math.max(6, proj);
-  let weekUpside = 1.2 + weekUpGap * 6.5; // 0.25 gap → ~2.8; 0.55 gap → ~4.8
-  if(n >= 1 && maxP > proj * 1.15)
-   weekUpside += Math.min(1.2, (maxP / proj - 1) * 2.2);
-  // Bust: soft floor and/or soft recent lows vs this week's middle
-  const weekFloorShare = floor / Math.max(1, proj); // 0.45 soft, 0.7 safe
-  let weekBust = 5.2 - weekFloorShare * 6.5; // 0.45→2.3, 0.7→0.65→clamp 1
+  // —— Week ——
+  // Boom: relative ceiling, but absolute cap so a 12-proj WR with ceil 18 is not automatic 5
+  const weekUpGap = Math.max(0, (ceil - proj) / Math.max(8, proj));
+  let weekUpside = 1.5 + weekUpGap * 5.5;
   if(n >= 1){
-   const minShare = minP / Math.max(1, mean);
-   // min near mean (Allen 38/39) → strong cut to bust
-   weekBust -= Math.min(2.4, Math.max(0, (minShare - 0.55) * 5.5));
-   // min already high in absolute fantasy points
-   if(minP >= 20) weekBust -= 0.8;
-   if(minP >= 28) weekBust -= 0.7;
-  }
-  // Low conf → modest regression toward 3, not a hard 4
-  if(conf < 0.4){
-   const pull = (0.4 - conf) * 1.1;
-   weekUpside = weekUpside * (1 - pull) + 3 * pull;
-   weekBust = weekBust * (1 - pull) + 3 * pull;
+   // Only reward boom if they actually hit a high relative to proj
+   if(maxP >= proj * 1.35) weekUpside += Math.min(1.0, (maxP / proj - 1) * 1.4);
+   if(maxP >= 25) weekUpside += 0.35;
+   if(maxP >= 35) weekUpside += 0.45;
+   // Soft tops keep boom modest
+   if(maxP < 12 && proj < 14) weekUpside = Math.min(weekUpside, 3.2);
   }
 
-  // —— Season (ROS profile) ——
-  // Uses sample variance + value tier
-  let seasonUpside = 2.2;
-  let seasonBust = 2.5;
+  // Bust: soft floor + real duds (including 0)
+  const weekFloorShare = floor / Math.max(1, proj);
+  let weekBust = 5.0 - weekFloorShare * 5.5;
+  if(n >= 1){
+   const minShare = minP / Math.max(1, Math.max(mean, proj * 0.8));
+   // 0 score → minShare 0 → strong bust
+   weekBust += Math.min(2.2, (0.55 - Math.min(0.55, minShare)) * 4.0);
+   if(minP <= 0.5) weekBust += 1.3;
+   else if(minP < 4) weekBust += 0.7;
+   if(minP >= 18) weekBust -= 1.0;
+   if(minP >= 28) weekBust -= 0.9;
+  }
+  if(conf < 0.4){
+   const pull = (0.4 - conf) * 0.85;
+   weekUpside = weekUpside * (1 - pull) + 2.8 * pull;
+   weekBust = weekBust * (1 - pull) + 3.0 * pull;
+  }
+
+  // —— Season ——
+  let seasonUpside = 2.4;
+  let seasonBust = 2.6;
   if(n >= 2){
-   const cv = mean > 1 ? sd / mean : 0.3;
-   seasonUpside = 1.4 + cv * 7 + Math.min(1.5, (maxP - mean) / Math.max(6, mean) * 3);
-   seasonBust = 1.3 + cv * 6 + Math.min(1.5, (mean - minP) / Math.max(6, mean) * 3);
+   const cv = mean > 0.5 ? sd / mean : 0.8;
+   seasonUpside = 1.5 + Math.min(0.7, cv) * 5 + Math.min(1.2, Math.max(0, maxP - mean) / Math.max(5, mean) * 2.2);
+   seasonBust = 1.4 + Math.min(0.7, cv) * 5 + Math.min(1.4, Math.max(0, mean - minP) / Math.max(5, mean) * 2.5);
+   if(minP <= 0.5) seasonBust += 1.1;
+   if(maxP < 10) seasonUpside = Math.min(seasonUpside, 3.0);
   } else if(n === 1){
-   seasonUpside = 2.4 + Math.min(1.5, (maxP / proj - 1) * 2);
-   seasonBust = 2.6 - Math.min(1.2, (minP / proj - 0.5) * 2);
+   seasonUpside = 2.2 + (maxP > proj * 1.2 ? 0.8 : 0.2);
+   seasonBust = minP <= 0.5 ? 4.2 : (2.4 + (proj - minP) / Math.max(8, proj));
   } else {
    const pos = (p && p.position) || 'WR';
-   const POS_U = { QB: 2.6, RB: 3.1, WR: 3.5, TE: 3.0, DST: 3.4, K: 2.8 };
-   const POS_B = { QB: 2.4, RB: 3.0, WR: 3.3, TE: 2.9, DST: 3.5, K: 3.0 };
-   seasonUpside = POS_U[pos] || 3.1;
-   seasonBust = POS_B[pos] || 3.0;
+   const POS_U = { QB: 2.5, RB: 3.0, WR: 3.3, TE: 2.9, DST: 3.2, K: 2.7 };
+   const POS_B = { QB: 2.3, RB: 2.9, WR: 3.1, TE: 2.8, DST: 3.3, K: 2.9 };
+   seasonUpside = POS_U[pos] || 3.0;
+   seasonBust = POS_B[pos] || 2.9;
   }
-  // High absolute production lowers season bust
-  if(mean >= 22) seasonBust -= 0.9;
-  if(mean >= 28) seasonBust -= 0.7;
-  if(minP >= 24) seasonBust -= 0.8;
-  // Elite ceiling sample raises season upside
-  if(maxP >= 30) seasonUpside += 0.5;
-  if(maxP >= 38) seasonUpside += 0.6;
+  if(mean >= 22) seasonBust -= 0.8;
+  if(mean >= 28) seasonBust -= 0.6;
+  if(minP >= 24) seasonBust -= 0.7;
+  if(maxP >= 30) seasonUpside += 0.4;
+  if(maxP >= 38) seasonUpside += 0.5;
 
   if(conf < 0.35){
-   const pull = (0.35 - conf) * 0.9;
-   seasonUpside = seasonUpside * (1 - pull) + 3 * pull;
-   seasonBust = seasonBust * (1 - pull) + 3 * pull;
+   const pull = (0.35 - conf) * 0.8;
+   seasonUpside = seasonUpside * (1 - pull) + 2.9 * pull;
+   seasonBust = seasonBust * (1 - pull) + 3.0 * pull;
   }
 
   return {
@@ -4098,19 +4107,35 @@
  }
 
  function playerValueHistoryPoints(p){
-  // Build a small series for the value chart: estimated past → now
+  // Prefer local snapshots (any length). Fall back to FC trend anchors beyond 30d when present.
   const pts = [];
   const key = normalizeName(p.fullName || p.name || '');
   let cur = typeof p.value === 'number' ? p.value : null;
   let t30 = typeof p.trend30Day === 'number' ? p.trend30Day : (typeof p.trend30 === 'number' ? p.trend30 : null);
+  let t7 = null, t90 = null, t1 = null;
   try{
+   const entry = (p.fcEntry) || (Array.isArray(state.fcValues) && state.fcValues.find(e => e.player && normalizeName(e.player.name) === key));
+   if(entry){
+    if(cur == null && typeof entry.value === 'number') cur = entry.value;
+    if(typeof entry.trend30Day === 'number') t30 = entry.trend30Day;
+    if(typeof entry.trend7Day === 'number') t7 = entry.trend7Day;
+    if(typeof entry.trend90Day === 'number') t90 = entry.trend90Day;
+    if(typeof entry.trend1Day === 'number') t1 = entry.trend1Day;
+    // FantasyCalc sometimes nests overallTrend / valueHistory
+    if(Array.isArray(entry.valueHistory)){
+     entry.valueHistory.forEach(h => {
+      const v = typeof h === 'number' ? h : (h && (h.value != null ? h.value : h.v));
+      const t = (h && (h.ts || h.date || h.t)) || null;
+      if(typeof v === 'number' && v > 0) pts.push({ t: t || pts.length, v, label: h.label || '' });
+     });
+    }
+   }
    const bundle = typeof getFcTrendBundle === 'function' ? getFcTrendBundle(p) : null;
    if(bundle){
     if(cur == null && typeof bundle.cur === 'number') cur = bundle.cur;
     if(t30 == null && typeof bundle.t30 === 'number') t30 = bundle.t30;
    }
   }catch(e){}
-  // Local snapshots if the app stored them
   try{
    const hist = state.valueHistory || state.fcHistory;
    if(hist && Array.isArray(hist)){
@@ -4119,64 +4144,145 @@
      let v = null;
      if(map && typeof map === 'object'){
       if(typeof map[key] === 'number') v = map[key];
-      else if(map[p.id] != null) v = Number(map[p.id]);
+      else if(p.id != null && map[p.id] != null) v = Number(map[p.id]);
      }
-     if(typeof v === 'number' && v > 0){
-      pts.push({ t: h.ts || h.date || h.when || pts.length, v, label: h.label || '' });
-     }
+     if(typeof v === 'number' && v > 0)
+      pts.push({ t: h.ts || h.date || h.when || pts.length, v, label: h.label || formatHistLabel(h.ts || h.date) });
     });
    }
   }catch(e){}
-  pts.sort((a,b) => (a.t > b.t ? 1 : -1));
-  // Always add synthetic 30d ago + now so the chart is never empty when we have FC
+  pts.sort((a,b) => {
+   const ta = typeof a.t === 'number' ? a.t : Date.parse(a.t) || 0;
+   const tb = typeof b.t === 'number' ? b.t : Date.parse(b.t) || 0;
+   return ta - tb;
+  });
+  // Synthetic anchors so chart has depth even without local history
   if(cur != null && cur > 0){
-   if(t30 != null){
-    const prev = Math.max(0, cur - t30);
-    pts.unshift({ t: '30d', v: prev, label: '≈30d ago' });
-   }
-   pts.push({ t: 'now', v: cur, label: 'Now' });
+   const anchors = [];
+   if(t90 != null) anchors.push({ t: '90d', v: Math.max(0, cur - t90), label: '~90d' });
+   if(t30 != null) anchors.push({ t: '30d', v: Math.max(0, cur - t30), label: '~30d' });
+   if(t7 != null) anchors.push({ t: '7d', v: Math.max(0, cur - t7), label: '~7d' });
+   if(t1 != null) anchors.push({ t: '1d', v: Math.max(0, cur - t1), label: '~1d' });
+   anchors.forEach(a => {
+    if(!pts.some(p => p.label === a.label)) pts.unshift(a);
+   });
+   if(!pts.some(p => p.label === 'Now' || p.t === 'now'))
+    pts.push({ t: 'now', v: cur, label: 'Now' });
   }
-  // Dedupe near-identical trailing points
+  // Dedupe
   const out = [];
   pts.forEach(pt => {
    const last = out[out.length - 1];
-   if(last && Math.abs(last.v - pt.v) < 0.5 && last.label === pt.label) return;
+   if(last && Math.abs(last.v - pt.v) < 0.25 && String(last.label) === String(pt.label)) return;
    out.push(pt);
   });
   return out;
  }
+ function formatHistLabel(ts){
+  if(ts == null) return '';
+  try{
+   const d = new Date(ts);
+   if(!isNaN(d.getTime())) return (d.getMonth()+1) + '/' + d.getDate();
+  }catch(e){}
+  return String(ts);
+ }
 
  function renderSparkline(points, color){
-  if(!points || points.length < 2){
-   if(points && points.length === 1){
-    return `<div class="pc-empty">Value ${Math.round(points[0].v)} (only one point).</div>`;
-   }
-   return `<div class="pc-empty">No value history yet. Open the app over a few days to build a local trend, or wait on FantasyCalc 30d move.</div>`;
+  if(!points || points.length < 1){
+   return `<div class="pc-empty">No value history yet. Local snapshots build over days you open the app; FC 1d/7d/30d/90d anchors fill gaps when present.</div>`;
+  }
+  if(points.length === 1){
+   return `<div class="pc-empty">Value ${Math.round(points[0].v)} (only one point). Hover history appears as more days load.</div>`;
   }
   const vals = points.map(p => p.v);
   const minV = Math.min(...vals);
   const maxV = Math.max(...vals);
   const span = Math.max(1, maxV - minV);
-  const w = 320, h = 72, pad = 6;
+  const w = 320, h = 80, pad = 8;
   const coords = points.map((p, i) => {
    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
    const y = h - pad - ((p.v - minV) / span) * (h - pad * 2);
-   return [x, y, p];
+   return { x, y, p };
   });
-  const d = coords.map((c,i) => (i ? 'L' : 'M') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
-  const dots = coords.map(c =>
-   `<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="3" fill="${color || 'var(--accent)'}" />`
-  ).join('');
-  const labels = points.map((p,i) => {
-   if(i === 0 || i === points.length - 1 || p.label)
-    return `<span>${escapeHtml(p.label || '')} ${Math.round(p.v)}</span>`;
-   return '';
-  }).filter(Boolean).join(' · ');
-  return `<svg class="pc-spark" viewBox="0 0 ${w} ${h}" width="100%" height="72" preserveAspectRatio="none">
-   <path d="${d}" fill="none" stroke="${color || 'var(--accent)'}" stroke-width="2.5" stroke-linejoin="round" />
-   ${dots}
-  </svg>
-  <div class="pc-spark-labels">${labels}</div>`;
+  const d = coords.map((c,i) => (i ? 'L' : 'M') + c.x.toFixed(1) + ',' + c.y.toFixed(1)).join(' ');
+  const dots = coords.map((c,i) => {
+   const lab = escapeHtml(String(c.p.label || c.p.t || ''));
+   const val = Math.round(c.p.v);
+   return `<circle class="pc-dot" data-i="${i}" data-label="${lab}" data-val="${val}" cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="${color || 'var(--accent)'}" style="cursor:pointer">
+    <title>${lab}: ${val}</title>
+   </circle>`;
+  }).join('');
+  return `<div class="pc-spark-wrap">
+   <svg class="pc-spark" viewBox="0 0 ${w} ${h}" width="100%" height="80" preserveAspectRatio="none">
+    <path d="${d}" fill="none" stroke="${color || 'var(--accent)'}" stroke-width="2.5" stroke-linejoin="round" />
+    ${dots}
+   </svg>
+   <div class="pc-spark-hover" id="pc-spark-hover">Hover a point</div>
+  </div>`;
+ }
+
+ function bindSparklineHover(){
+  const wrap = document.querySelector('.pc-spark-wrap');
+  const hover = el('pc-spark-hover');
+  if(!wrap || !hover) return;
+  wrap.querySelectorAll('.pc-dot').forEach(dot => {
+   dot.addEventListener('mouseenter', () => {
+    hover.textContent = (dot.getAttribute('data-label') || '') + ': ' + dot.getAttribute('data-val');
+    hover.style.opacity = '1';
+   });
+   dot.addEventListener('mouseleave', () => {
+    hover.textContent = 'Hover a point';
+    hover.style.opacity = '0.7';
+   });
+   dot.addEventListener('click', () => {
+    hover.textContent = (dot.getAttribute('data-label') || '') + ': ' + dot.getAttribute('data-val');
+   });
+  });
+ }
+
+ 
+ function fcRanksForPlayer(p){
+  // Overall + position rank among FantasyCalc values (1 = best)
+  const name = normalizeName(p.fullName || p.name || '');
+  const pos = (p.position || '').toUpperCase();
+  const pool = Array.isArray(state.fcValues) ? state.fcValues.slice() : [];
+  if(!pool.length) return { overall: null, posRank: null, poolSize: 0, posSize: 0 };
+  const scored = pool
+   .filter(e => e && e.player && typeof e.value === 'number')
+   .map(e => ({
+    name: normalizeName(e.player.name),
+    pos: normalizeFcPosition ? normalizeFcPosition(e.player) : (e.player.position || ''),
+    value: e.value
+   }))
+   .sort((a,b) => b.value - a.value);
+  let overall = null;
+  scored.forEach((e, i) => { if(e.name === name) overall = i + 1; });
+  const posList = scored.filter(e => (e.pos || '').toUpperCase() === pos || (e.pos || '') === pos);
+  let posRank = null;
+  posList.forEach((e, i) => { if(e.name === name) posRank = i + 1; });
+  return { overall, posRank, poolSize: scored.length, posSize: posList.length };
+ }
+
+ function playerWeekOpponent(p, week){
+  // Best-effort: projection row, player field, or matchup cache notes
+  try{
+   const row = getPlayerProjection(p.id, p.fullName || p.name);
+   if(row && (row.opponent || row.opp)) return String(row.opponent || row.opp);
+  }catch(e){}
+  if(p.opponent || p.opp) return String(p.opponent || p.opp);
+  try{
+   if(state.playersMap && state.playersMap[p.id]){
+    const sp = state.playersMap[p.id];
+    if(sp.opponent) return String(sp.opponent);
+    if(sp.week_opponent) return String(sp.week_opponent);
+   }
+  }catch(e){}
+  // Sleeper sometimes embeds on player object after merge
+  if(p.teamAbbr && scheduleCache && scheduleCache.nflOpponents){
+   const map = scheduleCache.nflOpponents[week];
+   if(map && map[p.teamAbbr]) return map[p.teamAbbr];
+  }
+  return null;
  }
 
  function openPlayerCard(name, id){
@@ -4193,19 +4299,36 @@
   let fc = { proj: null, floor: null, ceil: null, nHist: 0, conf: 0 };
   try{ fc = playerFloorCeil(p, curWeek, curWeek) || fc; }catch(e){}
   const hist = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
-  const scores = hist.filter(h => h.pts > 0.5).sort((a,b) => (a.week || 0) - (b.week || 0));
+  const scores = (typeof playerScoredWeeks === 'function' ? playerScoredWeeks(p) : hist.filter(h => h.pts >= 0))
+   .slice()
+   .sort((a,b) => (a.week || 0) - (b.week || 0));
   const ratings = playerUpsideBust(p, fc);
   const inj = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : (p.injuryStatus || null);
   const injLab = inj && inj !== 'ok' && typeof injuryLabel === 'function' ? injuryLabel(inj) : (inj && inj !== 'ok' ? String(inj) : null);
 
   if(title) title.textContent = p.fullName || p.name || name || 'Player';
+  const ranks = typeof fcRanksForPlayer === 'function' ? fcRanksForPlayer(p) : {};
+  let opp = typeof playerWeekOpponent === 'function' ? playerWeekOpponent(p, curWeek) : null;
+  let weekOut = false;
+  try{
+   const st = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : (p.injuryStatus || null);
+   if(st && typeof injuryUnavailable === 'function' && injuryUnavailable(st)) weekOut = true;
+   if(p.isIR) weekOut = true;
+   const bw = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null;
+   if(bw != null && Number(bw) === Number(curWeek)) weekOut = true;
+  }catch(e){}
+  if(weekOut) opp = null;
   if(meta){
    const bits = [];
    if(p.position) bits.push(p.position);
    if(p.teamAbbr) bits.push(p.teamAbbr);
+   if(weekOut) bits.push(injLab ? (injLab + ' — no weekly') : 'Out/bye — no weekly');
+   else if(opp) bits.push('vs ' + opp + ' (W' + curWeek + ')');
    if(team) bits.push(team.name);
    else bits.push('Free agent');
    if(p.value != null) bits.push('FC ' + Math.round(p.value));
+   if(ranks.overall) bits.push('#' + ranks.overall + ' overall');
+   if(ranks.posRank) bits.push('#' + ranks.posRank + ' ' + (p.position || ''));
    if(injLab) bits.push(injLab);
    meta.textContent = bits.join(' · ');
   }
@@ -4243,6 +4366,11 @@
     <div class="pc-stat"><div class="lbl">Floor</div><div class="val">${fc.floor != null ? fc.floor : '—'}</div></div>
     <div class="pc-stat"><div class="lbl">Ceiling</div><div class="val">${fc.ceil != null ? fc.ceil : '—'}</div></div>
    </div>
+   <div class="pc-stats" style="margin-top:8px;">
+    <div class="pc-stat"><div class="lbl">Overall</div><div class="val" style="font-size:15px;">${ranks.overall ? ('#' + ranks.overall) : '—'}</div></div>
+    <div class="pc-stat"><div class="lbl">${escapeHtml(p.position || 'Pos')} rank</div><div class="val" style="font-size:15px;">${ranks.posRank ? ('#' + ranks.posRank) : '—'}</div></div>
+    <div class="pc-stat"><div class="lbl">Week ${curWeek}</div><div class="val" style="font-size:14px;">${weekOut ? 'Out / bye' : (opp ? ('vs ' + escapeHtml(opp)) : '—')}</div></div>
+   </div>
    <div class="pc-section-title">This week</div>
    <div class="pc-ratings">
     <div class="pc-rate">
@@ -4278,6 +4406,7 @@
   `;
 
   overlay.classList.add('show');
+  try{ bindSparklineHover(); }catch(e){}
  }
 
  function closePlayerCard(){
@@ -5457,10 +5586,59 @@ function escapeHtml(s){
  function suggestedDrop(fa){
   if(!my) return null;
   const counts = getStarterCounts();
+  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
   const roster = (my.roster || []).filter(p => !p.isTaxi);
-  // Prefer cutting lowest value while still filling starters
-  const ranked = roster.slice().sort((a,b) => (a.value || 0) - (b.value || 0));
-  for(const cand of ranked){
+  // This week's healthy optimal starters — never recommend dropping these
+  const protectedIds = new Set();
+  try{
+   const flexElig = counts.flexEligible || ['RB','WR','TE'];
+   const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+   const opt = optimalStarterLineup(my, counts, flexElig, sfElig, {
+    healthyOnly: true,
+    scoreFn: (p) => typeof playerWeeklyPtsForWeek === 'function'
+     ? playerWeeklyPtsForWeek(p, curWeek, curWeek)
+     : (p.value || 0)
+   });
+   if(opt && opt.starterIds){
+    opt.starterIds.forEach(id => protectedIds.add(String(id)));
+   } else if(opt && opt.assignments){
+    opt.assignments.forEach(a => { if(a && a.id != null) protectedIds.add(String(a.id)); });
+   }
+   // Also protect anyone already locked into a starter slot this week
+   roster.forEach(p => {
+    if(p.isStarter && p.lineupSlotId != null && p.lineupSlotId !== 20 && !p.isIR)
+     protectedIds.add(String(p.id));
+   });
+  }catch(e){}
+  // Sole healthy body at a position while someone is out → protect the backup (Geno case)
+  try{
+   const byPos = {};
+   roster.forEach(p => {
+    const pos = p.position || '';
+    if(!byPos[pos]) byPos[pos] = [];
+    byPos[pos].push(p);
+   });
+   Object.keys(byPos).forEach(pos => {
+    const arr = byPos[pos];
+    const healthy = arr.filter(p => {
+     if(p.isIR) return false;
+     const st = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : null;
+     return !(st && typeof injuryUnavailable === 'function' && injuryUnavailable(st));
+    });
+    const hurt = arr.filter(p => {
+     if(p.isIR) return true;
+     const st = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : null;
+     return st && typeof injuryUnavailable === 'function' && injuryUnavailable(st);
+    });
+    if(hurt.length && healthy.length <= 2){
+     healthy.forEach(p => protectedIds.add(String(p.id)));
+    }
+   });
+  }catch(e){}
+
+  function canDrop(cand){
+   if(protectedIds.has(String(cand.id))) return false;
+   // Prefer not dropping IR-bound stars for stream adds unless mode is season and value is tiny
    const left = roster.filter(p => String(p.id) !== String(cand.id));
    const trial = left.concat([{
     id: 'FA-' + normalizeName(fa.name),
@@ -5470,14 +5648,27 @@ function escapeHtml(s){
     value: fa.value || 0,
     isIR: false
    }]);
-   let holes = 0;
-   try{
-    holes = unfilledSlots(trial, counts, { healthyOnly: false });
-   }catch(e){ holes = 0; }
-   if(holes === 0) return cand;
+   // Must still fill full-strength roster AND this week's healthy lineup
+   let holes = 0, weekHoles = 0;
+   try{ holes = unfilledSlots(trial, counts, { healthyOnly: false }); }catch(e){}
+   try{ weekHoles = unfilledSlots(trial, counts, { healthyOnly: true }); }catch(e){}
+   if(holes > 0) return false;
+   if(weekHoles > 0) return false;
+   return true;
   }
-  // Fallback: lowest value on roster
-  return ranked[0] || null;
+
+  // Sort: drop IR fluff first, then lowest value unprotected
+  const ranked = roster.slice().sort((a,b) => {
+   const aIR = a.isIR ? 0 : 1;
+   const bIR = b.isIR ? 0 : 1;
+   if(aIR !== bIR) return aIR - bIR;
+   return (a.value || 0) - (b.value || 0);
+  });
+  for(const cand of ranked){
+   if(canDrop(cand)) return cand;
+  }
+  // No safe drop — do not invent a bad one (e.g. Geno)
+  return null;
  }
 
  // Suggested adds: top 8 overall (or filtered)
@@ -5488,7 +5679,7 @@ function escapeHtml(s){
   } else {
    sug.innerHTML = top.map((fa, idx) => {
     const drop = suggestedDrop(fa);
-    const dropName = drop ? (drop.fullName || drop.name) : '—';
+    const dropName = drop ? (drop.fullName || drop.name) : 'No safe drop';
     const dropVal = drop && drop.value != null ? Math.round(drop.value) : '';
     const metric = mode === 'stream'
      ? (fa.weekPts != null ? fa.weekPts.toFixed(1) + ' wk' : '—')
@@ -7035,6 +7226,19 @@ function countPosBodies(roster){
  if(p.espnId != null) ids.add(String(p.espnId));
  const seen = new Set(); // week key
 
+ function playerScoredWeeks(p){
+  // Include real 0-point games. Skip bye-week zeros only.
+  const raw = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
+  let bye = null;
+  try{ bye = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null; }catch(e){}
+  return raw.filter(x => {
+   if(!x || typeof x.pts !== 'number' || !isFinite(x.pts) || x.pts < 0) return false;
+   if(x.pts === 0 && bye != null && Number(x.week) === Number(bye)) return false;
+   return true;
+  });
+ }
+
+ 
  function push(week, pts){
   if(typeof pts !== 'number' || !(pts >= 0) || !isFinite(pts)) return;
   const key = String(week) + '|' + pts.toFixed(2);
@@ -7139,10 +7343,10 @@ function countPosBodies(roster){
  // More real games → tighter band, more weight on history.
  // Few games (early season or missed weeks / injury) → wider band, lean on proj.
  const row = getPlayerProjection(p.id, p.fullName || p.name) || {};
- const histRaw = playerHistWeekScores(p);
+ const histRaw = typeof playerScoredWeeks === 'function' ? playerScoredWeeks(p) : playerHistWeekScores(p);
  const hist = histRaw
   .map(x => x.pts)
-  .filter(v => typeof v === 'number' && isFinite(v) && v > 0.5);
+  .filter(v => typeof v === 'number' && isFinite(v) && v >= 0);
  const pos = p.position || 'WR';
  const cw = Number(curWeek) || Number(week) || 1;
 
@@ -7197,9 +7401,16 @@ function countPosBodies(roster){
 
   const sigmaK = 0.7 + (1 - conf) * 0.55; // more σ when unsure
   let histFloor = Math.min(pLo, mean - sigmaK * (cv * mean));
-  const floorGuard = Math.max(mean * (0.38 + conf * 0.08), proj * (0.36 + conf * 0.08), 3);
-  histFloor = Math.max(histFloor, floorGuard * (0.9 + conf * 0.1));
-  if(minPts >= floorGuard * 0.8) histFloor = Math.max(histFloor, Math.min(minPts, mean * 0.7));
+  // Real 0s pull the floor down; still avoid pure-zero display for high-proj stars with one dud
+  const sawZero = minPts <= 0.5;
+  const floorGuard = sawZero
+   ? Math.max(0, Math.min(mean * 0.25, proj * 0.22))
+   : Math.max(mean * (0.38 + conf * 0.08), proj * (0.36 + conf * 0.08), 3);
+  histFloor = sawZero
+   ? Math.min(histFloor, Math.max(0, mean * 0.2))
+   : Math.max(histFloor, floorGuard * (0.9 + conf * 0.1));
+  if(!sawZero && minPts >= floorGuard * 0.8)
+   histFloor = Math.max(histFloor, Math.min(minPts, mean * 0.7));
 
   let histCeil = Math.max(pHi, mean + sigmaK * (cv * mean), maxPts);
   if(conf < 0.45) histCeil = Math.max(histCeil, maxPts * (1.06 + (1 - conf) * 0.08));
@@ -7232,9 +7443,15 @@ function countPosBodies(roster){
  if(!(floor > 0)) floor = Math.max(3, proj * 0.42);
  if(ceil < proj) ceil = proj * (1 + defaultCv * widen);
  if(ceil < floor + 2) ceil = floor + Math.max(5, proj * 0.25);
- if(proj >= 8) floor = Math.max(floor, proj * 0.36);
- if(proj >= 15) floor = Math.max(floor, proj * 0.40);
- if(proj >= 20) floor = Math.max(floor, proj * 0.43);
+ const histHasZero = n >= 1 && Math.min(...(hist.length ? hist : [1])) <= 0.5;
+ if(!histHasZero){
+  if(proj >= 8) floor = Math.max(floor, proj * 0.36);
+  if(proj >= 15) floor = Math.max(floor, proj * 0.40);
+  if(proj >= 20) floor = Math.max(floor, proj * 0.43);
+ } else {
+  // Soft floor after a true dud week
+  floor = Math.min(floor, proj * 0.28);
+ }
 
  return {
   proj: Math.round(proj * 10) / 10,
