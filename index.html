@@ -2236,6 +2236,69 @@
  font-size: 11px;
  }
 
+
+ .bp-tab-rule {
+ display: none;
+ margin: 0 0 12px;
+ padding: 8px 12px;
+ border-left: 3px solid var(--accent);
+ background: var(--accent-muted);
+ border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+ font-size: 12.5px;
+ color: var(--text-secondary);
+ line-height: 1.4;
+ }
+ .bp-tab-rule .bp-rule-label {
+ font-weight: 700;
+ color: var(--accent);
+ text-transform: uppercase;
+ letter-spacing: 0.06em;
+ font-size: 10px;
+ margin-right: 8px;
+ }
+ .bp-pipeline { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+ .bp-pipe-step {
+ display: flex;
+ align-items: flex-start;
+ gap: 12px;
+ padding: 12px 14px;
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ background: var(--surface);
+ cursor: pointer;
+ }
+ .bp-pipe-step:hover { border-color: var(--accent); }
+ .bp-pipe-step.status-block { border-color: #c45c52; background: rgba(196,92,82,0.08); }
+ .bp-pipe-step.status-go { border-color: var(--accent); }
+ .bp-pipe-step.status-wait { opacity: 0.75; }
+ .bp-pipe-step.status-ok { opacity: 0.85; }
+ .bp-pipe-num {
+ width: 26px; height: 26px; border-radius: 50%;
+ background: var(--surface-2); font-weight: 700; font-size: 12px;
+ display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+ }
+ .bp-pipe-step.status-block .bp-pipe-num { background: rgba(196,92,82,0.25); color: #c45c52; }
+ .bp-pipe-step.status-go .bp-pipe-num { background: var(--accent-muted); color: var(--accent); }
+ .bp-pipe-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+ .bp-pipe-title { font-weight: 650; font-size: 14px; margin-top: 2px; }
+ .bp-pipe-why { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+ .bp-pipe-go { font-size: 12px; font-weight: 650; color: var(--accent); white-space: nowrap; margin-left: auto; }
+ .bp-block-banner {
+ padding: 10px 12px; margin-bottom: 12px;
+ border: 1px solid #c45c52; border-radius: var(--radius);
+ background: rgba(196,92,82,0.1); color: var(--text);
+ font-size: 13px; font-weight: 600;
+ }
+ .bp-pillars-grid {
+ display: grid;
+ grid-template-columns: repeat(3, minmax(0, 1fr));
+ gap: 8px;
+ }
+ @media (max-width: 720px) {
+ .bp-pillars-grid { grid-template-columns: 1fr; }
+ .bp-pipe-go { display: none; }
+ }
+
 </style>
 </head>
 <body>
@@ -2347,6 +2410,10 @@
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h4V9H4v10zM10 19h4V5h-4v14zM16 19h4v-7h-4v7z"/></svg></span>
  Rankings
  </button>
+ <button class="nav-item" data-panel="panel-needs">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg></span>
+ Needs
+ </button>
  <button class="nav-item" data-panel="panel-finder">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
  Trades
@@ -2369,11 +2436,31 @@
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
  Playoffs
  </button>
+ <button class="nav-item" data-panel="panel-path">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-8 4 5 4-9"/></svg></span>
+ Path
+ </button>
+ <button class="nav-item" data-panel="panel-luck">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>
+ Luck
+ </button>
 
  <div class="nav-section">More</div>
  <button class="nav-item" data-panel="panel-rate">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
  Grade
+ </button>
+ <button class="nav-item" data-panel="panel-trends">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
+ Trends
+ </button>
+ <button class="nav-item" data-panel="panel-compare">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+ Compare
+ </button>
+ <button class="nav-item" data-panel="panel-records">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 7h12v13H6z"/></svg></span>
+ Records
  </button>
  </nav>
  <div class="sidebar-footer">
@@ -2720,7 +2807,7 @@
  <div id="finder-send-boxes" style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;"></div>
  </div>
  </div>
- <p class="needs-intro">Packages that raise your Power, keep both sides able to fill starters, and stay near market-fair. Multi-select partners and positions. Open any result in the Trade tool.</p>
+ <p class="needs-intro">Both sides legal. Surplus funds need. Packages that raise power, keep both sides able to fill starters, and stay near market-fair. Multi-select partners and positions. Open any result in the Trade tool.</p>
  <div id="finder-results" class="hist-list"></div>
  </section>
 
@@ -2984,6 +3071,22 @@
  </section>
 
  <!-- ---------- MATCHUPS ---------- -->
+ 
+ <section class="panel" id="panel-path">
+ <div class="section-title-row">
+ <div class="section-title" style="margin:0;">Path</div>
+ <button type="button" class="info-btn" id="btn-path-info" title="Info" aria-label="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ </div>
+ <div class="waiver-toolbar">
+ <select id="path-team" style="max-width:220px;"></select>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-path-force">Run early</button>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-path-to-playoffs">Playoffs</button>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-path-to-sos">Schedule</button>
+ <span id="path-force-warn" style="font-size:12px;color:var(--gold);"></span>
+ </div>
+ <div id="path-context" class="hist-meta" style="margin-bottom:10px;"></div>
+ <div id="path-list" class="hist-list"></div>
+ </section>
  <section class="panel" id="panel-matchups">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Matchups</div>
@@ -4367,6 +4470,7 @@
  state.pendingTrade = null;
  }
 
+ try{ clearWeekScoreCache(); }catch(e){}
  renderAll();
  hideStatus();
  el('setup-screen').style.display = 'none';
@@ -4483,7 +4587,8 @@
  p.matched = true;
  p.fcEntry = m;
  p.fcRawValue = m.value || 0;
- p.trend30 = typeof m.trend30Day === 'number' ? m.trend30Day : null;
+ p.trend30Day = typeof m.trend30Day === 'number' ? m.trend30Day : null;
+ p.trend30 = p.trend30Day;
  p.fcAge = m.player && m.player.maybeAge != null ? m.player.maybeAge : null;
  p.fcVol = typeof m.maybeMovingStandardDeviation === 'number' ? m.maybeMovingStandardDeviation : null;
  } else {
@@ -4716,7 +4821,7 @@
  bits.push('Injury cover: <strong>' + topN + '</strong>' + (needs[0].hasBackup ? ' — backup is weak' : ' — no healthy backup'));
  }
  }catch(e){}
- bits.push('Impact sort rewards balance + injury backups');
+ bits.push('Blueprint: only claim if power rises or a hole closes');
  n.innerHTML = ' ' + bits.join('. ') + '. <a href="#" id="waivers-to-needs" style="color:var(--accent);">Team needs</a> · <a href="#" id="waivers-to-cover" style="color:var(--accent);">Cover &amp; stream</a>';
  const a1 = el('waivers-to-needs'); if(a1) a1.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-needs', { teamId: brief.team.id }); };
  const a2 = el('waivers-to-cover'); if(a2) a2.onclick = (e)=>{ e.preventDefault(); goToPanel('panel-byes', { teamId: brief.team.id }); };
@@ -6507,20 +6612,36 @@ function countPosBodies(roster){
  }).sort((a,b) => b.weekPts - a.weekPts);
  }
 
- function estimateTeamWeekScore(team, week, opts){
+ function clearWeekScoreCache(){ state._weekScoreCache = null; }
+
+function estimateTeamWeekScore(team, week, opts){
  opts = opts || {};
  if(!team) return { pts: null, source: 'none', assignments: [], waiverFills: [] };
+ // Shared memo across SOS / Path / Playoffs for one data generation
+ if(!opts.skipCache){
+ if(!state._weekScoreCache) state._weekScoreCache = new Map();
+ const ck = String(team.id) + '|' + week + '|' + (opts.mode || 'mean');
+ if(state._weekScoreCache.has(ck)) return state._weekScoreCache.get(ck);
+ }
+ const _cachePut = (result) => {
+ if(!opts.skipCache){
+ if(!state._weekScoreCache) state._weekScoreCache = new Map();
+ state._weekScoreCache.set(String(team.id) + '|' + week + '|' + (opts.mode || 'mean'), result);
+ }
+ return result;
+ };
+
  const node = (scheduleCache && (scheduleCache[team.id] || scheduleCache[String(team.id)])) || null;
  const wRow = node && node.weeks && node.weeks[week];
  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || week;
 
  // Final: official score (no waiver backfill — what's done is done)
  if(wRow && wRow.status === 'final' && typeof wRow.myScore === 'number' && (wRow.myScore > 0 || week < curWeek)){
- return { pts: wRow.myScore, source: 'final', assignments: [], waiverFills: [] };
+ return _cachePut({ pts: wRow.myScore, source: 'final', assignments: [], waiverFills: [] });
  }
  const ws = (team.weeklyScores || [])[week - 1];
  if(week < curWeek && typeof ws === 'number'){
- return { pts: ws, source: 'final', assignments: [], waiverFills: [] };
+ return _cachePut({ pts: ws, source: 'final', assignments: [], waiverFills: [] });
  }
 
  const counts = getStarterCounts();
@@ -6621,14 +6742,14 @@ function countPosBodies(roster){
  });
  if(floorPts > pts) floorPts = pts * 0.82;
  if(ceilPts < pts) ceilPts = pts * 1.12;
- return {
+ return _cachePut({
  pts: Math.round(pts * 10) / 10,
  floorPts: Math.round(floorPts * 10) / 10,
  ceilPts: Math.round(ceilPts * 10) / 10,
  source,
  assignments,
  waiverFills
- };
+ });
  }
 
  function weekWinProb(myPts, oppPts, status, myRange, oppRange){
@@ -6849,27 +6970,30 @@ function detectLeagueMedian(){
  const pointsA = typeof pair[0].points === 'number' ? pair[0].points : 0;
  const pointsB = pair[1] && typeof pair[1].points === 'number' ? pair[1].points : null;
  // Sleeper starters projections when present
- let projA = null, projB = null;
- try{
- if(pair[0].starters_points && pair[0].starters){
- /* live points only */
- }
- }catch(e){}
  const ppA = pair[0].players_points || {};
  const ppB = pair[1] ? (pair[1].players_points || {}) : {};
- // Normalize ids to string keys too
  const norm = (obj) => {
  const m = { ...obj };
  Object.keys(obj || {}).forEach(k => { m[String(k)] = obj[k]; });
  return m;
  };
+ let projA = pointsA, projB = pointsB;
+ try{
+ if(a && typeof estimateTeamWeekScore === 'function'){
+ const ea = estimateTeamWeekScore(a, week);
+ if(ea && ea.pts != null) projA = Math.max(pointsA || 0, ea.pts);
+ }
+ if(b && typeof estimateTeamWeekScore === 'function'){
+ const eb = estimateTeamWeekScore(b, week);
+ if(eb && eb.pts != null) projB = Math.max(pointsB || 0, eb.pts);
+ }
+ }catch(e){}
  out.push({
  week,
  teamA: a, teamB: b,
  pointsA: pointsA != null ? pointsA : 0,
  pointsB,
- projA: pointsA, // sleeper posts live cumulative; proj often absent mid-week
- projB: pointsB,
+ projA, projB,
  playersPointsA: norm(ppA),
  playersPointsB: norm(ppB),
  startersA: pair[0].starters || [],
@@ -7107,6 +7231,7 @@ function detectLeagueMedian(){
  console.warn('fetchCurrentMatchups', e);
  }
  matchupCache = out;
+ try{ clearWeekScoreCache(); }catch(e){}
  return out;
  }
 
@@ -8206,6 +8331,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
  // Percent value change when available (FantasyCalc 30d or snapshot)
  if(!p) return null;
  if(typeof p.trend30Day === 'number' && isFinite(p.trend30Day)) return p.trend30Day;
+ if(typeof p.trend30 === 'number' && isFinite(p.trend30)) return p.trend30;
  if(typeof p.fcTrend30 === 'number' && isFinite(p.fcTrend30)) return p.fcTrend30;
  // Derive from history snapshots if present
  try{
@@ -10690,6 +10816,211 @@ function renderByes(){
  return { rows, score, idealShare, total };
  }
 
+
+ /* ============================================================
+    FANTASY BLUEPRINT — Operating System
+    Rules:
+    1. Legality first
+    2. One model for every decision
+    3. Weekly order: Cover → Lineup → Waivers → Trades → Season
+    4. Matchup sets risk mode (floor / balanced / ceiling)
+    5. Process over narrative (reason tags, not vibes)
+    6. Season is a path (week-true projs, real schedule)
+    ============================================================ */
+ const BP = {
+  order: [
+   { id: 'cover', panel: 'panel-byes', label: 'Cover', rule: 'Fix holes before you optimize.' },
+   { id: 'lineup', panel: 'panel-sit', label: 'Lineup', rule: 'Best legal starters. Risk mode from the matchup.' },
+   { id: 'waivers', panel: 'panel-waivers', label: 'Waivers', rule: 'Add only if power rises or a real hole closes.' },
+   { id: 'trades', panel: 'panel-finder', label: 'Trades', rule: 'Both sides legal. Surplus funds need.' },
+   { id: 'season', panel: 'panel-rankings', label: 'Season', rule: 'Path uses week-true scores and the real schedule.' }
+  ],
+  tabRule: {
+   'panel-home': 'Run the system. Cover → Lineup → Waivers → Trades → Season path.',
+   'panel-sit': 'Availability, then role, then projection. Floor if favored; ceiling if chasing.',
+   'panel-waivers': 'Claim only raises power or covers a hole. Never drop your only starter at a slot.',
+   'panel-matchups': 'Live score + remaining projection. Confidence rises as points left shrink.',
+   'panel-byes': 'Bye and injury holes first. Stream only what the week forces.',
+   'panel-rankings': 'Full-strength roster: IR still counts as an asset. Results weigh more later.',
+   'panel-needs': 'Thin positions drive waiver and trade targets.',
+   'panel-finder': 'Mutual benefit. Need over shiny names.',
+   'panel-trade': 'Same power model as rankings. Legality checked both sides.',
+   'panel-depth': 'Tiers show drop-offs. Edge is at the cliff, not one slot of rank.',
+   'panel-sos': 'Each week is its own lineup — byes, injuries, return windows.',
+   'panel-playoffs': 'Real schedule. Week-specific projections. Early season = more variance.',
+   'panel-path': 'Games that move your seed. Tied to odds and schedule.',
+   'panel-luck': 'Expected wins from scores vs field. Luck is actual minus expected.',
+   'panel-rate': 'Grade vs league distribution of starter surplus and depth.',
+   'panel-trends': 'Value moves need a reason: injury, role, hype, or drift.',
+   'panel-compare': 'Same metrics, side by side. No narrative.',
+   'panel-records': 'Completed weeks only. Active week does not set records.'
+  }
+ };
+
+ function bpEnsureBanner(){
+  let b = el('bp-tab-rule');
+  if(b) return b;
+  const main = document.querySelector('.content main') || document.querySelector('main');
+  if(!main) return null;
+  b = document.createElement('div');
+  b.id = 'bp-tab-rule';
+  b.className = 'bp-tab-rule';
+  const strip = el('strategy-strip');
+  if(strip && strip.parentNode) strip.parentNode.insertBefore(b, strip.nextSibling);
+  else main.insertBefore(b, main.firstChild);
+  return b;
+ }
+
+ function bpShowTabRule(panelId){
+  const b = bpEnsureBanner();
+  if(!b) return;
+  const rule = BP.tabRule[panelId];
+  if(!rule || panelId === 'panel-home'){
+   b.style.display = 'none';
+   b.textContent = '';
+   return;
+  }
+  b.style.display = 'block';
+  b.innerHTML = '<span class="bp-rule-label">Blueprint</span> ' + escapeHtml(rule);
+ }
+
+ function bpMatchupRisk(team){
+  // favored → floor, dog → ceiling, else balanced
+  try{
+   if(!matchupCache || !matchupCache.length || !team) return 'balanced';
+   const m = matchupCache.find(x =>
+    (x.teamA && (x.teamA.id === team.id || String(x.teamA.id) === String(team.id))) ||
+    (x.teamB && (x.teamB.id === team.id || String(x.teamB.id) === String(team.id)))
+   );
+   if(!m) return 'balanced';
+   const isA = m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id));
+   const myLive = isA ? (m.pointsA || 0) : (m.pointsB || 0);
+   const oppLive = isA ? (m.pointsB || 0) : (m.pointsA || 0);
+   const myProj = isA ? (m.projA != null ? m.projA : myLive) : (m.projB != null ? m.projB : myLive);
+   const oppProj = isA ? (m.projB != null ? m.projB : oppLive) : (m.projA != null ? m.projA : oppLive);
+   const gap = (myProj || 0) - (oppProj || 0);
+   if(gap >= 12) return 'floor';
+   if(gap <= -12) return 'ceiling';
+   return 'balanced';
+  }catch(e){ return 'balanced'; }
+ }
+
+ function bpDiagnose(team){
+  // Ordered checklist items for the weekly OS
+  const items = [];
+  if(!team) return items;
+  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+
+  // 1 Cover holes
+  let holes = 0, holeNames = [];
+  try{
+   const counts = getStarterCounts();
+   const flexElig = counts.flexEligible || ['RB','WR','TE'];
+   const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+   const opt = optimalStarterLineup(team, counts, flexElig, sfElig, {
+    healthyOnly: true,
+    scoreFn: (p) => typeof playerWeeklyPtsForWeek === 'function'
+     ? playerWeeklyPtsForWeek(p, curWeek, curWeek)
+     : (p.value || 0)
+   });
+   holes = typeof unfilledSlots === 'function'
+    ? unfilledSlots(team.roster || [], counts, { healthyOnly: true })
+    : 0;
+   (team.roster || []).forEach(p => {
+    let st = playerInjuryStatus(p);
+    if(!st && p.isIR) st = 'ir';
+    if(st && typeof injuryUnavailable === 'function' && injuryUnavailable(st))
+     holeNames.push(p.fullName || p.name);
+    const bw = playerByeWeek(p);
+    if(bw != null && Number(bw) === Number(curWeek)) holeNames.push((p.fullName || p.name) + ' (bye)');
+   });
+  }catch(e){}
+  if(holes > 0 || holeNames.length){
+   items.push({
+    stage: 'cover',
+    priority: 1,
+    status: 'block',
+    title: holes > 0 ? (holes + ' lineup hole' + (holes > 1 ? 's' : '')) : 'Cover needed',
+    why: holeNames.slice(0, 3).join(', ') || 'Bye or injury — fill before lock.',
+    panel: 'panel-byes',
+    label: 'Cover'
+   });
+  } else {
+   items.push({
+    stage: 'cover',
+    priority: 9,
+    status: 'ok',
+    title: 'Cover clear',
+    why: 'No forced holes this week.',
+    panel: 'panel-byes',
+    label: 'Cover'
+   });
+  }
+
+  // 2 Lineup
+  const risk = bpMatchupRisk(team);
+  items.push({
+   stage: 'lineup',
+   priority: holes > 0 ? 2 : 1,
+   status: holes > 0 ? 'wait' : 'go',
+   title: 'Set lineup',
+   why: risk === 'floor' ? 'Favored — lean floor.' : risk === 'ceiling' ? 'Trailing — lean ceiling.' : 'Balanced risk.',
+   panel: 'panel-sit',
+   label: 'Lineup',
+   risk
+  });
+
+  // 3 Waivers
+  let backupNeed = 0;
+  try{
+   const needs = typeof injuryBackupNeeds === 'function' ? injuryBackupNeeds(team) : [];
+   backupNeed = needs.filter(n => !n.hasBackup || n.weakBackup).length;
+  }catch(e){}
+  items.push({
+   stage: 'waivers',
+   priority: backupNeed ? 2 : 5,
+   status: backupNeed ? 'go' : 'ok',
+   title: backupNeed ? (backupNeed + ' injury backup gap' + (backupNeed > 1 ? 's' : '')) : 'Waivers',
+   why: backupNeed ? 'Depth missing behind a designation.' : 'Only claim if power rises or a hole closes.',
+   panel: 'panel-waivers',
+   label: 'Waivers'
+  });
+
+  // 4 Trades / needs
+  let thin = null;
+  try{
+   if(typeof teamPosNeedScores === 'function'){
+    const need = teamPosNeedScores(team);
+    const ranked = Object.keys(need).map(k => ({ pos: k, n: need[k] })).sort((a,b) => b.n - a.n);
+    if(ranked[0] && ranked[0].n >= 55) thin = ranked[0];
+   }
+  }catch(e){}
+  items.push({
+   stage: 'trades',
+   priority: thin ? 3 : 6,
+   status: thin ? 'go' : 'ok',
+   title: thin ? ('Thin at ' + thin.pos) : 'Trades',
+   why: thin ? 'Surplus elsewhere should fund this need.' : 'No forced positional crisis.',
+   panel: thin ? 'panel-needs' : 'panel-finder',
+   label: thin ? 'Needs' : 'Trades'
+  });
+
+  // 5 Season path
+  items.push({
+   stage: 'season',
+   priority: 8,
+   status: 'ok',
+   title: 'Season path',
+   why: 'Rankings, schedule, playoffs — after the week is set.',
+   panel: 'panel-sos',
+   label: 'Schedule'
+  });
+
+  items.sort((a,b) => a.priority - b.priority);
+  return { items, risk, holes, backupNeed, thin };
+ }
+
+
 function buildStrategyBrief(){
  // Single source of truth for "what should this team do next"
  if(!state.teams || !state.teams.length) return null;
@@ -10780,110 +11111,49 @@ function buildStrategyBrief(){
  }
  }catch(e){}
 
+ const diag = bpDiagnose(team);
  const actions = [];
- // Priority order: week-critical → roster shape → season outlook → trades
- if(weekHoles > 0){
+ // OS checklist drives priorities — append only high-signal extras
+ (diag.items || []).forEach(it => {
+ if(it.status === 'ok' && it.stage !== 'lineup') return; // skip quiet ok stages except lineup always shown
  actions.push({
- id: 'cover',
- priority: 1,
- title: weekHoles + ' hole' + (weekHoles > 1 ? 's' : '') + ' this week',
- why: (outNames.slice(0, 3).join(', ') || 'Bye/injury') + ' — fix before lock.',
- panel: 'panel-byes',
- label: 'Cover & stream'
+ id: it.stage,
+ priority: it.priority,
+ title: it.title,
+ why: it.why,
+ panel: it.panel,
+ label: it.label,
+ status: it.status
  });
- }
- try{
- const bakNeeds = injuryBackupNeeds(team);
- const urgent = bakNeeds.filter(n => !n.hasBackup || n.weakBackup);
- if(urgent.length){
- const u = urgent[0];
- actions.push({
- id: 'inj-backup',
- priority: 2,
- title: 'No backup for ' + u.name,
- why: (typeof injuryLabel === 'function' ? injuryLabel(u.status) : u.status) + ' · grab ' + u.pos + ' depth on waivers.',
- panel: 'panel-waivers',
- label: 'Waivers'
  });
- }
- }catch(e){}
- if(lineupMoves > 0){
- actions.push({
- id: 'lineup',
- priority: 2,
- title: 'Set your lineup',
- why: 'Optimizer disagrees with your current starters for week ' + curWeek + '.',
- panel: 'panel-sit',
- label: 'Fix lineup'
- });
- }
- if(weakPos.length && weakPos[0].val < (weakPos[weakPos.length-1].val - 5)){
- const w = weakPos[0];
- actions.push({
- id: 'needs',
- priority: 3,
- title: 'Need help at ' + w.pos,
- why: w.pos + ' is your weakest positional group. Waivers and trades should prefer this slot.',
- panel: 'panel-needs',
- label: 'Team needs'
- });
- actions.push({
- id: 'waivers',
- priority: 4,
- title: 'Check ' + w.pos + ' on waivers',
- why: 'Impact sort prefers adds that help power and positional balance.',
- panel: 'panel-waivers',
- label: 'Waivers'
- });
- }
- if(myRank != null && myRank > Math.ceil(n * 0.6)){
- actions.push({
- id: 'trade',
- priority: 5,
- title: 'Power rank #' + myRank + ' — look for upgrades',
- why: 'Trade finder prioritizes needs, not stacking a strength.',
- panel: 'panel-finder',
- label: 'Trade finder'
- });
- } else if(myRank != null && myRank <= 3){
- actions.push({
- id: 'trade-sell',
- priority: 6,
- title: 'Top-tier roster — sell high / fortify depth',
- why: 'Grade and compare can flag inflated pieces; finder can target depth.',
- panel: 'panel-rate',
- label: 'Team grade'
- });
- }
- if(playoffPct != null && playoffPct < 45 && quality.ready){
+ if(playoffPct != null && playoffPct < 40 && quality.ready){
  actions.push({
  id: 'path',
- priority: 5,
+ priority: 4,
  title: 'Playoff odds ' + playoffPct.toFixed(0) + '%',
- why: 'Path + SOS show which remaining games matter most.',
+ why: 'Path shows which games move the seed.',
  panel: 'panel-path',
- label: 'Playoff path'
+ label: 'Path'
  });
  }
  if(sosRank != null && sosRank >= Math.ceil(n * 0.7)){
  actions.push({
  id: 'sos',
- priority: 7,
- title: 'Hard schedule (SOS #' + sosRank + ')',
- why: 'Projected path is tough — streaming and matchup use matter more.',
+ priority: 5,
+ title: 'Hard schedule (#' + sosRank + ')',
+ why: 'Streaming and matchup picks matter more on a tough path.',
  panel: 'panel-sos',
- label: 'SOS'
+ label: 'Schedule'
  });
  }
- // Always offer at least outlook
  if(!actions.length){
  actions.push({
- id: 'rank',
- priority: 9,
- title: 'Review power snapshot',
- why: 'No urgent holes — check rankings, grade, and matchups.',
- panel: 'panel-rankings',
- label: 'Power rankings'
+ id: 'lineup',
+ priority: 1,
+ title: 'Set lineup',
+ why: 'Week is clear — lock starters.',
+ panel: 'panel-sit',
+ label: 'Lineup'
  });
  }
  actions.sort((a,b) => a.priority - b.priority);
@@ -10891,16 +11161,21 @@ function buildStrategyBrief(){
  return {
  team, mine, myRank, nTeams: n,
  rate, playoffPct, seed, quality,
- sosPath, sosRank, curWeek, weekHoles,
+ sosPath, sosRank, curWeek, weekHoles: diag.holes || weekHoles,
  weakPos, actions: actions.slice(0, 5),
+ risk: diag.risk,
+ diagnose: diag,
  record: ((team.wins||0) + '-' + (team.losses||0) + ((team.ties||0) ? '-' + team.ties : ''))
  };
  }
 
- 
  function renderStrategyStrip(){
  const strip = el('strategy-strip');
  if(!strip) return;
+ // Hidden in Blueprint UI — skip work
+ strip.classList.remove('show');
+ strip.innerHTML = '';
+ return;
  if(!state.teams || !state.teams.length){
  strip.classList.remove('show');
  strip.innerHTML = '';
@@ -10950,11 +11225,11 @@ function buildStrategyBrief(){
  const score = el('bp-scorecard');
  const moves = el('bp-moves');
  const pillars = el('bp-pillars');
- // keep strip hidden
  try{ const s = el('strategy-strip'); if(s){ s.classList.remove('show'); s.innerHTML = ''; } }catch(e){}
+ bpShowTabRule('panel-home');
 
  if(!state.teams || !state.teams.length){
- if(sub) sub.textContent = 'Load an ESPN or Sleeper league to build this week’s plan.';
+ if(sub) sub.textContent = 'Load ESPN or Sleeper. Then run Cover → Lineup → Waivers.';
  if(score) score.innerHTML = '';
  if(moves) moves.innerHTML = '';
  if(pillars) pillars.innerHTML = '';
@@ -10968,65 +11243,82 @@ function buildStrategyBrief(){
  }
 
  const week = brief.curWeek || 1;
+ const risk = (brief.risk || brief.diagnose && brief.diagnose.risk) || 'balanced';
  if(sub){
- sub.textContent = brief.team.name + ' · Week ' + week + ' · same power model, projections, and schedule on every tab.';
+ sub.textContent = brief.team.name + ' · Week ' + week + ' · risk: ' + risk + ' · one model across every tab.';
  }
 
- // Scorecard — lean, number-first
  if(score){
  const cells = [
  { lbl: 'Power', val: brief.myRank != null ? '#' + brief.myRank : '—', hint: brief.record || '' },
- { lbl: 'Grade', val: (brief.rate && brief.rate.grade) ? brief.rate.grade : '—', hint: 'roster quality' },
- { lbl: 'Playoffs', val: brief.playoffPct != null ? Math.round(brief.playoffPct) + '%' : '—', hint: 'sim odds' },
- { lbl: 'Holes', val: String(brief.weekHoles != null ? brief.weekHoles : 0), hint: 'bye / injury' }
+ { lbl: 'Grade', val: (brief.rate && brief.rate.grade) ? brief.rate.grade : '—', hint: 'full-strength' },
+ { lbl: 'Playoffs', val: brief.playoffPct != null ? Math.round(brief.playoffPct) + '%' : '—', hint: 'week-true sim' },
+ { lbl: 'Holes', val: String(brief.weekHoles != null ? brief.weekHoles : 0), hint: 'this week' }
  ];
  score.innerHTML = cells.map(c =>
  `<div class="bp-stat"><div class="lbl">${c.lbl}</div><div class="val">${escapeHtml(String(c.val))}</div><div class="hint">${escapeHtml(c.hint)}</div></div>`
  ).join('');
  }
 
- // Ordered moves — the weekly blueprint
+ // OS pipeline — always show full order with status
  if(moves){
- const acts = (brief.actions || []).slice(0, 4);
- if(!acts.length){
- moves.innerHTML = '<div class="bp-moves-head">This week</div><div class="bp-move"><div class="num">✓</div><div class="body"><div class="title">No urgent flags</div><div class="why">Lineup still comes first. Then waivers.</div></div></div>';
- } else {
- moves.innerHTML = '<div class="bp-moves-head">This week</div>' + acts.map((a, idx) =>
- `<div class="bp-move" data-panel="${a.panel || ''}">
- <div class="num">${idx + 1}</div>
- <div class="body">
- <div class="title">${escapeHtml(a.title)}</div>
- <div class="why">${escapeHtml(a.why || '')}</div>
- </div>
- <div class="go">${escapeHtml(a.label || 'Open')} →</div>
- </div>`
- ).join('');
- moves.querySelectorAll('.bp-move[data-panel]').forEach(node => {
- const p = node.getAttribute('data-panel');
- if(!p) return;
- node.addEventListener('click', () => goToPanel(p, { teamId: brief.team.id }));
+ const diag = brief.diagnose || bpDiagnose(brief.team);
+ const stageMap = {};
+ (diag.items || []).forEach(it => { stageMap[it.stage] = it; });
+ // Merge brief actions for why text
+ const actByPanel = {};
+ (brief.actions || []).forEach(a => { actByPanel[a.panel] = a; });
+
+ let html = '<div class="bp-moves-head">Weekly order (do not skip)</div>';
+ html += '<div class="bp-pipeline">';
+ BP.order.forEach((step, idx) => {
+  const it = stageMap[step.id] || {};
+  const st = it.status || 'ok';
+  const title = it.title || step.label;
+  const why = it.why || step.rule;
+  const panel = it.panel || step.panel;
+  html += `<div class="bp-pipe-step status-${st}" data-panel="${panel}">
+   <div class="bp-pipe-num">${idx + 1}</div>
+   <div class="bp-pipe-body">
+    <div class="bp-pipe-label">${escapeHtml(step.label)}</div>
+    <div class="bp-pipe-title">${escapeHtml(title)}</div>
+    <div class="bp-pipe-why">${escapeHtml(why)}</div>
+   </div>
+   <div class="bp-pipe-go">Open →</div>
+  </div>`;
  });
- }
+ html += '</div>';
+
+ // Blocked warning
+ const blocked = (diag.items || []).find(x => x.status === 'block');
+ if(blocked){
+  html = `<div class="bp-block-banner">Blocked: ${escapeHtml(blocked.title)}. ${escapeHtml(blocked.why)} Finish Cover before Lineup.</div>` + html;
  }
 
- // Methodology pillars — fixed system, always same order
- if(pillars){
- const cols = [
- { panel: 'panel-sit', ph: '1. Lineup', pd: 'Best legal starters for this week. Locked players stay. Floor or ceiling when the matchup calls for it.' },
- { panel: 'panel-waivers', ph: '2. Waivers', pd: 'Adds that raise power or cover injury holes. No drop that breaks a starter slot.' },
- { panel: 'panel-finder', ph: '3. Trades', pd: 'Packages that help both sides. Target or sell by name when you already know the player.' },
- { panel: 'panel-rankings', ph: '4. Rankings', pd: 'Power = starters + depth + results. Weights shift as real scores stack up.' },
- { panel: 'panel-sos', ph: '5. Schedule', pd: 'Week-by-week lineup projections, byes, and injury return windows.' },
- { panel: 'panel-playoffs', ph: '6. Playoffs', pd: 'Odds from the real schedule and week-specific projections — not one flat average.' }
- ];
- pillars.innerHTML = cols.map(c =>
- `<div class="bp-pillar" data-panel="${c.panel}"><div class="ph">${escapeHtml(c.ph)}</div><div class="pd">${escapeHtml(c.pd)}</div></div>`
- ).join('');
- pillars.querySelectorAll('[data-panel]').forEach(node => {
- node.addEventListener('click', () => goToPanel(node.getAttribute('data-panel'), { teamId: brief.team.id }));
+ moves.innerHTML = html;
+ moves.querySelectorAll('[data-panel]').forEach(node => {
+  node.addEventListener('click', () => goToPanel(node.getAttribute('data-panel'), { teamId: brief.team.id }));
  });
  }
+
+ if(pillars){
+ const cols = [
+  { panel: 'panel-byes', ph: 'Rule 1 · Legality', pd: 'No move that leaves a pure slot empty. IR can be an asset; this week still needs a healthy body.' },
+  { panel: 'panel-rankings', ph: 'Rule 2 · One model', pd: 'Power, waivers, and trades share the same surplus and depth math.' },
+  { panel: 'panel-sit', ph: 'Rule 3 · Weekly order', pd: 'Cover → Lineup → Waivers → Trades → Season path. Always.' },
+  { panel: 'panel-sit', ph: 'Rule 4 · Risk mode', pd: 'Favored → floor. Dog → ceiling. Else balanced.' },
+  { panel: 'panel-finder', ph: 'Rule 5 · Process', pd: 'Need funds surplus. Sell-high needs a reason tag, not a feeling.' },
+  { panel: 'panel-sos', ph: 'Rule 6 · Path', pd: 'Each week is its own lineup. Real schedule. Honest early variance.' }
+ ];
+ pillars.innerHTML = '<div class="bp-moves-head">The six rules</div><div class="bp-pillars-grid">' + cols.map(c =>
+  `<div class="bp-pillar" data-panel="${c.panel}"><div class="ph">${escapeHtml(c.ph)}</div><div class="pd">${escapeHtml(c.pd)}</div></div>`
+ ).join('') + '</div>';
+ pillars.querySelectorAll('[data-panel]').forEach(node => {
+  node.addEventListener('click', () => goToPanel(node.getAttribute('data-panel'), { teamId: brief.team.id }));
+ });
  }
+}
+
 
 
 
@@ -11306,6 +11598,18 @@ function buildStrategyBrief(){
  });
  if(prev) teamSel.value = prev;
  else if(state.myTeamId != null) teamSel.value = state.myTeamId;
+ // Blueprint rule 4: matchup sets default risk mode
+ try{
+  const team = state.teams.find(t => String(t.id) === String(teamSel.value));
+  const risk = bpMatchupRisk(team);
+  if(stratSel && !stratSel._userTouched){
+   stratSel.value = risk === 'floor' ? 'floor' : risk === 'ceiling' ? 'ceiling' : 'auto';
+  }
+  if(stratSel && !stratSel._riskBound){
+   stratSel._riskBound = true;
+   stratSel.addEventListener('change', () => { stratSel._userTouched = true; });
+  }
+ }catch(e){}
  runSitLineup();
  }
 
@@ -11353,7 +11657,16 @@ function buildStrategyBrief(){
  if(strategy === 'auto'){
  contextBits.push(res.tilt === 'ceiling' ? 'ceiling lean' : res.tilt === 'floor' ? 'floor lean' : 'balanced');
  }
+
+ // OS: warn if cover incomplete
+ try{
+  const diag = bpDiagnose(team);
+  if(diag.holes > 0){
+   contextBits.unshift('COVER FIRST — ' + diag.holes + ' hole(s)');
+  }
+ }catch(e){}
  if(ctxEl) ctxEl.textContent = contextBits.join(' · ');
+
 
  const benchRows = res.bench.map(b => `
  <tr>
@@ -13667,6 +13980,7 @@ function goToPanel(panelId, opts){
  if(nav) nav.classList.add('active');
  const panel = el(panelId);
  if(panel) panel.classList.add('active');
+ try{ bpShowTabRule(panelId); }catch(e){}
  }
  // Keep one team context everywhere
  if(opts.teamId != null){
@@ -13703,6 +14017,7 @@ function goToPanel(panelId, opts){
  btn.classList.add('active');
  const panel = el(btn.dataset.panel);
  if(panel) panel.classList.add('active');
+ try{ bpShowTabRule(btn.dataset.panel); }catch(e){}
  const sb = el('app-sidebar');
  if(sb) sb.classList.remove('nav-open');
  try{
