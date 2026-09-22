@@ -1926,6 +1926,109 @@
  border-top: 1px solid var(--border-subtle);
  }
  .related-links .btn { font-weight: 600; }
+
+ .drawer-head {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+ margin-bottom: 16px;
+ }
+ .drawer-head h2 { margin: 0; font-size: 18px; }
+ .drawer-section {
+ margin-bottom: 18px;
+ padding-bottom: 14px;
+ border-bottom: 1px solid var(--border-subtle);
+ }
+ .drawer-section-title {
+ font-size: 11px;
+ font-weight: 700;
+ text-transform: uppercase;
+ letter-spacing: 0.06em;
+ color: var(--text-muted);
+ margin-bottom: 10px;
+ }
+ .drawer-actions {
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+ margin-top: 8px;
+ }
+ .drawer-actions .btn { width: 100%; }
+ .drawer-check {
+ width: 18px;
+ height: 18px;
+ accent-color: var(--accent);
+ cursor: pointer;
+ }
+ input.drawer-check { flex-shrink: 0; }
+
+ /* Lineup / toolbar primary actions */
+ .waiver-toolbar .btn-primary,
+ #btn-sit-build {
+ background: var(--accent) !important;
+ color: #06100a !important;
+ border: 1px solid var(--accent) !important;
+ font-weight: 700;
+ padding: 8px 14px;
+ border-radius: var(--radius-sm);
+ min-height: 38px;
+ white-space: nowrap;
+ }
+ .waiver-toolbar .btn-primary:hover,
+ #btn-sit-build:hover {
+ background: var(--accent-hover) !important;
+ border-color: var(--accent-hover) !important;
+ }
+
+
+ /* Compact headers */
+ .section-title-row {
+ margin-bottom: 8px !important;
+ }
+ .section-title {
+ font-size: 17px !important;
+ }
+ .info-btn {
+ padding: 4px 6px !important;
+ min-width: 28px;
+ justify-content: center;
+ }
+ .info-btn .icon { width: 16px; height: 16px; }
+
+ /* Page blurbs: hidden unless expanded */
+ .needs-intro {
+ display: none;
+ font-size: 12.5px;
+ color: var(--text-secondary);
+ line-height: 1.4;
+ margin: 0 0 10px;
+ max-width: 56ch;
+ }
+ .needs-intro.show-help {
+ display: block;
+ }
+ .panel-help-toggle {
+ font-size: 12px;
+ font-weight: 600;
+ color: var(--text-muted);
+ background: none;
+ border: none;
+ cursor: pointer;
+ padding: 0 4px;
+ margin-left: 4px;
+ }
+ .panel-help-toggle:hover { color: var(--accent); }
+
+ .waiver-toolbar {
+ margin-bottom: 10px !important;
+ gap: 8px !important;
+ }
+
+ /* Less vertical noise */
+ .hist-meta { font-size: 12px; margin-bottom: 8px; }
+ .strategy-strip { padding: 6px 14px !important; }
+
 </style>
 </head>
 <body>
@@ -2122,12 +2225,9 @@
  <section class="panel active" id="panel-home">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Your game plan</div>
- <button type="button" class="info-btn" id="btn-home-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-home-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <p class="needs-intro" id="home-intro">Next moves for your team. Everything else links from here.</p>
+ <p class="needs-intro" id="home-intro"></p>
  <div id="home-priorities" style="margin-bottom:14px;"></div>
  <div class="strategy-flow" id="home-flow"></div>
  <div id="home-grid" class="needs-grid"></div>
@@ -2137,8 +2237,8 @@
  
  <section class="panel" id="panel-rosters">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">All teams</div>
- <button type="button" class="info-btn" id="btn-rosters-info" title="How it works">How it works</button>
+ <div class="section-title" style="margin:0;">Teams</div>
+ <button type="button" class="info-btn" id="btn-rosters-info" title="How it works" aria-label="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Every roster with market value and recent value move. Sort teams by total value change to see who is rising or falling.</p>
  <div class="waiver-toolbar">
@@ -2159,10 +2259,7 @@
  <section class="panel" id="panel-trends">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">League trends</div>
- <button type="button" class="info-btn" id="btn-trends-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-trends-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Risers and fallers from saved FantasyCalc values and Power ranks on this device. Open the app over a few days to build history (1d / 1w / 1m windows).</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;">
@@ -2181,11 +2278,8 @@
 
 <section class="panel" id="panel-trade">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Trade calculator</div>
- <button type="button" class="info-btn" id="btn-trade-info" title="How trades work">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <div class="section-title" style="margin:0;">Trade</div>
+ <button type="button" class="info-btn" id="btn-trade-info" title="How trades work"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="cache-banner" id="cache-banner">Using cached player values. FantasyCalc was unreachable, so numbers may be outdated.</div>
  <div class="trade-layout">
@@ -2271,10 +2365,7 @@
  <div class="card">
  <div class="section-title-row">
  <div class="section-title">Power rankings</div>
- <button type="button" class="info-btn" id="btn-rankings-info" title="How rankings work">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-rankings-info" title="How rankings work"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="waiver-toolbar" style="margin-bottom:10px;">
  <button type="button" class="btn btn-ghost btn-sm" id="btn-rank-to-needs">Needs</button>
@@ -2313,10 +2404,7 @@
  <section class="panel" id="panel-needs">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;" id="needs-section-title">Team needs</div>
- <button type="button" class="info-btn" id="btn-needs-info" title="How team needs work">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-needs-info" title="How team needs work"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="needs-intro-text">Per position: <strong>Starters</strong> (optimal lineup), <strong>Bench</strong> (everyone else), <strong>Overall</strong> (full roster). Compared to league median. Pair with Waivers for adds.</p>
  <div class="needs-grid" id="needs-grid"></div>
@@ -2326,10 +2414,7 @@
  <section class="panel" id="panel-waivers">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Waiver wire</div>
- <button type="button" class="info-btn" id="btn-waivers-info" title="How waivers work">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-waivers-info" title="How waivers work"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Unrostered FantasyCalc players in this league. Sorted by VORP (scarcity) or value. Approximate; the host wire may differ.</p>
  <div id="waiver-top-by-pos" class="waiver-top-grid"></div>
@@ -2364,8 +2449,8 @@
  <!-- ---------- LEAGUE RECORDS ---------- -->
  <section class="panel" id="panel-records">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">League records</div>
- <button type="button" class="info-btn" id="btn-records-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
+ <div class="section-title" style="margin:0;">Records</div>
+ <button type="button" class="info-btn" id="btn-records-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Season highs and lows from completed weeks only. Incomplete weeks are ignored.</p>
  <div id="records-grid" class="needs-grid"></div>
@@ -2375,10 +2460,7 @@
  <section class="panel" id="panel-rate">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Rate my team</div>
- <button type="button" class="info-btn" id="btn-rate-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-rate-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="waiver-toolbar" style="margin-bottom:14px;">
  <label class="field-label" style="margin:0;">Team</label>
@@ -2392,7 +2474,7 @@
  <section class="panel" id="panel-compare">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Player compare</div>
- <button type="button" class="info-btn" id="btn-compare-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
+ <button type="button" class="info-btn" id="btn-compare-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Pick 2–4 players and compare value, trend, age, position rank, and roster context.</p>
  <div class="waiver-toolbar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px;">
@@ -2404,11 +2486,8 @@
  </section>
 <section class="panel" id="panel-finder">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Trade finder</div>
- <button type="button" class="info-btn" id="btn-finder-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <div class="section-title" style="margin:0;">Trades</div>
+ <button type="button" class="info-btn" id="btn-finder-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:flex-end;">
  <div>
@@ -2470,10 +2549,7 @@
  <section class="panel" id="panel-roster">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Start/sit accuracy</div>
- <button type="button" class="info-btn" id="btn-roster-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-roster-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="roster-intro">Compares who was started to the best lineup that week from actual player points. Works on Sleeper and ESPN (week-by-week box scores).</p>
  <div style="overflow-x:auto;">
@@ -2497,35 +2573,9 @@
 
  <!-- ---------- START/SIT PICK ---------- -->
  <section class="panel" id="panel-sit">
- <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Lineup optimizer</div>
- <button type="button" class="info-btn" id="btn-sit-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
- </div>
- <p class="needs-intro">Full lineup for this week based on your starter slots, projections, byes, and matchup context when available.</p>
- <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:flex-end;">
- <div>
- <label class="field-label">Team</label>
- <select id="sit-team" style="max-width:200px;display:block;"></select>
- </div>
- <div>
- <label class="field-label">Strategy</label>
- <select id="sit-strategy" style="max-width:180px;display:block;">
- <option value="auto">Auto (matchup-aware)</option>
- <option value="proj">Highest projection</option>
- <option value="floor">Play it safe (floor)</option>
- <option value="ceiling">Swing for ceiling</option>
- </select>
- </div>
- <button type="button" class="btn btn-primary btn-sm" id="btn-sit-build">Build lineup</button>
- </div>
- <div id="sit-result" class="hist-list"></div>
- </section>
-
- <!-- ---------- PLAYOFF PATH ---------- -->
- <section class="panel" id="panel-path">
- <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Playoff path</div>
- <button type="button" class="info-btn" id="btn-path-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
+ <div class="section-title-row">
+ <div class="section-title" style="margin:0;">Lineup</div>
+ <button type="button" class="info-btn" id="btn-sit-info" title="How it works" aria-label="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="path-intro">Games that matter most for your seed and bubble, based on current standings and remaining schedule.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2543,10 +2593,7 @@
  <section class="panel" id="panel-depth">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Depth / rankings</div>
- <button type="button" class="info-btn" id="btn-depth-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-depth-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Rankings by FantasyCalc value. Tiers cut where values drop off in this list.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;">
@@ -2577,11 +2624,8 @@
  
  <section class="panel" id="panel-byes">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Cover &amp; streaming</div>
- <button type="button" class="info-btn" id="btn-byes-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <div class="section-title" style="margin:0;">Cover</div>
+ <button type="button" class="info-btn" id="btn-byes-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro">Bye weeks and injuries create short-term holes. This page shows who is out, who on your roster can cover, and which waiver streams fill the rest — including DST/K and cross-position bench fills.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2640,10 +2684,7 @@
  <section class="panel" id="panel-luck">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Expected wins &amp; luck</div>
- <button type="button" class="info-btn" id="btn-luck-info" title="How it works">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-luck-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="luck-intro">Expected wins from weekly scores vs the field. Luck is actual wins minus expected. SOS uses opponents' average points for when weekly matchup data exists.</p>
  <div style="overflow-x:auto;">
@@ -2669,8 +2710,8 @@
 
  <section class="panel" id="panel-sos">
  <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">SOS &amp; projections</div>
- <button type="button" class="info-btn" id="btn-sos-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
+ <div class="section-title" style="margin:0;">Schedule</div>
+ <button type="button" class="info-btn" id="btn-sos-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="sos-intro">Week-by-week opponents with actual scores when final, live/proj for the current week, and projected lineup scores (byes excluded) for remaining weeks. Running record uses real results first, then projected outcomes.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -2725,10 +2766,7 @@
  <section class="panel" id="panel-playoffs">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Playoff picture</div>
- <button type="button" class="info-btn" id="btn-playoffs-info" title="How playoff odds work">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span>
- How it works
- </button>
+ <button type="button" class="info-btn" id="btn-playoffs-info" title="How playoff odds work"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="playoffs-intro">Seeding from current standings. Odds simulate each remaining week with that week's projected lineup (byes out) and the real schedule, plus noise around those projections.</p>
  <div class="waiver-toolbar" style="margin-bottom:8px;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2763,7 +2801,7 @@
  <section class="panel" id="panel-matchups">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Matchups</div>
- <button type="button" class="info-btn" id="btn-matchups-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span> How it works</button>
+ <button type="button" class="info-btn" id="btn-matchups-info" title="How it works"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  <button type="button" class="btn btn-ghost btn-sm" id="btn-matchups-refresh">Refresh scores</button>
  </div>
  <p class="needs-intro" id="matchups-intro">Live and projected scores. Win % uses current points plus remaining projection gap (more uncertainty when a team still has more left to score).</p>
@@ -2776,63 +2814,74 @@
 </div>
 
 <div id="overlay"></div>
-<div id="drawer">
+<div class="drawer" id="drawer">
+ <div class="drawer-head">
  <h2>Settings</h2>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-drawer-close" aria-label="Close">Close</button>
+ </div>
+
+ <div class="drawer-section">
+ <div class="drawer-section-title">Your team</div>
+ <div class="field">
+ <label class="field-label">Default team</label>
+ <select id="sel-my-team"></select>
+ </div>
+ <p class="hint">Used across Home, Trades, Waivers, Lineup, and the rest.</p>
+ </div>
+
+ <div class="drawer-section">
+ <div class="drawer-section-title">League format</div>
  <div class="drawer-row">
- <span class="field-label">Dynasty format</span>
- <div class="switch" id="sw-dynasty"><div class="knob"></div></div>
+ <span class="field-label">Dynasty</span>
+ <div class="switch" id="sw-dynasty" role="switch" aria-checked="false"><div class="knob"></div></div>
  </div>
  <div class="drawer-row">
  <span class="field-label">Superflex</span>
- <div class="switch" id="sw-superflex"><div class="knob"></div></div>
+ <div class="switch" id="sw-superflex" role="switch" aria-checked="false"><div class="knob"></div></div>
  </div>
  <div class="field">
- <label class="field-label">PPR</label>
+ <label class="field-label">Scoring</label>
  <select id="sel-ppr">
  <option value="1">Full PPR</option>
  <option value="0.5">Half PPR</option>
  <option value="0">Standard</option>
  </select>
  </div>
- <p class="hint" id="drawer-detected-note">Detected from your league settings. Override if wrong.</p>
- <hr class="drawer-divider">
+ <p class="hint" id="drawer-detected-note">Detected from league settings. Change only if wrong.</p>
+ </div>
+
+ <div class="drawer-section">
+ <div class="drawer-section-title">Values &amp; display</div>
  <div class="field">
- <label class="field-label">Value mode</label>
+ <label class="field-label">Rankings value mode</label>
  <select id="sel-value-mode">
- <option value="vorp">VORP (value over replacement)</option>
- <option value="raw">Regular (raw FantasyCalc)</option>
+ <option value="vorp">VORP (over replacement)</option>
+ <option value="raw">Raw FantasyCalc</option>
  </select>
  </div>
- <p class="hint">VORP subtracts positional replacement from the full player pool. Regular ranks on market value only. Trades always use raw values.</p>
- <hr class="drawer-divider">
- <div class="field">
- <label class="field-label">My team (default everywhere)</label>
- <select id="sel-my-team"></select>
- </div>
- <p class="hint">Used as default on Trade (Team A), Waivers, History, and Playoffs highlights.</p>
- <hr class="drawer-divider">
- <div class="field">
- <span class="field-label">League</span>
- <p class="hint" id="drawer-league-info">-</p>
- </div>
- <div class="small-btn-row">
- 
- <hr class="drawer-divider">
+ <p class="hint">Trades always use raw market value. Rankings/needs use this mode.</p>
  <div class="drawer-row">
- <label class="field-label" for="set-show-pct">Show % changes</label>
- <input type="checkbox" id="set-show-pct" />
+ <span class="field-label">Show % changes</span>
+ <input type="checkbox" id="set-show-pct" class="drawer-check" />
  </div>
- <p class="hint">When off, trend and value moves show absolute amounts only (no %).</p>
-<button class="btn btn-ghost btn-sm" id="btn-apply-settings">Apply & recalculate</button>
+ <p class="hint">Trends and value moves. Off = absolute numbers only.</p>
+ <div class="drawer-row">
+ <span class="field-label">Power impact on trades</span>
+ <input type="checkbox" id="set-show-trade-power" class="drawer-check" />
  </div>
- <hr class="drawer-divider">
- <div class="field">
- <span class="field-label">Debug</span>
- <p class="hint">Copy league + roster + value dump to paste for troubleshooting.</p>
+ <p class="hint">When on, the trade calculator shows power rank changes after a deal. Off by default to keep the screen clean.</p>
  </div>
- <button class="btn btn-ghost btn-sm" id="btn-copy-debug" type="button">Copy debug data</button>
- <hr class="drawer-divider">
- <button class="btn btn-ghost btn-sm" id="btn-change-league">Load a different league</button>
+
+ <div class="drawer-section">
+ <div class="drawer-section-title">League</div>
+ <p class="hint" id="drawer-league-info" style="margin:0;">-</p>
+ </div>
+
+ <div class="drawer-actions">
+ <button type="button" class="btn btn-primary" id="btn-apply-settings">Apply &amp; recalculate</button>
+ <button type="button" class="btn btn-ghost" id="btn-change-league">Switch league</button>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-copy-debug">Copy debug data</button>
+ </div>
 </div>
 
 <div class="share-toast" id="share-toast">Link copied</div>
@@ -2985,7 +3034,7 @@
  <p>Win % leans on the projected gap and gets more confident as remaining points shrink. If the league uses median, the board shows odds to finish in the top half.</p>
  </div>
  <div id="info-content-sit" style="display:none;">
- <h2>Lineup optimizer</h2>
+ <h2>Lineup</h2>
  <p class="info-sub">Best legal lineup for this week from projections, floor/ceiling, and locks.</p>
  <p>Players who already scored are locked. Byes and OUT/IR are excluded. Compares your current starters to the optimal set.</p>
  </div>
@@ -5845,20 +5894,34 @@ function countPosBodies(roster){
  const actStat = stats.find(s => s.statSourceId === 0 && s.scoringPeriodId === period);
  if(projStat && projStat.appliedTotal != null) proj = Number(projStat.appliedTotal);
  if(actStat && actStat.appliedTotal != null) actual = Number(actStat.appliedTotal);
- if(proj == null && actual == null) return;
+ // Live projected on entry when ESPN provides it (updates during games)
+ let liveProj = null;
+ if(typeof ent.projectedPoints === 'number') liveProj = ent.projectedPoints;
+ if(typeof ppe.projectedPoints === 'number') liveProj = ppe.projectedPoints;
+ if(typeof ppe.appliedProjectedStatTotal === 'number') liveProj = ppe.appliedProjectedStatTotal;
+ if(proj == null && actual == null && liveProj == null) return;
  const prev = map[pid] || {};
- const useProj = proj != null ? proj : prev.proj;
+ // Live expected: finished → actual; mid-game → liveProj or max(actual, remaining pregame)
+ let useProj = proj != null ? proj : prev.proj;
+ if(liveProj != null) useProj = liveProj;
+ else if(actual != null && actual > 0 && proj != null && proj > actual) useProj = proj; // still more game expected
+ else if(actual != null && actual > 0 && (proj == null || actual >= proj * 0.92)) useProj = actual; // finished-ish
+ const locked = actual != null && actual > 0 && (liveProj == null || liveProj <= actual + 0.05) && (proj == null || actual >= proj * 0.92);
  map[pid] = {
- proj: useProj != null ? useProj : 0,
+ proj: useProj != null ? useProj : (actual != null ? actual : 0),
  floor: useProj != null ? Math.max(0, useProj * 0.65) : (prev.floor || 0),
  ceil: useProj != null ? useProj * 1.35 : (prev.ceil || 0),
  source: prev.source && prev.source !== 'espn' ? 'espn+sleeper' : 'espn',
- rangeEst: true,
+ rangeEst: !locked,
  actual: actual,
- locked: actual != null && actual > 0
+ locked: !!locked
  };
  });
  });
+ // Team-level live projected totals → nothing per player, but ensure week is set
+ try{
+ if(typeof data.scoringPeriodId === 'number') projectionCacheWeek = data.scoringPeriodId;
+ }catch(e){}
  });
  }catch(e){ console.warn('espn boxscore proj', e); }
  }
@@ -5936,19 +5999,30 @@ function countPosBodies(roster){
 
  function getLiveWeekPoints(playerId, team){
  const row = getPlayerProjection(playerId);
- if(row && row.actual != null && row.actual > 0) return row.actual;
- // Direct from matchup cache if projection map not ready
+ if(row && typeof row.actual === 'number' && row.actual >= 0 && row.locked) return row.actual;
+ if(row && typeof row.actual === 'number' && row.actual > 0) return row.actual;
  try{
- if(!team || !matchupCache) return null;
+ if(!matchupCache || !matchupCache.length) return null;
+ let maps = [];
+ if(team){
  const m = matchupCache.find(x =>
  (x.teamA && (x.teamA.id === team.id || String(x.teamA.id) === String(team.id))) ||
  (x.teamB && (x.teamB.id === team.id || String(x.teamB.id) === String(team.id)))
  );
- if(!m) return null;
+ if(m){
  const isA = m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id));
- const ptsMap = isA ? (m.playersPointsA || {}) : (m.playersPointsB || {});
+ maps = [isA ? (m.playersPointsA || {}) : (m.playersPointsB || {})];
+ }
+ } else {
+ matchupCache.forEach(m => {
+ maps.push(m.playersPointsA || {});
+ maps.push(m.playersPointsB || {});
+ });
+ }
+ for(const ptsMap of maps){
  const pts = ptsMap[playerId] ?? ptsMap[String(playerId)];
- if(typeof pts === 'number' && pts > 0) return pts;
+ if(typeof pts === 'number') return pts;
+ }
  }catch(e){}
  return null;
  }
@@ -6054,30 +6128,173 @@ function countPosBodies(roster){
 
  const POS_WEEKLY_BASE = { QB: 18, RB: 11, WR: 10, TE: 7, K: 7, DST: 7, DEF: 7 };
 
- function playerWeeklyPtsForWeek(p, week, curWeek){
- if(!p) return 0;
- if(week === curWeek){
- const live = getLiveWeekPoints(p.id, null);
- const row = getPlayerProjection(p.id, p.fullName || p.name);
- if(row && row.locked && typeof row.actual === 'number') return Math.max(0, row.actual);
- if(typeof live === 'number' && live > 0){
- if(row && typeof row.proj === 'number' && row.proj > live)
- return live + Math.max(0, row.proj - live) * 0.5;
- return live;
+ // Deterministic week-to-week jitter so projections are unique per week without random sim noise
+ function weekHash01(seed){
+ let h = 2166136261;
+ const s = String(seed);
+ for(let i = 0; i < s.length; i++){
+ h ^= s.charCodeAt(i);
+ h = Math.imul(h, 16777619);
  }
- if(row && typeof row.proj === 'number' && row.proj > 0) return row.proj;
- if(row && typeof row.actual === 'number' && row.actual > 0) return row.actual;
+ return (h >>> 0) / 4294967296;
  }
- const row = getPlayerProjection(p.id, p.fullName || p.name);
- if(row && typeof row.proj === 'number' && row.proj > 0){
- if(projectionCacheWeek != null && week !== projectionCacheWeek) return row.proj * 0.97;
- return row.proj;
+
+ function playerHistWeekScores(p){
+ // Past actual scores for this player from roster week cache
+ const scores = [];
+ if(!p || !rosterWeekCache) return scores;
+ const pid = String(p.id);
+ const alt = p.sleeperId != null ? String(p.sleeperId) : null;
+ Object.keys(rosterWeekCache).forEach(tid => {
+ (rosterWeekCache[tid] || []).forEach(w => {
+ const pp = w.players_points || w.playersPoints || {};
+ let pts = pp[pid];
+ if(pts == null && alt) pts = pp[alt];
+ if(typeof pts === 'number' && pts >= 0) scores.push({ week: w.week, pts });
+ });
+ });
+ return scores;
  }
+
+ function estimateInjuryWeeksOut(p, status){
+ // Rough return timeline when platforms only give a designation
+ if(!status || status === 'ok') return 0;
+ if(status === 'questionable') return 0;
+ if(status === 'doubtful') return 1;
+ if(status === 'out') return 1;
+ if(status === 'pup') return 6;
+ if(status === 'ir'){
+ // Dynasty IR can be long; in redraft assume multi-week absence
+ return 4;
+ }
+ return 0;
+ }
+
+ function injuryWeekOutlook(p, week, curWeek){
+ // available + multiplier for that fantasy week given injury status as of now
+ let st = playerInjuryStatus(p);
+ if(!st && p && p.isIR) st = 'ir';
+ if(!st || st === 'ok') return { available: true, mult: 1, status: 'ok' };
+
+ const outN = estimateInjuryWeeksOut(p, st);
+ // Past weeks: don't apply current injury backwards
+ if(week < curWeek) return { available: true, mult: 1, status: st };
+
+ if(st === 'questionable'){
+ // This week: haircut toward floor; future weeks: assume clears
+ if(Number(week) === Number(curWeek)) return { available: true, mult: 0.72, status: st };
+ return { available: true, mult: 0.95, status: st };
+ }
+
+ // OUT / Doubtful / IR / PUP: miss current week through return
+ const returnWeek = curWeek + Math.max(1, outN);
+ if(week < returnWeek){
+ return { available: false, mult: 0, status: st, returnWeek };
+ }
+ // First week back: ramp
+ if(week === returnWeek) return { available: true, mult: 0.7, status: st, returnWeek };
+ if(week === returnWeek + 1) return { available: true, mult: 0.85, status: st, returnWeek };
+ return { available: true, mult: 0.95, status: st, returnWeek };
+ }
+
+ function playerFloorCeil(p, week, curWeek){
+ // Blend projection floor/ceil with real weekly variance as sample grows
+ const row = getPlayerProjection(p.id, p.fullName || p.name) || {};
+ const hist = playerHistWeekScores(p).map(x => x.pts).filter(v => typeof v === 'number');
+ let proj = typeof row.proj === 'number' ? row.proj : null;
+ let floor = typeof row.floor === 'number' ? row.floor : null;
+ let ceil = typeof row.ceil === 'number' ? row.ceil : null;
+ if(proj == null || !(proj > 0)){
  const pos = p.position || 'WR';
- const base = POS_WEEKLY_BASE[pos] || 8;
+ const base = (typeof POS_WEEKLY_BASE !== 'undefined' && POS_WEEKLY_BASE[pos]) || 8;
  const v = p.value || 0;
  const boost = v > 0 ? Math.min(14, Math.log10(Math.max(100, v)) * 3.2 - 4) : 0;
- return Math.max(2, base + boost);
+ proj = Math.max(2, base + boost);
+ }
+ if(floor == null) floor = Math.max(0, proj * 0.62);
+ if(ceil == null) ceil = proj * 1.38;
+
+ if(hist.length >= 2){
+ const mean = hist.reduce((a,b)=>a+b,0) / hist.length;
+ const sd = Math.sqrt(hist.reduce((s,x)=>s+(x-mean)*(x-mean),0) / Math.max(1, hist.length - 1));
+ const sorted = hist.slice().sort((a,b)=>a-b);
+ const p10 = sorted[Math.max(0, Math.floor((sorted.length - 1) * 0.1))];
+ const p90 = sorted[Math.min(sorted.length - 1, Math.ceil((sorted.length - 1) * 0.9))];
+ const histFloor = Math.max(0, Math.min(p10, mean - 1.15 * sd));
+ const histCeil = Math.max(histFloor + 1, Math.max(p90, mean + 1.15 * sd));
+ const histMean = mean;
+ // More games → trust real distribution more
+ const w = hist.length / (hist.length + 4);
+ floor = (1 - w) * floor + w * histFloor;
+ ceil = (1 - w) * ceil + w * histCeil;
+ // Soft pull projected mean toward historical mean
+ proj = (1 - w * 0.65) * proj + (w * 0.65) * histMean;
+ }
+ // Ensure order
+ if(floor > proj) floor = proj * 0.75;
+ if(ceil < proj) ceil = proj * 1.2;
+ return { proj, floor, ceil, nHist: hist.length };
+ }
+
+ function playerWeeklyPtsForWeek(p, week, curWeek, opts){
+ opts = opts || {};
+ if(!p) return 0;
+ const mode = opts.mode || 'mean'; // mean | floor | ceil
+
+ // Injury / IR for this specific week
+ const outlook = injuryWeekOutlook(p, week, curWeek);
+ if(!outlook.available) return 0;
+
+ // Current week: live actual / live proj
+ if(Number(week) === Number(curWeek)){
+ const live = getLiveWeekPoints(p.id, null);
+ const row = getPlayerProjection(p.id, p.fullName || p.name);
+ if(row && row.locked && typeof row.actual === 'number'){
+ return Math.max(0, row.actual) * (outlook.mult || 1);
+ }
+ if(typeof live === 'number' && live > 0){
+ let v = live;
+ if(row && typeof row.proj === 'number' && row.proj > live)
+ v = live + Math.max(0, row.proj - live) * 0.55;
+ return Math.max(0, v) * (outlook.mult || 1);
+ }
+ }
+
+ const fc = playerFloorCeil(p, week, curWeek);
+ let base = fc.proj;
+ if(mode === 'floor') base = fc.floor;
+ else if(mode === 'ceil') base = fc.ceil;
+
+ // Week-specific shape: not identical every week
+ // 1) Deterministic jitter by player+week
+ const jitter = (weekHash01(String(p.id) + '|' + week) - 0.5) * 0.1; // ±5%
+ // 2) Slight regression toward position mean as we look further out
+ const horizon = Math.max(0, Number(week) - Number(curWeek));
+ const reg = Math.min(0.22, horizon * 0.028);
+ const pos = p.position || 'WR';
+ const posBase = (typeof POS_WEEKLY_BASE !== 'undefined' && POS_WEEKLY_BASE[pos]) || 8;
+ base = base * (1 - reg) + posBase * reg;
+ base = base * (1 + jitter);
+
+ // 3) If we have this player's score in a prior similar slot, tiny pull
+ const hist = playerHistWeekScores(p);
+ if(hist.length){
+ const meanH = hist.reduce((a,b)=>a+b.pts,0) / hist.length;
+ base = base * 0.9 + meanH * 0.1;
+ }
+
+ base *= (outlook.mult || 1);
+ return Math.max(0, base);
+ }
+
+ function playerAvailableForWeek(p, week, curWeek){
+ if(!p) return false;
+ if(p.isTaxi) return false;
+ // IR slot: still check return timeline (may return mid-season)
+ const bw = playerByeWeek(p);
+ if(bw != null && Number(bw) === Number(week)) return false;
+ const o = injuryWeekOutlook(p, week, curWeek);
+ return !!o.available;
  }
 
  // Best free agents by position for filling empty starter slots this week
@@ -6124,17 +6341,15 @@ function countPosBodies(roster){
  const flexElig = counts.flexEligible || ['RB','WR','TE'];
  const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
  const available = (team.roster || []).filter(p => {
- if(p.isIR) return false;
- const bw = playerByeWeek(p);
- if(bw != null && Number(bw) === Number(week)) return false;
- return true;
+ if(p.isTaxi) return false;
+ return playerAvailableForWeek(p, week, curWeek);
  });
 
- // Rank roster by weekly points
+ // Rank roster by weekly points (mean). Floor/ceil available via scoreFn modes for ranges.
  const trial = { ...team, roster: available };
  let { assignments, starterIds } = optimalStarterLineup(trial, counts, flexElig, sfElig, {
- healthyOnly: true,
- scoreFn: (p) => playerWeeklyPtsForWeek(p, week, curWeek)
+ healthyOnly: false, // injury already applied in playerAvailableForWeek
+ scoreFn: (p) => playerWeeklyPtsForWeek(p, week, curWeek, { mode: 'mean' })
  });
 
  // Fill empty pure slots (and FLEX/SF) from waivers
@@ -6205,25 +6420,54 @@ function countPosBodies(roster){
  });
  let source = hasProj ? 'opt-proj' : 'opt-est';
  if(waiverFills.length) source += '+waivers';
+ // Floor / ceiling for the same chosen lineup (injury & week-specific already in pts fn)
+ let floorPts = 0, ceilPts = 0;
+ assignments.forEach(a => {
+ if(a.isWaiverFill){
+ floorPts += (a.pts || 0) * 0.7;
+ ceilPts += (a.pts || 0) * 1.15;
+ return;
+ }
+ const pl = (team.roster || []).find(x => String(x.id) === String(a.id));
+ if(!pl){ floorPts += a.pts || 0; ceilPts += a.pts || 0; return; }
+ floorPts += playerWeeklyPtsForWeek(pl, week, curWeek, { mode: 'floor' });
+ ceilPts += playerWeeklyPtsForWeek(pl, week, curWeek, { mode: 'ceil' });
+ });
+ if(floorPts > pts) floorPts = pts * 0.82;
+ if(ceilPts < pts) ceilPts = pts * 1.12;
  return {
  pts: Math.round(pts * 10) / 10,
+ floorPts: Math.round(floorPts * 10) / 10,
+ ceilPts: Math.round(ceilPts * 10) / 10,
  source,
  assignments,
  waiverFills
  };
  }
 
- function weekWinProb(myPts, oppPts, status){
+ function weekWinProb(myPts, oppPts, status, myRange, oppRange){
  if(myPts == null || oppPts == null) return null;
  if(status === 'final'){
  if(Math.abs(myPts - oppPts) < 0.05) return 0.5;
  return myPts > oppPts ? 1 : 0;
  }
- // Dedicated SOS scale — matchupWinPct treats full proj as "remaining" so a 15-pt
- // gap only becomes ~55%. Here team weekly noise is ~15-18 pts, so two independent
- // lineups differ with σ ≈ 22. A 10-pt gap → ~67%, 20-pt → ~81%, 30-pt → ~89%.
+ // Sigma from floor/ceil spreads when available; otherwise ~16.5 team noise
+ let sigma = 16.5;
+ try{
+ const mySpan = myRange && myRange.floorPts != null && myRange.ceilPts != null
+ ? Math.max(6, (myRange.ceilPts - myRange.floorPts) / 2.2)
+ : null;
+ const oppSpan = oppRange && oppRange.floorPts != null && oppRange.ceilPts != null
+ ? Math.max(6, (oppRange.ceilPts - oppRange.floorPts) / 2.2)
+ : null;
+ if(mySpan != null || oppSpan != null){
+ const a = mySpan != null ? mySpan : 12;
+ const b = oppSpan != null ? oppSpan : 12;
+ sigma = Math.sqrt(a * a + b * b);
+ sigma = Math.max(12, Math.min(28, sigma));
+ }
+ }catch(e){}
  const gap = myPts - oppPts;
- const sigma = 16.5;
  const z = gap / sigma;
  const p = 1 / (1 + Math.exp(-1.7 * z));
  return Math.max(0.03, Math.min(0.97, p));
@@ -6298,10 +6542,11 @@ function countPosBodies(roster){
  const med = medianPts(week);
  const isProj = status !== 'final';
 
- // Game 1: H2H
+ // Game 1: H2H (sigma from each side's floor/ceil when projecting)
  let h2hProb = null;
  if(opp && myPts != null && oppPts != null){
- h2hProb = weekWinProb(myPts, oppPts, status);
+ const oppEst = opp ? est(opp, week) : null;
+ h2hProb = weekWinProb(myPts, oppPts, status, myEst, oppEst);
  } else if(!match){
  h2hProb = null; // bye — no H2H game
  }
@@ -6309,7 +6554,8 @@ function countPosBodies(roster){
  // Game 2: vs league median (always, when median exists)
  let medProb = null;
  if(myPts != null && med != null){
- medProb = weekWinProb(myPts, med, status);
+ // Median spread ~ average team uncertainty
+ medProb = weekWinProb(myPts, med, status, myEst, myEst);
  }
 
  // Accumulate expected wins from both games (stacks into full projected record)
@@ -6423,77 +6669,253 @@ function detectLeagueMedian(){
  /* live points only */
  }
  }catch(e){}
+ const ppA = pair[0].players_points || {};
+ const ppB = pair[1] ? (pair[1].players_points || {}) : {};
+ // Normalize ids to string keys too
+ const norm = (obj) => {
+ const m = { ...obj };
+ Object.keys(obj || {}).forEach(k => { m[String(k)] = obj[k]; });
+ return m;
+ };
  out.push({
  week,
  teamA: a, teamB: b,
- pointsA, pointsB,
- projA: pointsA, // sleeper often only has live until end
+ pointsA: pointsA != null ? pointsA : 0,
+ pointsB,
+ projA: pointsA, // sleeper posts live cumulative; proj often absent mid-week
  projB: pointsB,
- playersPointsA: pair[0].players_points || {},
- playersPointsB: pair[1] ? (pair[1].players_points || {}) : {}
+ playersPointsA: norm(ppA),
+ playersPointsB: norm(ppB),
+ startersA: pair[0].starters || [],
+ startersB: pair[1] ? (pair[1].starters || []) : []
  });
  });
+ 
  } else if(state.platform === 'espn' && state.leagueId && state.year){
- const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore&view=mScoreboard&view=mRoster`;
+ const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore&view=mScoreboard&view=mRoster&view=mMatchup`;
  const urls = [
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ];
- const res = await robustFetchAny(urls, { timeoutMs: 15000 });
+ const res = await robustFetchAny(urls, { timeoutMs: 18000 });
  const data = await res.json();
- const week = data.scoringPeriodId || (data.status && data.status.currentMatchupPeriod) || 1;
+ const week = Number(
+ (data.status && (data.status.currentMatchupPeriod || data.status.latestScoringPeriod)) ||
+ data.scoringPeriodId ||
+ 1
+ );
  if(scheduleCache) scheduleCache._currentWeek = week;
- (data.schedule || []).forEach(game => {
- const mp = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
- if(mp != null && mp !== week) return;
+
+ function sideLivePoints(side){
+ if(!side) return null;
+ // Prefer live roster total for current scoring period
+ const rsp = side.rosterForCurrentScoringPeriod;
+ if(rsp && typeof rsp.appliedStatTotal === 'number') return rsp.appliedStatTotal;
+ if(typeof side.totalPointsLive === 'number') return side.totalPointsLive;
+ if(typeof side.totalPoints === 'number') return side.totalPoints;
+ // Sum starter entry live totals
+ if(rsp && Array.isArray(rsp.entries)){
+ let s = 0, any = false;
+ rsp.entries.forEach(en => {
+ if(en.lineupSlotId === 20 || en.lineupSlotId === 21 || en.lineupSlotId === 22) return;
+ const pool = en.playerPoolEntry;
+ if(!pool) return;
+ if(typeof pool.appliedStatTotal === 'number'){ s += pool.appliedStatTotal; any = true; return; }
+ const stats = pool.player && pool.player.stats;
+ if(!stats) return;
+ // statSourceId 0 = actual, 1 = projected
+ const act = stats.find(st => st.scoringPeriodId === week && st.statSourceId === 0);
+ if(act && typeof act.appliedTotal === 'number'){ s += act.appliedTotal; any = true; }
+ });
+ if(any) return s;
+ }
+ return 0;
+ }
+ function sidePlayerLiveExpected(en){
+ // Live expected points for one roster entry: actual if done, else live-updating proj
+ if(!en) return null;
+ if(en.lineupSlotId === 20 || en.lineupSlotId === 21 || en.lineupSlotId === 22) return null;
+ const pool = en.playerPoolEntry;
+ if(!pool) return null;
+ let actual = null, pregameProj = null, liveProj = null;
+ if(typeof pool.appliedStatTotal === 'number') actual = pool.appliedStatTotal;
+ if(typeof en.points === 'number') actual = en.points;
+ const pl = pool.player || {};
+ const stats = pl.stats || [];
+ const actStat = stats.find(st => st.scoringPeriodId === week && st.statSourceId === 0);
+ const projStat = stats.find(st => st.scoringPeriodId === week && st.statSourceId === 1)
+ || stats.find(st => st.statSourceId === 1);
+ if(actStat && actStat.appliedTotal != null) actual = Number(actStat.appliedTotal);
+ if(projStat && projStat.appliedTotal != null) pregameProj = Number(projStat.appliedTotal);
+ // ESPN sometimes exposes remaining/live projected on the entry or pool
+ if(typeof en.projectedPoints === 'number') liveProj = en.projectedPoints;
+ if(typeof pool.projectedPoints === 'number') liveProj = pool.projectedPoints;
+ if(typeof pool.appliedProjectedStatTotal === 'number') liveProj = pool.appliedProjectedStatTotal;
+
+ // Infer finished: has actual and pregame proj, and actual is set with no live remaining
+ // proGamesPlayed >= 1 and week game over is ideal; approximate with roster slot + actual
+ const gamesPlayed = pl.stats ? null : null;
+ let finished = false;
+ try{
+ // If player has actual and no remaining projection higher than actual, treat as locked when actual >= pregame*0.95
+ if(actual != null && pregameProj != null && actual >= pregameProj * 0.92 && actual > 0) finished = true;
+ // Or ESPN marks lineup as done via opponentProTeamId etc. — skip
+ }catch(e){}
+
+ if(finished && actual != null) return actual;
+ // Mid-game: prefer max(actual, liveProj, pregame) is wrong — prefer live team-level only
+ // Player mid-game: actual so far is floor; use pregame as ceiling estimate only if no live
+ if(actual != null && actual > 0){
+ if(liveProj != null && liveProj >= actual) return liveProj;
+ // Keep pregame total as "still expected week total" only if higher than actual (game not done)
+ if(pregameProj != null && pregameProj > actual) return pregameProj;
+ return actual;
+ }
+ if(liveProj != null) return liveProj;
+ if(pregameProj != null) return pregameProj;
+ if(actual != null) return actual;
+ return null;
+ }
+ function sideProjPoints(side){
+ if(!side) return null;
+ // CRITICAL: ESPN updates totalProjectedPointsLive during games (scored + remaining).
+ // Pregame totalProjectedPoints / statSourceId=1 stays frozen after kickoff.
+ if(typeof side.totalProjectedPointsLive === 'number' && isFinite(side.totalProjectedPointsLive))
+ return side.totalProjectedPointsLive;
+ if(typeof side.totalProjectedPoints === 'number' && isFinite(side.totalProjectedPoints) && side.totalProjectedPoints > 0)
+ return side.totalProjectedPoints;
+ const rsp = side.rosterForCurrentScoringPeriod;
+ if(rsp && Array.isArray(rsp.entries)){
+ let s = 0, any = false;
+ rsp.entries.forEach(en => {
+ const v = sidePlayerLiveExpected(en);
+ if(v != null){ s += v; any = true; }
+ });
+ if(any) return s;
+ }
+ return null;
+ }
+ function sidePlayerPoints(side){
+ const map = {};
+ if(!side) return map;
+ const rsp = side.rosterForCurrentScoringPeriod;
+ const entries = (rsp && rsp.entries) || [];
+ entries.forEach(en => {
+ const pid = en.playerId != null ? en.playerId : (en.playerPoolEntry && en.playerPoolEntry.id);
+ if(pid == null) return;
+ const pool = en.playerPoolEntry;
+ let pts = null;
+ if(pool && typeof pool.appliedStatTotal === 'number') pts = pool.appliedStatTotal;
+ if(pts == null && pool && pool.player && pool.player.stats){
+ const act = pool.player.stats.find(st => st.scoringPeriodId === week && st.statSourceId === 0);
+ if(act && typeof act.appliedTotal === 'number') pts = act.appliedTotal;
+ }
+ if(typeof pts === 'number'){
+ map[pid] = pts;
+ map[String(pid)] = pts;
+ }
+ });
+ return map;
+ }
+
+ const schedule = data.schedule || [];
+ // Prefer current matchup period; if none match, fall back to latest period present
+ let games = schedule.filter(g => {
+ const mp = g.matchupPeriodId != null ? g.matchupPeriodId : g.scoringPeriodId;
+ return mp == null || Number(mp) === week;
+ });
+ if(!games.length && schedule.length){
+ const periods = schedule.map(g => g.matchupPeriodId != null ? g.matchupPeriodId : g.scoringPeriodId).filter(x => x != null);
+ const maxP = periods.length ? Math.max(...periods.map(Number)) : week;
+ games = schedule.filter(g => {
+ const mp = g.matchupPeriodId != null ? g.matchupPeriodId : g.scoringPeriodId;
+ return Number(mp) === maxP;
+ });
+ }
+
+ games.forEach(game => {
  const home = game.home, away = game.away;
  if(!home) return;
  const teamA = teamByRosterId(home.teamId);
  const teamB = away ? teamByRosterId(away.teamId) : null;
- let pointsA = typeof home.totalPoints === 'number' ? home.totalPoints : 0;
- let pointsB = away && typeof away.totalPoints === 'number' ? away.totalPoints : null;
- let projA = null, projB = null;
- try{
- if(home.rosterForCurrentScoringPeriod && typeof home.rosterForCurrentScoringPeriod.appliedStatTotal === 'number')
- pointsA = home.rosterForCurrentScoringPeriod.appliedStatTotal;
- if(away && away.rosterForCurrentScoringPeriod && typeof away.rosterForCurrentScoringPeriod.appliedStatTotal === 'number')
- pointsB = away.rosterForCurrentScoringPeriod.appliedStatTotal;
- }catch(e){}
- // projection from entries
- try{
- const sumProj = (side) => {
- if(!side || !side.rosterForCurrentScoringPeriod || !side.rosterForCurrentScoringPeriod.entries) return null;
- let s = 0;
- side.rosterForCurrentScoringPeriod.entries.forEach(en => {
- if(en.lineupSlotId === 20 || en.lineupSlotId === 21 || en.lineupSlotId === 22) return;
- const pool = en.playerPoolEntry;
- const stats = pool && pool.player && pool.player.stats;
- if(!stats) return;
- const proj = stats.find(st => st.scoringPeriodId === week && st.statSourceId === 1);
- if(proj && proj.appliedTotal != null) s += proj.appliedTotal;
- else if(pool.appliedStatTotal) s += 0;
+ const pointsA = sideLivePoints(home);
+ const pointsB = away ? sideLivePoints(away) : null;
+ let projA = sideProjPoints(home);
+ let projB = away ? sideProjPoints(away) : null;
+ // If proj missing, at least show live as floor for display
+ if(projA == null && pointsA != null) projA = pointsA;
+ if(projB == null && pointsB != null) projB = pointsB;
+ const ppa = sidePlayerPoints(home);
+ const ppb = sidePlayerPoints(away);
+ // Per-player live expected for lineup UI
+ const liveMapA = {}, liveMapB = {};
+ ((home.rosterForCurrentScoringPeriod && home.rosterForCurrentScoringPeriod.entries) || []).forEach(en => {
+ const pid = en.playerId != null ? en.playerId : (en.playerPoolEntry && en.playerPoolEntry.id);
+ const v = sidePlayerLiveExpected(en);
+ if(pid != null && v != null){ liveMapA[pid] = v; liveMapA[String(pid)] = v; }
  });
- return s > 0 ? s : null;
- };
- projA = sumProj(home);
- projB = away ? sumProj(away) : null;
- }catch(e){}
- const playersPointsA = {}, playersPointsB = {};
- try{
- (home.rosterForCurrentScoringPeriod && home.rosterForCurrentScoringPeriod.entries || []).forEach(en => {
- const pid = en.playerId || (en.playerPoolEntry && en.playerPoolEntry.id);
- if(pid != null && en.playerPoolEntry && typeof en.playerPoolEntry.appliedStatTotal === 'number')
- playersPointsA[pid] = en.playerPoolEntry.appliedStatTotal;
+ if(away){
+ ((away.rosterForCurrentScoringPeriod && away.rosterForCurrentScoringPeriod.entries) || []).forEach(en => {
+ const pid = en.playerId != null ? en.playerId : (en.playerPoolEntry && en.playerPoolEntry.id);
+ const v = sidePlayerLiveExpected(en);
+ if(pid != null && v != null){ liveMapB[pid] = v; liveMapB[String(pid)] = v; }
  });
- }catch(e){}
+ }
  out.push({
- week, teamA, teamB,
- pointsA: typeof home.totalPoints === 'number' ? home.totalPoints : 0,
- pointsB: away && typeof away.totalPoints === 'number' ? away.totalPoints : null,
+ week,
+ teamA, teamB,
+ pointsA: pointsA != null ? pointsA : 0,
+ pointsB: pointsB,
  projA, projB,
- playersPointsA, playersPointsB
+ playersPointsA: ppa,
+ playersPointsB: ppb,
+ playersLiveProjA: liveMapA,
+ playersLiveProjB: liveMapB,
+ startersA: ((home.rosterForCurrentScoringPeriod && home.rosterForCurrentScoringPeriod.entries) || [])
+ .filter(en => en.lineupSlotId !== 20 && en.lineupSlotId !== 21 && en.lineupSlotId !== 22)
+ .map(en => en.playerId).filter(Boolean),
+ startersB: away ? (((away.rosterForCurrentScoringPeriod && away.rosterForCurrentScoringPeriod.entries) || [])
+ .filter(en => en.lineupSlotId !== 20 && en.lineupSlotId !== 21 && en.lineupSlotId !== 22)
+ .map(en => en.playerId).filter(Boolean)) : []
  });
  });
+ // Merge live scores + live expected into projectionCache so Lineup / Start-Sit update
+ try{
+ if(!projectionCache) projectionCache = {};
+ out.forEach(m => {
+ const mergeSide = (ptsMap, liveMap) => {
+ Object.keys(ptsMap || {}).forEach(pid => {
+ const actual = ptsMap[pid];
+ const live = liveMap && liveMap[pid] != null ? liveMap[pid] : null;
+ const prev = projectionCache[String(pid)] || {};
+ const locked = typeof actual === 'number' && live != null && Math.abs(live - actual) < 0.05 && actual > 0;
+ projectionCache[String(pid)] = {
+ ...prev,
+ actual: typeof actual === 'number' ? actual : prev.actual,
+ // Live expected replaces frozen pregame proj when we have it
+ proj: live != null ? live : (typeof actual === 'number' && actual > 0 ? actual : prev.proj),
+ locked: locked || (typeof actual === 'number' && actual > 0 && live != null && live <= actual + 0.05),
+ source: 'espn-live',
+ rangeEst: !locked
+ };
+ });
+ // Also keys only in live map
+ Object.keys(liveMap || {}).forEach(pid => {
+ if(ptsMap && ptsMap[pid] != null) return;
+ const live = liveMap[pid];
+ const prev = projectionCache[String(pid)] || {};
+ projectionCache[String(pid)] = {
+ ...prev,
+ proj: live,
+ source: 'espn-live',
+ rangeEst: true
+ };
+ });
+ };
+ mergeSide(m.playersPointsA, m.playersLiveProjA);
+ mergeSide(m.playersPointsB, m.playersLiveProjB);
+ });
+ }catch(e){ console.warn('proj cache merge', e); }
  }
  }catch(e){
  console.warn('fetchCurrentMatchups', e);
@@ -6671,8 +7093,17 @@ function matchupWinPct(liveA, liveB, projA, projB){
  async function refreshMatchups(){
  const list = el('matchups-list');
  if(list) list.innerHTML = '<div class="hist-empty">Loading matchups…</div>';
- try{ await fetchCurrentMatchups(); }catch(e){}
+ try{
+ await fetchCurrentMatchups();
+ // Pull fresh live projected totals (not frozen pregame numbers)
+ try{ await loadWeeklyProjections(); }catch(e2){ console.warn('live proj refresh', e2); }
+ }catch(e){
+ console.warn('refreshMatchups', e);
+ if(list) list.innerHTML = '<div class="hist-empty">Could not load scores. Check league access / try Refresh.</div>';
+ }
  renderMatchups();
+ try{ if(typeof renderSitAnalyzer === 'function') renderSitAnalyzer(); }catch(e){}
+ try{ if(typeof renderHome === 'function') renderHome(); }catch(e){}
  }
 
  /* ---------- league records ---------- */
@@ -9597,17 +10028,47 @@ function renderByes(){
  }
  function initShowPctSetting(){
  const cb = el('set-show-pct');
- if(!cb) return;
+ if(cb){
  try{ cb.checked = localStorage.getItem('fd_show_pct') === '1'; }catch(e){}
  if(!cb._bound){
  cb._bound = true;
  cb.addEventListener('change', () => {
  try{ localStorage.setItem('fd_show_pct', cb.checked ? '1' : '0'); }catch(e){}
- // Refresh panels that show %
  try{ if(typeof renderTrends === 'function') renderTrends(); }catch(e){}
  try{ if(typeof renderFairness === 'function') renderFairness(); }catch(e){}
  try{ if(typeof renderTradeSide === 'function'){ renderTradeSide('a'); renderTradeSide('b'); } }catch(e){}
  try{ if(typeof renderLuck === 'function') renderLuck(); }catch(e){}
+ try{ if(typeof renderLeagueRosters === 'function') renderLeagueRosters(); }catch(e){}
+ });
+ }
+ }
+ const tp = el('set-show-trade-power');
+ if(tp){
+ try{ tp.checked = localStorage.getItem('fd_show_trade_power') === '1'; }catch(e){}
+ if(!tp._bound){
+ tp._bound = true;
+ tp.addEventListener('change', () => {
+ try{ localStorage.setItem('fd_show_trade_power', tp.checked ? '1' : '0'); }catch(e){}
+ try{
+ if(typeof renderTradePowerImpact === 'function' && typeof getTeamA === 'function'){
+ const a = typeof getSelectedTradeTeams === 'function' ? getSelectedTradeTeams() : null;
+ if(a && a.teamA) renderTradePowerImpact(a.teamA, a.teamB);
+ else if(typeof updateTradeUI === 'function') updateTradeUI();
+ else if(typeof renderFairness === 'function') renderFairness();
+ }
+ }catch(e){}
+ try{ if(typeof renderFairness === 'function') renderFairness(); }catch(e){}
+ });
+ }
+ }
+ const closeBtn = el('btn-drawer-close');
+ if(closeBtn && !closeBtn._bound){
+ closeBtn._bound = true;
+ closeBtn.addEventListener('click', () => {
+ const d = el('drawer');
+ const o = el('overlay');
+ if(d) d.classList.remove('show');
+ if(o) o.classList.remove('show');
  });
  }
  }
@@ -11757,11 +12218,25 @@ function buildStrategyBrief(){
  });
 
  /* ---------- fairness meter (left/right) ---------- */
+ function showTradePowerSetting(){
+ try{ return localStorage.getItem('fd_show_trade_power') === '1'; }catch(e){ return false; }
+ }
+
  function renderTradePowerImpact(teamA, teamB){
  const box = el('trade-power-impact');
  const grid = el('trade-power-grid');
  const note = el('trade-power-note');
  if(!box || !grid) return;
+
+ // Hidden unless Settings → Show power impact on trades
+ if(!showTradePowerSetting()){
+ box.classList.remove('show');
+ box.style.display = 'none';
+ grid.innerHTML = '';
+ if(note) note.textContent = '';
+ return;
+ }
+ box.style.display = '';
 
  const hasPlayers =
  state.tradeA.some(a => !a.isPick) || state.tradeB.some(a => !a.isPick);
