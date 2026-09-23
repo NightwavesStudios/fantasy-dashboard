@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fantasy Blueprint</title>
+<title>Fantasy Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2256,7 +2256,7 @@
  }
 
 
- .bp-tab-rule {
+ .bp-tab-rule-legacy {
  display: none;
  margin: 0 0 12px;
  padding: 8px 12px;
@@ -2267,7 +2267,7 @@
  color: var(--text-secondary);
  line-height: 1.4;
  }
- .bp-tab-rule .bp-rule-label {
+ .bp-tab-rule-legacy .bp-rule-label {
  font-weight: 700;
  color: var(--accent);
  text-transform: uppercase;
@@ -2954,6 +2954,26 @@ html[data-theme="light"] {
  .root-game .rg-impact.down { color: var(--red); }
  .root-game .rg-hint { color: var(--text-secondary); font-size: 12.5px; }
 
+
+ table.is-sortable th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+ }
+ table.is-sortable th:hover {
+  color: var(--accent);
+ }
+ table.is-sortable th.sorted-asc::after {
+  content: ' ▲';
+  font-size: 10px;
+  opacity: 0.8;
+ }
+ table.is-sortable th.sorted-desc::after {
+  content: ' ▼';
+  font-size: 10px;
+  opacity: 0.8;
+ }
+
 </style>
 </head>
 <body>
@@ -2962,7 +2982,7 @@ html[data-theme="light"] {
 <div id="setup-screen">
  <div class="setup-wrap">
  <div class="setup-header">
- <h1>Fantasy Blueprint</h1>
+ <h1>Fantasy Dashboard</h1>
  <p>Load your league to value rosters and check trades against current market prices.</p>
  </div>
 
@@ -3029,7 +3049,7 @@ html[data-theme="light"] {
  <aside class="sidebar" id="app-sidebar">
  <div class="sidebar-brand">
  <div>
- <h1>Fantasy Blueprint</h1>
+ <h1>Fantasy Dashboard</h1>
  <span class="league-chip" id="league-chip">-</span>
  </div>
  <button type="button" class="nav-toggle" id="btn-nav-toggle" aria-label="Menu" title="Menu">
@@ -3039,7 +3059,7 @@ html[data-theme="light"] {
  <nav class="sidebar-nav">
  <button class="nav-item active" data-panel="panel-home">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></span>
- Blueprint
+ Home
  </button>
 
  <div class="nav-section">This week</div>
@@ -3057,7 +3077,7 @@ html[data-theme="light"] {
  </button>
  <button class="nav-item" data-panel="panel-byes">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
- Cover
+ Byes + injuries
  </button>
 
  <div class="nav-section">Roster</div>
@@ -3141,13 +3161,13 @@ html[data-theme="light"] {
 
  <section class="panel active" id="panel-home">
  <div class="bp-hero">
- <div class="bp-kicker">Weekly system</div>
- <div class="bp-title">Your Blueprint</div>
- <div class="bp-sub" id="bp-sub">Load a league to lock in this week’s plan.</div>
+ <div class="bp-kicker">Fantasy Dashboard</div>
+ <div class="bp-title">This week</div>
+ <div class="bp-sub" id="bp-sub">Load a league to build this week’s checklist.</div>
  </div>
  <div id="bp-scorecard" class="bp-scorecard"></div>
  <div id="bp-moves" class="bp-moves"></div>
- <div id="bp-pillars" class="bp-pillars"></div>
+ <div id="bp-pillars" class="bp-pillars" style="display:none"></div>
  <!-- legacy hooks used by renderHome -->
  <div id="home-intro" style="display:none"></div>
  <div id="home-priorities" style="display:none"></div>
@@ -3574,7 +3594,7 @@ html[data-theme="light"] {
  
  <section class="panel" id="panel-byes">
  <div class="section-title-row">
- <div class="section-title" style="margin:0;">Cover</div>
+ <div class="section-title" style="margin:0;">Byes + injuries</div>
  <button type="button" class="info-btn" id="btn-byes-info" title="Info" aria-label="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <div class="waiver-toolbar">
@@ -3588,7 +3608,10 @@ html[data-theme="light"] {
  </div>
  <div id="cover-actions" class="cover-actions"></div>
  <div id="cover-summary" class="hist-meta" style="margin-bottom:10px;"></div>
+ <div class="section-title" style="font-size:14px;margin:12px 0 8px;">This week</div>
  <div id="cover-this-week" class="hist-list"></div>
+ <div class="section-title" style="font-size:14px;margin:16px 0 8px;">Later byes + injury holes</div>
+ <div id="cover-bye-list" class="hist-list"></div>
  <div class="section-title" style="font-size:14px;margin:16px 0 8px;">Waiver streams</div>
  <div style="overflow-x:auto;">
  <table>
@@ -3596,8 +3619,6 @@ html[data-theme="light"] {
  <tbody id="cover-stream-body"></tbody>
  </table>
  </div>
- <div class="section-title" style="font-size:14px;margin:16px 0 8px;">Later byes</div>
- <div id="cover-bye-list" class="hist-list"></div>
  <div id="cover-inj-body" style="display:none"></div>
  <div class="bp-source" id="source-cover"></div>
  </section>
@@ -3757,13 +3778,13 @@ html[data-theme="light"] {
  <button type="button" class="btn btn-ghost btn-sm" id="btn-drawer-close" aria-label="Close">Close</button>
  </div>
 
+ 
  <div class="drawer-section">
- <div class="drawer-section-title">Your team</div>
+ <div class="drawer-section-title">Team</div>
  <div class="field">
  <label class="field-label">Default team</label>
  <select id="sel-my-team"></select>
  </div>
- <p class="hint">Used across Home, Trades, Waivers, Lineup, and the rest.</p>
  </div>
 
  <div class="drawer-section">
@@ -3784,48 +3805,46 @@ html[data-theme="light"] {
  <option value="0">Standard</option>
  </select>
  </div>
- <p class="hint" id="drawer-detected-note">Detected from league settings. Change only if wrong.</p>
+ <p class="hint" id="drawer-detected-note">From league settings. Change only if wrong.</p>
  </div>
 
  <div class="drawer-section">
- <div class="drawer-section-title">Values &amp; display</div>
+ <div class="drawer-section-title">Values</div>
  <div class="field">
- <label class="field-label">Rankings value mode</label>
+ <label class="field-label">Value mode</label>
  <select id="sel-value-mode">
- <option value="vorp">VORP (over replacement)</option>
+ <option value="vorp">VORP</option>
  <option value="raw">Raw FantasyCalc</option>
  </select>
  </div>
- <p class="hint">Rankings/needs use this mode. Trades use raw unless “Trade calc uses VORP” is on.</p>
- <div class="drawer-row">
- <span class="field-label">Show % changes</span>
- <input type="checkbox" id="set-show-pct" class="drawer-check" />
- </div>
- <p class="hint">Trends and value moves. Off = absolute numbers only.</p>
- <div class="drawer-row">
- <span class="field-label">Power impact on trades</span>
- <input type="checkbox" id="set-show-trade-power" class="drawer-check" />
- </div>
- <p class="hint">When on, the trade calculator shows power rank changes after a deal. Off by default to keep the screen clean.</p>
- <div class="drawer-row">
- <span class="field-label">Needs after trade</span>
- <input type="checkbox" id="set-show-trade-needs" class="drawer-check" />
- </div>
- <p class="hint">Shows before/after positional strength % for both sides. Off by default.</p>
  <div class="drawer-row">
  <span class="field-label">Trade calc uses VORP</span>
  <input type="checkbox" id="set-trade-vorp" class="drawer-check" />
  </div>
- <p class="hint">When on, trade totals and fairness use value over replacement instead of raw FantasyCalc. Off = raw market value.</p>
  <div class="drawer-row">
- <span class="field-label">Show AI export tab</span>
- <input type="checkbox" id="set-show-ai-export" class="drawer-check" />
+ <span class="field-label">Show % changes</span>
+ <input type="checkbox" id="set-show-pct" class="drawer-check" />
  </div>
- <p class="hint">Shows the AI export page under More for full-text league dumps.</p>
  </div>
 
  <div class="drawer-section">
- <div class="drawer-section-title">League</div>
+ <div class="drawer-section-title">Trade screen</div>
+ <div class="drawer-row">
+ <span class="field-label">Power impact</span>
+ <input type="checkbox" id="set-show-trade-power" class="drawer-check" />
+ </div>
+ <div class="drawer-row">
+ <span class="field-label">Needs after trade</span>
+ <input type="checkbox" id="set-show-trade-needs" class="drawer-check" />
+ </div>
+ </div>
+
+ <div class="drawer-section">
+ <div class="drawer-section-title">More</div>
+ <div class="drawer-row">
+ <span class="field-label">AI export tab</span>
+ <input type="checkbox" id="set-show-ai-export" class="drawer-check" />
+ </div>
  <p class="hint" id="drawer-league-info" style="margin:0;">-</p>
  </div>
 
@@ -4338,6 +4357,64 @@ html[data-theme="light"] {
  .trim();
  }
  function fmt(n){ return Math.round(n||0).toLocaleString(); }
+
+ function sortTableByColumn(table, colIdx, th){
+  const tbody = table.tBodies && table.tBodies[0];
+  if(!tbody) return;
+  const rows = Array.from(tbody.rows);
+  if(!rows.length) return;
+  const dir = th.getAttribute('data-sort-dir') === 'asc' ? 'desc' : 'asc';
+  table.querySelectorAll('th').forEach(h => {
+   h.removeAttribute('data-sort-dir');
+   h.classList.remove('sorted-asc', 'sorted-desc');
+  });
+  th.setAttribute('data-sort-dir', dir);
+  th.classList.add(dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+  function cellVal(row){
+   const cell = row.cells[colIdx];
+   if(!cell) return '';
+   let t = (cell.getAttribute('data-sort') || cell.textContent || '').trim();
+   t = t.replace(/,/g, '').replace(/%/g, '').replace(/[–—]/g, '-');
+   const n = parseFloat(t.replace(/[^0-9.+\-eE]/g, ''));
+   if(t !== '' && !isNaN(n) && /[0-9]/.test(t)) return { n: true, v: n };
+   return { n: false, v: t.toLowerCase() };
+  }
+  rows.sort((a, b) => {
+   const A = cellVal(a), B = cellVal(b);
+   let cmp = 0;
+   if(A.n && B.n) cmp = A.v - B.v;
+   else if(A.n && !B.n) cmp = -1;
+   else if(!A.n && B.n) cmp = 1;
+   else cmp = A.v < B.v ? -1 : A.v > B.v ? 1 : 0;
+   return dir === 'asc' ? cmp : -cmp;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+ }
+ function bindTableSorting(){
+  if(document._tableSortBound) return;
+  document._tableSortBound = true;
+  document.addEventListener('click', function(e){
+   const th = e.target && e.target.closest ? e.target.closest('table th') : null;
+   if(!th) return;
+   if(th.closest('.no-sort')) return;
+   const table = th.closest('table');
+   if(!table || !table.tHead) return;
+   const heads = Array.from(th.parentNode.children).filter(n => n.tagName === 'TH');
+   const colIdx = heads.indexOf(th);
+   if(colIdx < 0) return;
+   sortTableByColumn(table, colIdx, th);
+  });
+ }
+ function markTablesSortable(root){
+  (root || document).querySelectorAll('table').forEach(table => {
+   if(!table.tHead) return;
+   table.classList.add('is-sortable');
+   table.tHead.querySelectorAll('th').forEach(th => {
+    th.setAttribute('title', 'Click to sort');
+   });
+  });
+ }
+
  function el(id){ return document.getElementById(id); }
  function medianOf(arr){
  const s = (arr || []).filter(v => v != null && !isNaN(v)).slice().sort((a,b) => a - b);
@@ -5845,6 +5922,8 @@ function escapeHtml(s){
 
  /* ---------- rendering ---------- */
  function renderAll(){
+ try{ bindTableSorting(); }catch(e){}
+
  const fmtParts = [state.numTeams + ' teams', state.numQBs===2 ? 'Superflex' : '1QB', state.isDynasty ? 'Dynasty' : 'Redraft', pprLabel(state.ppr)];
  el('league-chip').textContent = state.leagueName + ' · ' + fmtParts.join(' · ');
  el('drawer-league-info').textContent = state.leagueName + ' (ID ' + state.leagueId + '), ' + state.teams.length + ' teams, via ' + (state.platform==='espn'?'ESPN':'Sleeper') + '.';
@@ -5889,7 +5968,8 @@ function escapeHtml(s){
   if(typeof renderTradeNeedsImpact === 'function')
    renderTradeNeedsImpact(getTeam('a'), getTeam('b'));
  }catch(e){}
- }
+  try{ markTablesSortable(document); }catch(e){}
+}
 
  let waiverPosFilter = 'ALL';
  let waiverSearch = '';
@@ -5957,12 +6037,15 @@ function escapeHtml(s){
  }
  if(!st) return null;
  const s = String(st).toLowerCase();
+ if(s === 'active' || s === 'a' || s === 'healthy') return 'ok';
  if(s.includes('pup') || s === 'pup') return 'pup';
- if(s === 'ir' || s.includes('injured_reserve') || s.includes('injured reserve')) return 'ir';
+ if(s === 'ir' || s.includes('injured_reserve') || s.includes('injured reserve')
+  || s.includes('injury_reserve') || s.includes('injury reserve') || s === 'injury_reserve') return 'ir';
  if(s === 'out' || s === 'o') return 'out';
  if(s === 'doubtful' || s === 'd') return 'doubtful';
  if(s === 'questionable' || s === 'q') return 'questionable';
  if(s === 'probable' || s === 'p') return 'ok';
+ if(s.includes('reserve') && s.includes('injur')) return 'ir';
  return s;
  }catch(e){ return null; }
  }
@@ -11059,8 +11142,15 @@ function runTradeFinder(){
  }
  function injuryLabel(status){
  if(!status) return ' - ';
- const map = { out:'OUT', ir:'IR', pup:'PUP', doubtful:'Doubtful', questionable:'Questionable', ok:'OK' };
+ const map = { out:'OUT', ir:'IR', pup:'PUP', doubtful:'Doubtful', questionable:'Questionable', ok:'Active' };
  return map[status] || String(status).toUpperCase();
+ }
+ function injuryColor(status, onBye){
+  if(onBye) return '#6bb0e0'; // bye - blue
+  if(!status || status === 'ok') return 'var(--accent)'; // Active - green
+  if(status === 'questionable') return '#e0b34d'; // yellow
+  if(status === 'doubtful' || status === 'out' || status === 'ir' || status === 'pup') return 'var(--red)';
+  return 'var(--text-muted)';
  }
  function injurySeverity(status){
  if(status === 'out' || status === 'ir' || status === 'pup') return 3;
@@ -11445,22 +11535,28 @@ function runTradeFinder(){
  }
  }
 
- try{ bpSetSource('source-cover', 'Cover', 'Bye weeks from NFL/pro team maps when available. Injury flags from ESPN/Sleeper roster feeds. Stream list = free agents ranked by FantasyCalc value + this week’s projected points.'); }catch(e){}
+ try{ bpSetSource('source-cover', 'Byes + injuries', 'Bye weeks from NFL/pro team maps when available. Injury flags from ESPN/Sleeper roster feeds. Stream list = free agents ranked by FantasyCalc value + this week’s projected points.'); }catch(e){}
 
  if(thisWeekEl){
  if(!outThisWeek.length){
  thisWeekEl.innerHTML = '<div class="hist-empty">No byes or injury flags on this roster this week.</div>';
  } else {
  thisWeekEl.innerHTML = outThisWeek.map(x => {
- const reason = x.onBye ? 'BYE' : injuryLabel(x.status);
- const col = x.unavail ? '#c45c52' : '#c9a227';
+ const reason = x.onBye ? 'BYE' : injuryLabel(x.status || 'ok');
+ const col = typeof injuryColor === 'function' ? injuryColor(x.status, x.onBye) : (x.unavail ? 'var(--red)' : 'var(--accent)');
+ let sub = 'Monitor';
+ if(x.onBye) sub = 'On bye  -  need cover if no other starter at this slot';
+ else if(x.status === 'ir') sub = x.unavail ? 'IR  -  hole if no replacement on roster' : 'IR';
+ else if(x.status === 'out' || x.status === 'pup' || x.status === 'doubtful') sub = 'Unavailable  -  need roster cover or a stream';
+ else if(x.status === 'questionable') sub = 'Questionable  -  have a backup plan';
+ else if(x.status === 'ok' || !x.status) sub = 'Active';
  return `<div class="hist-card" style="padding:10px 12px;">
  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
  <div><strong>${playerCardLink(x.player.fullName, x.player.id)}</strong>
  <span style="color:var(--text-muted);"> · ${escapeHtml(x.player.position||'')}</span></div>
  <div style="color:${col};font-weight:700;">${escapeHtml(reason)}</div>
  </div>
- <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${x.unavail ? 'Unavailable  -  need roster cover or a stream' : 'Monitor (still eligible)'}</div>
+ <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${escapeHtml(sub)}</div>
  </div>`;
  }).join('');
  }
@@ -11534,21 +11630,25 @@ function runTradeFinder(){
  } else {
  weeks.forEach(week => {
  const ids = new Set(byWeek[week].map(p => String(p.id)));
- // also treat long-term IR as out that week
+ const injNames = [];
  (team.roster || []).forEach(p => {
  let st = playerInjuryStatus(p);
  if(!st && p.isIR) st = 'ir';
- if(st && injuryUnavailable && injuryUnavailable(st)) ids.add(String(p.id));
+ if(st && injuryUnavailable && injuryUnavailable(st)){
+  ids.add(String(p.id));
+  if(!byWeek[week].some(b => String(b.id) === String(p.id)))
+   injNames.push((p.fullName || p.name) + ' (' + injuryLabel(st) + ')');
+ }
  });
  const c = coverHolesForRoster(team, ids, week);
  const names = byWeek[week].map(p => p.fullName).join(', ');
  let severity = 'Covered';
- let col = '#3d8f5f';
- if(c.holes > 0){ severity = c.holes + ' hole(s)'; col = '#c45c52'; }
- else if(c.need.length){ severity = 'Soft'; col = '#c9a227'; }
+ let col = 'var(--accent)';
+ if(c.holes > 0){ severity = c.holes + ' hole(s)'; col = 'var(--red)'; }
+ else if(c.need && c.need.length){ severity = 'Soft'; col = '#e0b34d'; }
 
  let streamHint = '';
- if(wantStreams && c.need.length){
+ if(wantStreams && c.need && c.need.length){
  const posNeed = [...new Set(c.need.map(n => n === 'SF' ? 'QB' : n === 'FLEX' ? 'RB' : n))];
  streamHint = posNeed.slice(0, 4).map(pos => {
  const top = bestStreamersForPos(pos, 1, week)[0];
@@ -11562,8 +11662,10 @@ function runTradeFinder(){
  <div class="hist-teams">Week ${week}</div>
  <div class="hist-date" style="color:${col};font-weight:700;">${severity}</div>
  </div>
- <div class="hist-asset">On bye: ${escapeHtml(names)}</div>
- ${streamHint ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Stream: ${escapeHtml(streamHint)}</div>` : ''}`;
+ <div class="hist-asset">On bye: ${escapeHtml(names || 'None')}</div>
+ ${injNames.length ? `<div class="hist-asset" style="margin-top:4px;">Also out (IR/injury): ${escapeHtml(injNames.join(', '))}</div>` : ''}
+ ${c.holes > 0 ? `<div style="font-size:12.5px;color:var(--red);margin-top:6px;font-weight:600;">Hole(s) that week if these stay out — need cover before then.</div>` : ''}
+ ${streamHint ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Stream ideas: ${escapeHtml(streamHint)}</div>` : ''}`;
  byeList.appendChild(card);
  });
  }
@@ -12515,7 +12617,7 @@ function renderByes(){
     ============================================================ */
  const BP = {
   order: [
-   { id: 'cover', panel: 'panel-byes', label: 'Cover', rule: 'Fix holes before you optimize.' },
+   { id: 'cover', panel: 'panel-byes', label: 'Byes + injuries', rule: 'Fix holes before you optimize.' },
    { id: 'lineup', panel: 'panel-sit', label: 'Lineup', rule: 'Best legal starters. Risk mode from the matchup.' },
    { id: 'waivers', panel: 'panel-waivers', label: 'Waivers', rule: 'Add only if power rises or a real hole closes.' },
    { id: 'trades', panel: 'panel-finder', label: 'Trades', rule: 'Both sides legal. Surplus funds need.' },
@@ -12572,17 +12674,12 @@ function renderByes(){
  }
 
  function bpShowTabRule(panelId){
-  const b = bpEnsureBanner();
-  if(!b) return;
-  const rule = BP.tabRule[panelId];
-  if(!rule || panelId === 'panel-home'){
-   b.style.display = 'none';
-   b.textContent = '';
-   return;
-  }
-  b.style.display = 'block';
-  b.innerHTML = '<span class="bp-rule-label">Blueprint</span> ' + escapeHtml(rule);
- }
+ // Rules strip removed — checklist on Home carries the order
+ try{
+  document.querySelectorAll('.bp-tab-rule-legacy').forEach(n => { n.style.display = 'none'; n.textContent = ''; });
+ }catch(e){}
+}
+
 
  function bpMatchupRisk(team){
   // favored → floor, dog → ceiling, else balanced
@@ -12707,7 +12804,7 @@ function bpDiagnose(team){
     title: holes + ' lineup hole' + (holes > 1 ? 's' : ''),
     why: (holeNames.slice(0, 3).join(', ') || 'Bye/injury') + '  -  empty starter slot.',
     panel: 'panel-byes',
-    label: 'Cover'
+    label: 'Byes + injuries'
    });
   } else if(holeNames.length){
    items.push({
@@ -12717,7 +12814,7 @@ function bpDiagnose(team){
     title: 'Covered (watch list)',
     why: holeNames.slice(0, 3).join(', ') + ' out/bye, but a legal lineup still fills.',
     panel: 'panel-byes',
-    label: 'Cover'
+    label: 'Byes + injuries'
    });
   } else {
    items.push({
@@ -12727,7 +12824,7 @@ function bpDiagnose(team){
     title: 'Cover clear',
     why: 'No forced holes this week.',
     panel: 'panel-byes',
-    label: 'Cover'
+    label: 'Byes + injuries'
    });
   }
 
@@ -13059,7 +13156,8 @@ function buildStrategyBrief(){
   break;
  }
 
- let html = '<div class="bp-moves-head">Weekly order</div>';
+ let html = '<div class="bp-moves-head">Checklist</div>';
+ html += '<p class="needs-intro" style="margin:0 0 10px;">Work top to bottom. Cover holes first, set lineup, then waivers and trades. Season tools are last.</p>';
  html += '<div class="bp-pipeline">';
  BP.order.forEach((step, idx) => {
   const it = stageMap[step.id] || {};
@@ -13091,7 +13189,7 @@ function buildStrategyBrief(){
 
  const blockedItem = (diag.items || (Array.isArray(diag) ? diag : [])).find(x => x && x.status === 'block');
  if(blockedItem && !completed.cover){
-  html = `<div class="bp-block-banner">Blocked: ${escapeHtml(blockedItem.title)}. ${escapeHtml(blockedItem.why || '')} Finish Cover first.</div>` + html;
+  html = `<div class="bp-block-banner">Blocked: ${escapeHtml(blockedItem.title)}. ${escapeHtml(blockedItem.why || '')} Finish byes + injuries first.</div>` + html;
  }
 
  moves.innerHTML = html;
@@ -13113,22 +13211,8 @@ function buildStrategyBrief(){
  });
  }
 
- if(pillars){
- const cols = [
-  { panel: 'panel-byes', ph: 'Rule 1 · Legality', pd: 'No move that leaves a pure slot empty. IR can be an asset; this week still needs a healthy body.' },
-  { panel: 'panel-rankings', ph: 'Rule 2 · One model', pd: 'Power, waivers, and trades share the same surplus and depth math.' },
-  { panel: 'panel-sit', ph: 'Rule 3 · Weekly order', pd: 'Cover → Lineup → Waivers → Trades → Season path. Always.' },
-  { panel: 'panel-sit', ph: 'Rule 4 · Risk mode', pd: 'Favored → floor. Dog → ceiling. Else balanced.' },
-  { panel: 'panel-finder', ph: 'Rule 5 · Process', pd: 'Need funds surplus. Sell-high needs a reason tag, not a feeling.' },
-  { panel: 'panel-sos', ph: 'Rule 6 · Path', pd: 'Each week is its own lineup. Real schedule. Honest early variance.' }
- ];
- pillars.innerHTML = '<div class="bp-moves-head">The six rules</div><div class="bp-pillars-grid">' + cols.map(c =>
-  `<div class="bp-pillar" data-panel="${c.panel}"><div class="ph">${escapeHtml(c.ph)}</div><div class="pd">${escapeHtml(c.pd)}</div></div>`
- ).join('') + '</div>';
- pillars.querySelectorAll('[data-panel]').forEach(node => {
-  node.addEventListener('click', () => goToPanel(node.getAttribute('data-panel'), { teamId: brief.team.id }));
- });
- }
+ if(pillars){ pillars.innerHTML = ''; pillars.style.display = 'none'; }
+
 }
 
 
@@ -13427,7 +13511,7 @@ function buildStrategyBrief(){
  });
  if(prev) teamSel.value = prev;
  else if(state.myTeamId != null) teamSel.value = state.myTeamId;
- // Blueprint rule 4: matchup sets default risk mode
+ // Matchup risk: matchup sets default risk mode
  try{
   const team = state.teams.find(t => String(t.id) === String(teamSel.value));
   const risk = bpMatchupRisk(team);
@@ -14595,7 +14679,6 @@ function renderTradeSide(side){
   const note = el('trade-needs-note');
   if(!box || !grid) return;
 
-  // Hidden unless Settings → Needs after trade (default off)
   let needsOn = false;
   try{ needsOn = showTradeNeedsSetting(); }catch(e){ needsOn = false; }
   if(!needsOn){
@@ -14606,17 +14689,16 @@ function renderTradeSide(side){
   }
   box.style.display = '';
 
-
   const hasPlayers =
    (state.tradeA && state.tradeA.some(a => !a.isPick)) ||
    (state.tradeB && state.tradeB.some(a => !a.isPick));
   if(!teamA || !teamB || teamA.id === teamB.id || !hasPlayers){
-   box.style.display = '';
    grid.innerHTML = '<div class="hist-empty" style="padding:8px 0;">Add players on both sides of the trade to see needs change.</div>';
    if(note) note.textContent = 'Needs after trade is on. Build a package to compare before/after strength.';
    return;
   }
 
+  // outgoing leaves, incoming arrives from other team
   function apply(team, outgoing, incoming, other){
    const outIds = new Set((outgoing || []).filter(a => !a.isPick).map(a => String(a.id)));
    let roster = (team.roster || []).filter(p => !outIds.has(String(p.id)));
@@ -14649,11 +14731,11 @@ function renderTradeSide(side){
    return roster;
   }
 
-  // League average starter value by position (for a real 50% = league-avg baseline)
-  const leagueAvgStarter = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  const leagueAvgBench = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  const leagueCntS = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  const leagueCntB = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  // League average TOTAL starter value per position (sum across teams / teams)
+  // and average count of starters at that pos
+  const leagueSumStarter = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const leagueSumBench = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  const leagueTeamsN = Math.max(1, (state.teams || []).length);
   try{
    const counts0 = getStarterCounts();
    const flex0 = counts0.flexEligible || ['RB','WR','TE'];
@@ -14662,29 +14744,21 @@ function renderTradeSide(side){
     let opt;
     try{ opt = optimalStarterLineup(t, counts0, flex0, sf0, {}); }catch(e){ return; }
     const sids = new Set();
-    if(opt && opt.starterIds){
-     if(opt.starterIds.forEach) opt.starterIds.forEach(id => sids.add(String(id)));
-     else if(Array.isArray(opt.starterIds)) opt.starterIds.forEach(id => sids.add(String(id)));
-    }
     (opt.assignments || []).forEach(a => {
+     if(a && a.id != null) sids.add(String(a.id));
      const pos = a.position;
-     if(!leagueAvgStarter[pos] && leagueAvgStarter[pos] !== 0) return;
-     if(leagueCntS[pos] != null){
-      leagueAvgStarter[pos] += (a.value || 0);
-      leagueCntS[pos]++;
-     }
+     if(leagueSumStarter[pos] != null) leagueSumStarter[pos] += (Number(a.value) || 0);
     });
     (t.roster || []).forEach(p => {
      const pos = p.position;
-     if(leagueCntB[pos] == null) return;
+     if(leagueSumBench[pos] == null) return;
      if(sids.has(String(p.id))) return;
-     leagueAvgBench[pos] += (p.value || 0);
-     leagueCntB[pos]++;
+     leagueSumBench[pos] += (Number(p.value) || 0);
     });
    });
    ['QB','RB','WR','TE'].forEach(pos => {
-    if(leagueCntS[pos]) leagueAvgStarter[pos] /= leagueCntS[pos];
-    if(leagueCntB[pos]) leagueAvgBench[pos] /= leagueCntB[pos];
+    leagueSumStarter[pos] /= leagueTeamsN;
+    leagueSumBench[pos] /= leagueTeamsN;
    });
   }catch(e){}
 
@@ -14699,48 +14773,43 @@ function renderTradeSide(side){
    try{
     const opt = optimalStarterLineup(trial, counts, flexElig, sfElig, {});
     assignments = opt.assignments || [];
-    if(opt.starterIds){
-     if(opt.starterIds.forEach) opt.starterIds.forEach(id => starterIds.add(String(id)));
-     else if(Array.isArray(opt.starterIds)) opt.starterIds.forEach(id => starterIds.add(String(id)));
-    }
     (assignments || []).forEach(a => { if(a && a.id != null) starterIds.add(String(a.id)); });
    }catch(e){}
 
-   // 50% = league average at that role. ±100% swing maps roughly ±2× league avg gap.
-   function pctVsLeague(vals, leagueAvg, rv, required){
-    if(required && (!vals || !vals.length)) return -100;
-    if(!vals || !vals.length) return null;
-    const avg = vals.reduce((s,v) => s + v, 0) / vals.length;
-    const base = (leagueAvg && leagueAvg > 0) ? leagueAvg : (rv > 0 ? rv : avg);
-    if(!(base > 0)) return 50;
-    // avg == base → 50; avg == 0 → 0; avg == 2*base → 100
-    const pct = (avg / base) * 50;
-    return Math.round(Math.max(-100, Math.min(100, pct)));
-   }
-
-   const starterByPos = { QB: [], RB: [], WR: [], TE: [] };
-   assignments.forEach(a => {
-    if(starterByPos[a.position]) starterByPos[a.position].push(Number(a.value) || 0);
-   });
    const req = {
     QB: (counts.QB || 0) + (counts.SF || 0),
     RB: counts.RB || 0,
     WR: counts.WR || 0,
     TE: counts.TE || 0
    };
+
+   // SUM-based strength (not average). Dropping a starter lowers the sum.
+   // Empty required pure slots count as 0 so holes hurt.
+   function pctFromSum(sum, leagueAvgSum, needN, required){
+    if(required && needN > 0 && !(sum > 0)) return -100;
+    if(sum == null) return null;
+    const base = leagueAvgSum > 0 ? leagueAvgSum : 1;
+    // league average sum → 50%. Double → 100%. Zero → 0.
+    const pct = (sum / base) * 50;
+    return Math.round(Math.max(-100, Math.min(150, pct)));
+   }
+
+   const starterByPos = { QB: [], RB: [], WR: [], TE: [] };
+   assignments.forEach(a => {
+    if(starterByPos[a.position]) starterByPos[a.position].push(Number(a.value) || 0);
+   });
+
    const starters = {};
    ['QB','RB','WR','TE'].forEach(pos => {
-    const vals = starterByPos[pos];
     const needN = pos === 'QB' ? req.QB : req[pos];
-    if(needN > 0 && (!vals || !vals.length)){
-     // Also check: any player at pos on roster that could start?
-     const onRoster = (roster || []).filter(p => p.position === pos && !p.isTaxi);
-     if(!onRoster.length) starters[pos] = -100;
-     else starters[pos] = pctVsLeague(onRoster.map(p => p.value || 0), leagueAvgStarter[pos], starterRV[pos], true);
-    } else {
-     starters[pos] = pctVsLeague(vals, leagueAvgStarter[pos], starterRV[pos], needN > 0);
-    }
+    const vals = (starterByPos[pos] || []).slice().sort((a,b) => b - a);
+    // Pad empty pure slots with 0 so losing your only starter collapses the sum
+    const padded = vals.slice();
+    while(needN > 0 && padded.length < needN) padded.push(0);
+    const sum = padded.reduce((s,v) => s + v, 0);
+    starters[pos] = pctFromSum(sum, leagueSumStarter[pos], needN, needN > 0);
    });
+
    const starterList = ['QB','RB','WR','TE'].map(p => starters[p]).filter(v => v != null);
    const overall = starterList.length
     ? Math.round(starterList.reduce((a,b) => a + b, 0) / starterList.length)
@@ -14753,23 +14822,23 @@ function renderTradeSide(side){
    });
    const bench = {};
    ['QB','RB','WR','TE'].forEach(pos => {
-    const vals = benchByPos[pos];
+    const vals = benchByPos[pos] || [];
     if(!vals.length){ bench[pos] = null; return; }
-    bench[pos] = pctVsLeague(vals, leagueAvgBench[pos] || leagueAvgStarter[pos] * 0.55, (starterRV[pos] || 400) * 0.55, false);
+    const sum = vals.reduce((s,v) => s + v, 0);
+    bench[pos] = pctFromSum(sum, leagueSumBench[pos] || leagueSumStarter[pos] * 0.4, 0, false);
    });
-   const allBench = benchPlayers.map(p => Number(p.value) || 0);
-   const meanBenchLeague = ['QB','RB','WR','TE']
-    .map(p => leagueAvgBench[p])
-    .filter(v => v > 0);
-   const benchBase = meanBenchLeague.length
-    ? meanBenchLeague.reduce((a,b)=>a+b,0) / meanBenchLeague.length
-    : 200;
-   const benchOverall = allBench.length ? pctVsLeague(allBench, benchBase, benchBase, false) : null;
+   const allBenchSum = benchPlayers.reduce((s,p) => s + (Number(p.value) || 0), 0);
+   const leagueBenchTotal = ['QB','RB','WR','TE'].reduce((s,p) => s + (leagueSumBench[p] || 0), 0);
+   const benchOverall = benchPlayers.length
+    ? pctFromSum(allBenchSum, leagueBenchTotal || 1, 0, false)
+    : null;
 
    return { overall, starters, bench, benchOverall };
   }
 
+  // Team A: sends tradeA, receives tradeB
   const rosterA = apply(teamA, state.tradeA, state.tradeB, teamB);
+  // Team B: sends tradeB, receives tradeA
   const rosterB = apply(teamB, state.tradeB, state.tradeA, teamA);
   const beforeA = strengthBreakdown(teamA, teamA.roster);
   const afterA = strengthBreakdown(teamA, rosterA);
@@ -14778,19 +14847,16 @@ function renderTradeSide(side){
 
   function deltaColor(d){
    if(d == null || !isFinite(d) || Math.abs(d) < 0.5) return 'var(--text-muted)';
-   // gray → red/green by magnitude (cap intensity ~30 pts)
-   const t = Math.min(1, Math.abs(d) / 30);
+   const t = Math.min(1, Math.abs(d) / 25);
    if(d > 0){
-    // green
     const g = Math.round(80 + t * 100);
     return 'rgb(' + Math.round(40 + (1-t)*40) + ',' + g + ',' + Math.round(70 + (1-t)*30) + ')';
    }
-   // red
    const r = Math.round(180 + t * 60);
    return 'rgb(' + r + ',' + Math.round(70 + (1-t)*40) + ',' + Math.round(70 + (1-t)*30) + ')';
   }
   function fmtPct(v){
-   if(v == null || !isFinite(v)) return ' - ';
+   if(v == null || !isFinite(v)) return '—';
    return v + '%';
   }
   function row(label, before, after){
@@ -14809,7 +14875,7 @@ function renderTradeSide(side){
     <span style="font-variant-numeric:tabular-nums;">${fmtPct(b)} → <span style="${afterStyle}">${fmtPct(a)}</span>${delta}</span>
    </div>`;
   }
-  function sideHtml(name, before, after){
+  function sideHtml(name, before, after, sentNote){
    const parts = [];
    parts.push(row('Overall starters', before.overall, after.overall));
    parts.push(row('Bench overall', before.benchOverall, after.benchOverall));
@@ -14818,15 +14884,27 @@ function renderTradeSide(side){
     parts.push(row(pos + ' bench', before.bench[pos], after.bench[pos]));
    });
    return `<div class="tpi-card" style="padding:10px 12px;">
-    <div style="font-weight:700;margin-bottom:6px;">${escapeHtml(name)}</div>
+    <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(name)}</div>
+    ${sentNote ? `<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;">${sentNote}</div>` : ''}
     ${parts.filter(Boolean).join('')}
    </div>`;
   }
 
-  grid.innerHTML = sideHtml(teamA.name, beforeA, afterA) + sideHtml(teamB.name, beforeB, afterB);
+  function packageNote(outgoing, incoming){
+   const out = (outgoing || []).filter(a => !a.isPick).map(a => (a.position || '?') + ' out').join(', ');
+   const inn = (incoming || []).filter(a => !a.isPick).map(a => (a.position || '?') + ' in').join(', ');
+   if(!out && !inn) return '';
+   return escapeHtml([out, inn].filter(Boolean).join(' · '));
+  }
+
+  grid.innerHTML =
+   sideHtml(teamA.name, beforeA, afterA, packageNote(state.tradeA, state.tradeB)) +
+   sideHtml(teamB.name, beforeB, afterB, packageNote(state.tradeB, state.tradeA));
   box.style.display = '';
-  if(note) note.textContent = '50% = league-average at that role. −100% = empty required slot. Color scales with change: gray = flat, green = stronger, red = weaker.';
+  if(note) note.textContent = 'Uses total starter value (not averages), so losing a starter drops that position. 50% ≈ league-average total. −100% = empty required slot.';
 }
+
+
 
 
 
@@ -16610,7 +16688,7 @@ function buildDebugDump(){
  try{
   const my = teamsOut.find(t => t.isMyTeam);
   tabs.blueprint = {
-   name: 'Blueprint / Home',
+   name: 'Home',
    checklist: (my && Array.isArray(my.blueprintChecklist)) ? my.blueprintChecklist : [],
    myTeam: my ? my.name : null
   };
@@ -16720,7 +16798,7 @@ function buildDebugDump(){
 
  // Text summary
  const lines = [];
- lines.push('# Fantasy Blueprint  -  full league export for AI');
+ lines.push('# Fantasy Dashboard  -  full league export for AI');
  lines.push('Exported: ' + new Date().toISOString());
  lines.push('');
  lines.push('## League settings');
@@ -16806,7 +16884,7 @@ function buildDebugDump(){
  const payload = {
   exportedAt: new Date().toISOString(),
   purpose: 'Complete league picture for another AI: every tab snapshot, all rosters with accurate 30d value moves, all free agents, settings.',
-  app: 'Fantasy Blueprint',
+  app: 'Fantasy Dashboard',
   currentWeek: curWeek,
   trendNote: 'FantasyCalc trend30Day is absolute value change. pct30d = delta / value_30d_ago * 100 using raw FC values. Omitted when prior value is too small to be meaningful.',
   league: {
