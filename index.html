@@ -13880,7 +13880,7 @@ function buildStrategyBrief(){
    if(note) note.textContent = '';
    return;
   }
-  // Build post-trade rosters (same idea as simulateTradePower)
+
   function apply(team, outgoing, incoming, other){
    const outIds = new Set((outgoing || []).filter(a => !a.isPick).map(a => String(a.id)));
    let roster = (team.roster || []).filter(p => !outIds.has(String(p.id)));
@@ -13892,7 +13892,6 @@ function buildStrategyBrief(){
      value: a.value || 0, matched: true, isIR: false
     });
    });
-   // Uneven: optional waiver fill for the side that lost net players
    try{
     const netLost = (outgoing || []).filter(a => !a.isPick).length - (incoming || []).filter(a => !a.isPick).length;
     if(netLost > 0 && typeof buildAvailableWaivers === 'function'){
@@ -13900,8 +13899,8 @@ function buildStrategyBrief(){
      const on = new Set(roster.map(p => normalizeName(p.fullName || p.name)));
      const sorted = (available || []).filter(fa => fa && !on.has(normalizeName(fa.name)))
       .sort((x,y) => (y.value||0) - (x.value||0));
-     for(let i = 0; i < netLost && i < sorted.length; i++){
-      const fa = sorted[i];
+     for(let n = 0; n < netLost && n < sorted.length; n++){
+      const fa = sorted[n];
       roster.push({
        id: 'WV-' + normalizeName(fa.name), fullName: fa.name, name: fa.name,
        position: fa.position, value: fa.value || 0, matched: true, isIR: false, isWaiverFill: true
@@ -13911,42 +13910,133 @@ function buildStrategyBrief(){
    }catch(e){}
    return roster;
   }
+
+  // Strength scale: 50% ≈ at replacement, 100% ≈ 2× replacement, 0% ≈ worthless, -100% ≈ empty required slot
+  function strengthBreakdown(team, roster){
+   const levels = typeof computeReplacementLevels === 'function' ? computeReplacementLevels() : {};
+   const counts = levels.counts || getStarterCounts();
+   const starterRV = levels.starterRV || {};
+   const flexElig = counts.flexEligible || ['RB','WR','TE'];
+   const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+   const trial = { ...(team || {}), roster: roster || [] };
+   let assignments = [], starterIds = new Set();
+   try{
+    const opt = optimalStarterLineup(trial, counts, flexElig, sfElig, {});
+    assignments = opt.assignments || [];
+    starterIds = opt.starterIds || new Set();
+   }catch(e){}
+
+   function pctFromVals(vals, rv, required){
+    if(required && (!vals || !vals.length)) return -100;
+    if(!vals || !vals.length) return null;
+    const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+    const r = (rv != null && rv > 0) ? rv : 400;
+    // ratio 0 → 0, 1 → 50, 2 → 100
+    const ratio = avg / r;
+    return Math.round(Math.max(-100, Math.min(120, ratio * 50)));
+   }
+
+   const starterByPos = { QB: [], RB: [], WR: [], TE: [] };
+   assignments.forEach(a => {
+    const pos = a.position;
+    if(starterByPos[pos]) starterByPos[pos].push(a.value || 0);
+   });
+   // Count required pure slots (holes matter)
+   const req = {
+    QB: (counts.QB || 0) + (counts.SF || 0),
+    RB: counts.RB || 0,
+    WR: counts.WR || 0,
+    TE: counts.TE || 0
+   };
+   // holes per pure pos
+   let holes = {};
+   try{ holes = {}; /* unfilled is total */ }catch(e){}
+
+   const starters = {};
+   ['QB','RB','WR','TE'].forEach(pos => {
+    const needN = pos === 'QB' ? req.QB : req[pos];
+    const vals = starterByPos[pos] || [];
+    // If we need TE and none assigned, -100
+    const missing = needN > 0 && vals.length === 0;
+    starters[pos] = pctFromVals(vals, starterRV[pos], needN > 0);
+    if(missing) starters[pos] = -100;
+   });
+
+   // Overall starters: average of positions that are required
+   const starterList = ['QB','RB','WR','TE'].map(p => starters[p]).filter(v => v != null);
+   const overall = starterList.length
+    ? Math.round(starterList.reduce((a,b)=>a+b,0) / starterList.length)
+    : null;
+
+   // Bench by pos + overall
+   const benchPlayers = (roster || []).filter(p => !starterIds.has(String(p.id)) && !p.isTaxi);
+   const benchByPos = { QB: [], RB: [], WR: [], TE: [] };
+   benchPlayers.forEach(p => {
+    const pos = p.position;
+    if(benchByPos[pos]) benchByPos[pos].push(p.value || 0);
+   });
+   const bench = {};
+   ['QB','RB','WR','TE'].forEach(pos => {
+    const vals = benchByPos[pos];
+    if(!vals.length){ bench[pos] = null; return; }
+    // Bench scale slightly softer: still vs starter RV
+    bench[pos] = pctFromVals(vals, starterRV[pos], false);
+   });
+   const allBenchVals = benchPlayers.map(p => p.value || 0);
+   const avgStarterRV = (['QB','RB','WR','TE'].map(p => starterRV[p] || 0).filter(x=>x>0));
+   const meanRV = avgStarterRV.length ? avgStarterRV.reduce((a,b)=>a+b,0)/avgStarterRV.length : 400;
+   const benchOverall = allBenchVals.length ? pctFromVals(allBenchVals, meanRV * 0.55, false) : null;
+
+   return { overall, starters, bench, benchOverall };
+  }
+
   const rosterA = apply(teamA, state.tradeA, state.tradeB, teamB);
   const rosterB = apply(teamB, state.tradeB, state.tradeA, teamA);
-  function needMap(team, roster){
-   try{
-    if(typeof teamPosNeedScores !== 'function') return {};
-    return teamPosNeedScores({ ...team, roster: roster });
-   }catch(e){ return {}; }
+  const beforeA = strengthBreakdown(teamA, teamA.roster);
+  const afterA = strengthBreakdown(teamA, rosterA);
+  const beforeB = strengthBreakdown(teamB, teamB.roster);
+  const afterB = strengthBreakdown(teamB, rosterB);
+
+  function fmtPct(v){
+   if(v == null || !isFinite(v)) return '—';
+   return v + '%';
   }
-  const beforeA = needMap(teamA, teamA.roster);
-  const afterA = needMap(teamA, rosterA);
-  const beforeB = needMap(teamB, teamB.roster);
-  const afterB = needMap(teamB, rosterB);
-  const poses = ['QB','RB','WR','TE'];
-  function sideHtml(label, before, after){
-   const bits = poses.map(pos => {
-    const b = before[pos] != null ? before[pos] : 0;
-    const a = after[pos] != null ? after[pos] : 0;
-    const d = a - b;
-    if(Math.abs(d) < 0.5 && b < 40 && a < 40) return null; // noise
-    const cls = d > 2 ? 'down' : d < -2 ? 'up' : '';
-    const arrow = d > 0.5 ? ('need ↑' + d.toFixed(0)) : d < -0.5 ? ('need ↓' + Math.abs(d).toFixed(0)) : 'same';
-    return `<div style="display:flex;justify-content:space-between;gap:6px;padding:2px 0;">
-     <span>${pos}</span>
-     <span class="${cls}">${arrow}</span>
-    </div>`;
-   }).filter(Boolean);
-   const changed = bits.length;
-   return `<div>
-    <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(label)}</div>
-    ${changed ? bits.join('') : '<div style="color:var(--text-muted);">No big need shifts</div>'}
+  function row(label, before, after){
+   if(before == null && after == null) return '';
+   const b = before != null ? before : null;
+   const a = after != null ? after : null;
+   const d = (b != null && a != null) ? (a - b) : null;
+   let cls = '';
+   if(d != null){
+    if(d >= 3) cls = 'up';
+    else if(d <= -3) cls = 'down';
+   }
+   const delta = d == null ? '' : (' <span class="' + cls + '">(' + (d >= 0 ? '+' : '') + d + ')</span>');
+   return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--border-subtle);">
+    <span style="color:var(--text-secondary);">${label}</span>
+    <span style="font-variant-numeric:tabular-nums;">${fmtPct(b)} → <strong class="${cls}">${fmtPct(a)}</strong>${delta}</span>
    </div>`;
   }
+  function sideHtml(name, before, after){
+   const parts = [];
+   parts.push(row('Overall starters', before.overall, after.overall));
+   parts.push(row('Bench overall', before.benchOverall, after.benchOverall));
+   ['QB','RB','WR','TE'].forEach(pos => {
+    parts.push(row(pos + ' starters', before.starters[pos], after.starters[pos]));
+    parts.push(row(pos + ' bench', before.bench[pos], after.bench[pos]));
+   });
+   return `<div>
+    <div style="font-weight:700;margin-bottom:6px;">${escapeHtml(name)}</div>
+    ${parts.filter(Boolean).join('')}
+   </div>`;
+  }
+
   grid.innerHTML = sideHtml(teamA.name, beforeA, afterA) + sideHtml(teamB.name, beforeB, afterB);
   box.style.display = '';
-  if(note) note.textContent = 'Higher need = thinner at that spot after the deal. Waiver fills assumed on uneven trades when possible.';
- }
+  if(note) note.textContent = '50% ≈ replacement-level. 100% ≈ about 2× replacement. −100% = empty required slot. Green = stronger after the trade, red = weaker.';
+}
+
+
 
 
  function syncSettingsCheckboxes(){
