@@ -2663,6 +2663,10 @@
  </button>
 
  <div class="nav-section">More</div>
+ <button class="nav-item" data-panel="panel-export" id="nav-export" style="display:none;">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg></span>
+ AI export
+ </button>
  <button class="nav-item" data-panel="panel-rosters">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
  Rosters
@@ -2735,6 +2739,19 @@
  <div id="rosters-summary" class="hist-meta" style="margin-bottom:12px;"></div>
  <div id="rosters-list"></div>
  </section>
+
+ <section class="panel" id="panel-export">
+ <div class="section-title-row" style="margin-bottom:12px;">
+ <div class="section-title" style="margin:0;">AI export</div>
+ </div>
+ <p class="needs-intro">Full league dump for pasting into another AI. Select all and copy manually.</p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+ <button type="button" class="btn btn-primary" id="btn-export-refresh">Refresh dump</button>
+ <button type="button" class="btn btn-ghost" id="btn-export-select">Select all</button>
+ </div>
+ <textarea id="export-dump-ta" readonly spellcheck="false" style="width:100%;min-height:70vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.45;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);resize:vertical;"></textarea>
+ </section>
+
  <section class="panel" id="panel-trends">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">League trends</div>
@@ -2830,6 +2847,11 @@
  <span class="side-b-lbl" id="meter-lbl-b">Team B</span>
  </div>
  <div class="fairness-summary" id="fairness-summary"></div>
+ <div class="trade-needs-impact" id="trade-needs-impact" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">
+ <div class="tpi-title">Needs after trade</div>
+ <div id="trade-needs-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;"></div>
+ <div class="tpi-note" id="trade-needs-note" style="margin-top:6px;font-size:11.5px;color:var(--text-muted);"></div>
+ </div>
  <div class="trade-power-impact" id="trade-power-impact">
  <div class="tpi-title">Power ranking impact</div>
  <div class="tpi-grid" id="trade-power-grid"></div>
@@ -3336,7 +3358,7 @@
  <option value="raw">Raw FantasyCalc</option>
  </select>
  </div>
- <p class="hint">Trades always use raw market value. Rankings/needs use this mode.</p>
+ <p class="hint">Rankings/needs use this mode. Trades use raw unless “Trade calc uses VORP” is on.</p>
  <div class="drawer-row">
  <span class="field-label">Show % changes</span>
  <input type="checkbox" id="set-show-pct" class="drawer-check" />
@@ -3347,6 +3369,16 @@
  <input type="checkbox" id="set-show-trade-power" class="drawer-check" />
  </div>
  <p class="hint">When on, the trade calculator shows power rank changes after a deal. Off by default to keep the screen clean.</p>
+ <div class="drawer-row">
+ <span class="field-label">Trade calc uses VORP</span>
+ <input type="checkbox" id="set-trade-vorp" class="drawer-check" />
+ </div>
+ <p class="hint">When on, trade totals and fairness use value over replacement instead of raw FantasyCalc. Off = raw market value.</p>
+ <div class="drawer-row">
+ <span class="field-label">Show AI export tab</span>
+ <input type="checkbox" id="set-show-ai-export" class="drawer-check" />
+ </div>
+ <p class="hint">Shows the AI export page under More for full-text league dumps.</p>
  </div>
 
  <div class="drawer-section">
@@ -3358,6 +3390,7 @@
  <button type="button" class="btn btn-primary" id="btn-apply-settings">Apply &amp; recalculate</button>
  <button type="button" class="btn btn-ghost" id="btn-change-league">Switch league</button>
  <button type="button" class="btn btn-ghost btn-sm" id="btn-copy-debug">Copy full analysis (AI paste)</button>
+ 
  </div>
 </div>
 
@@ -9341,30 +9374,31 @@ function matchupWinPct(liveA, liveB, projA, projB){
 
  
  function playerTrendPct(p){
- // Percent value change when available (FantasyCalc 30d or snapshot)
+ // Returns 30-day PERCENT change, not absolute FantasyCalc delta.
+ // FC trend30Day is absolute points (e.g. +266). Percent = delta / value_30d_ago * 100.
  if(!p) return null;
- if(typeof p.trend30Day === 'number' && isFinite(p.trend30Day)) return p.trend30Day;
- if(typeof p.trend30 === 'number' && isFinite(p.trend30)) return p.trend30;
- if(typeof p.fcTrend30 === 'number' && isFinite(p.fcTrend30)) return p.fcTrend30;
- // Derive from history snapshots if present
  try{
- const hist = state.valueHistory || state.fcHistory;
- if(hist && Array.isArray(hist)){
- const key = normalizeName(p.fullName || p.name);
- // hist entries may be { ts, values: { name: val } }
- const pts = [];
- hist.forEach(snap => {
- const v = snap.values && (snap.values[key] || snap.values[p.fullName]);
- if(typeof v === 'number') pts.push(v);
- });
- if(pts.length >= 2){
- const prev = pts[0], cur = pts[pts.length-1];
- if(prev > 0) return ((cur - prev) / prev) * 100;
- }
- }
+  if(typeof playerTrend30Accurate === 'function'){
+   const tr = playerTrend30Accurate(p);
+   if(tr && tr.pct30d != null && isFinite(tr.pct30d)) return tr.pct30d;
+   return null;
+  }
  }catch(e){}
- return null;
- }
+ let cur = null, t30 = null;
+ if(p.fcRawValue != null && typeof p.fcRawValue === 'number') cur = p.fcRawValue;
+ else if(p.fcEntry && typeof p.fcEntry.value === 'number') cur = p.fcEntry.value;
+ else if(typeof p.value === 'number') cur = p.value;
+ if(typeof p.trend30Day === 'number') t30 = p.trend30Day;
+ else if(typeof p.trend30 === 'number') t30 = p.trend30;
+ else if(p.fcEntry && typeof p.fcEntry.trend30Day === 'number') t30 = p.fcEntry.trend30Day;
+ if(cur == null || t30 == null || !isFinite(cur) || !isFinite(t30)) return null;
+ const prev = cur - t30;
+ if(prev < 100) return null;
+ const pct = (t30 / prev) * 100;
+ if(!isFinite(pct) || Math.abs(pct) > 400) return null;
+ return pct;
+}
+
 
  function sellHighBuyLowSignals(team){
  const sellHigh = [], buyLow = [];
@@ -13773,7 +13807,7 @@ function buildStrategyBrief(){
  <span class="pos-badge pos-${a.position}">${a.position}</span>
  <span class="chip-name">${playerCardLink(a.name, a.id)}${trendChipHtml(a)}</span>
  </span>
- <span class="val">${fmt(a.value)}</span>`;
+ <span class="val">${fmt(tradeAssetValue(a))}</span>`;
  const rm = document.createElement('button');
  rm.className = 'rm-btn';
  rm.title = 'Remove';
@@ -13804,6 +13838,132 @@ function buildStrategyBrief(){
  });
 
  /* ---------- fairness meter (left/right) ---------- */
+ 
+ function showAiExportSetting(){
+  try{ return localStorage.getItem('fd_show_ai_export') === '1'; }catch(e){ return false; }
+ }
+ function setAiExportSetting(on){
+  try{ localStorage.setItem('fd_show_ai_export', on ? '1' : '0'); }catch(e){}
+  const nav = document.getElementById('nav-export');
+  if(nav) nav.style.display = on ? '' : 'none';
+ }
+ function showTradeVorpSetting(){
+  try{ return localStorage.getItem('fd_trade_vorp') === '1'; }catch(e){ return false; }
+ }
+ function setTradeVorpSetting(on){
+  try{ localStorage.setItem('fd_trade_vorp', on ? '1' : '0'); }catch(e){}
+ }
+ function tradeAssetValue(a){
+  // Value used on the trade board for display + fairness
+  if(!a) return 0;
+  const raw = typeof a.value === 'number' ? a.value : 0;
+  if(!showTradeVorpSetting()) return raw;
+  try{
+   const levels = typeof computeReplacementLevels === 'function' ? computeReplacementLevels() : null;
+   const rvMap = (levels && levels.starterRV) || {};
+   const pos = a.position || '';
+   const rv = rvMap[pos] != null ? rvMap[pos] : 0;
+   return Math.max(0, raw - rv);
+  }catch(e){ return raw; }
+ }
+ function renderTradeNeedsImpact(teamA, teamB){
+  const box = el('trade-needs-impact');
+  const grid = el('trade-needs-grid');
+  const note = el('trade-needs-note');
+  if(!box || !grid) return;
+  const hasPlayers =
+   (state.tradeA && state.tradeA.some(a => !a.isPick)) ||
+   (state.tradeB && state.tradeB.some(a => !a.isPick));
+  if(!teamA || !teamB || teamA.id === teamB.id || !hasPlayers){
+   box.style.display = 'none';
+   grid.innerHTML = '';
+   if(note) note.textContent = '';
+   return;
+  }
+  // Build post-trade rosters (same idea as simulateTradePower)
+  function apply(team, outgoing, incoming, other){
+   const outIds = new Set((outgoing || []).filter(a => !a.isPick).map(a => String(a.id)));
+   let roster = (team.roster || []).filter(p => !outIds.has(String(p.id)));
+   (incoming || []).filter(a => !a.isPick).forEach(a => {
+    const src = (other.roster || []).find(p => String(p.id) === String(a.id));
+    if(src) roster.push({ ...src });
+    else roster.push({
+     id: a.id, fullName: a.name, name: a.name, position: a.position,
+     value: a.value || 0, matched: true, isIR: false
+    });
+   });
+   // Uneven: optional waiver fill for the side that lost net players
+   try{
+    const netLost = (outgoing || []).filter(a => !a.isPick).length - (incoming || []).filter(a => !a.isPick).length;
+    if(netLost > 0 && typeof buildAvailableWaivers === 'function'){
+     const { available } = buildAvailableWaivers();
+     const on = new Set(roster.map(p => normalizeName(p.fullName || p.name)));
+     const sorted = (available || []).filter(fa => fa && !on.has(normalizeName(fa.name)))
+      .sort((x,y) => (y.value||0) - (x.value||0));
+     for(let i = 0; i < netLost && i < sorted.length; i++){
+      const fa = sorted[i];
+      roster.push({
+       id: 'WV-' + normalizeName(fa.name), fullName: fa.name, name: fa.name,
+       position: fa.position, value: fa.value || 0, matched: true, isIR: false, isWaiverFill: true
+      });
+     }
+    }
+   }catch(e){}
+   return roster;
+  }
+  const rosterA = apply(teamA, state.tradeA, state.tradeB, teamB);
+  const rosterB = apply(teamB, state.tradeB, state.tradeA, teamA);
+  function needMap(team, roster){
+   try{
+    if(typeof teamPosNeedScores !== 'function') return {};
+    return teamPosNeedScores({ ...team, roster: roster });
+   }catch(e){ return {}; }
+  }
+  const beforeA = needMap(teamA, teamA.roster);
+  const afterA = needMap(teamA, rosterA);
+  const beforeB = needMap(teamB, teamB.roster);
+  const afterB = needMap(teamB, rosterB);
+  const poses = ['QB','RB','WR','TE'];
+  function sideHtml(label, before, after){
+   const bits = poses.map(pos => {
+    const b = before[pos] != null ? before[pos] : 0;
+    const a = after[pos] != null ? after[pos] : 0;
+    const d = a - b;
+    if(Math.abs(d) < 0.5 && b < 40 && a < 40) return null; // noise
+    const cls = d > 2 ? 'down' : d < -2 ? 'up' : '';
+    const arrow = d > 0.5 ? ('need ↑' + d.toFixed(0)) : d < -0.5 ? ('need ↓' + Math.abs(d).toFixed(0)) : 'same';
+    return `<div style="display:flex;justify-content:space-between;gap:6px;padding:2px 0;">
+     <span>${pos}</span>
+     <span class="${cls}">${arrow}</span>
+    </div>`;
+   }).filter(Boolean);
+   const changed = bits.length;
+   return `<div>
+    <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(label)}</div>
+    ${changed ? bits.join('') : '<div style="color:var(--text-muted);">No big need shifts</div>'}
+   </div>`;
+  }
+  grid.innerHTML = sideHtml(teamA.name, beforeA, afterA) + sideHtml(teamB.name, beforeB, afterB);
+  box.style.display = '';
+  if(note) note.textContent = 'Higher need = thinner at that spot after the deal. Waiver fills assumed on uneven trades when possible.';
+ }
+
+
+ function syncSettingsCheckboxes(){
+  try{
+   const sp = el('set-show-trade-power');
+   if(sp) sp.checked = showTradePowerSetting();
+   const tv = el('set-trade-vorp');
+   if(tv) tv.checked = showTradeVorpSetting();
+   const ae = el('set-show-ai-export');
+   if(ae) ae.checked = showAiExportSetting();
+   const pct = el('set-show-pct');
+   if(pct) pct.checked = (localStorage.getItem('fd_show_pct') === '1');
+   setAiExportSetting(showAiExportSetting());
+  }catch(e){}
+ }
+ try{ syncSettingsCheckboxes(); }catch(e){}
+
  function showTradePowerSetting(){
  try{ return localStorage.getItem('fd_show_trade_power') === '1'; }catch(e){ return false; }
  }
@@ -13898,8 +14058,8 @@ function buildStrategyBrief(){
  }
 
  function renderFairness(){
- const totalA = state.tradeA.reduce((s,a)=>s+a.value,0);
- const totalB = state.tradeB.reduce((s,a)=>s+a.value,0);
+ const totalA = state.tradeA.reduce((s,a)=>s+tradeAssetValue(a),0);
+ const totalB = state.tradeB.reduce((s,a)=>s+tradeAssetValue(a),0);
  const labelEl = el('fairness-label');
  const fill = el('meter-fill');
  const summary = el('fairness-summary');
@@ -14009,6 +14169,7 @@ function buildStrategyBrief(){
  }
 
  renderTradePowerImpact(teamA, teamB);
+ try{ renderTradeNeedsImpact(teamA, teamB); }catch(e){}
  syncUrl();
  }
 
@@ -15178,6 +15339,7 @@ function goToPanel(panelId, opts){
  if(btn.dataset.panel === 'panel-depth') renderDepth();
  if(btn.dataset.panel === 'panel-byes') renderByes();
  if(btn.dataset.panel === 'panel-rosters') renderLeagueRosters();
+ if(btn.dataset.panel === 'panel-export') renderExportPanel();
  if(btn.dataset.panel === 'panel-home') renderHome();
  if(btn.dataset.panel === 'panel-compare') renderCompare();
  if(btn.dataset.panel === 'panel-trends') renderTrends();
@@ -15312,6 +15474,16 @@ el('btn-settings').addEventListener('click', () => {
  const numQBs = el('sw-superflex').classList.contains('on') ? 2 : 1;
  const ppr = parseFloat(el('sel-ppr').value);
  const valueMode = (el('sel-value-mode') && el('sel-value-mode').value === 'raw') ? 'raw' : 'vorp';
+ try{
+  const sp = el('set-show-trade-power');
+  if(sp) localStorage.setItem('fd_show_trade_power', sp.checked ? '1' : '0');
+  const tv = el('set-trade-vorp');
+  if(tv) setTradeVorpSetting(!!tv.checked);
+  const ae = el('set-show-ai-export');
+  if(ae) setAiExportSetting(!!ae.checked);
+  const pct = el('set-show-pct');
+  if(pct) localStorage.setItem('fd_show_pct', pct.checked ? '1' : '0');
+ }catch(e){}
  const pricingChanged = isDynasty !== state.isDynasty || numQBs !== state.numQBs || ppr !== state.ppr;
  closeDrawer();
 
@@ -15454,7 +15626,12 @@ function buildDebugDump(){
    .sort((a,b) => (b.value || 0) - (a.value || 0));
   const totalValue = roster.reduce((s,p) => s + (p.value || 0), 0);
   let diagnose = null, need = null;
-  try{ if(typeof bpDiagnose === 'function') diagnose = bpDiagnose(t); }catch(e){}
+  try{
+   if(typeof bpDiagnose === 'function'){
+    const d = bpDiagnose(t);
+    diagnose = Array.isArray(d) ? d : (d && Array.isArray(d.items) ? d.items : []);
+   }
+  }catch(e){ diagnose = []; }
   try{ if(typeof teamPosNeedScores === 'function') need = teamPosNeedScores(t); }catch(e){}
   return {
    id: t.id,
@@ -15467,7 +15644,7 @@ function buildDebugDump(){
    weeklyScores: t.weeklyScores || [],
    totalMarketValue: Math.round(totalValue),
    positionalNeed: need,
-   blueprintChecklist: diagnose,
+   blueprintChecklist: Array.isArray(diagnose) ? diagnose : [],
    roster
   };
  });
@@ -15495,7 +15672,7 @@ function buildDebugDump(){
   const my = teamsOut.find(t => t.isMyTeam);
   tabs.blueprint = {
    name: 'Blueprint / Home',
-   checklist: my && my.blueprintChecklist,
+   checklist: (my && Array.isArray(my.blueprintChecklist)) ? my.blueprintChecklist : [],
    myTeam: my ? my.name : null
   };
  }catch(e){ tabs.blueprint = { error: String(e.message || e) }; }
@@ -15668,8 +15845,11 @@ function buildDebugDump(){
   if(k === 'waivers'){
    lines.push('Free agents: ' + tab.count);
   }
-  if(k === 'blueprint' && tab.checklist){
-   (tab.checklist || []).forEach(c => lines.push('- [' + c.status + '] ' + (c.title || c.label) + (c.why ? ' — ' + c.why : '')));
+  if(k === 'blueprint' && Array.isArray(tab.checklist)){
+   tab.checklist.forEach(c => {
+    if(!c) return;
+    lines.push('- [' + (c.status || '') + '] ' + (c.title || c.label || '') + (c.why ? ' — ' + c.why : ''));
+   });
   }
  });
  lines.push('');
@@ -15727,37 +15907,236 @@ function buildDebugDump(){
  setTimeout(() => t.classList.remove('show'), 1800);
  }
 
- async function copyDebugData(){
- if(!state.teams || !state.teams.length){
-  showToast('Load a league first');
+ function safeStringify(obj){
+ try{
+  const seen = new WeakSet();
+  return JSON.stringify(obj, function(key, val){
+   if(typeof val === 'object' && val !== null){
+    if(seen.has(val)) return '[Circular]';
+    seen.add(val);
+   }
+   if(typeof val === 'function') return undefined;
+   if(typeof val === 'number' && !isFinite(val)) return null;
+   return val;
+  }, 2);
+ }catch(e){
+  try{ return JSON.stringify({ error: 'stringify failed', message: String(e.message || e) }); }
+  catch(e2){ return '{"error":"stringify failed"}'; }
+ }
+}
+
+function copyTextFallback(str){
+ const ta = document.createElement('textarea');
+ ta.value = str;
+ ta.setAttribute('readonly', '');
+ ta.style.position = 'fixed';
+ ta.style.top = '0';
+ ta.style.left = '0';
+ ta.style.width = '2em';
+ ta.style.height = '2em';
+ ta.style.padding = '0';
+ ta.style.border = 'none';
+ ta.style.outline = 'none';
+ ta.style.boxShadow = 'none';
+ ta.style.background = 'transparent';
+ ta.style.opacity = '0';
+ document.body.appendChild(ta);
+ ta.focus();
+ ta.select();
+ ta.setSelectionRange(0, str.length);
+ let ok = false;
+ try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+ document.body.removeChild(ta);
+ return ok;
+}
+
+function showCopyModal(str){
+ let modal = document.getElementById('ai-export-modal');
+ if(!modal){
+  modal = document.createElement('div');
+  modal.id = 'ai-export-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML = '<div style="background:var(--surface,#1a1a1a);color:var(--text,#eee);border:1px solid var(--border,#333);border-radius:10px;width:min(720px,100%);max-height:85vh;display:flex;flex-direction:column;padding:14px;gap:10px;">'
+   + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
+   + '<strong>AI export</strong>'
+   + '<button type="button" id="ai-export-close" class="btn btn-ghost btn-sm">Close</button></div>'
+   + '<p style="font-size:12.5px;color:var(--text-muted,#aaa);margin:0;">Clipboard blocked — select all and copy manually (Ctrl/Cmd+C).</p>'
+   + '<textarea id="ai-export-ta" style="flex:1;min-height:320px;width:100%;font-family:ui-monospace,monospace;font-size:11px;padding:10px;border-radius:6px;border:1px solid var(--border,#333);background:var(--bg,#111);color:inherit;"></textarea>'
+   + '<button type="button" id="ai-export-trycopy" class="btn btn-primary">Try copy again</button></div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(ev){ if(ev.target === modal) modal.remove(); });
+  document.getElementById('ai-export-close').onclick = function(){ modal.remove(); };
+ }
+ const ta = document.getElementById('ai-export-ta');
+ ta.value = str;
+ const tryBtn = document.getElementById('ai-export-trycopy');
+ tryBtn.onclick = async function(){
+  try{
+   await navigator.clipboard.writeText(str);
+   if(typeof showToast === 'function') showToast('Copied');
+   modal.remove();
+  }catch(e){
+   ta.focus(); ta.select();
+   if(copyTextFallback(str) && typeof showToast === 'function') showToast('Copied');
+  }
+ };
+ ta.focus();
+ ta.select();
+}
+
+async function copyDebugData(ev){
+ if(ev){ try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){} }
+ if(!state || !state.teams || !state.teams.length){
+  if(typeof showToast === 'function') showToast('Load a league first');
+  else alert('Load a league first');
   return;
  }
- const dump = buildDebugDump();
- const textOut = dump.textSummary + '\n\n```json\n' + JSON.stringify(dump.json, null, 2) + '\n```\n';
+ let textOut = '';
  try{
-  await navigator.clipboard.writeText(textOut);
-  showToast('Full analysis copied — paste into any AI');
- }catch(e){
-  try{
-   const ta = document.createElement('textarea');
-   ta.value = textOut;
-   ta.style.position = 'fixed';
-   ta.style.left = '-9999px';
-   document.body.appendChild(ta);
-   ta.select();
-   document.execCommand('copy');
-   document.body.removeChild(ta);
-   showToast('Full analysis copied — paste into any AI');
-  }catch(e2){
-   showToast('Copy failed');
-   console.error(e2);
+  const dump = buildDebugDump();
+  const summary = (dump && dump.textSummary) ? dump.textSummary : '';
+  const jsonPart = (dump && dump.json) ? safeStringify(dump.json) : '{}';
+  textOut = summary + '\n\n' + '```json\n' + jsonPart + '\n```\n';
+ }catch(err){
+  console.error('buildDebugDump failed', err);
+  textOut = 'Export failed while building dump: ' + String(err && err.message ? err.message : err);
+  if(typeof showToast === 'function') showToast('Export build error — see modal');
+  showCopyModal(textOut);
+  return;
+ }
+ let copied = false;
+ try{
+  if(navigator.clipboard && navigator.clipboard.writeText){
+   await navigator.clipboard.writeText(textOut);
+   copied = true;
   }
+ }catch(e){ copied = false; }
+ if(!copied) copied = copyTextFallback(textOut);
+ if(copied){
+  if(typeof showToast === 'function') showToast('Full analysis copied — paste into any AI');
+  else alert('Copied to clipboard');
+ } else {
+  if(typeof showToast === 'function') showToast('Clipboard blocked — use the box to copy');
+  showCopyModal(textOut);
  }
 }
 
 
- const btnCopyDebug = el('btn-copy-debug');
- if(btnCopyDebug) btnCopyDebug.addEventListener('click', copyDebugData);
+ const EXPORT_UNLOCK_KEY = 'fb_export_unlock';
+ const EXPORT_PASSWORD = 'joshisdagoat';
+
+ function isExportUnlocked(){ return showAiExportSetting(); }
+ function setExportUnlocked(on){
+  setAiExportSetting(!!on);
+ }
+
+ function buildExportText(){
+  if(!state || !state.teams || !state.teams.length){
+   return 'Load a league first, then refresh.';
+  }
+  try{
+   const dump = buildDebugDump();
+   const summary = (dump && dump.textSummary) ? dump.textSummary : '';
+   let jsonPart = '{}';
+   try{
+    if(typeof safeStringify === 'function') jsonPart = safeStringify(dump.json);
+    else jsonPart = JSON.stringify(dump.json, null, 2);
+   }catch(e){
+    jsonPart = '{"error":"json failed"}';
+   }
+   return summary + '\n\n```json\n' + jsonPart + '\n```\n';
+  }catch(err){
+   return 'Export failed: ' + String(err && err.message ? err.message : err);
+  }
+ }
+
+ function renderExportPanel(){
+  const ta = document.getElementById('export-dump-ta');
+  if(!ta) return;
+  ta.value = 'Building…';
+  // defer so UI paints
+  setTimeout(function(){
+   try{ ta.value = buildExportText(); }
+   catch(e){ ta.value = 'Error: ' + e; }
+  }, 30);
+ }
+
+ function tryUnlockExport(pw){
+  if(String(pw || '') === EXPORT_PASSWORD){
+   setExportUnlocked(true);
+   if(typeof showToast === 'function') showToast('AI export unlocked');
+   const nav = document.getElementById('nav-export');
+   if(nav){
+    // open the tab
+    nav.click();
+   }
+   renderExportPanel();
+   return true;
+  }
+  if(typeof showToast === 'function') showToast('Wrong password');
+  return false;
+ }
+
+ function bindExportUnlock(){
+  const btn = document.getElementById('btn-dev-unlock');
+  const inp = document.getElementById('dev-unlock-pw');
+  if(btn && !btn._bound){
+   btn._bound = true;
+   btn.addEventListener('click', function(){
+    tryUnlockExport(inp && inp.value);
+   });
+  }
+  if(inp && !inp._bound){
+   inp._bound = true;
+   inp.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter') tryUnlockExport(inp.value);
+   });
+  }
+  const ref = document.getElementById('btn-export-refresh');
+  if(ref && !ref._bound){
+   ref._bound = true;
+   ref.addEventListener('click', renderExportPanel);
+  }
+  const sel = document.getElementById('btn-export-select');
+  if(sel && !sel._bound){
+   sel._bound = true;
+   sel.addEventListener('click', function(){
+    const ta = document.getElementById('export-dump-ta');
+    if(!ta) return;
+    ta.focus();
+    ta.select();
+    try{ ta.setSelectionRange(0, ta.value.length); }catch(e){}
+   });
+  }
+  setExportUnlocked(isExportUnlocked());
+ }
+ try{ bindExportUnlock(); }catch(e){}
+ if(document.readyState === 'loading')
+  document.addEventListener('DOMContentLoaded', function(){ try{ bindExportUnlock(); }catch(e){} });
+ else try{ bindExportUnlock(); }catch(e){}
+
+
+function bindCopyDebugButton(){
+ const btn = document.getElementById('btn-copy-debug') || (typeof el === 'function' ? el('btn-copy-debug') : null);
+ if(btn && !btn._copyBound){
+  btn._copyBound = true;
+  btn.addEventListener('click', copyDebugData);
+ }
+}
+bindCopyDebugButton();
+// Delegation in case the node is re-rendered
+if(!window._copyDebugDelegated){
+ window._copyDebugDelegated = true;
+ document.addEventListener('click', function(ev){
+  const hit = ev.target && ev.target.closest && ev.target.closest('#btn-copy-debug');
+  if(hit) copyDebugData(ev);
+ });
+}
+try{
+ if(document.readyState === 'loading')
+  document.addEventListener('DOMContentLoaded', bindCopyDebugButton);
+ else bindCopyDebugButton();
+}catch(e){}
 
  /* ---------- boot: share link + recent ---------- */
  function parseShareParams(){
