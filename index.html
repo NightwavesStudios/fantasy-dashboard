@@ -1976,13 +1976,61 @@
  margin-top: 8px;
  }
  .drawer-actions .btn { width: 100%; }
+ .schedopt-team-list {
+ max-height: 180px;
+ overflow-y: auto;
+ border: 1px solid var(--border);
+ border-radius: 8px;
+ padding: 6px 8px;
+ background: var(--surface-2, var(--bg-elevated, transparent));
+ }
+ .schedopt-team-list label {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ font-size: 13px;
+ padding: 4px 2px;
+ cursor: pointer;
+ }
+ .schedopt-rule-row {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 8px;
+ align-items: center;
+ margin-bottom: 8px;
+ }
+ .schedopt-rule-row select { min-width: 120px; max-width: 180px; }
  .drawer-check {
  width: 18px;
  height: 18px;
  accent-color: var(--accent);
  cursor: pointer;
  }
- input.drawer-check { flex-shrink: 0; }
+ input.schedopt-team-list {
+ max-height: 180px;
+ overflow-y: auto;
+ border: 1px solid var(--border);
+ border-radius: 8px;
+ padding: 6px 8px;
+ background: var(--surface-2, var(--bg-elevated, transparent));
+ }
+ .schedopt-team-list label {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ font-size: 13px;
+ padding: 4px 2px;
+ cursor: pointer;
+ }
+ .schedopt-rule-row {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 8px;
+ align-items: center;
+ margin-bottom: 8px;
+ }
+ .schedopt-rule-row select { min-width: 120px; max-width: 180px; }
+ .drawer-check { flex-shrink: 0; }
 
  /* Lineup / toolbar primary actions */
  .waiver-toolbar .btn-primary,
@@ -3318,6 +3366,10 @@ html[data-theme="light"] {
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
  Schedule
  </button>
+ <button class="nav-item" data-panel="panel-schedopt" id="nav-schedopt" style="display:none;">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/><path d="M16 10l4 4-4 4"/></svg></span>
+ Sched opt
+ </button>
  <button class="nav-item" data-panel="panel-playoffs">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
  Playoffs
@@ -3915,6 +3967,86 @@ html[data-theme="light"] {
  </section>
 
  <!-- ---------- PLAYOFFS ---------- -->
+ <section class="panel" id="panel-schedopt">
+ <div class="section-title-row" style="margin-bottom:12px;">
+ <div class="section-title" style="margin:0;">Schedule optimizer</div>
+ <button type="button" class="info-btn" id="btn-schedopt-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
+ </div>
+ <p class="needs-intro">Rewrite <strong>future</strong> matchups only. Hard rules: weeks 1–9 each pair at most once; no pair more than twice all season; past and current week locked.</p>
+
+ <div class="hist-card" style="padding:12px 14px;margin-bottom:12px;">
+ <div style="font-weight:650;margin-bottom:8px;">Playoff targets</div>
+ <p class="hint" style="margin:0 0 8px;">Check teams you want helped into the playoffs and teams you want pushed out. Search favors easier SOS for "in" and harder for "out".</p>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+ <div>
+ <div class="field-label" style="margin-bottom:6px;">Help into playoffs</div>
+ <div id="schedopt-in-list" class="schedopt-team-list"></div>
+ </div>
+ <div>
+ <div class="field-label" style="margin-bottom:6px;">Push out of playoffs</div>
+ <div id="schedopt-out-list" class="schedopt-team-list"></div>
+ </div>
+ </div>
+ </div>
+
+ <div class="hist-card" style="padding:12px 14px;margin-bottom:12px;">
+ <div style="font-weight:650;margin-bottom:8px;">Matchup rules</div>
+ <p class="hint" style="margin:0 0 8px;">Force or ban remaining meetings between two teams (locked weeks are not changed).</p>
+ <div id="schedopt-rules"></div>
+ <button type="button" class="btn btn-ghost btn-sm" id="btn-schedopt-add-rule" style="margin-top:8px;">+ Add rule</button>
+ </div>
+
+ <div class="hist-card" style="padding:12px 14px;margin-bottom:12px;">
+ <div style="font-weight:650;margin-bottom:8px;">Extra SOS tilt (optional)</div>
+ <div class="waiver-toolbar" style="flex-wrap:wrap;gap:10px;margin:0;align-items:flex-end;">
+ <div class="field" style="margin:0;min-width:140px;">
+ <label class="field-label">Team</label>
+ <select id="schedopt-team"><option value="">None</option></select>
+ </div>
+ <div class="field" style="margin:0;min-width:150px;">
+ <label class="field-label">Goal</label>
+ <select id="schedopt-mode">
+ <option value="easiest">Easier schedule</option>
+ <option value="hardest">Harder schedule</option>
+ </select>
+ </div>
+ <div class="field" style="margin:0;min-width:140px;">
+ <label class="field-label">Also</label>
+ <select id="schedopt-team2"><option value="">None</option></select>
+ </div>
+ <div class="field" style="margin:0;min-width:150px;">
+ <label class="field-label">Their goal</label>
+ <select id="schedopt-mode2">
+ <option value="easiest">Easier</option>
+ <option value="hardest">Harder</option>
+ </select>
+ </div>
+ </div>
+ </div>
+
+ <div style="margin-bottom:12px;">
+ <button type="button" class="btn btn-primary" id="btn-schedopt-run">Optimize</button>
+ </div>
+
+ <details class="hist-card" style="padding:10px 14px;margin-bottom:12px;">
+ <summary style="cursor:pointer;font-weight:650;">How this works</summary>
+ <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;line-height:1.45;">
+ Search swaps remaining matchups under the hard rules above. Scoring:
+ <ul style="margin:8px 0 0 18px;padding:0;">
+ <li><strong>Help in</strong> — easier remaining SOS (same weekly projections as Schedule).</li>
+ <li><strong>Push out</strong> — harder remaining SOS.</li>
+ <li><strong>Must play</strong> — prefer they meet once more in an editable week if still under the twice-max rule.</li>
+ <li><strong>Must not play</strong> — no new meetings in editable weeks; existing future meetings are swapped away when possible.</li>
+ </ul>
+ After search, playoff % before/after uses the same simulator as the Playoffs tab for every team.
+ </div>
+ </details>
+ <div id="schedopt-status" class="hist-meta" style="margin-bottom:10px;"></div>
+ <div id="schedopt-summary" style="margin-bottom:14px;"></div>
+ <div id="schedopt-swaps"></div>
+ <div class="bp-source" id="source-schedopt"></div>
+ </section>
+
  <section class="panel" id="panel-playoffs">
  <div class="section-title-row" style="margin-bottom:12px;">
  <div class="section-title" style="margin:0;">Playoff picture</div>
@@ -3936,6 +4068,7 @@ html[data-theme="light"] {
  <th>#</th>
  <th>Team</th>
  <th>Record</th>
+ <th title="Same as Schedule: expected H2H + league median record">Proj record</th>
  <th>PF</th>
  <th title="Chance to make the playoffs">Playoffs %</th>
  <th title="Chance at a first-round bye (when the format has byes)">Bye %</th>
@@ -4056,6 +4189,11 @@ html[data-theme="light"] {
  <span class="field-label">AI export tab</span>
  <input type="checkbox" id="set-show-ai-export" class="drawer-check" />
  </div>
+ <div class="drawer-row">
+ <span class="field-label">Schedule optimizer</span>
+ <input type="checkbox" id="set-show-schedopt" class="drawer-check" />
+ </div>
+ <p class="hint" style="margin:0 0 8px;">Commissioner tool: rewrite remaining matchups under league rules.</p>
  <p class="hint" id="drawer-league-info" style="margin:0;">-</p>
  </div>
 
@@ -5959,6 +6097,7 @@ function escapeHtml(s){
  hideStatus();
  el('setup-screen').style.display = 'none';
  el('app').classList.add('show');
+ try{ loadNflInjuryBoard().catch(function(){}); }catch(e){}
 
  // Weekly high/low scores - non-blocking
  attachWeeklyScores().then(() => {
@@ -7485,16 +7624,37 @@ function countPosBodies(roster){
  function simulatePlayoffOdds(sims, opts){
  const quality = playoffDataQuality();
  const force = !!(opts && opts.force);
- // Scale sims with data quality; force allows early runs with a warning
+ // Same sim counts whether auto or force. Force only unlocks early (when not ready).
  if(sims == null){
  if(quality.level === 'high') sims = 5000;
- else if(quality.level === 'medium') sims = 3500;
- else if(quality.level === 'low') sims = 2000;
- else sims = force ? 1200 : 0;
+ else if(quality.level === 'medium') sims = 4000;
+ else if(quality.level === 'low') sims = 3500;
+ else sims = force ? 3500 : 0; // early override uses same depth as low-confidence runs
  }
  const settings = state.playoffSettings || detectPlayoffSettings();
  const teams = state.teams || [];
  if(!teams.length) return null;
+
+ // Stable cache key: same inputs → same odds (no random drift between first load and re-click)
+ let curW = 0;
+ try{ curW = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0); }catch(e){}
+ const cacheKey = [
+  state.leagueId || '',
+  state.platform || '',
+  curW,
+  sims,
+  quality.weeks,
+  (scheduleCache ? 1 : 0),
+  teams.map(t => [t.id, t.wins||0, t.losses||0, t.ties||0, Math.round(t.pointsFor||0)].join(':')).join('|')
+ ].join('::');
+ try{
+  if(state._playoffOddsCache && state._playoffOddsCache.key === cacheKey && state._playoffOddsCache.result){
+   return state._playoffOddsCache.result;
+  }
+ }catch(e){}
+
+ // Deterministic PRNG for this exact input set
+ try{ seedSimRng(cacheKey); }catch(e){ _simRngState = 123456789; }
 
  // League scoring context for early-season shrinkage
  const allScores = [];
@@ -7573,9 +7733,20 @@ function countPosBodies(roster){
  // Build matchup list per week from scheduleCache (real opponents)
  const graph = scheduleCache || {};
  const weekMatchups = {}; // week -> [{ aId, bId }] unique pairs; byes listed separately
+ const overrideWeeks = opts && opts.scheduleWeeks; // optional week -> [{a,b}] from schedule optimizer
  weekNums.forEach(wk => {
  const pairs = [];
  const seen = new Set();
+ if(overrideWeeks && overrideWeeks[wk] && overrideWeeks[wk].length){
+  overrideWeeks[wk].forEach(g => {
+   const a = String(g.a), b = String(g.b);
+   if(seen.has(a) || seen.has(b)) return;
+   seen.add(a); seen.add(b);
+   pairs.push({ aId: g.a, bId: g.b });
+  });
+  weekMatchups[wk] = pairs;
+  return;
+ }
  teams.forEach(t => {
  if(seen.has(String(t.id))) return;
  const node = graph[t.id] || graph[String(t.id)];
@@ -7596,12 +7767,20 @@ function countPosBodies(roster){
  const counts = {
  playoff: {},
  bye: {},
- title: {}
+ title: {},
+ sumW: {},
+ sumL: {},
+ sumT: {},
+ sumPf: {}
  };
  teams.forEach(t => {
  counts.playoff[t.id] = 0;
  counts.bye[t.id] = 0;
  counts.title[t.id] = 0;
+ counts.sumW[t.id] = 0;
+ counts.sumL[t.id] = 0;
+ counts.sumT[t.id] = 0;
+ counts.sumPf[t.id] = 0;
  });
 
  const nPlayoff = settings.playoffTeams;
@@ -7721,6 +7900,14 @@ function countPosBodies(roster){
  if(active.length >= 16) break; // safety
  }
  if(active[0]) counts.title[active[0].id]++;
+
+  // Accumulate final projected records for this sim
+  sim.forEach(row => {
+   counts.sumW[row.id] += row.wins || 0;
+   counts.sumL[row.id] += row.losses || 0;
+   counts.sumT[row.id] += row.ties || 0;
+   counts.sumPf[row.id] += row.pf || 0;
+  });
  }
 
  // Current seed order (no sim)
@@ -7736,11 +7923,34 @@ function countPosBodies(roster){
  currentSeed,
  odds: teams.map(t => {
  const seedRow = currentSeed.find(r => r.id === t.id);
+ // Projected record matches Schedule tab: H2H + league median expected wins
+ let projRecord = null;
+ let projWins = null, projLosses = null;
+ try{
+  if(typeof buildTeamSosPath === 'function'){
+   const path = buildTeamSosPath(t);
+   if(path){
+    projWins = path.expWins;
+    projLosses = path.expLosses;
+    projRecord = path.finalRecord || (
+     path.expWins != null
+      ? (path.expWins.toFixed(1) + '-' + path.expLosses.toFixed(1) + ' (H2H + median)')
+      : null
+    );
+   }
+  }
+ }catch(e){}
+ const ppf = sims > 0 ? (counts.sumPf[t.id] || 0) / denom : null;
  return {
  team: t,
  seed: seedRow ? seedRow.seed : null,
  record: (t.ties ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins || 0}-${t.losses || 0}`),
+ projRecord,
+ projWins,
+ projLosses,
+ projTies: null,
  pf: seedRow ? seedRow.pf : (t.pointsFor || 0),
+ projPf: ppf,
  playoffPct: sims > 0 ? 100 * (counts.playoff[t.id] || 0) / denom : null,
  byePct: sims > 0 && nBye > 0 ? 100 * (counts.bye[t.id] || 0) / denom : null,
  titlePct: sims > 0 ? 100 * (counts.title[t.id] || 0) / denom : null,
@@ -7750,9 +7960,7 @@ function countPosBodies(roster){
  }).sort((a, b) => (a.seed || 99) - (b.seed || 99))
  };
  try{
-  if(typeof cacheKey !== 'undefined' && cacheKey){
-   state._playoffOddsCache = { key: cacheKey, result };
-  }
+  state._playoffOddsCache = { key: cacheKey, result };
  }catch(e){}
  return result;
  }
@@ -7767,7 +7975,7 @@ function countPosBodies(roster){
  if(!tbody) return;
 
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
  return;
  }
 
@@ -7776,6 +7984,7 @@ function countPosBodies(roster){
  state._playoffSchedLoading = true;
  loadScheduleGraph().then(() => {
  state._playoffSchedLoading = false;
+ try{ state._playoffOddsCache = null; }catch(e){}
  renderPlayoffs();
  }).catch(() => { state._playoffSchedLoading = false; renderPlayoffs(); });
  if(intro) intro.textContent = 'Loading schedule for week-by-week projections…';
@@ -7787,7 +7996,7 @@ function countPosBodies(roster){
  const forced = !!state.forcePlayoffOdds;
  const result = simulatePlayoffOdds(null, { force: forced });
  if(!result){
- tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Could not simulate.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">Could not simulate.</td></tr>';
  return;
  }
 
@@ -7831,10 +8040,12 @@ function countPosBodies(roster){
  const ri = ranks.findIndex(r => String(r.id) === String(state.myTeamId));
  if(ri >= 0) sosBit = ` · SOS #${ri+1} (easiest=1)` + (ranks[ri].rec ? ` · ${ranks[ri].rec}` : '');
  }catch(e){}
+ const projBit = mine.projRecord ? ` · Proj <strong>${escapeHtml(mine.projRecord)}</strong>` : '';
  pctx.innerHTML = mine
  ? `<span>Your team <strong>${escapeHtml(mine.team.name)}</strong></span>
  <span>Seed <strong>#${mine.seed}</strong></span>
  <span>Playoff <strong>${mine.playoffPct != null ? mine.playoffPct.toFixed(0)+'%' : ' - '}</strong></span>
+ <span>${projBit}</span>
  <span>${escapeHtml(sosBit)}</span>
  <span style="color:var(--text-muted);cursor:pointer;text-decoration:underline;" id="playoffs-ctx-path">View path →</span>`
  : '';
@@ -7879,10 +8090,12 @@ function countPosBodies(roster){
  else if(row.seed <= s.playoffTeams) status = 'Bubble / in';
  else status = 'Outside';
  const pct = (v) => (v == null || !showOdds) ? '-' : v.toFixed(0) + '%';
+ const projRec = row.projRecord ? escapeHtml(row.projRecord) : '-';
  tr.innerHTML = `
  <td><span class="rank-num">${row.seed || (i + 1)}</span></td>
  <td class="team-name-cell">${escapeHtml(row.team.name)}${isMine ? ' <span style="color:var(--accent);font-size:11px;">you</span>' : ''}</td>
  <td class="val-cell">${escapeHtml(row.record)}</td>
+ <td class="val-cell" title="Expected end-of-regular-season record">${projRec}</td>
  <td class="val-cell">${fmtPts(row.pf)}</td>
  <td class="val-cell">${showOdds ? '<strong>' + pct(row.playoffPct) + '</strong>' : '-'}</td>
  <td class="val-cell">${pct(row.byePct)}</td>
@@ -8134,8 +8347,11 @@ function countPosBodies(roster){
  const when = status === 'final' ? 'past' : 'future';
  if(!a[when].some(x => String(x) === String(bId))) a[when].push(bId);
  if(!b[when].some(x => String(x) === String(aId))) b[when].push(aId);
- a.weeks[week] = { oppId: bId, myScore: scoreA, oppScore: scoreB, status };
- b.weeks[week] = { oppId: aId, myScore: scoreB, oppScore: scoreA, status };
+ const wk = Number(week);
+ const rowA = { oppId: bId, myScore: scoreA, oppScore: scoreB, status };
+ const rowB = { oppId: aId, myScore: scoreB, oppScore: scoreA, status };
+ a.weeks[wk] = rowA; a.weeks[String(wk)] = rowA;
+ b.weeks[wk] = rowB; b.weeks[String(wk)] = rowB;
  }
  try{
  if(state.platform === 'sleeper' && state.leagueId){
@@ -8207,6 +8423,17 @@ function countPosBodies(roster){
  }catch(e){
  console.warn('loadScheduleGraph', e);
  }
+ // Count filled weeks for diagnostics
+ let filled = 0;
+ (state.teams || []).forEach(t => {
+  const node = graph[t.id] || graph[String(t.id)];
+  if(!node || !node.weeks) return;
+  Object.keys(node.weeks).forEach(k => {
+   if(node.weeks[k] && node.weeks[k].oppId != null) filled++;
+  });
+ });
+ graph._matchRows = filled;
+ if(!filled) console.warn('loadScheduleGraph: no matchup rows (check team ids / API)');
  scheduleCache = graph;
  return graph;
  }
@@ -8348,15 +8575,97 @@ function countPosBodies(roster){
 
 
  function estimateInjuryWeeksOut(p, status){
- // Finite windows only. Never treat injury as out for the rest of the season.
- // Status is re-read each load, so a long IR still advances week by week.
+ // Finite windows only. Prefer notes from ESPN injury board when present.
  if(!status || status === 'ok') return 0;
+ const note = String((p && (p.injuryNote || p.injury_notes || p.injuryComment || '')) || '').toLowerCase();
+ // Parse common timelines from note text
+ let fromNote = null;
+ if(/season[- ]?ending|out for the season|out remainder|ir for season/.test(note)) fromNote = state.isDynasty ? 6 : 6;
+ else if(/4[-– ]?6 weeks|4 to 6 weeks/.test(note)) fromNote = 5;
+ else if(/3[-– ]?5 weeks|3 to 5 weeks/.test(note)) fromNote = 4;
+ else if(/2[-– ]?4 weeks|2 to 4 weeks/.test(note)) fromNote = 3;
+ else if(/1[-– ]?2 weeks|1 to 2 weeks|week[- ]to[- ]week/.test(note)) fromNote = 1;
+ else if(/next week|miss this week|out this week|will not play/.test(note)) fromNote = 1;
+ else if(/several weeks|few weeks/.test(note)) fromNote = 3;
+ else {
+  const m = note.match(/(\d+)\s*-\s*(\d+)\s*weeks?/);
+  if(m) fromNote = Math.min(6, Math.round((Number(m[1])+Number(m[2]))/2));
+  else {
+   const m2 = note.match(/(\d+)\s*weeks?/);
+   if(m2) fromNote = Math.min(6, Number(m2[1]));
+  }
+ }
+ if(fromNote != null) return fromNote;
+
  if(status === 'questionable') return 0;
  if(status === 'doubtful') return 1;
  if(status === 'out') return 1;
  if(status === 'pup') return 5;
  if(status === 'ir') return state.isDynasty ? 5 : 3;
  return 1;
+ }
+
+ async function loadNflInjuryBoard(){
+  // ESPN public injury feed — richer status + comments than roster alone
+  try{
+   const url = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries';
+   const res = await solidFetch(url);
+   if(!res || !res.ok) return null;
+   const data = await res.json();
+   const byName = {};
+   const teams = (data && data.injuries) || [];
+   teams.forEach(teamBlock => {
+    (teamBlock.injuries || teamBlock.items || []).forEach(item => {
+     const ath = item.athlete || item;
+     const name = (ath.displayName || ath.fullName || item.displayName || '').trim();
+     if(!name) return;
+     const status = item.status || (item.type && item.type.description) || ath.injuryStatus || '';
+     const comment = item.longComment || item.shortComment || item.detail || item.description || '';
+     const date = item.date || null;
+     byName[normalizeName(name)] = {
+      status: String(status || ''),
+      note: String(comment || ''),
+      date,
+      raw: item
+     };
+    });
+   });
+   // Flatten alternate shapes
+   if(!teams.length && data && Array.isArray(data)){
+    data.forEach(item => {
+     const ath = item.athlete || {};
+     const name = (ath.displayName || '').trim();
+     if(!name) return;
+     byName[normalizeName(name)] = {
+      status: String(item.status || ''),
+      note: String(item.longComment || item.shortComment || ''),
+      date: item.date || null
+     };
+    });
+   }
+   state._nflInjuries = byName;
+   // Merge onto rostered players
+   (state.teams || []).forEach(t => {
+    (t.roster || []).forEach(p => {
+     const key = normalizeName(p.fullName || p.name || '');
+     const hit = byName[key];
+     if(!hit) return;
+     if(hit.status){
+      const norm = playerInjuryStatus({ injuryStatus: hit.status });
+      if(norm && norm !== 'ok'){
+       p.injuryStatus = hit.status;
+       p.injury_status = hit.status;
+      }
+     }
+     if(hit.note) p.injuryNote = hit.note;
+    });
+   });
+   try{ clearWeekScoreCache(); }catch(e){}
+   return byName;
+  }catch(e){
+   console.warn('injury board', e);
+   return null;
+  }
  }
 
  function injuryWeekOutlook(p, week, curWeek){
@@ -8618,7 +8927,7 @@ function estimateTeamWeekScore(team, week, opts){
  };
 
  const node = (scheduleCache && (scheduleCache[team.id] || scheduleCache[String(team.id)])) || null;
- const wRow = node && node.weeks && node.weeks[week];
+ const wRow = node && node.weeks && (node.weeks[week] || node.weeks[String(week)]);
  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || week;
 
  // Final: official score (no waiver backfill  -  what's done is done)
@@ -8809,7 +9118,7 @@ function estimateTeamWeekScore(team, week, opts){
  const rows = [];
 
  for(let week = 1; week <= maxWeek; week++){
- const match = node.weeks[week];
+ const match = (node.weeks && (node.weeks[week] || node.weeks[String(week)])) || null;
  const myEst = est(team, week);
  let myPts = myEst.pts;
  let status = (match && match.status) || (week < curWeek ? 'final' : (week === curWeek ? 'live' : 'future'));
@@ -10261,6 +10570,17 @@ function renderMatchups(){
  if(summary) summary.textContent = '';
  return;
  }
+ // If every week is BYE, schedule graph is empty — reload once
+ const allBye = path.rows.every(r => !r.opp || r.oppName === 'BYE');
+ if(allBye && typeof loadScheduleGraph === 'function' && !state._sosReloading){
+  state._sosReloading = true;
+  if(summary) summary.textContent = 'Schedule empty — reloading matchups…';
+  loadScheduleGraph().then(() => {
+   state._sosReloading = false;
+   paint();
+  }).catch(() => { state._sosReloading = false; });
+  return;
+ }
  const leagueOpp = [];
  path.rows.forEach(r => { if(r.oppPts != null) leagueOpp.push(r.oppPts); });
  const avgOpp = path.sos;
@@ -10408,13 +10728,749 @@ function renderMatchups(){
  }
  }
 
- function renderLuck(){
+ function teamStrengthScore(t){
+  if(!t) return 100;
+  if(typeof t.avgPts === 'number' && t.avgPts > 0) return t.avgPts;
+  const pf = t.pointsFor || 0;
+  const g = (t.wins||0)+(t.losses||0)+(t.ties||0) || 1;
+  if(pf > 0) return pf / g;
+  try{
+   if(state._powerContext && state._powerContext.base){
+    const row = state._powerContext.base.find(r => r.team && (r.team.id === t.id || String(r.team.id) === String(t.id)));
+    if(row && row.power != null) return 80 + row.power;
+   }
+  }catch(e){}
+  return 100;
+ }
+
+ function buildScheduleState(){
+  // week -> [{a,b}] pairs; also pairCounts overall and in weeks 1-9
+  const teams = state.teams || [];
+  const ids = teams.map(t => t.id);
+  const byId = {};
+  teams.forEach(t => { byId[t.id] = t; byId[String(t.id)] = t; });
+  const graph = scheduleCache || {};
+  const curWeek = Number(graph._currentWeek || projectionCacheWeek || 1);
+  const playoffStart = (state.playoffSettings && state.playoffSettings.playoffWeekStart) || 15;
+  const maxWeek = Math.min(17, Math.max(14, playoffStart - 1));
+
+  const weeks = {};
+  for(let w = 1; w <= maxWeek; w++) weeks[w] = [];
+
+  const seenPairWeek = new Set();
+  teams.forEach(t => {
+   const node = graph[t.id] || graph[String(t.id)];
+   if(!node || !node.weeks) return;
+   // Prefer numeric weeks 1..max to avoid double-counting string+number keys
+   for(let w = 1; w <= maxWeek; w++){
+    const m = node.weeks[w] || node.weeks[String(w)];
+    if(!m || m.oppId == null || m.oppId === '' || m.oppName === 'BYE') continue;
+    const a = String(t.id), b = String(m.oppId);
+    const key = [a,b].sort().join('|') + '@' + w;
+    if(seenPairWeek.has(key)) continue;
+    seenPairWeek.add(key);
+    weeks[w].push({ a: t.id, b: m.oppId });
+   }
+  });
+
+  function pairKey(a,b){ return [String(a), String(b)].sort().join('|'); }
+
+  function countPairs(weekList, fromW, toW){
+   const c = {};
+   for(let w = fromW; w <= toW; w++){
+    (weekList[w] || []).forEach(g => {
+     const k = pairKey(g.a, g.b);
+     c[k] = (c[k] || 0) + 1;
+    });
+   }
+   return c;
+  }
+
+  return { teams, ids, byId, weeks, curWeek, maxWeek, playoffStart, pairKey, countPairs };
+ }
+
+ function scheduleLegal(weeks, pairKey, maxWeek){
+  // Max twice overall
+  const all = {};
+  for(let w = 1; w <= maxWeek; w++){
+   (weeks[w] || []).forEach(g => {
+    const k = pairKey(g.a, g.b);
+    all[k] = (all[k] || 0) + 1;
+    if(all[k] > 2) return false;
+   });
+  }
+  for(const k of Object.keys(all)){ if(all[k] > 2) return false; }
+  // Weeks 1-9: at most once each pair
+  const early = {};
+  for(let w = 1; w <= Math.min(9, maxWeek); w++){
+   (weeks[w] || []).forEach(g => {
+    const k = pairKey(g.a, g.b);
+    early[k] = (early[k] || 0) + 1;
+   });
+  }
+  for(const k of Object.keys(early)){ if(early[k] > 1) return false; }
+  // Each team plays at most once per week
+  for(let w = 1; w <= maxWeek; w++){
+   const seen = new Set();
+   for(const g of (weeks[w] || [])){
+    const a = String(g.a), b = String(g.b);
+    if(seen.has(a) || seen.has(b) || a === b) return false;
+    seen.add(a); seen.add(b);
+   }
+  }
+  return true;
+ }
+
+ function targetWeekScore(teamId, oppId, week, byId){
+  // Same weekly projection engine as Schedule (SOS) / Path / Playoffs
+  const opp = byId[oppId] || byId[String(oppId)];
+  if(!opp) return teamStrengthScore(null);
+  try{
+   if(typeof estimateTeamWeekScore === 'function'){
+    const est = estimateTeamWeekScore(opp, week);
+    if(est && est.pts != null && isFinite(est.pts)) return est.pts;
+   }
+  }catch(e){}
+  return teamStrengthScore(opp);
+ }
+
+ function applyPairWeeksToScheduleCache(weeksMap, maxWeek){
+  // Rewrite future matchup links in scheduleCache from week -> [{a,b}]
+  if(!scheduleCache) return;
+  const teams = state.teams || [];
+  teams.forEach(t => {
+   const node = scheduleCache[t.id] || scheduleCache[String(t.id)];
+   if(!node) return;
+   if(!node.weeks) node.weeks = {};
+  });
+  for(let w = 1; w <= maxWeek; w++){
+   const games = weeksMap[w] || [];
+   // clear this week's opp for all teams first (only if we have games for the week)
+   if(!games.length) continue;
+   teams.forEach(t => {
+    const node = scheduleCache[t.id] || scheduleCache[String(t.id)];
+    if(!node || !node.weeks) return;
+    // keep final/live rows intact if present
+    const cur = node.weeks[w] || node.weeks[String(w)];
+    if(cur && (cur.status === 'final' || cur.status === 'live')) return;
+   });
+   games.forEach(g => {
+    const a = scheduleCache[g.a] || scheduleCache[String(g.a)];
+    const b = scheduleCache[g.b] || scheduleCache[String(g.b)];
+    if(a){
+     const prev = a.weeks[w] || a.weeks[String(w)] || {};
+     if(prev.status !== 'final' && prev.status !== 'live'){
+      a.weeks[w] = { oppId: g.b, myScore: prev.myScore, oppScore: prev.oppScore, status: prev.status || 'future' };
+     }
+    }
+    if(b){
+     const prev = b.weeks[w] || b.weeks[String(w)] || {};
+     if(prev.status !== 'final' && prev.status !== 'live'){
+      b.weeks[w] = { oppId: g.a, myScore: prev.myScore, oppScore: prev.oppScore, status: prev.status || 'future' };
+     }
+    }
+   });
+  }
+ }
+
+ function snapshotScheduleWeeks(maxWeek){
+  const snap = {};
+  (state.teams || []).forEach(t => {
+   const node = scheduleCache && (scheduleCache[t.id] || scheduleCache[String(t.id)]);
+   if(!node || !node.weeks) return;
+   snap[String(t.id)] = {};
+   for(let w = 1; w <= maxWeek; w++){
+    const row = node.weeks[w] || node.weeks[String(w)];
+    if(row) snap[String(t.id)][w] = { ...row };
+   }
+  });
+  return snap;
+ }
+
+ function restoreScheduleWeeks(snap){
+  if(!snap || !scheduleCache) return;
+  Object.keys(snap).forEach(tid => {
+   const node = scheduleCache[tid] || scheduleCache[Number(tid)];
+   if(!node) return;
+   if(!node.weeks) node.weeks = {};
+   Object.keys(snap[tid]).forEach(w => {
+    node.weeks[w] = { ...snap[tid][w] };
+    node.weeks[Number(w)] = node.weeks[w];
+   });
+  });
+ }
+
+ function playoffPctMapForced(scheduleWeeks){
+  try{ state._playoffOddsCache = null; }catch(e){}
+  const result = simulatePlayoffOdds(null, { force: true, scheduleWeeks: scheduleWeeks || null });
+  const map = {};
+  if(result && result.odds){
+   result.odds.forEach(r => {
+    map[String(r.team.id)] = r.playoffPct;
+    map[r.team.id] = r.playoffPct;
+   });
+  }
+  return { map, result };
+ }
+
+ function remainingSos(teamId, weeks, curWeek, maxWeek, byId){
+  let sum = 0, n = 0;
+  for(let w = curWeek + 1; w <= maxWeek; w++){
+   const games = weeks[w] || [];
+   const g = games.find(x => String(x.a) === String(teamId) || String(x.b) === String(teamId));
+   if(!g) continue;
+   const opp = String(g.a) === String(teamId) ? g.b : g.a;
+   sum += targetWeekScore(teamId, opp, w, byId);
+   n++;
+  }
+  return n ? sum / n : 0;
+ }
+
+ function playoffHelpScore(teamId, weeks, curWeek, maxWeek, byId){
+  // Lower is better: soft SOS + slight preference to play strong teams that are already safe
+  // and weak teams still in the race (simplify: pure SOS with tiny seed weight)
+  let sos = remainingSos(teamId, weeks, curWeek, maxWeek, byId);
+  try{
+   const teams = state.teams || [];
+   const standings = teams.slice().sort((a,b) => {
+    const ga = (a.wins||0)+(a.losses||0)+(a.ties||0) || 1;
+    const gb = (b.wins||0)+(b.losses||0)+(b.ties||0) || 1;
+    const pa = ((a.wins||0)+0.5*(a.ties||0))/ga;
+    const pb = ((b.wins||0)+0.5*(b.ties||0))/gb;
+    return pb - pa || (b.pointsFor||0) - (a.pointsFor||0);
+   });
+   const nPlay = (state.playoffSettings && state.playoffSettings.playoffTeams) || Math.ceil(teams.length/2);
+   const myIdx = standings.findIndex(t => String(t.id) === String(teamId));
+   // Reward facing teams clearly above the cut more than bubble teams? For "help make playoffs"
+   // easiest path is mainly weak opponents — stick with SOS, small bonus for weaker records
+   let bonus = 0;
+   for(let w = curWeek + 1; w <= maxWeek; w++){
+    const games = weeks[w] || [];
+    const g = games.find(x => String(x.a) === String(teamId) || String(x.b) === String(teamId));
+    if(!g) continue;
+    const oppId = String(g.a) === String(teamId) ? g.b : g.a;
+    const oi = standings.findIndex(t => String(t.id) === String(oppId));
+    if(oi > nPlay) bonus -= 1.5; // face teams outside bubble (weaker standings)
+    if(oi >= 0 && oi < nPlay - 2) bonus += 0.8; // strong locked-in teams are harder
+   }
+   return sos + bonus;
+  }catch(e){ return sos; }
+ }
+
+ function cloneWeeks(weeks){
+  const out = {};
+  Object.keys(weeks).forEach(w => {
+   out[w] = (weeks[w] || []).map(g => ({ a: g.a, b: g.b }));
+  });
+  return out;
+ }
+
+ function trySwapInWeek(weeks, week, i, j, mode){
+  // Two matchups: A-B and C-D → try A-C/B-D and A-D/B-C
+  const games = weeks[week];
+  if(!games || i === j || i < 0 || j < 0 || i >= games.length || j >= games.length) return null;
+  const g1 = games[i], g2 = games[j];
+  const A = g1.a, B = g1.b, C = g2.a, D = g2.b;
+  const options = [
+   [{ a:A, b:C }, { a:B, b:D }],
+   [{ a:A, b:D }, { a:B, b:C }]
+  ];
+  const results = [];
+  for(const pair of options){
+   const next = cloneWeeks(weeks);
+   next[week] = games.map((g, idx) => {
+    if(idx === i) return pair[0];
+    if(idx === j) return pair[1];
+    return { a: g.a, b: g.b };
+   });
+   results.push(next);
+  }
+  return results;
+ }
+
+ function optimizeSchedule(opts){
+  opts = opts || {};
+  const primaryId = opts.primaryId || null;
+  const primaryMode = opts.primaryMode || 'easiest';
+  const secondaryId = opts.secondaryId || null;
+  const secondaryMode = opts.secondaryMode || 'easiest';
+  const helpIn = (opts.helpIn || []).map(String);
+  const helpOut = (opts.helpOut || []).map(String);
+  const constraints = opts.constraints || []; // {a,b,type:'meet'|'avoid'}
+
+  const st = buildScheduleState();
+  if(!st.teams.length) return { error: 'No teams loaded.' };
+  if(!scheduleCache) return { error: 'Schedule not loaded yet. Open Schedule once, then try again.' };
+
+  let totalGames = 0;
+  for(let w = 1; w <= st.maxWeek; w++) totalGames += (st.weeks[w] || []).length;
+  if(totalGames < 1){
+   return { error: 'Schedule has no matchups loaded (every week looks like a BYE). Open Schedule or Matchups to refresh, then retry.' };
+  }
+
+  let lockedThrough = Number(st.curWeek) || 1;
+  if(!isFinite(lockedThrough) || lockedThrough < 1) lockedThrough = 1;
+  if(lockedThrough > st.maxWeek) lockedThrough = Math.max(1, st.maxWeek - 1);
+
+  const editable = [];
+  for(let w = lockedThrough + 1; w <= st.maxWeek; w++){
+   if((st.weeks[w] || []).length >= 1) editable.push(w);
+  }
+  const swappable = editable.filter(w => (st.weeks[w] || []).length >= 2);
+  if(!swappable.length){
+   return { error: 'No future weeks with 2+ games to swap (locked through week ' + lockedThrough + ').' };
+  }
+
+  function pairKey(a,b){ return st.pairKey(a,b); }
+
+  function pairCountInWeeks(weeksMap, a, b, fromW, toW){
+   const k = pairKey(a,b);
+   let n = 0;
+   for(let w = fromW; w <= toW; w++){
+    (weeksMap[w] || []).forEach(g => {
+     if(pairKey(g.a, g.b) === k) n++;
+    });
+   }
+   return n;
+  }
+
+  function violatesAvoid(weeksMap){
+   for(const c of constraints){
+    if(c.type !== 'avoid') continue;
+    // Future meetings only (editable weeks) — must be zero
+    if(pairCountInWeeks(weeksMap, c.a, c.b, lockedThrough + 1, st.maxWeek) > 0) return true;
+   }
+   return false;
+  }
+
+  function meetScore(weeksMap){
+   // Higher when must-meet pairs have a future meeting (and still legal overall)
+   let s = 0;
+   for(const c of constraints){
+    if(c.type !== 'meet') continue;
+    const total = pairCountInWeeks(weeksMap, c.a, c.b, 1, st.maxWeek);
+    const future = pairCountInWeeks(weeksMap, c.a, c.b, lockedThrough + 1, st.maxWeek);
+    if(future >= 1) s += 40;
+    else if(total >= 2) s += 5; // already met twice in past — can't force more
+    else s -= 25; // wanted a meeting, none left
+   }
+   return s;
+  }
+
+  function legalPlus(weeksMap){
+   if(!scheduleLegal(weeksMap, st.pairKey, st.maxWeek)) return false;
+   if(violatesAvoid(weeksMap)) return false;
+   return true;
+  }
+
+  let best = cloneWeeks(st.weeks);
+  // If baseline violates avoid, still search from it
+
+  function goalScore(teamId, mode, weeks){
+   if(!teamId) return 0;
+   const sos = remainingSos(teamId, weeks, lockedThrough, st.maxWeek, st.byId);
+   if(mode === 'hardest') return sos;
+   return -sos;
+  }
+
+  function scoreOrient(weeks){
+   let s = 0;
+   helpIn.forEach(id => { s += goalScore(id, 'easiest', weeks) * 1.2; });
+   helpOut.forEach(id => { s += goalScore(id, 'hardest', weeks) * 1.2; });
+   if(primaryId) s += goalScore(primaryId, primaryMode, weeks);
+   if(secondaryId && String(secondaryId) !== String(primaryId)){
+    s += 0.85 * goalScore(secondaryId, secondaryMode, weeks);
+   }
+   s += meetScore(weeks);
+   return s;
+  }
+
+  let bestScore = scoreOrient(best);
+  const baselinePrimary = primaryId ? remainingSos(primaryId, st.weeks, lockedThrough, st.maxWeek, st.byId) : null;
+  const baselineSecondary = secondaryId ? remainingSos(secondaryId, st.weeks, lockedThrough, st.maxWeek, st.byId) : null;
+  const baselineIn = {};
+  const baselineOut = {};
+  helpIn.forEach(id => { baselineIn[id] = remainingSos(id, st.weeks, lockedThrough, st.maxWeek, st.byId); });
+  helpOut.forEach(id => { baselineOut[id] = remainingSos(id, st.weeks, lockedThrough, st.maxWeek, st.byId); });
+
+  const ITER = 4500 + constraints.length * 400 + (helpIn.length + helpOut.length) * 200;
+  for(let it = 0; it < ITER; it++){
+   const w = swappable[Math.floor(Math.random() * swappable.length)];
+   const games = best[w] || [];
+   if(games.length < 2) continue;
+   let i = Math.floor(Math.random() * games.length);
+   let j = Math.floor(Math.random() * games.length);
+   if(i === j) j = (j + 1) % games.length;
+   const optsSwap = trySwapInWeek(best, w, i, j);
+   if(!optsSwap) continue;
+   for(const cand of optsSwap){
+    if(!legalPlus(cand)) continue;
+    const sc = scoreOrient(cand);
+    if(sc > bestScore + 1e-6){
+     best = cand;
+     bestScore = sc;
+    }
+   }
+  }
+
+  // Prefer satisfying avoid: if best still has avoid meetings, try a focused pass
+  if(violatesAvoid(best)){
+   for(let it = 0; it < 2000; it++){
+    const w = swappable[Math.floor(Math.random() * swappable.length)];
+    const games = best[w] || [];
+    if(games.length < 2) continue;
+    let i = Math.floor(Math.random() * games.length);
+    let j = Math.floor(Math.random() * games.length);
+    if(i === j) j = (j + 1) % games.length;
+    const optsSwap = trySwapInWeek(best, w, i, j);
+    if(!optsSwap) continue;
+    for(const cand of optsSwap){
+     if(!legalPlus(cand)) continue;
+     // Prefer fewer avoid violations; scoreOrient secondary
+     const sc = scoreOrient(cand) + (violatesAvoid(cand) ? -1000 : 200);
+     if(sc > bestScore + 1e-6){
+      best = cand;
+      bestScore = sc;
+     }
+    }
+   }
+  }
+
+  const finalPrimary = primaryId ? remainingSos(primaryId, best, lockedThrough, st.maxWeek, st.byId) : null;
+  const finalSecondary = secondaryId ? remainingSos(secondaryId, best, lockedThrough, st.maxWeek, st.byId) : null;
+  const finalIn = {};
+  const finalOut = {};
+  helpIn.forEach(id => { finalIn[id] = remainingSos(id, best, lockedThrough, st.maxWeek, st.byId); });
+  helpOut.forEach(id => { finalOut[id] = remainingSos(id, best, lockedThrough, st.maxWeek, st.byId); });
+
+  const diffs = [];
+  for(let w = lockedThrough + 1; w <= st.maxWeek; w++){
+   const before = st.weeks[w] || [];
+   const after = best[w] || [];
+   const beforeKeys = new Set(before.map(g => st.pairKey(g.a, g.b)));
+   const afterKeys = new Set(after.map(g => st.pairKey(g.a, g.b)));
+   const removed = before.filter(g => !afterKeys.has(st.pairKey(g.a, g.b)));
+   const added = after.filter(g => !beforeKeys.has(st.pairKey(g.a, g.b)));
+   if(!removed.length && !added.length) continue;
+   diffs.push({
+    week: w,
+    removed: removed.map(g => ({ a: g.a, b: g.b })),
+    added: added.map(g => ({ a: g.a, b: g.b }))
+   });
+  }
+
+  // Constraint report
+  const constraintReport = constraints.map(c => {
+   const future = pairCountInWeeks(best, c.a, c.b, lockedThrough + 1, st.maxWeek);
+   const total = pairCountInWeeks(best, c.a, c.b, 1, st.maxWeek);
+   return {
+    a: c.a, b: c.b, type: c.type,
+    futureMeetings: future,
+    totalMeetings: total,
+    ok: c.type === 'avoid' ? future === 0 : (future >= 1 || total >= 2)
+   };
+  });
+
+  let playoffDeltas = [];
+  try{
+   const beforePO = playoffPctMapForced(st.weeks);
+   const afterPO = playoffPctMapForced(best);
+   try{ state._playoffOddsCache = null; }catch(e){}
+   playoffDeltas = (state.teams || []).map(t => {
+    const b = beforePO.map[String(t.id)];
+    const a = afterPO.map[String(t.id)];
+    return {
+     team: t,
+     before: b,
+     after: a,
+     delta: (b != null && a != null) ? (a - b) : null
+    };
+   }).sort((x,y) => (y.delta||0) - (x.delta||0));
+  }catch(e){ console.warn('schedopt playoff delta', e); playoffDeltas = []; }
+
+  return {
+   primaryId, primaryMode, secondaryId, secondaryMode,
+   helpIn, helpOut, constraints, constraintReport,
+   lockedThrough,
+   baselinePrimary, finalPrimary,
+   deltaPrimary: (finalPrimary != null && baselinePrimary != null) ? finalPrimary - baselinePrimary : null,
+   baselineSecondary, finalSecondary,
+   deltaSecondary: (finalSecondary != null && baselineSecondary != null) ? finalSecondary - baselineSecondary : null,
+   baselineIn, finalIn, baselineOut, finalOut,
+   diffs,
+   playoffDeltas,
+   iterations: ITER,
+   editableWeeks: editable,
+   avoidStillBroken: violatesAvoid(best)
+  };
+ }
+
+ function renderSchedOpt(){
+  try{ bpSetSource('source-schedopt', 'Schedule optimizer', 'Uses Schedule weekly projections. Playoff % uses the Playoffs simulator. Suggestions only.'); }catch(e){}
+  const status = el('schedopt-status');
+  const summary = el('schedopt-summary');
+  const swaps = el('schedopt-swaps');
+  const inList = el('schedopt-in-list');
+  const outList = el('schedopt-out-list');
+  const rulesBox = el('schedopt-rules');
+  const sel = el('schedopt-team');
+  const sel2 = el('schedopt-team2');
+
+  function nameOf(id){
+   const t = (state.teams || []).find(x => String(x.id) === String(id));
+   return t ? t.name : String(id);
+  }
+
+  function fillTeamChecks(box, prefix){
+   if(!box || box._filled) return;
+   box._filled = true;
+   box.innerHTML = '';
+   (state.teams || []).forEach(t => {
+    const id = 'schedopt-' + prefix + '-' + String(t.id).replace(/\W/g,'_');
+    const lab = document.createElement('label');
+    lab.innerHTML = '<input type="checkbox" class="schedopt-' + prefix + '" value="' + escapeHtml(String(t.id)) + '" id="' + id + '" /> <span>' + escapeHtml(t.name) + '</span>';
+    box.appendChild(lab);
+   });
+  }
+  fillTeamChecks(inList, 'in');
+  fillTeamChecks(outList, 'out');
+
+  function fillTeamSelect(node){
+   if(!node || node._filled) return;
+   node._filled = true;
+   // keep first None option if present
+   (state.teams || []).forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id;
+    o.textContent = t.name;
+    node.appendChild(o);
+   });
+  }
+  fillTeamSelect(sel);
+  fillTeamSelect(sel2);
+
+  function addRuleRow(preset){
+   if(!rulesBox) return;
+   const row = document.createElement('div');
+   row.className = 'schedopt-rule-row';
+   const s1 = document.createElement('select');
+   const s2 = document.createElement('select');
+   const stype = document.createElement('select');
+   stype.innerHTML = '<option value="meet">Must play again</option><option value="avoid">Must not play again</option>';
+   (state.teams || []).forEach(t => {
+    const o1 = document.createElement('option'); o1.value = t.id; o1.textContent = t.name; s1.appendChild(o1);
+    const o2 = document.createElement('option'); o2.value = t.id; o2.textContent = t.name; s2.appendChild(o2);
+   });
+   if(preset){
+    if(preset.a != null) s1.value = preset.a;
+    if(preset.b != null) s2.value = preset.b;
+    if(preset.type) stype.value = preset.type;
+   }
+   const rm = document.createElement('button');
+   rm.type = 'button';
+   rm.className = 'btn btn-ghost btn-sm';
+   rm.textContent = 'Remove';
+   rm.onclick = () => row.remove();
+   row.appendChild(s1);
+   row.appendChild(stype);
+   row.appendChild(s2);
+   row.appendChild(rm);
+   rulesBox.appendChild(row);
+  }
+
+  const addRuleBtn = el('btn-schedopt-add-rule');
+  if(addRuleBtn && !addRuleBtn._bound){
+   addRuleBtn._bound = true;
+   addRuleBtn.addEventListener('click', () => addRuleRow());
+  }
+  if(rulesBox && !rulesBox.children.length){
+   // start with one empty rule row for convenience
+   addRuleRow();
+  }
+
+  function readChecks(cls){
+   return Array.from(document.querySelectorAll('.' + cls + ':checked')).map(c => c.value);
+  }
+  function readRules(){
+   const out = [];
+   if(!rulesBox) return out;
+   Array.from(rulesBox.querySelectorAll('.schedopt-rule-row')).forEach(row => {
+    const sels = row.querySelectorAll('select');
+    if(sels.length < 3) return;
+    const a = sels[0].value, type = sels[1].value, b = sels[2].value;
+    if(!a || !b || String(a) === String(b)) return;
+    out.push({ a, b, type });
+   });
+   return out;
+  }
+
+  const runBtn = el('btn-schedopt-run');
+  if(runBtn && !runBtn._bound){
+   runBtn._bound = true;
+   runBtn.addEventListener('click', () => {
+    const helpIn = readChecks('schedopt-in');
+    const helpOut = readChecks('schedopt-out');
+    const constraints = readRules();
+    const teamId = sel && sel.value ? sel.value : '';
+    const mode = (el('schedopt-mode') && el('schedopt-mode').value) || 'easiest';
+    const team2 = sel2 && sel2.value ? sel2.value : '';
+    const mode2 = (el('schedopt-mode2') && el('schedopt-mode2').value) || 'easiest';
+
+    // Disallow same team in both in and out
+    const overlap = helpIn.filter(id => helpOut.includes(id));
+    if(overlap.length){
+     if(status) status.textContent = 'A team cannot be both help-in and push-out: ' + overlap.map(nameOf).join(', ');
+     return;
+    }
+    if(!helpIn.length && !helpOut.length && !constraints.length && !teamId && !team2){
+     if(status) status.textContent = 'Pick playoff targets, matchup rules, and/or an SOS tilt team.';
+     return;
+    }
+
+    if(status) status.textContent = 'Loading schedule if needed, then optimizing…';
+    if(summary) summary.innerHTML = '';
+    if(swaps) swaps.innerHTML = '';
+
+    const finish = () => {
+     if(status) status.textContent = 'Running optimizer + playoff odds…';
+     setTimeout(() => {
+      let result;
+      try{
+       result = optimizeSchedule({
+        primaryId: teamId || null,
+        primaryMode: mode,
+        secondaryId: team2 || null,
+        secondaryMode: mode2,
+        helpIn, helpOut, constraints
+       });
+      }catch(e){ console.warn(e); result = { error: String(e.message || e) }; }
+      if(result.error){
+       if(status) status.textContent = result.error;
+       return;
+      }
+      let statusTxt = 'Locked through week ' + result.lockedThrough;
+      if(result.helpIn && result.helpIn.length) statusTxt += ' · help in: ' + result.helpIn.map(nameOf).join(', ');
+      if(result.helpOut && result.helpOut.length) statusTxt += ' · push out: ' + result.helpOut.map(nameOf).join(', ');
+      if(result.avoidStillBroken) statusTxt += ' · warning: some avoid rules still broken';
+      if(status) status.textContent = statusTxt;
+
+      if(summary){
+       function sosLine(label, before, after){
+        if(before == null || after == null) return '';
+        const delta = after - before;
+        const dir = delta <= 0 ? 'easier' : 'harder';
+        const col = delta <= 0 ? 'var(--accent)' : 'var(--red)';
+        return '<div style="margin-bottom:6px;"><strong>' + escapeHtml(label) + '</strong> · SOS ' +
+         before.toFixed(1) + ' → ' + after.toFixed(1) +
+         ' · Δ <span style="color:' + col + ';font-weight:650;">' +
+         (delta >= 0 ? '+' : '') + delta.toFixed(1) + '</span> (' + dir + ')</div>';
+       }
+       let html = '<div class="hist-card" style="padding:12px 14px;">';
+       html += '<div style="font-weight:650;margin-bottom:8px;">Remaining SOS</div>';
+       (result.helpIn || []).forEach(id => html += sosLine(nameOf(id) + ' (help in)', result.baselineIn[id], result.finalIn[id]));
+       (result.helpOut || []).forEach(id => html += sosLine(nameOf(id) + ' (push out)', result.baselineOut[id], result.finalOut[id]));
+       if(result.primaryId) html += sosLine(nameOf(result.primaryId) + ' (tilt)', result.baselinePrimary, result.finalPrimary);
+       if(result.secondaryId) html += sosLine(nameOf(result.secondaryId) + ' (tilt)', result.baselineSecondary, result.finalSecondary);
+       if(!(result.helpIn||[]).length && !(result.helpOut||[]).length && !result.primaryId){
+        html += '<div style="font-size:13px;color:var(--text-muted);">No SOS targets — constraints / playoff table below.</div>';
+       }
+
+       if(result.constraintReport && result.constraintReport.length){
+        html += '<div style="font-weight:650;margin:12px 0 6px;">Matchup rules</div>';
+        result.constraintReport.forEach(c => {
+         const ok = c.ok ? 'OK' : 'Not met';
+         const col = c.ok ? 'var(--accent)' : 'var(--red)';
+         const kind = c.type === 'avoid' ? 'must not play' : 'must play';
+         html += '<div style="font-size:13px;margin-bottom:4px;">' + escapeHtml(nameOf(c.a)) + ' ' + kind + ' ' + escapeHtml(nameOf(c.b)) +
+          ' · future meetings: ' + c.futureMeetings + ' · <span style="color:' + col + ';font-weight:650;">' + ok + '</span></div>';
+        });
+       }
+
+       if(result.playoffDeltas && result.playoffDeltas.length){
+        html += '<div style="font-weight:650;margin:14px 0 8px;">Playoff % change (all teams)</div>';
+        html += '<div style="overflow-x:auto;"><table style="width:100%;font-size:13px;"><thead><tr><th>Team</th><th>Before</th><th>After</th><th>Δ</th></tr></thead><tbody>';
+        result.playoffDeltas.forEach(row => {
+         const isIn = (result.helpIn || []).includes(String(row.team.id));
+         const isOut = (result.helpOut || []).includes(String(row.team.id));
+         const d = row.delta;
+         const dStr = d == null ? '-' : ((d >= 0 ? '+' : '') + d.toFixed(1) + ' pts');
+         const col = d == null ? 'var(--text-muted)' : (d > 0.15 ? 'var(--accent)' : (d < -0.15 ? 'var(--red)' : 'var(--text-secondary)'));
+         let tag = '';
+         if(isIn) tag = ' <span style="color:var(--accent);font-size:11px;">in</span>';
+         if(isOut) tag = ' <span style="color:var(--red);font-size:11px;">out</span>';
+         html += '<tr' + (isIn || isOut ? ' style="background:var(--accent-muted)"' : '') + '><td>' + escapeHtml(row.team.name) + tag + '</td>';
+         html += '<td>' + (row.before != null ? row.before.toFixed(1) + '%' : '-') + '</td>';
+         html += '<td>' + (row.after != null ? row.after.toFixed(1) + '%' : '-') + '</td>';
+         html += '<td style="color:' + col + ';font-weight:650;">' + dStr + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        html += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Same playoff simulator as Playoffs tab. Small gaps can be noise.</div>';
+       }
+       html += '</div>';
+       summary.innerHTML = html;
+      }
+
+      if(swaps){
+       if(!result.diffs.length){
+        swaps.innerHTML = '<div class="hist-empty">No matchup changes. Try different targets or rules.</div>';
+       } else {
+        function gameStr(g){ return escapeHtml(nameOf(g.a)) + ' vs ' + escapeHtml(nameOf(g.b)); }
+        let html = '<div class="bp-moves-head">Changed games only (' + result.diffs.length + ' week' + (result.diffs.length === 1 ? '' : 's') + ')</div>';
+        result.diffs.forEach(d => {
+         html += '<div class="hist-card" style="padding:12px 14px;margin-bottom:8px;">';
+         html += '<div style="font-weight:650;margin-bottom:8px;">Week ' + d.week + '</div>';
+         if(d.removed.length){
+          html += '<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:4px;">Remove</div>';
+          html += '<div style="font-size:13px;margin-bottom:8px;color:var(--red);">' + d.removed.map(gameStr).join('<br>') + '</div>';
+         }
+         if(d.added.length){
+          html += '<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:4px;">Add</div>';
+          html += '<div style="font-size:13px;color:var(--accent);">' + d.added.map(gameStr).join('<br>') + '</div>';
+         }
+         html += '</div>';
+        });
+        swaps.innerHTML = html;
+       }
+      }
+     }, 30);
+    };
+
+    let needLoad = true;
+    try{
+     if(scheduleCache && scheduleCache._matchRows > 0) needLoad = false;
+     else if(scheduleCache){
+      let n = 0;
+      (state.teams || []).forEach(t => {
+       const node = scheduleCache[t.id] || scheduleCache[String(t.id)];
+       if(!node || !node.weeks) return;
+       for(let w = 1; w <= 17; w++){
+        const m = node.weeks[w] || node.weeks[String(w)];
+        if(m && m.oppId != null) n++;
+       }
+      });
+      if(n > 0) needLoad = false;
+     }
+    }catch(e){}
+    if(needLoad && typeof loadScheduleGraph === 'function'){
+     loadScheduleGraph().then(() => finish()).catch(() => finish());
+    } else {
+     finish();
+    }
+   });
+  }
+
+  if(status && !status.textContent) status.textContent = 'Set playoff targets and/or matchup rules, then Optimize.';
+ }
+
+
+
+function renderLuck(){
  const tbody = el('luck-body');
  const note = el('luck-note');
  const intro = el('luck-intro');
  if(!tbody) return;
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+ tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
  return;
  }
 
@@ -15330,6 +16386,21 @@ function renderTradeSide(side){
   const nav = document.getElementById('nav-export');
   if(nav) nav.style.display = on ? '' : 'none';
  }
+ function showSchedOptSetting(){
+  try{ return localStorage.getItem('fd_show_schedopt') === '1'; }catch(e){ return false; }
+ }
+ function setSchedOptSetting(on){
+  try{ localStorage.setItem('fd_show_schedopt', on ? '1' : '0'); }catch(e){}
+  const nav = document.getElementById('nav-schedopt');
+  if(nav) nav.style.display = on ? '' : 'none';
+  // If turned off while on that panel, go home
+  if(!on){
+   const panel = document.getElementById('panel-schedopt');
+   if(panel && panel.classList.contains('active')){
+    try{ goToPanel('panel-home'); }catch(e){}
+   }
+  }
+ }
  function showTradeVorpSetting(){
   try{ return localStorage.getItem('fd_trade_vorp') === '1'; }catch(e){ return false; }
  }
@@ -15624,9 +16695,12 @@ function renderTradeSide(side){
    if(tv) tv.checked = showTradeVorpSetting();
    const ae = el('set-show-ai-export');
    if(ae) ae.checked = showAiExportSetting();
+   const so = el('set-show-schedopt');
+   if(so) so.checked = showSchedOptSetting();
    const pct = el('set-show-pct');
    if(pct) pct.checked = (localStorage.getItem('fd_show_pct') === '1');
    setAiExportSetting(showAiExportSetting());
+   setSchedOptSetting(showSchedOptSetting());
   }catch(e){}
  }
  try{ syncSettingsCheckboxes(); bindTradeNeedsCheckbox(); }catch(e){}
@@ -16981,8 +18055,14 @@ function goToPanel(panelId, opts){
  if(btn.dataset.panel === 'panel-rate') renderRateTeam();
  if(btn.dataset.panel === 'panel-injuries') { goToPanel('panel-byes'); return; }
  if(btn.dataset.panel === 'panel-sos'){
- if(!scheduleCache) loadScheduleGraph().then(() => renderSos());
+ const empty = !scheduleCache || !scheduleCache._matchRows;
+ if(empty && typeof loadScheduleGraph === 'function') loadScheduleGraph().then(() => renderSos());
+ else if(!scheduleCache) loadScheduleGraph().then(() => renderSos());
  else renderSos();
+ }
+ if(btn.dataset.panel === 'panel-schedopt'){
+ if(!scheduleCache) loadScheduleGraph().then(() => renderSchedOpt());
+ else renderSchedOpt();
  }
  if(btn.dataset.panel === 'panel-luck'){
  if(!scheduleCache) loadScheduleGraph().then(() => renderLuck());
@@ -17158,6 +18238,8 @@ el('btn-settings').addEventListener('click', () => {
      if(tv && typeof setTradeVorpSetting === 'function') setTradeVorpSetting(!!tv.checked);
      const ae = el('set-show-ai-export');
      if(ae && typeof setAiExportSetting === 'function') setAiExportSetting(!!ae.checked);
+     const so = el('set-show-schedopt');
+     if(so && typeof setSchedOptSetting === 'function') setSchedOptSetting(!!so.checked);
      const pct = el('set-show-pct');
      if(pct) localStorage.setItem('fd_show_pct', pct.checked ? '1' : '0');
     }catch(e){ console.warn('settings toggles', e); }
