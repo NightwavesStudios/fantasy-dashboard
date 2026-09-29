@@ -29,7 +29,7 @@
  --red-muted: rgba(240, 113, 103, 0.14);
  --blue: #6bb0e0;
 
- --sidebar-w: 232px;
+ --sidebar-w: 220px;
  --radius: 10px;
  --radius-sm: 7px;
  --touch: 44px;
@@ -2974,6 +2974,217 @@ html[data-theme="light"] {
   opacity: 0.8;
  }
 
+
+ /* —— Layout polish —— */
+ main {
+  padding: 24px 24px 56px !important;
+  max-width: 1080px !important;
+ }
+ .section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+ }
+ .section-title {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+ }
+ .needs-intro, .hint, .hist-meta {
+  font-size: 12.5px !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.45 !important;
+  margin-bottom: 12px !important;
+ }
+ .waiver-toolbar {
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+ }
+ .hist-card, .rec-card, .card, .tpi-card, .wtr-card, .cover-step, .bp-pipe-step {
+  border-radius: 8px !important;
+ }
+ .hist-card {
+  padding: 11px 13px !important;
+ }
+ .hist-list { gap: 6px !important; }
+ .rec-card {
+  padding: 12px 14px !important;
+ }
+ .rec-card h3 {
+  font-size: 11px !important;
+  letter-spacing: 0.06em !important;
+  margin-bottom: 8px !important;
+  font-weight: 650 !important;
+ }
+ .needs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+ }
+ table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+ }
+ table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+ }
+ table tbody td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+ }
+ table tbody tr:hover td {
+  background: rgba(255,255,255,0.02);
+ }
+ .bp-hero {
+  margin-bottom: 16px !important;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+ }
+ .bp-title {
+  font-size: 22px !important;
+  margin-bottom: 4px !important;
+ }
+ .bp-kicker {
+  font-size: 10px !important;
+  margin-bottom: 4px !important;
+ }
+ .bp-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+ }
+ .bp-scorecard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+ }
+ .bp-scorecard .sc-item, .bp-scorecard > div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+ }
+ .bp-pipe-step {
+  padding: 11px 12px !important;
+  gap: 10px !important;
+ }
+ .bp-pipe-why {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  margin-top: 2px;
+ }
+ .bp-pipe-label {
+  font-size: 13px !important;
+  font-weight: 650 !important;
+ }
+ .bp-moves-head {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+ }
+ .sidebar-brand {
+  padding: 16px 14px 14px !important;
+ }
+ .sidebar-brand h1 {
+  font-size: 14px !important;
+  letter-spacing: -0.01em;
+ }
+ .nav-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 14px 14px 6px;
+ }
+ .nav-item {
+  margin: 1px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+ }
+ .drawer-section {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid var(--border-subtle);
+ }
+ .drawer-section-title {
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+ }
+ .drawer-row {
+  padding: 8px 0 !important;
+ }
+ .field-label {
+  font-size: 12.5px !important;
+ }
+ .cover-actions {
+  margin-bottom: 12px;
+ }
+ .cover-step {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+ }
+ .cover-step.bad { border-color: rgba(240,113,103,0.45); }
+ .cover-step.ok { border-color: rgba(62,207,142,0.35); }
+ .pct-cell.up { color: var(--accent); font-weight: 650; }
+ .pct-cell.down { color: var(--red); font-weight: 650; }
+ .info-btn {
+  opacity: 0.55;
+ }
+ .info-btn:hover { opacity: 1; }
+ .btn {
+  border-radius: 8px;
+ }
+ .pos-chip {
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 5px 11px;
+ }
+ /* Less visual noise on sources */
+ .bp-source {
+  font-size: 11.5px !important;
+  color: var(--text-muted) !important;
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+ }
+
+
+ 
+
+ 
+
+ 
+ .proj-standings {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 14px 16px;
+ }
+ .proj-standings table { width: 100%; }
+
 </style>
 </head>
 <body>
@@ -3158,8 +3369,7 @@ html[data-theme="light"] {
  <main>
  <!-- ---------- TRADE ---------- -->
  <div id="strategy-strip" class="strategy-strip" aria-label="Team strategy" style="display:none!important"></div>
-
- <section class="panel active" id="panel-home">
+<section class="panel active" id="panel-home">
  <div class="bp-hero">
  <div class="bp-kicker">Fantasy Dashboard</div>
  <div class="bp-title">This week</div>
@@ -3168,7 +3378,7 @@ html[data-theme="light"] {
  <div id="bp-scorecard" class="bp-scorecard"></div>
  <div id="bp-moves" class="bp-moves"></div>
  <div id="bp-pillars" class="bp-pillars" style="display:none"></div>
- <!-- legacy hooks used by renderHome -->
+<!-- legacy hooks used by renderHome -->
  <div id="home-intro" style="display:none"></div>
  <div id="home-priorities" style="display:none"></div>
  <div id="home-flow" style="display:none"></div>
@@ -3215,7 +3425,7 @@ html[data-theme="light"] {
  <div class="section-title" style="margin:0;">League trends</div>
  <button type="button" class="info-btn" id="btn-trends-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <p class="needs-intro">Risers and fallers from saved FantasyCalc values and Power ranks on this device. Open the app over a few days to build history (1d / 1w / 1m windows).</p>
+ <p class="needs-intro">Only real risers (up) and fallers (down). FC 30-day is live; 1d / 1w / 1m need local history on this device.</p>
  <div class="waiver-toolbar" style="margin-bottom:12px;">
  <select id="trends-window">
  <option value="1d">Last ~1 day</option>
@@ -3763,11 +3973,12 @@ html[data-theme="light"] {
  <button type="button" class="btn btn-ghost btn-sm" id="btn-matchups-refresh">Refresh scores</button>
  </div>
  <p class="needs-intro" id="matchups-intro">Live and projected scores. Win % uses current points plus remaining projection gap (more uncertainty when a team still has more left to score).</p>
+ <div id="matchups-proj-standings" class="proj-standings" style="margin-bottom:18px;"></div>
  <div id="matchups-list" class="hist-list"></div>
  </section>
 
  <div class="footer-note">Player values from FantasyCalc · roster data from your league host · not financial advice</div>
- </main>
+</main>
  </div>
 </div>
 
@@ -4414,6 +4625,8 @@ html[data-theme="light"] {
    });
   });
  }
+
+
 
  function el(id){ return document.getElementById(id); }
  function medianOf(arr){
@@ -5929,6 +6142,16 @@ function escapeHtml(s){
  el('drawer-league-info').textContent = state.leagueName + ' (ID ' + state.leagueId + '), ' + state.teams.length + ' teams, via ' + (state.platform==='espn'?'ESPN':'Sleeper') + '.';
  el('sw-dynasty').classList.toggle('on', state.isDynasty);
  el('sw-superflex').classList.toggle('on', state.numQBs === 2);
+ try{
+  const swm = el('sw-league-median');
+  if(swm){
+   let on = false;
+   if(state.settings && state.settings.leagueMedian === true) on = true;
+   else if(state.settings && state.settings.leagueMedian === false) on = false;
+   else on = detectLeagueMedian();
+   swm.classList.toggle('on', !!on);
+  }
+ }catch(e){}
  el('sel-ppr').value = String(state.ppr);
  const vm = el('sel-value-mode');
  if(vm) vm.value = state.valueMode === 'raw' ? 'raw' : 'vorp';
@@ -6161,16 +6384,47 @@ function escapeHtml(s){
   poolEl.addEventListener('change', () => renderWaivers());
  }
  const pool = poolEl ? poolEl.value : 'ALL';
- if(pool === 'fa') list = list.filter(fa => fa.status === 'fa' || fa.status === 'unknown');
+ if(pool === 'fa') list = list.filter(fa => !fa.status || fa.status === 'fa' || fa.status === 'unknown');
  else if(pool === 'waiver') list = list.filter(fa => fa.status === 'waiver');
 
+
+
+ function rosterHasOpenSpot(roster, counts){
+  const limit = (counts && counts.rosterSize) || (roster || []).length + 1;
+  // Prefer league roster limit when known
+  let maxRoster = null;
+  try{
+   if(state.platform === 'sleeper' && state.league && state.league.settings){
+    maxRoster = state.league.settings.roster_positions
+     ? state.league.settings.roster_positions.length
+     : null;
+   }
+  }catch(e){}
+  if(maxRoster == null) maxRoster = (roster || []).length + 4; // allow adds if unknown
+  return (roster || []).length < maxRoster;
+ }
 
  function suggestedDrop(fa){
   if(!my) return null;
   const counts = getStarterCounts();
   const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
   const roster = (my.roster || []).filter(p => !p.isTaxi);
-  // This week's healthy optimal starters  -  never recommend dropping these
+
+  // If roster has room, no drop required
+  try{
+   let rosterSlots = null;
+   if(state.platform === 'espn' && state.league && state.league.settings){
+    const rs = state.league.settings.rosterSettings || {};
+    if(rs.rosterSlotCounts){
+     rosterSlots = Object.values(rs.rosterSlotCounts).reduce((a,b)=>a+(Number(b)||0),0);
+    }
+   }
+   if(state.platform === 'sleeper' && state.league && state.league.roster_positions){
+    rosterSlots = state.league.roster_positions.length;
+   }
+   if(rosterSlots != null && roster.length < rosterSlots) return null;
+  }catch(e){}
+
   const protectedIds = new Set();
   try{
    const flexElig = counts.flexEligible || ['RB','WR','TE'];
@@ -6186,13 +6440,13 @@ function escapeHtml(s){
    } else if(opt && opt.assignments){
     opt.assignments.forEach(a => { if(a && a.id != null) protectedIds.add(String(a.id)); });
    }
-   // Also protect anyone already locked into a starter slot this week
    roster.forEach(p => {
     if(p.isStarter && p.lineupSlotId != null && p.lineupSlotId !== 20 && !p.isIR)
      protectedIds.add(String(p.id));
    });
   }catch(e){}
-  // Sole healthy body at a position while someone is out → protect the backup (Geno case)
+
+  // Protect sole healthy backup when someone is hurt at that position
   try{
    const byPos = {};
    roster.forEach(p => {
@@ -6220,10 +6474,11 @@ function escapeHtml(s){
 
   function canDrop(cand){
    if(protectedIds.has(String(cand.id))) return false;
+   // Do not drop IR stars unless IR-only filter is on
    if(cand.isIR){
     const irOnly = el('waiver-ir-only') && el('waiver-ir-only').checked;
     if(!irOnly) return false;
-    if((cand.value || 0) > 200) return false;
+    if((cand.value || 0) > 250) return false;
    }
    const left = roster.filter(p => String(p.id) !== String(cand.id));
    const trial = left.concat([{
@@ -6234,87 +6489,149 @@ function escapeHtml(s){
     value: fa.value || 0,
     isIR: false
    }]);
-   // Must still fill full-strength roster AND this week's healthy lineup
-   let holes = 0, weekHoles = 0;
+   // Only require full-strength roster can still fill starters (IR returns count)
+   let holes = 0;
    try{ holes = unfilledSlots(trial, counts, { healthyOnly: false }); }catch(e){}
-   try{ weekHoles = unfilledSlots(trial, counts, { healthyOnly: true }); }catch(e){}
    if(holes > 0) return false;
-   if(weekHoles > 0) return false;
    return true;
   }
 
-  // Sort: drop IR fluff first, then lowest value unprotected
   const ranked = roster.slice().sort((a,b) => {
    const aIR = a.isIR ? 1 : 0;
    const bIR = b.isIR ? 1 : 0;
-   if(aIR !== bIR) return aIR - bIR;
+   // Prefer dropping low-value non-IR first for normal adds; IR fluff first when IR filter
+   const irOnly = el('waiver-ir-only') && el('waiver-ir-only').checked;
+   if(irOnly && aIR !== bIR) return bIR - aIR;
+   if(aIR !== bIR) return aIR - bIR; // non-IR first for ranking then low value
    return (a.value || 0) - (b.value || 0);
   });
   for(const cand of ranked){
    if(canDrop(cand)) return cand;
   }
-  // No safe drop  -  do not invent a bad one (e.g. Geno)
   return null;
  }
 
- // One shared safe drop for the roster (avoid repeating the same cut on every row)
- const sharedDrop = list.length ? suggestedDrop(list[0]) : null;
+ function scoreAddDrop(fa, drop){
+  // Higher is better. Season mode: market value gain. Stream: this-week pts.
+  if(mode === 'stream'){
+   const addPts = fa.weekPts || 0;
+   const dropPts = drop && typeof playerWeeklyPtsForWeek === 'function'
+    ? playerWeeklyPtsForWeek(drop, curWeek, curWeek)
+    : (drop ? (drop.value || 0) * 0.01 : 0);
+   return addPts - (dropPts || 0);
+  }
+  const addV = isVorpMode() ? (fa.vorp != null ? fa.vorp : fa.value) : (fa.value || 0);
+  const dropV = drop
+   ? (isVorpMode() ? Math.max(0, (drop.value || 0) - ((fa.rv != null ? fa.rv : 0))) : (drop.value || 0))
+   : 0;
+  return addV - dropV * 0.85;
+ }
 
- const faList = list.filter(fa => fa.status === 'fa' || (fa.status === 'unknown' && state.platform === 'sleeper'));
- const waiverList = list.filter(fa => fa.status === 'waiver' || (fa.status === 'unknown' && state.platform === 'espn'));
+ // Build real suggestions: top FAs with a legal drop (or open roster)
+ function buildSuggestions(poolList, label, limit){
+  const out = [];
+  const usedDrops = new Set();
+  for(const fa of poolList){
+   if(out.length >= limit) break;
+   const drop = suggestedDrop(fa);
+   // If we need a drop and none is safe, skip (don't force bad cuts)
+   const needDrop = (my.roster || []).filter(p => !p.isTaxi).length >= 1;
+   // Always try; suggestedDrop returns null when open slot or no safe cut
+   if(drop && usedDrops.has(String(drop.id))) continue;
+   const score = scoreAddDrop(fa, drop);
+   // Season: only suggest positive-ish adds; stream: any upgrade week pts
+   if(mode === 'season' && drop && score < -50) continue;
+   if(mode === 'stream' && score < 0.5 && drop) continue;
+   out.push({ fa, drop, score });
+   if(drop) usedDrops.add(String(drop.id));
+  }
+  out.sort((a,b) => b.score - a.score);
+  return out;
+ }
+
+ const faList = list.filter(fa => !fa.status || fa.status === 'fa' || fa.status === 'unknown');
+ const waiverList = list.filter(fa => fa.status === 'waiver');
+ // If host did not tag waivers, everything is FA
+ const useSplit = waiverList.length > 0;
 
  function metricOf(fa){
   if(mode === 'stream') return fa.weekPts != null ? fa.weekPts.toFixed(1) + ' wk' : ' - ';
   return fa.value != null ? String(Math.round(fa.value)) : ' - ';
  }
  function statusLabel(st){
-  if(st === 'fa') return 'FA';
+  if(!st || st === 'fa' || st === 'unknown') return 'FA';
   if(st === 'waiver') return 'Waiver';
-  return '?';
+  return String(st);
  }
 
  if(sug){
   let html = '';
-  // Free agency: pick up now - only a few, no forced drops
-  const faTop = faList.slice(0, 5);
-  html += '<div class="bp-moves-head" style="margin-top:4px;">Free agents (available now)</div>';
-  if(!faTop.length){
-   html += '<div class="hist-empty" style="padding:8px 0;">None tagged as free agents, or status unknown. Check the full list.</div>';
+  const faSug = buildSuggestions(faList, 'FA', 6);
+  html += '<div class="bp-moves-head" style="margin-top:4px;">Suggested adds' +
+   (mode === 'stream' ? ' (this week)' : ' (rest of season)') + '</div>';
+  if(!faSug.length){
+   html += '<div class="hist-empty" style="padding:8px 0;">No clear adds right now. Check the full ranking below, or free a roster spot first.</div>';
   } else {
-   html += faTop.map((fa, idx) => {
-    return `<div class="hist-card waiver-sug-card" style="padding:10px 12px;">
-     <span style="color:var(--text-muted);font-size:12px;">#${idx+1}</span>
-     ${playerCardLink(fa.name, fa.id)}
-     <span style="color:var(--text-muted);"> · ${escapeHtml(fa.position || '')} · FA</span>
-     <span style="margin-left:8px;font-weight:650;">${metricOf(fa)}</span>
-    </div>`;
+   html += faSug.map((row, idx) => {
+    const fa = row.fa;
+    const drop = row.drop;
+    const dropBit = drop
+     ? (' · drop <strong style="color:#c45c52;">' + escapeHtml(drop.fullName || drop.name) + '</strong>')
+     : ' · open roster spot';
+    return '<div class="hist-card waiver-sug-card" style="padding:10px 12px;">' +
+     '<span style="color:var(--text-muted);font-size:12px;">#' + (idx+1) + '</span> ' +
+     playerCardLink(fa.name, fa.id) +
+     '<span style="color:var(--text-muted);"> · ' + escapeHtml(fa.position || '') +
+     ' · ' + statusLabel(fa.status) + '</span>' +
+     '<span style="margin-left:8px;font-weight:650;">' + metricOf(fa) + '</span>' +
+     '<div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;">Add' + dropBit + '</div>' +
+     '</div>';
    }).join('');
-   if(sharedDrop){
-    html += '<div style="font-size:12.5px;color:var(--text-muted);margin:6px 0 10px;">If you need a roster spot, lowest safe cut: <strong style="color:#c45c52;">'
-     + escapeHtml(sharedDrop.fullName || sharedDrop.name) + '</strong></div>';
+  }
+
+  if(useSplit){
+   const wSug = buildSuggestions(waiverList, 'Waiver', 5);
+   html += '<div class="bp-moves-head">Waiver priority</div>';
+   if(!wSug.length){
+    html += '<div class="hist-empty" style="padding:8px 0;">No separate waiver claims ranked above FA pool.</div>';
+   } else {
+    html += wSug.map((row, idx) => {
+     const fa = row.fa;
+     const drop = row.drop;
+     const dropBit = drop
+      ? (' · drop <strong style="color:#c45c52;">' + escapeHtml(drop.fullName || drop.name) + '</strong>')
+      : '';
+     return '<div class="hist-card waiver-sug-card" style="padding:10px 12px;">' +
+      '<span style="color:var(--text-muted);font-size:12px;">#' + (idx+1) + '</span> ' +
+      playerCardLink(fa.name, fa.id) +
+      '<span style="color:var(--text-muted);"> · ' + escapeHtml(fa.position || '') + ' · claim</span>' +
+      '<span style="margin-left:8px;font-weight:650;">' + metricOf(fa) + '</span>' +
+      (dropBit ? '<div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;">Add' + dropBit + '</div>' : '') +
+      '</div>';
+    }).join('');
    }
   }
-  // Waiver priority: claim order
-  const wTop = waiverList.slice(0, 6);
-  html += '<div class="bp-moves-head">Waiver priority</div>';
-  if(!wTop.length){
-   html += '<div class="hist-empty" style="padding:8px 0;">No separate waiver pool detected. ESPN FA vs waiver tags need host data; Sleeper is usually FA after claims process.</div>';
-  } else {
-   html += wTop.map((fa, idx) => {
-    return `<div class="hist-card waiver-sug-card" style="padding:10px 12px;">
-     <span style="color:var(--text-muted);font-size:12px;">#${idx+1}</span>
-     ${playerCardLink(fa.name, fa.id)}
-     <span style="color:var(--text-muted);"> · ${escapeHtml(fa.position || '')} · claim</span>
-     <span style="margin-left:8px;font-weight:650;">${metricOf(fa)}</span>
-    </div>`;
-   }).join('');
-   if(sharedDrop){
-    html += '<div style="font-size:12.5px;color:var(--text-muted);margin:6px 0;">Same safe cut if a claim needs a drop: <strong style="color:#c45c52;">'
-     + escapeHtml(sharedDrop.fullName || sharedDrop.name) + '</strong></div>';
+
+  // Injury cover callouts
+  try{
+   const needs = typeof injuryBackupNeeds === 'function' ? injuryBackupNeeds(my) : [];
+   if(needs && needs.length){
+    html += '<div class="bp-moves-head">Injury cover</div>';
+    needs.slice(0, 4).forEach(n => {
+     const pos = n.position || (n.player && n.player.position) || '';
+     const name = (n.player && (n.player.fullName || n.player.name)) || 'Starter';
+     const fa = list.find(f => f.position === pos);
+     html += '<div class="hist-card" style="padding:10px 12px;font-size:13px;">' +
+      escapeHtml(name) + ' (' + escapeHtml(pos) + ') may miss time.' +
+      (fa ? (' Top ' + pos + ' on wire: ' + playerCardLink(fa.name, fa.id) + '.') : ' No clear ' + pos + ' on wire.') +
+      '</div>';
+    });
    }
-  }
+  }catch(e){}
+
   sug.innerHTML = html;
  }
+
 
  // Full ranking table: status, no repeated drops
  const th4 = document.querySelector('#panel-waivers th:nth-child(4)');
@@ -7997,44 +8314,42 @@ function countPosBodies(roster){
 
 
  function estimateInjuryWeeksOut(p, status){
- // Rough return timeline when platforms only give a designation
+ // Finite windows only. Never treat injury as out for the rest of the season.
+ // Status is re-read each load, so a long IR still advances week by week.
  if(!status || status === 'ok') return 0;
  if(status === 'questionable') return 0;
  if(status === 'doubtful') return 1;
  if(status === 'out') return 1;
- if(status === 'pup') return 6;
- if(status === 'ir'){
- // Dynasty IR can be long; in redraft assume multi-week absence
- return 4;
- }
- return 0;
+ if(status === 'pup') return 5;
+ if(status === 'ir') return state.isDynasty ? 5 : 3;
+ return 1;
  }
 
  function injuryWeekOutlook(p, week, curWeek){
- // available + multiplier for that fantasy week given injury status as of now
+ // Week-scoped availability. IR/OUT miss a finite window, then count again in SOS / schedule sims.
  let st = playerInjuryStatus(p);
  if(!st && p && p.isIR) st = 'ir';
  if(!st || st === 'ok') return { available: true, mult: 1, status: 'ok' };
 
- const outN = estimateInjuryWeeksOut(p, st);
- // Past weeks: don't apply current injury backwards
+ week = Number(week);
+ curWeek = Number(curWeek);
+ const outN = Math.min(6, Math.max(0, estimateInjuryWeeksOut(p, st)));
+
  if(week < curWeek) return { available: true, mult: 1, status: st };
 
  if(st === 'questionable'){
- // This week: haircut toward floor; future weeks: assume clears
- if(Number(week) === Number(curWeek)) return { available: true, mult: 0.72, status: st };
- return { available: true, mult: 0.95, status: st };
+  if(week === curWeek) return { available: true, mult: 0.72, status: st };
+  return { available: true, mult: 0.95, status: st };
  }
 
- // OUT / Doubtful / IR / PUP: miss current week through return
+ // First week they can start again
  const returnWeek = curWeek + Math.max(1, outN);
  if(week < returnWeek){
- return { available: false, mult: 0, status: st, returnWeek };
+  return { available: false, mult: 0, status: st, returnWeek };
  }
- // First week back: ramp
- if(week === returnWeek) return { available: true, mult: 0.7, status: st, returnWeek };
- if(week === returnWeek + 1) return { available: true, mult: 0.85, status: st, returnWeek };
- return { available: true, mult: 0.95, status: st, returnWeek };
+ if(week === returnWeek) return { available: true, mult: 0.75, status: st, returnWeek };
+ if(week === returnWeek + 1) return { available: true, mult: 0.9, status: st, returnWeek };
+ return { available: true, mult: 1, status: st, returnWeek };
  }
 
  function playerFloorCeil(p, week, curWeek){
@@ -8216,12 +8531,14 @@ function countPosBodies(roster){
  function playerAvailableForWeek(p, week, curWeek){
  if(!p) return false;
  if(p.isTaxi) return false;
- // IR slot: still check return timeline (may return mid-season)
  const bw = playerByeWeek(p);
  if(bw != null && Number(bw) === Number(week)) return false;
+ // Injury is week-scoped: after returnWeek they count again (not permanent zero)
  const o = injuryWeekOutlook(p, week, curWeek);
  return !!o.available;
  }
+
+
 
  // Best free agents by position for filling empty starter slots this week
  function waiverFillPool(week, curWeek){
@@ -8565,14 +8882,44 @@ function estimateTeamWeekScore(team, week, opts){
 
 function detectLeagueMedian(){
  try{
+ // Manual override from settings / localStorage
+ if(state.settings && state.settings.leagueMedian === true) return true;
+ if(state.settings && state.settings.leagueMedian === false) return false;
+ try{
+  const ls = localStorage.getItem('fd_league_median');
+  if(ls === '1'){ if(!state.settings) state.settings = {}; state.settings.leagueMedian = true; return true; }
+  if(ls === '0'){ if(!state.settings) state.settings = {}; state.settings.leagueMedian = false; return false; }
+ }catch(e0){}
+
+
  if(state.platform === 'sleeper' && state.league && state.league.settings){
- if(state.league.settings.league_average_match === 1) return true;
- if(state.league.settings.league_median_match === 1) return true;
+ const s = state.league.settings;
+ if(s.league_average_match === 1 || s.league_average_match === true) return true;
+ if(s.league_median_match === 1 || s.league_median_match === true) return true;
+ if(s.league_average_match === '1') return true;
  }
  if(state.platform === 'espn' && state.league && state.league.settings){
- const sch = state.league.settings.scheduleSettings || {};
- if(sch.leagueMedian || sch.playAgainstLeagueMedian) return true;
+ const settings = state.league.settings;
+ const sch = settings.scheduleSettings || {};
+ const sc = settings.scoringSettings || {};
+ // ESPN "bonus wins / top half" is scoringEnhancementType WIN_BONUS_TOP_HALF
+ if(sc.scoringEnhancementType === 'WIN_BONUS_TOP_HALF') return true;
+ if(sc.scoringEnhancementType === 'WIN_BONUS_MEDIAN') return true;
+ if(sc.medianScoring || sc.leagueMedian || sc.playAgainstLeagueMedian) return true;
+ if(sch.leagueMedian || sch.playAgainstLeagueMedian || sch.medianScoring) return true;
+ if(sch.leagueMedianEnabled || sch.bonusWins) return true;
  }
+ // Heuristic: after N completed weeks, if total games ≈ 2 per team per week, median is on
+ try{
+  const teams = state.teams || [];
+  if(teams.length >= 4){
+   const games = teams.map(t => (t.wins||0) + (t.losses||0) + (t.ties||0));
+   const avgG = games.reduce((a,b)=>a+b,0) / teams.length;
+   const week = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0);
+   // Week 3 active: ~2 finished weeks → pure H2H ≈ 2 games, with median ≈ 4
+   if(week >= 2 && avgG >= (week - 0.5) * 1.6) return true;
+  }
+ }catch(e2){}
  }catch(e){}
  return false;
  }
@@ -8888,7 +9235,243 @@ function matchupWinPct(liveA, liveB, projA, projB){
  return Math.max(0.01, Math.min(0.99, winA));
  }
 
- function renderMatchups(){
+ 
+ function computeProjectedStandings(matchups){
+  const teams = state.teams || [];
+  if(!teams.length || !matchups || !matchups.length) return null;
+  const useMedian = typeof detectLeagueMedian === 'function' && detectLeagueMedian();
+  const byId = {};
+  teams.forEach(t => {
+   byId[t.id] = byId[String(t.id)] = {
+    id: t.id,
+    name: t.name,
+    wins: t.wins || 0,
+    losses: t.losses || 0,
+    ties: t.ties || 0,
+    pf: t.pointsFor || 0
+   };
+  });
+
+  function scoreSigma(live, proj){
+   const rem = Math.max(0, (proj != null ? proj : live) - (live || 0));
+   return Math.max(3, 4 + rem * 0.42);
+  }
+  function sampleFinal(live, proj){
+   const mu = proj != null ? proj : (live || 0);
+   const sig = scoreSigma(live, mu);
+   const u = Math.max(1e-9, Math.random());
+   const v = Math.max(1e-9, Math.random());
+   const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+   return Math.max(0, mu + z * sig);
+  }
+  function isFinal(m){
+   if(m.status === 'final' || m.final) return true;
+   if(m.complete || m.isComplete) return true;
+   const la = m.pointsA || 0, lb = m.pointsB || 0;
+   const pa = m.projA != null ? m.projA : la;
+   const pb = m.projB != null ? m.projB : lb;
+   if(la > 0 && lb > 0 && Math.abs(pa - la) < 0.05 && Math.abs(pb - lb) < 0.05) return true;
+   return false;
+  }
+  function medianOfScores(arr){
+   const s = arr.slice().sort((a,b) => a - b);
+   if(!s.length) return 0;
+   const m = Math.floor(s.length / 2);
+   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  const games = matchups.filter(m => m.teamA && m.teamB);
+  // Unique team score sources from matchups (each team once)
+  const scoreSrc = {};
+  games.forEach(m => {
+   if(m.teamA) scoreSrc[m.teamA.id] = {
+    live: m.pointsA || 0,
+    proj: m.projA != null ? m.projA : (m.pointsA || 0),
+    final: isFinal(m)
+   };
+   if(m.teamB) scoreSrc[m.teamB.id] = {
+    live: m.pointsB || 0,
+    proj: m.projB != null ? m.projB : (m.pointsB || 0),
+    final: isFinal(m)
+   };
+  });
+
+  const SIMS = 2500;
+  const sumW = {}, sumL = {}, sumT = {}, sumPf = {};
+  const sumH2hW = {}, sumMedW = {};
+  teams.forEach(t => {
+   sumW[t.id] = 0; sumL[t.id] = 0; sumT[t.id] = 0; sumPf[t.id] = 0;
+   sumH2hW[t.id] = 0; sumMedW[t.id] = 0;
+  });
+
+  for(let s = 0; s < SIMS; s++){
+   const w = {}, l = {}, ti = {}, pfAdd = {};
+   const h2hW = {}, medW = {};
+   teams.forEach(t => {
+    w[t.id] = 0; l[t.id] = 0; ti[t.id] = 0; pfAdd[t.id] = 0;
+    h2hW[t.id] = 0; medW[t.id] = 0;
+   });
+
+   // Sample one final score per team this week
+   const finals = {};
+   teams.forEach(t => {
+    const src = scoreSrc[t.id] || scoreSrc[String(t.id)];
+    if(!src){
+     finals[t.id] = 0;
+     return;
+    }
+    finals[t.id] = src.final ? src.live : sampleFinal(src.live, src.proj);
+    pfAdd[t.id] = finals[t.id];
+   });
+
+   // H2H results
+   games.forEach(m => {
+    const a = m.teamA, b = m.teamB;
+    if(!a || !b) return;
+    const fa = finals[a.id] != null ? finals[a.id] : 0;
+    const fb = finals[b.id] != null ? finals[b.id] : 0;
+    if(Math.abs(fa - fb) < 0.05){
+     ti[a.id]++; ti[b.id]++;
+    } else if(fa > fb){
+     w[a.id]++; l[b.id]++;
+     h2hW[a.id]++;
+    } else {
+     w[b.id]++; l[a.id]++;
+     h2hW[b.id]++;
+    }
+   });
+
+   // League median / bonus win: top half of weekly scores get a W, bottom half a L
+   // (ESPN WIN_BONUS_TOP_HALF and Sleeper league_average_match)
+   if(useMedian){
+    const ranked = teams.map(t => ({ id: t.id, sc: finals[t.id] || 0 }))
+      .sort((a,b) => b.sc - a.sc || String(a.id).localeCompare(String(b.id)));
+    const half = Math.floor(ranked.length / 2);
+    // Cutoff score: last of top half
+    const cutScore = ranked[half - 1] ? ranked[half - 1].sc : 0;
+    ranked.forEach((r, idx) => {
+     if(idx < half){
+      // In top half — still tie if tied with someone who would fall below cut
+      if(Math.abs(r.sc - cutScore) < 0.05 && ranked.slice(half).some(x => Math.abs(x.sc - r.sc) < 0.05)){
+       // Boundary tie cluster: split as ties for those exactly on cut that straddle half
+       const onCut = ranked.filter(x => Math.abs(x.sc - cutScore) < 0.05);
+       const onCutStart = ranked.findIndex(x => Math.abs(x.sc - cutScore) < 0.05);
+       if(onCut.length > 1 && onCutStart < half && onCutStart + onCut.length > half){
+        ti[r.id]++;
+        return;
+       }
+      }
+      w[r.id]++;
+      medW[r.id]++;
+     } else {
+      if(Math.abs(r.sc - cutScore) < 0.05 && ranked.slice(0, half).some(x => Math.abs(x.sc - r.sc) < 0.05)){
+       const onCut = ranked.filter(x => Math.abs(x.sc - cutScore) < 0.05);
+       const onCutStart = ranked.findIndex(x => Math.abs(x.sc - cutScore) < 0.05);
+       if(onCut.length > 1 && onCutStart < half && onCutStart + onCut.length > half){
+        ti[r.id]++;
+        return;
+       }
+      }
+      l[r.id]++;
+     }
+    });
+   }
+
+   teams.forEach(t => {
+    sumW[t.id] += w[t.id] || 0;
+    sumL[t.id] += l[t.id] || 0;
+    sumT[t.id] += ti[t.id] || 0;
+    sumPf[t.id] += pfAdd[t.id] || 0;
+    sumH2hW[t.id] += h2hW[t.id] || 0;
+    sumMedW[t.id] += medW[t.id] || 0;
+   });
+  }
+
+  const rows = teams.map(t => {
+   const base = byId[t.id];
+   const expW = (sumW[t.id] || 0) / SIMS;
+   const expL = (sumL[t.id] || 0) / SIMS;
+   const expT = (sumT[t.id] || 0) / SIMS;
+   const expPfWeek = (sumPf[t.id] || 0) / SIMS;
+   const expH2hW = (sumH2hW[t.id] || 0) / SIMS;
+   const expMedW = (sumMedW[t.id] || 0) / SIMS;
+   const projWins = (base.wins || 0) + expW;
+   const projLosses = (base.losses || 0) + expL;
+   const projTies = (base.ties || 0) + expT;
+   const gamesPlayed = projWins + projLosses + projTies;
+   const winPct = gamesPlayed > 0 ? (projWins + 0.5 * projTies) / gamesPlayed : 0;
+   return {
+    id: t.id,
+    name: t.name,
+    curRecord: (base.ties ? base.wins + '-' + base.losses + '-' + base.ties : base.wins + '-' + base.losses),
+    expWeekW: expW,
+    expWeekL: expL,
+    expH2hW,
+    expMedW,
+    projWins,
+    projLosses,
+    projTies,
+    winPct,
+    pf: (base.pf || 0) + expPfWeek,
+    curPf: base.pf || 0
+   };
+  });
+  rows.sort((a,b) => b.projWins - a.projWins || b.winPct - a.winPct || b.pf - a.pf);
+  return { rows, sims: SIMS, useMedian };
+ }
+
+ function renderProjectedStandings(matchups){
+  const box = el('matchups-proj-standings');
+  if(!box) return;
+  if(!matchups || !matchups.length || !(state.teams || []).length){
+   box.innerHTML = '';
+   return;
+  }
+  let result;
+  try{ result = computeProjectedStandings(matchups); }catch(e){ console.warn(e); box.innerHTML = ''; return; }
+  if(!result || !result.rows.length){ box.innerHTML = ''; return; }
+
+  const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || '';
+  const med = !!result.useMedian;
+  const rowsHtml = result.rows.map((r, i) => {
+   const rec = r.projTies > 0.05
+    ? r.projWins.toFixed(1) + '-' + r.projLosses.toFixed(1) + '-' + r.projTies.toFixed(1)
+    : r.projWins.toFixed(1) + '-' + r.projLosses.toFixed(1);
+   const weekBit = r.expWeekW.toFixed(2) + ' W';
+   const split = med
+    ? ('H2H ' + r.expH2hW.toFixed(2) + ' · Med ' + r.expMedW.toFixed(2))
+    : ('H2H ' + r.expH2hW.toFixed(2));
+   return '<tr>' +
+    '<td style="font-weight:650;">' + (i + 1) + '</td>' +
+    '<td>' + escapeHtml(r.name) + '</td>' +
+    '<td style="color:var(--text-muted);font-size:12.5px;">' + escapeHtml(r.curRecord) + '</td>' +
+    '<td class="val-cell">' + rec + '</td>' +
+    '<td style="font-size:12.5px;color:var(--text-secondary);">' + weekBit + '</td>' +
+    '<td style="font-size:12px;color:var(--text-muted);">' + split + '</td>' +
+    '<td class="val-cell">' + (r.pf != null ? r.pf.toFixed(1) : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const how = med
+    ? 'Each week counts H2H and vs league median (top half of scores win the median game). Sims use live scores + remaining projection variance.'
+    : 'H2H only this week. Sims use live scores + remaining projection variance.';
+
+  box.innerHTML =
+   '<div class="section-title" style="font-size:15px;margin:0 0 8px;">Projected standings after this week' +
+   (curWeek ? ' <span style="color:var(--text-muted);font-weight:500;font-size:13px;">· week ' + curWeek + '</span>' : '') +
+   (med ? ' <span style="font-size:12px;color:var(--accent);font-weight:600;">· H2H + median</span>' : '') +
+   '</div>' +
+   '<p class="needs-intro" style="margin-bottom:10px;">' + how + ' (' + result.sims.toLocaleString() + ' runs). Decimal wins = expected value.</p>' +
+   '<div style="overflow-x:auto;"><table class="is-sortable">' +
+   '<thead><tr><th>#</th><th>Team</th><th>Now</th><th>After week</th><th>Week W</th><th>' +
+   (med ? 'H2H / Median' : 'H2H') + '</th><th>PF (proj)</th></tr></thead>' +
+   '<tbody>' + rowsHtml + '</tbody></table></div>';
+  try{ markTablesSortable(box); }catch(e){}
+ }
+
+
+
+function renderMatchups(){
  try{ bpSetSource('source-matchups', 'Matchups data', 'Live points from ESPN mScoreboard / Sleeper matchups API. Projected totals prefer host live-projected fields when present; otherwise lineup estimates.'); }catch(e){}
  const list = el('matchups-list');
  const intro = el('matchups-intro');
@@ -8897,8 +9480,10 @@ function matchupWinPct(liveA, liveB, projA, projB){
  const data = matchupCache || [];
  if(!data.length){
  list.innerHTML = '<div class="hist-empty">No matchup data yet. Tap Refresh scores after loading a league.</div>';
+ try{ const b = el('matchups-proj-standings'); if(b) b.innerHTML = ''; }catch(e){}
  return;
  }
+ try{ renderProjectedStandings(data); }catch(e){ console.warn(e); }
 
  // Rank by projected (fallback live) - single combined list
  const flat = [];
@@ -10884,63 +11469,87 @@ function runTradeFinder(){
  }
 
  function assignValueTiers(rows){
-    // Target ~6-10 tiers from value dropoffs. Mix strongest cliffs with
-    // enough breaks so mid/low tiers do not pile into one bucket.
+    // Rank by value. Put ~7-10 tier breaks across the list at the strongest
+    // local gaps so overall never piles 100+ into T1. Honor a true elite cliff
+    // at the top when #1 is clearly alone.
     if(!rows.length) return [];
-    const values = rows.map(r => r.value || 0);
-    const n = values.length;
-    if(n === 1) return rows.map(r => ({ ...r, tier: 1 }));
+    const sorted = rows.slice().sort((a,b) =>
+      (b.value||0) - (a.value||0) || String(a.player||'').localeCompare(String(b.player||''))
+    );
+    const n = sorted.length;
+    if(n <= 2) return sorted.map((r,i) => ({ ...r, tier: i + 1 }));
+    const values = sorted.map(r => Number(r.value) || 0);
+    const top = Math.max(1, values[0]);
 
-    // Aim band: 6-10 tiers depending on list size
-    let targetTiers = 6;
-    if(n >= 16) targetTiers = 7;
-    if(n >= 24) targetTiers = 8;
-    if(n >= 36) targetTiers = 9;
-    if(n >= 50) targetTiers = 10;
-    targetTiers = Math.min(targetTiers, n);
-    const needBreaks = targetTiers - 1;
+    let target = 6;
+    if(n >= 18) target = 7;
+    if(n >= 36) target = 8;
+    if(n >= 70) target = 9;
+    if(n >= 120) target = 10;
+    target = Math.min(target, n);
 
-    const gaps = [];
-    for(let i = 1; i < n; i++){
+    function gapScore(i){
+      if(i <= 0 || i >= n) return -1;
       const gap = values[i - 1] - values[i];
       const rel = values[i - 1] > 0 ? gap / values[i - 1] : 0;
-      // Mild depth bias: top cliffs still score higher, but mid-board gaps count
-      const depth = i / n;
-      const score = rel * (1.15 - 0.35 * depth) + (gap / (values[0] || 1)) * 0.35;
-      gaps.push({ i, gap, rel, score });
+      return rel * 1.3 + (gap / top) * 0.6;
     }
 
-    // Rank gaps by score; keep relative floor loose so we can fill target tier count
-    const ranked = gaps.slice().sort((a, b) => b.score - a.score);
-    const picked = [];
-    for(const g of ranked){
-      if(picked.length >= needBreaks) break;
-      if(g.rel < 0.035 && g.gap < (values[0] || 1) * 0.015) continue;
-      // Keep at least 1 player between breaks
-      if(picked.some(j => Math.abs(j - g.i) < 2)) continue;
-      picked.push(g.i);
+    // Exactly (target-1) breaks. Even slots, each snapped to best gap nearby.
+    // Require minimum separation so we do not get one-player tiers.
+    const breaks = [];
+    const minSep = Math.max(2, Math.floor(n / (target * 2.2)));
+    const window = Math.max(minSep, Math.floor(n / (target * 1.6)));
+
+    for(let t = 1; t < target; t++){
+      const ideal = Math.round((n * t) / target);
+      const lo = Math.max(1, ideal - window);
+      const hi = Math.min(n - 1, ideal + window);
+      let bestI = ideal;
+      let bestS = -1;
+      for(let i = lo; i <= hi; i++){
+        // keep clear of breaks already chosen
+        if(breaks.some(b => Math.abs(b - i) < minSep)) continue;
+        const s = gapScore(i);
+        if(s > bestS){ bestS = s; bestI = i; }
+      }
+      // fallback if everything blocked
+      if(bestS < 0){
+        for(let i = lo; i <= hi; i++){
+          const s = gapScore(i);
+          if(s > bestS){ bestS = s; bestI = i; }
+        }
+      }
+      if(bestI > 0 && bestI < n && !breaks.includes(bestI)) breaks.push(bestI);
     }
 
-    // If still short on breaks (flat mid-board), force splits at roughly even ranks
-    // among the largest remaining gaps so we hit the target count.
-    if(picked.length < needBreaks){
-      const used = new Set(picked);
-      const rest = gaps.filter(g => !used.has(g.i) && !picked.some(j => Math.abs(j - g.i) < 2))
-        .sort((a, b) => b.gap - a.gap || b.rel - a.rel);
-      for(const g of rest){
-        if(picked.length >= needBreaks) break;
-        if(picked.some(j => Math.abs(j - g.i) < 2)) continue;
-        picked.push(g.i);
+    // Elite cliff: if #1 is far above #2, force break at index 1 (T1 = one player)
+    const topCliff = values[0] > 0 ? (values[0] - values[1]) / values[0] : 0;
+    if(topCliff >= 0.12 || (values[0] - values[1]) >= top * 0.08){
+      if(!breaks.some(b => Math.abs(b - 1) < minSep)) breaks.push(1);
+      else if(!breaks.includes(1)){
+        // replace nearest break with 1
+        let nearest = 0, nd = 1e9;
+        breaks.forEach((b, idx) => {
+          if(Math.abs(b - 1) < nd){ nd = Math.abs(b - 1); nearest = idx; }
+        });
+        breaks[nearest] = 1;
       }
     }
 
-    const breakAt = new Set(picked);
+    const breakAt = new Set(breaks.filter(i => i > 0 && i < n));
     let tier = 1;
-    return rows.map((r, i) => {
+    return sorted.map((r, i) => {
       if(i > 0 && breakAt.has(i)) tier++;
       return { ...r, tier };
     });
   }
+
+
+
+
+
+
 
  function tierBadgeStyle(tier){
  // Distinct but readable colors cycling by tier
@@ -12216,8 +12825,8 @@ function renderByes(){
  prev, cur, delta, pct
  });
  });
- const risers = rows.slice().sort((x,y) => y.delta - x.delta).slice(0, n);
- const fallers = rows.slice().sort((x,y) => x.delta - y.delta).slice(0, n);
+ const risers = rows.filter(r => r.delta > 0).sort((x,y) => y.delta - x.delta).slice(0, n);
+ const fallers = rows.filter(r => r.delta < 0).sort((x,y) => x.delta - y.delta).slice(0, n);
  return { risers, fallers };
  }
  function renderTrends(){
@@ -12231,7 +12840,7 @@ function renderByes(){
     const win = winSel ? winSel.value : '30d';
 
     function listBlock(title, rows, isPower, note){
-      if(!rows.length) return `<div class="rec-card"><h3>${escapeHtml(title)}</h3><div class="rec-who">No movers</div></div>`;
+      if(!rows.length) return `<div class="rec-card"><h3>${escapeHtml(title)}</h3><div class="rec-who">None this window</div></div>`;
       return `<div class="rec-card"><h3>${escapeHtml(title)}</h3>` +
         (note ? `<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;">${escapeHtml(note)}</div>` : '') +
         rows.map((r,i) => {
@@ -12277,8 +12886,8 @@ function renderByes(){
           pct
         });
       });
-      const risers = rows.slice().sort((a,b) => b.delta - a.delta).slice(0, 10);
-      const fallers = rows.slice().sort((a,b) => a.delta - b.delta).slice(0, 10);
+      const risers = rows.filter(r => r.delta > 0).sort((a,b) => b.delta - a.delta).slice(0, 10);
+      const fallers = rows.filter(r => r.delta < 0).sort((a,b) => a.delta - b.delta).slice(0, 10);
 
       // Optional: local power if we have any snapshot span
       let powHtml = '';
@@ -12293,8 +12902,7 @@ function renderByes(){
         powHtml = `<div class="rec-card"><h3>Power movers</h3><div class="rec-who">Need a second league load later for Power trends (saved on this device).</div></div>`;
       }
 
-      box.innerHTML = `<p class="needs-intro" style="margin-bottom:12px;">FantasyCalc <strong>trend30Day</strong> from their live values feed (approx. last 30 days of market movement). Not a full historical board API.</p>
-        <div class="needs-grid">
+      box.innerHTML = `<div class="needs-grid">
           ${listBlock('Value risers (30d)', risers, false, 'FantasyCalc')}
           ${listBlock('Value fallers (30d)', fallers, false, 'FantasyCalc')}
           ${powHtml}
@@ -12321,8 +12929,8 @@ function renderByes(){
         const prev = cur - t30;
         rows.push({ name: p.name, pos, cur, prev: prev > 0 ? prev : null, delta: t30, pct: prev > 0 ? (t30/prev)*100 : null });
       });
-      const risers = rows.slice().sort((a,b) => b.delta - a.delta).slice(0, 8);
-      const fallers = rows.slice().sort((a,b) => a.delta - b.delta).slice(0, 8);
+      const risers = rows.filter(r => r.delta > 0).sort((a,b) => b.delta - a.delta).slice(0, 8);
+      const fallers = rows.filter(r => r.delta < 0).sort((a,b) => a.delta - b.delta).slice(0, 8);
       box.innerHTML += `<div class="needs-grid">
         ${listBlock('Meanwhile: FC 30d risers', risers, false)}
         ${listBlock('Meanwhile: FC 30d fallers', fallers, false)}
@@ -13212,6 +13820,7 @@ function buildStrategyBrief(){
  }
 
  if(pillars){ pillars.innerHTML = ''; pillars.style.display = 'none'; }
+
 
 }
 
@@ -16259,41 +16868,25 @@ function goToPanel(panelId, opts){
  const btn = document.querySelector('.nav-item[data-panel="' + panelId + '"]');
  if(btn) btn.click();
  else {
- document.querySelectorAll('.nav-item[data-panel]').forEach(b => b.classList.remove('active'));
- document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
- const nav = document.querySelector('.nav-item[data-panel="' + panelId + '"]');
- if(nav) nav.classList.add('active');
- const panel = el(panelId);
- if(panel) panel.classList.add('active');
- try{ bpShowTabRule(panelId); }catch(e){}
+  document.querySelectorAll('.nav-item[data-panel]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const nav = document.querySelector('.nav-item[data-panel="' + panelId + '"]');
+  if(nav) nav.classList.add('active');
+  const panel = el(panelId);
+  if(panel) panel.classList.add('active');
  }
- // Keep one team context everywhere
+ try{
+  const sb = el('app-sidebar');
+  if(sb) sb.classList.remove('nav-open', 'show', 'open');
+  document.body.classList.remove('nav-open');
+ }catch(e){}
  if(opts.teamId != null){
- try{
- state.myTeamId = opts.teamId;
- if(typeof syncStrategyTeamSelectors === 'function') syncStrategyTeamSelectors(opts.teamId);
- }catch(e){}
+  try{ state.myTeamId = opts.teamId; }catch(e){}
  }
- try{ if(typeof renderStrategyStrip === 'function') renderStrategyStrip(); }catch(e){}
- // Re-render target after select settles
- setTimeout(() => {
- try{
- if(panelId === 'panel-path') renderPlayoffPath();
- if(panelId === 'panel-playoffs') renderPlayoffs();
- if(panelId === 'panel-sos') renderSos();
- if(panelId === 'panel-luck') renderLuck();
- if(panelId === 'panel-home') renderHome();
- if(panelId === 'panel-byes') renderByes();
- if(panelId === 'panel-sit') { try{ renderSitAnalyzer(); }catch(e){} }
- if(panelId === 'panel-rate') { try{ renderRateTeam(); }catch(e){} }
- if(panelId === 'panel-waivers') { try{ renderWaivers(); }catch(e){} }
- if(panelId === 'panel-needs') { try{ renderNeeds(); }catch(e){} }
- if(panelId === 'panel-rankings') { try{ renderRankings(); }catch(e){} }
- if(panelId === 'panel-rosters') { try{ renderLeagueRosters(); }catch(e){} }
- if(panelId === 'panel-finder') { try{ /* finder */ }catch(e){} }
- }catch(e){}
- }, 30);
- }
+}
+
+
+
 
  document.querySelectorAll('.nav-item[data-panel]').forEach(btn => {
  btn.addEventListener('click', () => {
@@ -16304,7 +16897,8 @@ function goToPanel(panelId, opts){
  if(panel) panel.classList.add('active');
  try{ bpShowTabRule(btn.dataset.panel); }catch(e){}
  const sb = el('app-sidebar');
- if(sb) sb.classList.remove('nav-open');
+ if(sb){ sb.classList.remove('nav-open', 'show', 'open'); }
+ document.body.classList.remove('nav-open');
  try{
  // Mobile: jump content into view after menu closes
  const main = document.querySelector('.content main') || document.querySelector('main');
@@ -16465,6 +17059,8 @@ el('btn-settings').addEventListener('click', () => {
  });
  el('sw-dynasty').addEventListener('click', function(){ this.classList.toggle('on'); });
  el('sw-superflex').addEventListener('click', function(){ this.classList.toggle('on'); });
+ const swMed = el('sw-league-median');
+ if(swMed && !swMed._bound){ swMed._bound = true; swMed.addEventListener('click', function(){ this.classList.toggle('on'); }); }
 
  (function bindApplySettings(){
   const btn = el('btn-apply-settings');
@@ -16475,6 +17071,14 @@ el('btn-settings').addEventListener('click', () => {
    try{
     const isDynasty = el('sw-dynasty') ? el('sw-dynasty').classList.contains('on') : state.isDynasty;
     const numQBs = el('sw-superflex') && el('sw-superflex').classList.contains('on') ? 2 : 1;
+    try{
+     if(!state.settings) state.settings = {};
+     const swm = el('sw-league-median');
+     if(swm){
+      state.settings.leagueMedian = swm.classList.contains('on');
+      try{ localStorage.setItem('fd_league_median', state.settings.leagueMedian ? '1' : '0'); }catch(e){}
+     }
+    }catch(e){}
     const pprEl = el('sel-ppr');
     const ppr = pprEl ? parseFloat(pprEl.value) : state.ppr;
     const valueMode = (el('sel-value-mode') && el('sel-value-mode').value === 'raw') ? 'raw' : 'vorp';
