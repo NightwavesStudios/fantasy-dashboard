@@ -8297,16 +8297,50 @@ function countPosBodies(roster){
  return scores;
  }
 
- function playerScoredWeeks(p){
-  // Include real 0-point finished games. Skip bye zeros and the current (incomplete) week.
-  const raw = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
-  const curW = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0;
+ function weekLooksLikeDnp(p, week, pts){
+  // True when the player almost certainly did not play (injury/inactive), not a real 0.
+  if(typeof pts !== 'number' || pts > 0) return false;
+  if(pts < 0) return true;
   let bye = null;
   try{ bye = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null; }catch(e){}
+  if(bye != null && Number(week) === Number(bye)) return true; // bye, not a game
+
+  // Explicit flags from host data when present
+  if(p && (p.dnpWeeks || p.inactiveWeeks)){
+   const set = p.dnpWeeks || p.inactiveWeeks;
+   if(set && (set.has && set.has(Number(week)) || (Array.isArray(set) && set.map(Number).includes(Number(week)))))
+    return true;
+  }
+
+  // If we know they are currently Out/IR and this is a recent week while that status
+  // applied, treat pure zeros as DNP. (Historical status is rarely stored per week.)
+  try{
+   const st = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : null;
+   if(st && (st === 'out' || st === 'ir' || st === 'pup' || st === 'doubtful')){
+    const curW = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0;
+    // Zero in a finished week while designated unavailable → DNP, not a played floor
+    if(curW && Number(week) < Number(curW) && pts === 0) return true;
+   }
+  }catch(e){}
+
+  // Skill positions almost never finish a full NFL game at true 0 fantasy points
+  // (especially PPR). A recorded 0 is nearly always inactive / injured DNP.
+  const pos = (p && p.position) || '';
+  if(['QB','RB','WR','TE'].includes(pos) && pts === 0) return true;
+
+  // DST/K can legitimately score 0; keep those
+  return false;
+ }
+
+ function playerScoredWeeks(p){
+  // Finished games the player actually played. Skip byes, incomplete week, and DNPs
+  // (injury/inactive zeros) so floor / boom-bust are not dragged to 0 by games they sat.
+  const raw = typeof playerHistWeekScores === 'function' ? playerHistWeekScores(p) : [];
+  const curW = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0;
   return raw.filter(x => {
    if(!x || typeof x.pts !== 'number' || !isFinite(x.pts) || x.pts < 0) return false;
    if(curW && Number(x.week) >= Number(curW)) return false;
-   if(x.pts === 0 && bye != null && Number(x.week) === Number(bye)) return false;
+   if(weekLooksLikeDnp(p, x.week, x.pts)) return false;
    return true;
   });
  }
@@ -10852,10 +10886,14 @@ function runTradeFinder(){
  (me._forceRecvIds.size ? me._forceRecvIds.size + ' get' : '') + '…')
  : 'Searching…';
 
- let partners = state.teams.filter(t => t.id !== me.id);
- if(selectedPartners.length){
- partners = partners.filter(t => selectedPartners.includes(String(t.id)));
+ let partners = state.teams.filter(t => t.id !== me.id && String(t.id) !== String(me.id));
+ if(me._forcePartnerId){
+  partners = state.teams.filter(t => String(t.id) === String(me._forcePartnerId));
+ } else if(selectedPartners.length){
+  partners = partners.filter(t => selectedPartners.includes(String(t.id)));
  }
+ const nicheMode = !!(me._forceSendIds && me._forceSendIds.size) || !!(me._forceRecvIds && me._forceRecvIds.size);
+
  const myNeed = teamPosNeedScores(me);
  const hits = [];
  const seen = new Set();
@@ -10867,13 +10905,14 @@ function runTradeFinder(){
  function candidatePool(team, n, posAllow, mode){
  // mode: 'send' prefers positions you don't need; 'get' prefers value at any allowed pos
  const need = teamPosNeedScores(team);
+ const minV = nicheMode ? 20 : 40;
  return (team.roster || [])
- .filter(p => p.matched && (p.value || 0) > 80 && !p.isIR && !p.isTaxi)
+ .filter(p => p.matched && (p.value || 0) > minV && !p.isTaxi)
+ .filter(p => !p.isIR || nicheMode) // allow IR only when hunting specific deals
  .filter(p => typeof playerTradeable === 'function' ? playerTradeable(p) : !p.tradeLocked)
  .filter(p => !posAllow || !posAllow.length || posAllow.includes(p.position))
  .slice()
  .sort((a,b) => {
- // Players listed on trade block float up when getting from a partner
  const ba = playerOnBlock(a) ? 1 : 0, bb = playerOnBlock(b) ? 1 : 0;
  if(mode === 'get' && ba !== bb) return bb - ba;
  if(mode === 'send'){
@@ -10914,27 +10953,28 @@ function runTradeFinder(){
  if(!recvList.some(p => String(p.id) === id)) return;
  }
  }
- if(me._finderBiasSendIds && me._finderBiasSendIds.size){
- // soft bias: at least one sell-high in package scores better later; require one if possible
+ if(!nicheMode && me._finderBiasSendIds && me._finderBiasSendIds.size){
  const has = sendList.some(p => me._finderBiasSendIds.has(String(p.id)));
- if(!has && Math.random() > 0.35) return; // mostly explore sell-high sends
+ if(!has && Math.random() > 0.5) return;
  }
  const key = sig(sendList, recvList);
  if(seen.has(key)) return;
  const sv = packageVal(sendList), rv = packageVal(recvList);
  const maxV = Math.max(sv, rv, 1);
- // Market fairness: tighter than before
- if(Math.abs(sv - rv) / maxV > 0.22) return;
+ // Fairness: wider when user named specific players (niche)
+ const fairMax = nicheMode ? 0.42 : 0.28;
+ if(Math.abs(sv - rv) / maxV > fairMax) return;
 
- // Never send a player from a high-need position to get one from a low-need position
  const sendNeedAvg = sendList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, sendList.length);
  const recvNeedAvg = recvList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, recvList.length);
- if(recvNeedAvg + 8 < sendNeedAvg) return; // net moving into worse need
- if(recvNeedAvg < 20 && sendNeedAvg > 40) return; // pure surplus stacking
+ if(!nicheMode){
+  if(recvNeedAvg + 12 < sendNeedAvg) return;
+  if(recvNeedAvg < 18 && sendNeedAvg > 45) return;
+ }
 
  const lineupGain = starterUpgradeScore(me, recvList, sendList);
- // Must improve optimal lineup value OR clearly fix a hole (need receive high)
- if(lineupGain < 50 && recvNeedAvg < 55) return;
+ // Niche: allow deals that are merely legal + fair; open search still wants lineup lift
+ if(!nicheMode && lineupGain < 30 && recvNeedAvg < 50) return;
 
  const tradeA = sendList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
  const tradeB = recvList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
@@ -10985,18 +11025,23 @@ function runTradeFinder(){
   });
  }catch(e){ profileBoost = 0; }
 
- // Absolute roster quality must improve for you  -  not just MAD-relative Power
  const surpMe = impact.a.surplusDelta || 0;
- if(surpMe <= 0 && lineupGain < 150 && profileBoost < 25) return;
- if(impact.a.delta <= 0.05 && surpMe <= 0 && profileBoost < 30) return;
- // Partner should not be destroyed
- if(impact.b.delta < -2.5) return;
- if((impact.b.surplusDelta || 0) < -800 && impact.b.delta < -0.5) return;
-
+ if(!nicheMode){
+  if(surpMe <= 0 && lineupGain < 80 && profileBoost < 15) return;
+  if(impact.a.delta <= -0.15 && surpMe <= 0 && profileBoost < 20) return;
+  if(impact.b.delta < -3.5) return;
+  if((impact.b.surplusDelta || 0) < -1200 && impact.b.delta < -0.8) return;
+  const pNeed0 = teamPosNeedScores(partner);
+  const partnerRecvNeed = sendList.reduce((s,p) => s + (pNeed0[p.position]||30), 0) / Math.max(1, sendList.length);
+  if(partnerRecvNeed < 15 && impact.b.delta < -0.3) return;
+ } else {
+  // Niche: only hard-block illegal or catastrophic partner hits
+  if(impact.b.delta < -6) return;
+  // You should not get much worse either
+  if(impact.a.delta < -2.5 && surpMe < -200) return;
+ }
  const pNeed = teamPosNeedScores(partner);
- // Partner should get something they need (or at least not get crushed)
  const partnerRecvNeed = sendList.reduce((s,p) => s + (pNeed[p.position]||30), 0) / Math.max(1, sendList.length);
- if(partnerRecvNeed < 18 && impact.b.delta < 0) return;
 
  if(kind === 'buy'){
  const ok = recvList.some(p => {
@@ -11024,52 +11069,70 @@ function runTradeFinder(){
  const wantMix = kind === 'mix' || kind === 'ALL';
 
  partners.forEach(partner => {
- let mine = candidatePool(me, 14, sendPos, 'send');
- let theirs = candidatePool(partner, 14, getPos, 'get');
+ const poolN = nicheMode ? 20 : 16;
+ let mine = candidatePool(me, poolN, sendPos, 'send');
+ let theirs = candidatePool(partner, poolN, getPos, 'get');
  if(me._forceSendIds && me._forceSendIds.size){
- const forced = (me.roster || []).filter(p => me._forceSendIds.has(String(p.id)));
- mine = [...forced, ...mine.filter(p => !me._forceSendIds.has(String(p.id)))].slice(0, 16);
+  const forced = (me.roster || []).filter(p => me._forceSendIds.has(String(p.id)));
+  // Always include forced sends even if value/IR filtered them out
+  mine = [...forced, ...mine.filter(p => !me._forceSendIds.has(String(p.id)))].slice(0, 22);
  }
  if(me._forceRecvIds && me._forceRecvIds.size){
- const forced = (partner.roster || []).filter(p => me._forceRecvIds.has(String(p.id)));
- theirs = [...forced, ...theirs.filter(p => !me._forceRecvIds.has(String(p.id)))].slice(0, 16);
+  const forced = (partner.roster || []).filter(p => me._forceRecvIds.has(String(p.id)));
+  theirs = [...forced, ...theirs.filter(p => !me._forceRecvIds.has(String(p.id)))].slice(0, 22);
  }
  if(me._finderBiasSendIds && me._finderBiasSendIds.size){
- const bias = (me.roster || []).filter(p => me._finderBiasSendIds.has(String(p.id)));
- mine = [...bias, ...mine.filter(p => !me._finderBiasSendIds.has(String(p.id)))].slice(0, 14);
+  const bias = (me.roster || []).filter(p => me._finderBiasSendIds.has(String(p.id)));
+  mine = [...bias, ...mine.filter(p => !me._finderBiasSendIds.has(String(p.id)))].slice(0, poolN);
  }
  if(want1){
- mine.forEach(a => theirs.forEach(b => {
- // Skip pure lateral same-pos when we already strong there
- if(a.position === b.position && (myNeed[a.position]||0) < 25) return;
- tryPackage(partner, [a], [b], '1-for-1');
- }));
+  mine.forEach(a => theirs.forEach(b => {
+   if(!nicheMode && a.position === b.position && (myNeed[a.position]||0) < 22) return;
+   tryPackage(partner, [a], [b], '1-for-1');
+  }));
  }
  if(want21){
- combos(mine, 2).slice(0, 30).forEach(pair => {
- theirs.slice(0, 8).forEach(b => tryPackage(partner, pair, [b], '2-for-1'));
- });
- mine.slice(0, 8).forEach(a => {
- combos(theirs, 2).slice(0, 24).forEach(pair => tryPackage(partner, [a], pair, '1-for-2'));
- });
+  combos(mine, 2).slice(0, nicheMode ? 50 : 36).forEach(pair => {
+   theirs.slice(0, nicheMode ? 12 : 10).forEach(b => tryPackage(partner, pair, [b], '2-for-1'));
+  });
+  mine.slice(0, nicheMode ? 12 : 10).forEach(a => {
+   combos(theirs, 2).slice(0, nicheMode ? 40 : 28).forEach(pair => tryPackage(partner, [a], pair, '1-for-2'));
+  });
  }
  if(want22){
- combos(mine, 2).slice(0, 20).forEach(sp => {
- combos(theirs, 2).slice(0, 20).forEach(rp => tryPackage(partner, sp, rp, '2-for-2'));
- });
+  combos(mine, 2).slice(0, nicheMode ? 30 : 24).forEach(sp => {
+   combos(theirs, 2).slice(0, nicheMode ? 30 : 24).forEach(rp => tryPackage(partner, sp, rp, '2-for-2'));
+  });
  }
  if(wantMix){
- combos(mine, 2).slice(0, 14).forEach(sp => {
- combos(theirs, 3).slice(0, 14).forEach(rp => tryPackage(partner, sp, rp, '2-for-3'));
- });
- combos(mine, 3).slice(0, 14).forEach(sp => {
- combos(theirs, 2).slice(0, 14).forEach(rp => tryPackage(partner, sp, rp, '3-for-2'));
- });
+  combos(mine, 2).slice(0, 18).forEach(sp => {
+   combos(theirs, 3).slice(0, 18).forEach(rp => tryPackage(partner, sp, rp, '2-for-3'));
+  });
+  combos(mine, 3).slice(0, 18).forEach(sp => {
+   combos(theirs, 2).slice(0, 18).forEach(rp => tryPackage(partner, sp, rp, '3-for-2'));
+  });
  }
  if(want33){
- combos(mine, 3).slice(0, 12).forEach(sp => {
- combos(theirs, 3).slice(0, 12).forEach(rp => tryPackage(partner, sp, rp, '3-for-3'));
- });
+  combos(mine, 3).slice(0, 16).forEach(sp => {
+   combos(theirs, 3).slice(0, 16).forEach(rp => tryPackage(partner, sp, rp, '3-for-3'));
+  });
+ }
+ // Niche fallback: if force send/recv and still nothing from this partner, try exact packages
+ if(nicheMode && me._forceSendIds && me._forceSendIds.size && me._forceRecvIds && me._forceRecvIds.size){
+  const sendExact = (me.roster || []).filter(p => me._forceSendIds.has(String(p.id)));
+  const recvExact = (partner.roster || []).filter(p => me._forceRecvIds.has(String(p.id)));
+  if(sendExact.length && recvExact.length){
+   tryPackage(partner, sendExact, recvExact, 'exact');
+   // Also pad with 1 extra piece each way for value balance
+   mine.slice(0, 8).forEach(extra => {
+    if(me._forceSendIds.has(String(extra.id))) return;
+    tryPackage(partner, sendExact.concat([extra]), recvExact, 'exact+');
+   });
+   theirs.slice(0, 8).forEach(extra => {
+    if(me._forceRecvIds.has(String(extra.id))) return;
+    tryPackage(partner, sendExact, recvExact.concat([extra]), 'exact+');
+   });
+  }
  }
  });
 
@@ -11092,11 +11155,15 @@ function runTradeFinder(){
  deduped.sort((a,b) => scoreHit(b) - scoreHit(a));
  const top = deduped.slice(0, 20);
 
- if(status) status.textContent = top.length ? (top.length + ' packages (need + lineup + surplus)') : 'No trades cleared the bar';
+ if(status) status.textContent = top.length
+  ? (top.length + ' packages' + (nicheMode ? ' (targeted)' : ' (need + lineup + surplus)'))
+  : (nicheMode ? 'No legal packages for those players' : 'No trades cleared the bar');
  results.innerHTML = '';
  if(!top.length){
- results.innerHTML = '<div class="hist-empty">No packages that improve your starting lineup at positions of need while staying near market fair and not gutting the other side. Try different positions or partners.</div>';
- return;
+  results.innerHTML = nicheMode
+   ? '<div class="hist-empty">Nothing legal matched those exact players. Value gap may be too wide, a player may be untradeable, or the swap empties a starter slot. Try adding a second piece on either side, widen positions, or clear partner filters.</div>'
+   : '<div class="hist-empty">No packages that help your lineup at positions of need while staying near fair value. Try more positions, more partners, or name specific players in Send/Get.</div>';
+  return;
  }
  top.forEach((h, idx) => {
  const card = document.createElement('div');
