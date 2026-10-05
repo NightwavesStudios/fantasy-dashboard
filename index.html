@@ -3988,7 +3988,7 @@ html[data-theme="light"] {
  <div class="section-title" style="margin:0;">Schedule optimizer</div>
  <button type="button" class="info-btn" id="btn-schedopt-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <p class="needs-intro">Rewrite <strong>future</strong> matchups only. Hard rules: weeks 1–9 each pair at most once; no pair more than twice all season; past and current week locked.</p>
+ <p class="needs-intro">Rewrite <strong>future</strong> matchups only. Can re-pair within a week, swap whole week slates, or move games across weeks 1–9 for bye/timing. Rules: weeks 1–9 each pair at most once; no pair more than twice all season; past and current week locked.</p>
 
  <div class="hist-card" style="padding:12px 14px;margin-bottom:12px;">
  <div style="font-weight:650;margin-bottom:8px;">Playoff targets</div>
@@ -7698,6 +7698,138 @@ function countPosBodies(roster){
  return { weeks, level, ready: weeks >= 3, label }; // ready ≠ high confidence; variance stays large early 
  }
 
+ function remainingGamesByTeam(playoffStart, currentWeek){
+  const teams = state.teams || [];
+  const rem = {};
+  teams.forEach(t => { rem[t.id] = 0; });
+  const start = Number(currentWeek) || 0;
+  const end = Number(playoffStart) || 15;
+  const weeksLeft = Math.max(0, end - start - 0);
+  if(weeksLeft <= 0) return rem;
+
+  const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
+  const graph = scheduleCache || {};
+  let usedSchedule = false;
+
+  for(let wk = start + 1; wk < end; wk++){
+    teams.forEach(t => {
+      const node = graph[t.id];
+      if(!node) return;
+      const opp = node[wk] != null ? node[wk] : node[String(wk)];
+      if(opp == null) return;
+      usedSchedule = true;
+      const bye = (opp === 'BYE' || opp === 'bye' || opp === 0 || opp === '0');
+      if(bye) return;
+      rem[t.id]++;
+      if(medianOn) rem[t.id]++;
+    });
+  }
+
+  if(!usedSchedule){
+    teams.forEach(t => {
+      rem[t.id] = weeksLeft * (medianOn ? 2 : 1);
+    });
+  }
+  return rem;
+ }
+
+ function computeMathematicalClinch(settings){
+  // True clinch / elimination: impossible to change outcome, not sim odds
+  const teams = state.teams || [];
+  const nPlayoff = (settings && settings.playoffTeams) || 4;
+  const nBye = (settings && settings.byes) || 0;
+  let currentWeek = 0;
+  try{
+   if(scheduleCache && scheduleCache._currentWeek) currentWeek = Number(scheduleCache._currentWeek) || 0;
+   if(!currentWeek){
+    const wc = teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length);
+    currentWeek = wc.length ? Math.max.apply(null, wc) : 0;
+   }
+  }catch(e){}
+  const playoffStart = (settings && settings.playoffWeekStart) || 15;
+  const rem = remainingGamesByTeam(playoffStart, currentWeek);
+  const weeksLeft = Math.max(0, playoffStart - currentWeek - 0);
+
+  const rows = teams.map(t => {
+   const w = t.wins || 0;
+   const r = rem[t.id] != null ? rem[t.id] : weeksLeft;
+   return {
+    id: t.id,
+    name: t.name,
+    wins: w,
+    pf: t.pointsFor || 0,
+    rem: r,
+    minW: w,
+    maxW: w + r
+   };
+  });
+
+  const byId = {};
+  rows.forEach(r => { byId[r.id] = r; });
+
+  function statusFor(t){
+   const me = byId[t.id];
+   if(!me) return { clinched: false, eliminated: false, byeClinched: false };
+
+   // How many teams can still finish with at least me.minW wins (T loses out)?
+   // Conservative: those teams can be placed ahead of T on tiebreakers.
+   let canBeAheadOfMin = 0;
+   rows.forEach(x => {
+    if(x.id === me.id) return;
+    if(x.maxW > me.minW) canBeAheadOfMin++;
+    else if(x.maxW === me.minW && x.pf >= me.pf) canBeAheadOfMin++; // equal wins possible, PF edge
+   });
+   // Clinched playoff: even losing out, at most nPlayoff-1 teams can finish ahead
+   const clinched = canBeAheadOfMin <= (nPlayoff - 1);
+
+   // Eliminated: even winning out, at least nPlayoff teams are forced strictly ahead
+   let forcedAheadOfMax = 0;
+   rows.forEach(x => {
+    if(x.id === me.id) return;
+    if(x.minW > me.maxW) forcedAheadOfMax++;
+    else if(x.minW === me.maxW && x.pf > me.pf && x.rem === 0) forcedAheadOfMax++;
+   });
+   const eliminated = forcedAheadOfMax >= nPlayoff;
+
+   // Bye clinch: same with nBye (only if byes exist)
+   let byeClinched = false;
+   if(nBye > 0){
+    let canBeAheadBye = 0;
+    rows.forEach(x => {
+     if(x.id === me.id) return;
+     if(x.maxW > me.minW) canBeAheadBye++;
+     else if(x.maxW === me.minW && x.pf >= me.pf) canBeAheadBye++;
+    });
+    byeClinched = canBeAheadBye <= (nBye - 1);
+   }
+
+   // Season over edge cases
+   if(weeksLeft <= 0 || me.rem === 0 && rows.every(x => x.rem === 0)){
+    const standings = rows.slice().sort((a,b) => b.wins - a.wins || b.pf - a.pf);
+    const seed = standings.findIndex(x => x.id === me.id) + 1;
+    return {
+     clinched: seed > 0 && seed <= nPlayoff,
+     eliminated: seed > nPlayoff,
+     byeClinched: nBye > 0 && seed > 0 && seed <= nBye,
+     seed, minW: me.minW, maxW: me.maxW, rem: me.rem
+    };
+   }
+
+   return {
+    clinched: clinched && !eliminated,
+    eliminated: eliminated && !clinched,
+    byeClinched: byeClinched && !eliminated,
+    minW: me.minW,
+    maxW: me.maxW,
+    rem: me.rem
+   };
+  }
+
+  const map = {};
+  teams.forEach(t => { map[t.id] = statusFor(t); });
+  return map;
+ }
+
  function simulatePlayoffOdds(sims, opts){
  const quality = playoffDataQuality();
  const force = !!(opts && opts.force);
@@ -7711,6 +7843,7 @@ function countPosBodies(roster){
  const settings = state.playoffSettings || detectPlayoffSettings();
  const teams = state.teams || [];
  if(!teams.length) return null;
+ try{ state._mathClinch = computeMathematicalClinch(settings); }catch(e){ state._mathClinch = {}; }
 
  // Stable cache key: same inputs → same odds (no random drift between first load and re-click)
  let curW = 0;
@@ -8031,24 +8164,9 @@ function countPosBodies(roster){
  playoffPct: sims > 0 ? 100 * (counts.playoff[t.id] || 0) / denom : null,
  byePct: sims > 0 && nBye > 0 ? 100 * (counts.bye[t.id] || 0) / denom : null,
  titlePct: sims > 0 ? 100 * (counts.title[t.id] || 0) / denom : null,
- clinched: (function(){
-  const pp = sims > 0 ? 100 * (counts.playoff[t.id] || 0) / denom : null;
-  if(remaining === 0 && seedRow && seedRow.seed <= nPlayoff) return true;
-  if(pp != null && pp >= 99.5) return true;
-  return false;
- })(),
- eliminated: (function(){
-  const pp = sims > 0 ? 100 * (counts.playoff[t.id] || 0) / denom : null;
-  if(remaining === 0 && seedRow && seedRow.seed > nPlayoff) return true;
-  if(pp != null && pp <= 0.5) return true;
-  return false;
- })(),
- byeClinched: (function(){
-  if(!(nBye > 0) || sims <= 0) return false;
-  const bp = 100 * (counts.bye[t.id] || 0) / denom;
-  if(remaining === 0 && seedRow && seedRow.seed <= nBye) return true;
-  return bp >= 99.5;
- })()
+ clinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].clinched),
+ eliminated: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].eliminated),
+ byeClinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].byeClinched)
  };
  }).sort((a, b) => (a.seed || 99) - (b.seed || 99))
  };
@@ -11044,6 +11162,28 @@ function renderRecords(){
    return next;
   });
  }
+ // Move an entire week slate to another week (same opponents, different timing)
+ function trySwapWeeks(weeks, w1, w2){
+  if(w1 === w2) return null;
+  const next = cloneWeeks(weeks);
+  const a = (next[w1] || []).map(g => ({ a: g.a, b: g.b }));
+  const b = (next[w2] || []).map(g => ({ a: g.a, b: g.b }));
+  next[w1] = b;
+  next[w2] = a;
+  return next;
+ }
+ // Swap one game from week wa with one game from week wb (cross-week retime)
+ function trySwapGamesAcrossWeeks(weeks, wa, ia, wb, ib){
+  if(wa === wb) return null;
+  const ga = (weeks[wa] || [])[ia];
+  const gb = (weeks[wb] || [])[ib];
+  if(!ga || !gb) return null;
+  const next = cloneWeeks(weeks);
+  next[wa] = (weeks[wa] || []).map((g, idx) => idx === ia ? { a: gb.a, b: gb.b } : { a: g.a, b: g.b });
+  next[wb] = (weeks[wb] || []).map((g, idx) => idx === ib ? { a: ga.a, b: ga.b } : { a: g.a, b: g.b });
+  // After moving games, a team might appear twice in one week — scheduleLegal catches that
+  return next;
+ }
  function playoffPctMapForced(scheduleWeeks){
   try{ state._playoffOddsCache = null; }catch(e){}
   const result = simulatePlayoffOdds(null, { force: true, scheduleWeeks: scheduleWeeks || null });
@@ -11122,13 +11262,59 @@ function renderRecords(){
   helpOut.forEach(id => { baselineOut[id] = remainingSos(id, st.weeks, lockedThrough, st.maxWeek, st.byId); });
   const baselinePrimary = primaryId ? remainingSos(primaryId, st.weeks, lockedThrough, st.maxWeek, st.byId) : null;
   const baselineSecondary = secondaryId ? remainingSos(secondaryId, st.weeks, lockedThrough, st.maxWeek, st.byId) : null;
-  const ITER = 4000;
+  // Unlocked weeks inside 1-9: can reorder whole slates (round-robin window)
+  const earlySwappable = swappable.filter(w => w <= 9);
+  const lateSwappable = swappable.filter(w => w > 9);
+  const ITER = 6000;
   for(let it = 0; it < ITER; it++){
-   const w = swappable[Math.floor(Math.random()*swappable.length)];
+   const roll = Math.random();
+   // 1) Swap entire weeks in the early window (timing / byes) — same matchups, different weeks
+   if(earlySwappable.length >= 2 && roll < 0.35){
+    const i1 = Math.floor(Math.random() * earlySwappable.length);
+    let i2 = Math.floor(Math.random() * earlySwappable.length);
+    if(i1 === i2) i2 = (i2 + 1) % earlySwappable.length;
+    const cand = trySwapWeeks(best, earlySwappable[i1], earlySwappable[i2]);
+    if(cand && legalPlus(cand)){
+     const sc = scoreOrient(cand);
+     if(sc > bestScore + 1e-6){ best = cand; bestScore = sc; }
+    }
+    continue;
+   }
+   // 2) Occasional full-week swap later season too (bye weeks still matter)
+   if(swappable.length >= 2 && roll < 0.45){
+    const i1 = Math.floor(Math.random() * swappable.length);
+    let i2 = Math.floor(Math.random() * swappable.length);
+    if(i1 === i2) i2 = (i2 + 1) % swappable.length;
+    const cand = trySwapWeeks(best, swappable[i1], swappable[i2]);
+    if(cand && legalPlus(cand)){
+     const sc = scoreOrient(cand);
+     if(sc > bestScore + 1e-6){ best = cand; bestScore = sc; }
+    }
+    continue;
+   }
+   // 3) Cross-week game swap inside weeks 1-9 only (retime one matchup vs another)
+   if(earlySwappable.length >= 2 && roll < 0.62){
+    const wa = earlySwappable[Math.floor(Math.random() * earlySwappable.length)];
+    let wb = earlySwappable[Math.floor(Math.random() * earlySwappable.length)];
+    if(wa === wb) wb = earlySwappable[(earlySwappable.indexOf(wa) + 1) % earlySwappable.length];
+    const ga = best[wa] || [], gb = best[wb] || [];
+    if(ga.length && gb.length){
+     const ia = Math.floor(Math.random() * ga.length);
+     const ib = Math.floor(Math.random() * gb.length);
+     const cand = trySwapGamesAcrossWeeks(best, wa, ia, wb, ib);
+     if(cand && legalPlus(cand)){
+      const sc = scoreOrient(cand);
+      if(sc > bestScore + 1e-6){ best = cand; bestScore = sc; }
+     }
+    }
+    continue;
+   }
+   // 4) Classic in-week partner swap (who plays who that week)
+   const w = swappable[Math.floor(Math.random() * swappable.length)];
    const games = best[w] || [];
    if(games.length < 2) continue;
-   let i = Math.floor(Math.random()*games.length), j = Math.floor(Math.random()*games.length);
-   if(i===j) j = (j+1)%games.length;
+   let i = Math.floor(Math.random() * games.length), j = Math.floor(Math.random() * games.length);
+   if(i === j) j = (j + 1) % games.length;
    const optsSwap = trySwapInWeek(best, w, i, j);
    if(!optsSwap) continue;
    for(const cand of optsSwap){
@@ -11176,7 +11362,7 @@ function renderRecords(){
  }
 
  function renderSchedOpt(){
-  try{ bpSetSource('source-schedopt', 'Schedule optimizer', 'Uses Schedule projections. Playoff % uses Playoffs simulator. Suggestions only.'); }catch(e){}
+  try{ bpSetSource('source-schedopt', 'Schedule optimizer', 'Uses week-specific projections (byes matter). Moves: in-week re-pairs, full week swaps, and cross-week game swaps in weeks 1–9. Past/current locked. Playoff % uses the Playoffs sim.'); }catch(e){}
   const status = el('schedopt-status'), summary = el('schedopt-summary'), swaps = el('schedopt-swaps');
   const inList = el('schedopt-in-list'), outList = el('schedopt-out-list'), rulesBox = el('schedopt-rules');
   const sel = el('schedopt-team'), sel2 = el('schedopt-team2');
@@ -17767,17 +17953,10 @@ function renderTradeSide(side){
   if((m.holes || 0) > 0) gradeZ -= 0.5 * m.holes;
   if((m.thin || 0) > 400) gradeZ -= 0.2;
 
-  // Rank drives the letter so a 10-team league cannot be eight A's
-  const grade = gradeFromLeagueRank(qualityRank, n, m.holes || 0);
-
+  // Provisional overall grade — recomputed after position ranks exist
+  let grade = gradeFromLeagueRank(qualityRank, n, m.holes || 0);
   let band = 'Middle of the pack';
-  if(qualityRank === 1) band = 'Best roster construction in the league';
-  else if(qualityRank === 2) band = 'Second-best roster';
-  else if(qualityRank <= Math.ceil(n * 0.3)) band = 'Top third';
-  else if(qualityRank <= Math.ceil(n * 0.5)) band = 'Upper half';
-  else if(qualityRank <= Math.ceil(n * 0.7)) band = 'Lower half';
-  else if(qualityRank >= n) band = 'Weakest roster construction';
-  else band = 'Bottom third';
+  let compositeRank = qualityRank;
 
   const powerSorted = rows.slice().sort((a,b) => (b.power||0) - (a.power||0));
   const powerRank = powerSorted.findIndex(r => r.team && (r.team.id === team.id || String(r.team.id) === String(team.id))) + 1;
@@ -18089,6 +18268,49 @@ function renderTradeSide(side){
    z: gradeZ
   };
 
+  // Overall letter reflects EVERY rank on this page, not just one surplus number
+  (function recomputeOverallGrade(){
+   const N = Math.max(1, leagueTeams.length || n || 1);
+   function rankPct(rank){
+    if(!(rank > 0) || N <= 1) return 0.5;
+    return 1 - ((rank - 1) / (N - 1));
+   }
+   const posRanks = (posReports || []).map(p => p.posRank).filter(r => r > 0);
+   const avgPosRank = posRanks.length
+    ? posRanks.reduce((a,b) => a + b, 0) / posRanks.length
+    : qualityRank;
+   // Weights sum to 1 — what the page actually shows
+   const pct =
+      0.28 * rankPct(myStarterRank)
+    + 0.14 * rankPct(myDepthRank)
+    + 0.22 * rankPct(qualityRank)
+    + 0.36 * rankPct(avgPosRank);
+
+   // Map composite percentile back to a 1..N rank for the letter table
+   compositeRank = Math.max(1, Math.min(N, Math.round(1 + (1 - pct) * (N - 1))));
+   grade = gradeFromLeagueRank(compositeRank, N, m.holes || 0);
+
+   // Hard floors from position grades on the page
+   const posLetters = (posReports || []).map(p => p.posGrade || 'C');
+   const badPos = posLetters.filter(g => g.charAt(0) === 'D' || g === 'F').length;
+   const goodPos = posLetters.filter(g => g.charAt(0) === 'A').length;
+   if(badPos >= 2 && (grade.charAt(0) === 'A' || grade === 'B+')) grade = 'C';
+   else if(badPos >= 1 && grade.charAt(0) === 'A') grade = 'B';
+   if((m.holes || 0) >= 1 && grade.charAt(0) === 'A') grade = 'B+';
+
+   if(compositeRank === 1 && badPos === 0) band = 'Best overall profile on this page';
+   else if(compositeRank === 2) band = 'Second overall — starters, depth, and positions combined';
+   else if(compositeRank <= Math.ceil(N * 0.3)) band = 'Top third overall (positions + starters + depth)';
+   else if(compositeRank <= Math.ceil(N * 0.5)) band = 'Upper half overall';
+   else if(compositeRank <= Math.ceil(N * 0.7)) band = 'Lower half overall';
+   else if(compositeRank >= N) band = 'Weakest overall profile on this page';
+   else band = 'Bottom third overall';
+
+   metrics.compositeRank = compositeRank;
+   metrics.avgPosRank = Math.round(avgPosRank * 10) / 10;
+   metrics.posGradeSummary = posLetters.join(' ');
+  })();
+
   return {
    team, grade, gradeZ, z, band, myScore, mean, std,
    starterSurplus: m.starterSurplus,
@@ -18175,7 +18397,9 @@ function renderTradeSide(side){
   html += '<div style="font-size:18px;font-weight:700;">' + escapeHtml(team.name) + '</div>';
   html += '<div style="font-size:14px;color:var(--text-secondary);margin:4px 0 10px;">' + escapeHtml(rate.band) + '</div>';
   html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-  if(rate.qualityRank) html += '<span style="padding:5px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.12));font-size:12.5px;font-weight:600;">Roster #' + rate.qualityRank + ' of ' + (rate.leagueSize || '') + '</span>';
+  const compR = (rate.metrics && rate.metrics.compositeRank) || rate.qualityRank;
+  if(compR) html += '<span style="padding:5px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.12));font-size:12.5px;font-weight:600;">Overall #' + compR + ' of ' + (rate.leagueSize || '') + '</span>';
+  if(rate.qualityRank && rate.qualityRank !== compR) html += '<span style="padding:5px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.12));font-size:12.5px;">Value #' + rate.qualityRank + '</span>';
   if(rate.rank) html += '<span style="padding:5px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.12));font-size:12.5px;font-weight:600;">Power #' + rate.rank + (rate.power != null ? ' · ' + rate.power.toFixed(1) : '') + '</span>';
   if(rate.holes > 0) html += '<span style="padding:5px 10px;border-radius:8px;background:rgba(220,60,60,.15);color:var(--red);font-size:12.5px;font-weight:700;">' + rate.holes + ' hole' + (rate.holes > 1 ? 's' : '') + '</span>';
   html += '</div></div></div></div>';
@@ -18266,7 +18490,7 @@ function renderTradeSide(side){
    html += '</ul></div>';
   }
 
-  html += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Grade is relative to this league. Bars compare your starter value at each position to the league average.</p>';
+  html += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Overall letter blends position ranks, starter rank, and depth rank on this page. A weak position pulls the overall grade down.</p>';
 
   report.innerHTML = html;
   report.querySelectorAll('.rate-goto').forEach(btn => {
