@@ -3698,7 +3698,7 @@ html[data-theme="light"] {
  <div class="section-title" style="margin:0;">Grade</div>
  <button type="button" class="info-btn" id="btn-rate-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <p class="needs-intro">Roster construction grade for this league. Stars help. Empty slots, thin depth, and weak positions still get called out.</p>
+ <p class="needs-intro">Clear grade, position bars vs the league, and a ranked list of what is wrong with a fix for each.</p>
  <div class="waiver-toolbar" style="margin-bottom:14px;">
  <label class="field-label" style="margin:0;">Team</label>
  <select id="rate-team-select" style="max-width:260px;"></select>
@@ -5469,19 +5469,41 @@ function escapeHtml(s){
  isStarter: !!isStarter,
  tradeLocked: !!tradeLocked || (e && e.playerPoolEntry && e.playerPoolEntry.player && e.playerPoolEntry.player.ownership && e.playerPoolEntry.player.ownership.tradeLocked) || false,
  isTradeable: (e && (e.isTradeable != null ? e.isTradeable : (e.playerPoolEntry && e.playerPoolEntry.isTradeable))) !== false,
- onTradeBlock: false
+ onTradeBlock: false,
+ tradeWillingness: null
  };
+ try{
+  const ppe = e && e.playerPoolEntry;
+  const rawTb = (e && e.tradeBlock) || (ppe && ppe.tradeBlock)
+   || (ppe && ppe.player && ppe.player.tradeBlock)
+   || (ppe && ppe.player && ppe.player.ownership && ppe.player.ownership.tradeBlock);
+  if(rawTb != null && rawTb !== false && roster.length){
+   const last = roster[roster.length - 1];
+   const w = typeof parseTradeWillingness === 'function' ? parseTradeWillingness(rawTb) : 'listed';
+   if(w){ last.onTradeBlock = true; last.tradeWillingness = w; }
+   else { last.onTradeBlock = true; last.tradeWillingness = 'listed'; }
+  }
+ }catch(errTb){}
  });
- // Team-level trade block (ESPN mTeam may include tradeBlock.players or tradeBlock array)
+ // ESPN trade block + likely / not-likely designations (mTeam.tradeBlock)
  try{
   const tb = t.tradeBlock || (t.valuesByStat && t.valuesByStat.tradeBlock) || null;
-  const ids = new Set();
-  if(Array.isArray(tb)) tb.forEach(x => ids.add(String(x.playerId || x.id || x)));
-  else if(tb && Array.isArray(tb.players)) tb.players.forEach(x => ids.add(String(x.playerId || x.id || x)));
-  else if(tb && typeof tb === 'object') Object.keys(tb).forEach(k => { if(tb[k]) ids.add(String(k)); });
-  if(ids.size){
-   roster.forEach(pl => {
-    if(ids.has(String(pl.id))) pl.onTradeBlock = true;
+  function markBlock(id, raw){
+   const pl = roster.find(p => String(p.id) === String(id));
+   if(!pl) return;
+   const w = typeof parseTradeWillingness === 'function' ? parseTradeWillingness(raw) : 'listed';
+   pl.onTradeBlock = true;
+   if(w) pl.tradeWillingness = w;
+  }
+  if(Array.isArray(tb)){
+   tb.forEach(x => markBlock(x.playerId || x.id || x, x.type || x.designation || x.willingness || x));
+  } else if(tb && Array.isArray(tb.players)){
+   tb.players.forEach(x => markBlock(x.playerId || x.id || x, x.type || x.designation || x));
+  } else if(tb && typeof tb === 'object'){
+   Object.keys(tb).forEach(k => {
+    const val = tb[k];
+    if(val == null || val === false) return;
+    markBlock((val && (val.playerId || val.id)) || k, val);
    });
   }
  }catch(e){}
@@ -10228,6 +10250,9 @@ function renderMatchups(){
    try{
     if(state.playoffSettings && state.playoffSettings.playoffWeekStart) curPlayoffStart = state.playoffSettings.playoffWeekStart;
    }catch(e){}
+   let starterSlots = 9;
+   try{ starterSlots = (typeof countStarterSlots === 'function' && typeof getStarterCounts === 'function') ? countStarterSlots(getStarterCounts()) : 9; }catch(e){}
+   const hasMed = typeof detectLeagueMedian === 'function' && detectLeagueMedian();
    seasons.push({
     season: state.year || state.season || 'current',
     leagueId: state.leagueId,
@@ -10240,7 +10265,11 @@ function renderMatchups(){
     })),
     meanPf: mean, stdPf: std,
     playoffStart: curPlayoffStart,
-    scoringNote: (state.ppr != null ? (state.ppr + ' PPR') : '') + (state.numQBs === 2 ? ' SF' : '')
+    nTeams: state.teams.length,
+    starterSlots,
+    gamesPerWeek: hasMed ? 2 : 1,
+    ppr: state.ppr != null ? Number(state.ppr) : null,
+    scoringNote: (state.ppr != null ? (state.ppr + ' PPR') : '') + (state.numQBs === 2 ? ' SF' : '') + ' · ' + state.teams.length + 'tm'
    });
   }
   try{
@@ -10307,6 +10336,12 @@ function renderMatchups(){
      const std = Math.sqrt(Math.max(1, variance));
      const scoring = lg.scoring_settings || {};
      const ppr = scoring.rec != null ? scoring.rec : '';
+     let starterSlots = 9;
+     try{
+      const rp = (lg.roster_positions || (lg.settings && lg.settings.roster_positions) || []);
+      starterSlots = (rp || []).filter(x => x && x !== 'BN' && x !== 'IR' && x !== 'TAXI').length || 9;
+     }catch(e){}
+     const nTeams = teams.length || (lg.total_rosters || 10);
      seasons.push({
       season: lg.season || lid,
       leagueId: lid,
@@ -10314,7 +10349,11 @@ function renderMatchups(){
       meanPf: mean,
       stdPf: std,
       playoffStart,
-      scoringNote: (ppr !== '' ? ppr + ' PPR' : '') + (lg.settings && lg.settings.roster_positions && lg.settings.roster_positions.includes('SUPER_FLEX') ? ' SF' : '')
+      nTeams,
+      starterSlots,
+      gamesPerWeek: 1,
+      ppr: (ppr !== '' && ppr != null) ? Number(ppr) : null,
+      scoringNote: (ppr !== '' ? ppr + ' PPR' : '') + (lg.settings && lg.settings.roster_positions && lg.settings.roster_positions.includes('SUPER_FLEX') ? ' SF' : '') + ' · ' + nTeams + 'tm'
      });
     }
    } else if(state.platform === 'espn' && state.leagueId && state.year){
@@ -10397,6 +10436,28 @@ function renderMatchups(){
       const std = Math.sqrt(Math.max(1, variance));
       const ss = (data.settings && data.settings.scoringSettings) || {};
       const ppr = ss.reception || ss.rec || '';
+      let starterSlots = 9;
+      try{
+       const slots = (data.settings && data.settings.rosterSettings && data.settings.rosterSettings.lineupSlotCounts) || {};
+       starterSlots = 0;
+       Object.keys(slots).forEach(k => {
+        const id = Number(k);
+        // ESPN bench=20, IR=21,21 etc - count non-bench
+        if(id === 20 || id === 21 || id === 22 || id === 24) return;
+        starterSlots += Number(slots[k]) || 0;
+       });
+       if(starterSlots < 5) starterSlots = 9;
+      }catch(e){ starterSlots = 9; }
+      const nTeams = teams.length || 10;
+      let gamesPerWeek = 1;
+      try{
+       if(data.settings && data.settings.scheduleSettings && data.settings.scheduleSettings.regularSeasonMatchupPeriodCount){
+        // median often doubles games - detect from total wins ~ 2*weeks
+        const avgG = teams.reduce((s,t)=>s+(t.wins||0)+(t.losses||0),0) / Math.max(1, teams.length);
+        const weeksEst = Math.max(1, playoffStart - 1);
+        if(avgG > weeksEst * 1.4) gamesPerWeek = 2;
+       }
+      }catch(e){}
       seasons.push({
        season: y,
        leagueId: state.leagueId,
@@ -10404,7 +10465,11 @@ function renderMatchups(){
        meanPf: mean,
        stdPf: std,
        playoffStart,
-       scoringNote: String(ppr)
+       nTeams,
+       starterSlots,
+       gamesPerWeek,
+       ppr: (ppr !== '' && ppr != null) ? Number(ppr) : null,
+       scoringNote: (ppr !== '' ? String(ppr) + ' PPR' : '') + ' · ' + nTeams + 'tm'
       });
      }catch(e){ /* season may not exist */ }
     }
@@ -10418,6 +10483,47 @@ function renderMatchups(){
   if(s == null || !isFinite(s)) return null;
   return (s - mean) / (std || 1);
  }
+
+ // Cross-season fair score: z within that year, then adjust for league size + starter slots.
+ // Larger leagues / more starters inflate totals and compress win rates.
+ function fairWeekScore(raw, szn, ref){
+  if(raw == null || !isFinite(raw)) return null;
+  const mean = szn.meanPf || 100;
+  const std = Math.max(1, szn.stdPf || 20);
+  let z = (raw - mean) / std;
+  // Starter-slot scale: more starters → higher totals; scale z slightly so 7-slot and 11-slot eras compare
+  const slots = Number(szn.starterSlots) || 9;
+  const refSlots = (ref && ref.starterSlots) || 9;
+  const slotAdj = Math.sqrt(refSlots / Math.max(5, slots));
+  // League size: extreme scores are a bit easier in tiny leagues (weaker median)
+  const n = Number(szn.nTeams) || 10;
+  const refN = (ref && ref.nTeams) || 10;
+  const sizeAdj = Math.pow(refN / Math.max(4, n), 0.15);
+  z = z * slotAdj * sizeAdj;
+  // Map back onto reference season scale for a readable "fair" points number
+  const rMean = (ref && ref.meanPf) || mean;
+  const rStd = Math.max(1, (ref && ref.stdPf) || std);
+  return rMean + z * rStd;
+ }
+
+ function fairWinRate(wins, losses, ties, szn, ref){
+  const g = (wins||0)+(losses||0)+(ties||0);
+  if(g < 1) return null;
+  let pct = ((wins||0) + 0.5*(ties||0)) / g;
+  // gamesPerWeek: median leagues have ~2x games; win% is already comparable, but
+  // luck variance differs — mild shrink toward 0.5 for small samples in big leagues
+  const n = Number(szn.nTeams) || 10;
+  const weekN = g / Math.max(1, Number(szn.gamesPerWeek) || 1);
+  const shrink = Math.min(0.25, 2 / Math.max(4, weekN));
+  pct = pct * (1 - shrink) + 0.5 * shrink;
+  // Winning in a 16-team league is harder than 8-team for the same record quality
+  const refN = (ref && ref.nTeams) || n;
+  const sizeBoost = Math.log(Math.max(4, n) / 4) / Math.log(Math.max(4, refN) / 4 || 2);
+  // convert to relative strength index around 0.5
+  const strength = 0.5 + (pct - 0.5) * (0.85 + 0.15 * Math.min(1.4, sizeBoost || 1));
+  return Math.max(0, Math.min(1, strength));
+ }
+
 
 function renderRecords(){
  const grid = el('records-grid');
@@ -10572,60 +10678,85 @@ function renderRecords(){
    allGrid.innerHTML = '<p class="needs-intro">Click "Load all seasons" to pull prior years (Sleeper league chain or ESPN history).</p>';
    return;
   }
-  const atHighWeek = { raw: -Infinity, z: -Infinity, label: '' };
-  const atLowWeek = { raw: Infinity, z: Infinity, label: '' };
-  const atPF = { raw: -Infinity, z: -Infinity, label: '', ppg: 0 };
-  const atWins = { val: -1, label: '', raw: 0 };
-  const atPct = { val: -1, label: '', str: '' };
-  const atBlow = { raw: -Infinity, z: -Infinity, label: '' };
+  // Reference scale = current / most recent season (readable "fair points")
+  const ref = seasons[0] || { meanPf: 100, stdPf: 20, nTeams: 10, starterSlots: 9 };
+
+  const atHighWeek = { raw: -Infinity, fair: -Infinity, z: -Infinity, label: '' };
+  const atLowWeek = { raw: Infinity, fair: Infinity, z: Infinity, label: '' };
+  const atPF = { raw: -Infinity, fair: -Infinity, ppg: 0, label: '' };
+  const atWins = { val: -1, fair: -1, label: '', raw: 0 };
+  const atPct = { val: -1, fair: -1, label: '', str: '' };
+  const atBlow = { raw: -Infinity, fair: -Infinity, label: '' };
 
   seasons.forEach(szn => {
    const mean = szn.meanPf || 100;
    const std = szn.stdPf || 20;
    const playoffStart = Number(szn.playoffStart) || 15;
-   // Only regular-season single weeks (exclude multi-week playoff periods)
    const maxReg = Math.min(playoffStart - 1, 17);
+   const nTeams = Number(szn.nTeams) || (szn.teams || []).length || 10;
+   const gpw = Number(szn.gamesPerWeek) || 1;
+   const meta = (szn.scoringNote || '') + (nTeams ? '' : '');
 
    (szn.teams || []).forEach(t => {
     (t.weeklyScores || []).forEach((s, i) => {
      const week = i + 1;
-     if(week > maxReg) return; // playoffs out
+     if(week > maxReg) return;
      if(typeof s !== 'number' || s <= 0) return;
-     // Guard: multi-week playoff totals sometimes land in late regular slots as huge outliers
      if(s > mean + 4.5 * std && week >= playoffStart - 1) return;
      const z = normScore(s, mean, std);
-     if(s > atHighWeek.raw || (s === atHighWeek.raw && z > atHighWeek.z)){
-      atHighWeek.raw = s; atHighWeek.z = z;
-      atHighWeek.label = t.name + ' · ' + szn.season + ' · week ' + week + (z != null ? ' · z ' + z.toFixed(2) : '');
+     const fair = fairWeekScore(s, szn, ref);
+     if(fair == null) return;
+     if(fair > atHighWeek.fair || (fair === atHighWeek.fair && s > atHighWeek.raw)){
+      atHighWeek.raw = s; atHighWeek.fair = fair; atHighWeek.z = z;
+      atHighWeek.label = t.name + ' · ' + szn.season + ' · week ' + week
+       + ' · raw ' + fmtPts(s)
+       + (nTeams ? ' · ' + nTeams + 'tm' : '')
+       + (szn.starterSlots ? ' · ' + szn.starterSlots + ' starters' : '')
+       + (z != null ? ' · z ' + z.toFixed(2) : '');
      }
-     if(s < atLowWeek.raw || (s === atLowWeek.raw && z < atLowWeek.z)){
-      atLowWeek.raw = s; atLowWeek.z = z;
-      atLowWeek.label = t.name + ' · ' + szn.season + ' · week ' + week + (z != null ? ' · z ' + z.toFixed(2) : '');
+     if(fair < atLowWeek.fair || (fair === atLowWeek.fair && s < atLowWeek.raw)){
+      atLowWeek.raw = s; atLowWeek.fair = fair; atLowWeek.z = z;
+      atLowWeek.label = t.name + ' · ' + szn.season + ' · week ' + week
+       + ' · raw ' + fmtPts(s)
+       + (nTeams ? ' · ' + nTeams + 'tm' : '')
+       + (z != null ? ' · z ' + z.toFixed(2) : '');
      }
     });
+
     const g = (t.wins||0)+(t.losses||0)+(t.ties||0) || 1;
-    const ppg = (t.pf || 0) / g;
-    const pfZ = normScore(ppg, mean, std);
-    if(ppg > atPF.ppg){
-     atPF.ppg = ppg; atPF.raw = t.pf; atPF.z = pfZ;
-     atPF.label = t.name + ' · ' + szn.season + ' · ' + fmtPts(t.pf) + ' PF' + (pfZ != null ? ' · z ' + pfZ.toFixed(2) : '');
-    }
     const weekN = (t.weeklyScores || []).filter((s, i) => typeof s === 'number' && s > 0 && (i + 1) <= maxReg).length;
-    const gTot = (t.wins||0)+(t.losses||0)+(t.ties||0);
-    const inferredMedian = weekN > 0 && gTot >= weekN * 1.5;
-    const gamesPerWeek = inferredMedian ? 2 : 1;
+    const ppg = (t.pf || 0) / g;
+    // PPG fair: z of ppg vs season mean weekly, slot/size adjusted
+    const ppgFair = fairWeekScore(ppg, szn, ref);
+    if(ppgFair != null && ppgFair > (atPF.fair || -Infinity)){
+     atPF.fair = ppgFair; atPF.ppg = ppg; atPF.raw = t.pf;
+     atPF.label = t.name + ' · ' + szn.season + ' · ' + fmtPts(t.pf) + ' PF · ' + fmtPts(ppg) + '/g'
+      + (nTeams ? ' · ' + nTeams + 'tm' : '');
+    }
+
     const winsPerWeek = weekN > 0 ? (t.wins||0) / weekN : (t.wins||0);
-    if(winsPerWeek > atWins.val){
+    // Normalize wins/week by games-per-week so H2H+median does not dominate
+    const winsFair = winsPerWeek / gpw * (ref.gamesPerWeek || 1);
+    // Size-adjust: more wins in a 12-team field count a bit more than in 8-team
+    const winsFair2 = winsFair * Math.pow(nTeams / Math.max(4, (ref.nTeams || 10)), 0.1);
+    if(winsFair2 > atWins.fair){
+     atWins.fair = winsFair2;
      atWins.val = winsPerWeek;
      atWins.raw = t.wins||0;
-     atWins.label = t.name + ' · ' + szn.season + ' · ' + (t.wins||0) + ' wins · ' + winsPerWeek.toFixed(2) + '/wk' + (inferredMedian ? ' (H2H+med)' : ' (H2H)');
+     atWins.label = t.name + ' · ' + szn.season + ' · ' + (t.wins||0) + ' wins · '
+      + winsPerWeek.toFixed(2) + '/wk' + (gpw > 1 ? ' (H2H+med)' : ' (H2H)')
+      + ' · ' + nTeams + 'tm';
     }
-    const gForPct = weekN > 0 ? weekN * gamesPerWeek : gTot;
-    const pct = gForPct > 0 ? ((t.wins||0)+0.5*(t.ties||0))/gForPct : -1;
-    if(pct > atPct.val && (weekN >= 5 || gTot >= 5)){
-     atPct.val = pct;
+
+    const gTot = (t.wins||0)+(t.losses||0)+(t.ties||0);
+    const fairPct = fairWinRate(t.wins, t.losses, t.ties, szn, ref);
+    if(fairPct != null && (weekN >= 5 || gTot >= 5) && fairPct > atPct.fair){
+     atPct.fair = fairPct;
+     atPct.val = gTot > 0 ? ((t.wins||0)+0.5*(t.ties||0))/gTot : 0;
      atPct.str = (t.ties ? t.wins+'-'+t.losses+'-'+t.ties : t.wins+'-'+t.losses);
-     atPct.label = t.name + ' · ' + szn.season + ' · ' + atPct.str + (inferredMedian ? ' (H2H+med)' : '');
+     atPct.label = t.name + ' · ' + szn.season + ' · ' + atPct.str
+      + ' · raw ' + (atPct.val*100).toFixed(1) + '%'
+      + ' · ' + nTeams + 'tm' + (gpw > 1 ? ' H2H+med' : '');
     }
    });
 
@@ -10637,24 +10768,55 @@ function renderRecords(){
     if(ws.length < 2) continue;
     ws.sort((a,b)=>b.s-a.s);
     const gap = ws[0].s - ws[ws.length-1].s;
-    if(gap > mean + 4.5 * std) continue; // skip corrupted multi-week dumps
-    const gapZ = gap / std;
-    if(gap > atBlow.raw){
-     atBlow.raw = gap; atBlow.z = gapZ;
-     atBlow.label = ws[0].t.name + ' over ' + ws[ws.length-1].t.name + ' · ' + szn.season + ' · week ' + (wi+1);
+    if(!(gap > 0) || gap > mean + 4.5 * std) continue;
+    // Fairness: gap in std-devs that season, then size/slot adjust, map to ref points
+    const gapZ = gap / Math.max(1, std);
+    const slots = Number(szn.starterSlots) || 9;
+    const refSlots = Number(ref.starterSlots) || 9;
+    const n = Number(szn.nTeams) || 10;
+    const refN = Number(ref.nTeams) || 10;
+    const slotAdj = Math.sqrt(refSlots / Math.max(5, slots));
+    const sizeAdj = Math.pow(refN / Math.max(4, n), 0.15);
+    const fairZ = gapZ * slotAdj * sizeAdj;
+    const fairGap = fairZ * Math.max(1, ref.stdPf || std);
+    if(fairGap > atBlow.fair){
+     atBlow.fair = fairGap;
+     atBlow.raw = gap;
+     atBlow.z = fairZ;
+     atBlow.label = ws[0].t.name + ' over ' + ws[ws.length-1].t.name + ' · ' + szn.season
+      + ' · week ' + (wi+1)
+      + ' · raw gap ' + fmtPts(gap)
+      + ' · z ' + fairZ.toFixed(2)
+      + ' · ' + n + 'tm'
+      + (szn.starterSlots ? ' · ' + szn.starterSlots + ' starters' : '');
     }
    }
   });
 
   const at = [];
-  at.push(card('Seasons loaded', String(seasons.length), seasons.map(s => s.season + (s.scoringNote ? ' ('+s.scoringNote+')' : '') + (s.playoffStart ? ' · RS 1-' + (s.playoffStart-1) : '')).join(', ')));
-  if(atHighWeek.raw > -Infinity) at.push(card('Highest week', fmtPts(atHighWeek.raw), atHighWeek.label));
-  if(atLowWeek.raw < Infinity) at.push(card('Lowest week', fmtPts(atLowWeek.raw), atLowWeek.label));
-  if(atPF.ppg > 0) at.push(card('Best PPG season', fmtPts(atPF.ppg), atPF.label));
-  if(atWins.val >= 0) at.push(card('Most wins/week', atWins.val.toFixed(2) + '/wk', atWins.label));
-  if(atPct.val >= 0) at.push(card('Best win% (by weeks)', (atPct.val*100).toFixed(1) + '%', atPct.label));
-  if(atBlow.raw > -Infinity) at.push(card('Biggest blowout gap', fmtPts(atBlow.raw), atBlow.label));
-  allGrid.innerHTML = at.join(''); }
+  at.push(card(
+   'Seasons loaded',
+   String(seasons.length),
+   seasons.map(s => {
+    let bit = String(s.season);
+    if(s.scoringNote) bit += ' (' + s.scoringNote + ')';
+    if(s.playoffStart) bit += ' · RS 1-' + (s.playoffStart-1);
+    return bit;
+   }).join(', ')
+  ));
+  if(atHighWeek.fair > -Infinity) at.push(card('Highest week (fair)', fmtPts(atHighWeek.fair), atHighWeek.label));
+  if(atLowWeek.fair < Infinity) at.push(card('Lowest week (fair)', fmtPts(atLowWeek.fair), atLowWeek.label));
+  if(atPF.fair > -Infinity) at.push(card('Best PPG (fair)', fmtPts(atPF.fair), atPF.label));
+  if(atWins.fair >= 0) at.push(card('Most wins/week (fair)', atWins.val.toFixed(2) + '/wk', atWins.label));
+  if(atPct.fair >= 0) at.push(card('Best win% (fair)', (atPct.fair*100).toFixed(1) + '%', atPct.label));
+  if(atBlow.fair > -Infinity) at.push(card('Biggest blowout (fair)', fmtPts(atBlow.fair), atBlow.label));
+  at.push(card(
+   'How fair scores work',
+   'z + size + slots',
+   'Each season is z-scored vs its own average (handles PPR / scoring). Then adjusted for league size and starter-slot count, mapped onto this season scale. Raw values stay in the subtitle.'
+  ));
+  allGrid.innerHTML = at.join('');
+ }
 
  if(leagueHistoryCache) paintAllTime(leagueHistoryCache);
  else if(allGrid) allGrid.innerHTML = '<p class="needs-intro">Click "Load all seasons" to include prior years.</p>';
@@ -11526,7 +11688,50 @@ function renderLuck(){
  });
  }
 
-function playerTradeable(p){
+function parseTradeWillingness(raw){
+ if(raw == null || raw === false || raw === 0) return null;
+ if(raw === true || raw === 1) return 'listed';
+ if(typeof raw === 'number'){
+  if(raw === 1) return 'likely';
+  if(raw === 2) return 'unlikely';
+  return 'listed';
+ }
+ if(typeof raw === 'string'){
+  const u = raw.toUpperCase().replace(/_/g, ' ');
+  if(u.includes('UNLIKE') || u.includes('NOT LIKELY') || u.includes('UNLIKELY') || u === 'NO') return 'unlikely';
+  if(u.includes('LIKELY') || u === 'YES' || u === 'WANT') return 'likely';
+  if(u.includes('BLOCK') || u.includes('TRADE')) return 'listed';
+  return 'listed';
+ }
+ if(typeof raw === 'object'){
+  const type = raw.type || raw.designation || raw.willingness || raw.status || raw.tradeBlockType || raw.level;
+  if(type != null) return parseTradeWillingness(type);
+  if(raw.likely === true || raw.isLikely === true) return 'likely';
+  if(raw.likely === false || raw.isLikely === false) return 'unlikely';
+  if(raw.playerId != null || raw.id != null) return 'listed';
+  return 'listed';
+ }
+ return null;
+ }
+ function tradeAcceptScore(sendList, recvList){
+  // What partner is sending us (recvList) — host likely/not-likely signals
+  let score = 50;
+  const notes = [];
+  (recvList || []).forEach(p => {
+   if(p.isTradeable === false || p.tradeLocked || p.allow_trade === false){
+    score -= 80;
+    notes.push((p.fullName || p.name || 'Player') + ' locked/untradeable');
+    return;
+   }
+   const w = p.tradeWillingness || (p.onTradeBlock ? 'listed' : null);
+   if(w === 'likely'){ score += 28; notes.push((p.fullName || p.name) + ' likely to trade'); }
+   else if(w === 'listed' || p.onTradeBlock){ score += 16; notes.push((p.fullName || p.name) + ' on trade block'); }
+   else if(w === 'unlikely'){ score -= 35; notes.push((p.fullName || p.name) + ' not likely to trade'); }
+  });
+  score = Math.max(0, Math.min(100, score));
+  return { score, notes };
+ }
+ function playerTradeable(p){
  if(!p) return false;
  if(p.tradeLocked) return false;
  if(p.isTradeable === false) return false;
@@ -11534,7 +11739,11 @@ function playerTradeable(p){
  return true;
 }
 function playerOnBlock(p){
- return !!(p && p.onTradeBlock);
+ return !!(p && (p.onTradeBlock || p.tradeWillingness === 'likely' || p.tradeWillingness === 'listed'));
+}
+function playerTradeWillingness(p){
+ if(!p) return null;
+ return p.tradeWillingness || (p.onTradeBlock ? 'listed' : null);
 }
 
 
@@ -11667,8 +11876,17 @@ function runTradeFinder(){
  .filter(p => !posAllow || !posAllow.length || posAllow.includes(p.position))
  .slice()
  .sort((a,b) => {
- const ba = playerOnBlock(a) ? 1 : 0, bb = playerOnBlock(b) ? 1 : 0;
- if(mode === 'get' && ba !== bb) return bb - ba;
+ function blockRank(p){
+  const w = p.tradeWillingness || (p.onTradeBlock ? 'listed' : null);
+  if(w === 'likely') return 3;
+  if(w === 'listed') return 2;
+  if(w === 'unlikely') return 0;
+  return 1;
+ }
+ if(mode === 'get'){
+  const ba = blockRank(a), bb = blockRank(b);
+  if(ba !== bb) return bb - ba;
+ }
  if(mode === 'send'){
  const na = need[a.position] || 40, nb = need[b.position] || 40;
  if(na !== nb) return na - nb;
@@ -11716,8 +11934,13 @@ function runTradeFinder(){
  const sv = packageVal(sendList), rv = packageVal(recvList);
  const maxV = Math.max(sv, rv, 1);
  // Fairness: wider when user named specific players (niche)
- const fairMax = nicheMode ? 0.42 : 0.28;
- if(Math.abs(sv - rv) / maxV > fairMax) return;
+ const fairMax = nicheMode ? 0.32 : 0.18;
+ const valueGapPct = Math.abs(sv - rv) / maxV;
+ if(valueGapPct > fairMax) return;
+
+ const accept = typeof tradeAcceptScore === 'function' ? tradeAcceptScore(sendList, recvList) : { score: 50, notes: [] };
+ if(!nicheMode && accept.score < 25) return;
+ if(!nicheMode && recvList.some(p => p.tradeWillingness === 'unlikely')) return;
 
  const sendNeedAvg = sendList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, sendList.length);
  const recvNeedAvg = recvList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, recvList.length);
@@ -11783,8 +12006,9 @@ function runTradeFinder(){
  if(!nicheMode){
   if(surpMe <= 0 && lineupGain < 80 && profileBoost < 15) return;
   if(impact.a.delta <= -0.15 && surpMe <= 0 && profileBoost < 20) return;
-  if(impact.b.delta < -3.5) return;
-  if((impact.b.surplusDelta || 0) < -1200 && impact.b.delta < -0.8) return;
+  if(impact.b.delta < -1.2) return;
+  if(impact.a.delta > 0 && impact.b.delta < -0.35 && valueGapPct > 0.08) return;
+  if((impact.b.surplusDelta || 0) < -900 && impact.b.delta < -0.5) return;
   const pNeed0 = teamPosNeedScores(partner);
   const partnerRecvNeed = sendList.reduce((s,p) => s + (pNeed0[p.position]||30), 0) / Math.max(1, sendList.length);
   if(partnerRecvNeed < 15 && impact.b.delta < -0.3) return;
@@ -11807,11 +12031,19 @@ function runTradeFinder(){
 
  const fit = needFitScore(sendList, recvList, myNeed, pNeed);
  seen.add(key);
+ // Rank: mutual power gain + fair value + accept likelihood from host trade block
+ const acceptBoost = (accept.score - 50) * 0.55;
+ const fairnessBoost = (1 - valueGapPct) * 40;
+ const mutual = Math.min(impact.a.delta, Math.max(0, impact.b.delta + 0.5)) * 12;
  hits.push({
  kind: label, me, partner, send: sendList, recv: recvList,
  deltaMe: impact.a.delta, deltaThem: impact.b.delta,
  surplusMe: surpMe, lineupGain, fit,
  profileBoost: profileBoost || 0,
+ acceptScore: accept.score,
+ acceptNotes: accept.notes || [],
+ valueGapPct,
+ rankScore: (impact.a.delta * 18) + (lineupGain * 0.15) + fit + (profileBoost || 0) + acceptBoost + fairnessBoost + mutual,
  tradeA, tradeB
  });
  }
@@ -11894,9 +12126,12 @@ function runTradeFinder(){
  return (h.lineupGain || 0) * 0.002
  + (h.surplusMe || 0) * 0.0015
  + Math.max(0, h.deltaMe) * 2.2
- + Math.min(Math.max(h.deltaThem, -1), 1.5) * 0.4
+ + Math.min(Math.max(h.deltaThem, -1), 1.5) * 0.9
  + (h.fit || 0) * 0.03
- + (h.profileBoost || 0) * 0.04;
+ + (h.profileBoost || 0) * 0.04
+ + ((h.acceptScore != null ? h.acceptScore : 50) - 50) * 0.08
+ + (1 - Math.min(1, h.valueGapPct || 0)) * 1.2
+ + (h.rankScore || 0) * 0.02;
  }
  const bestByCluster = new Map();
  hits.forEach(h => {
@@ -11928,6 +12163,20 @@ function runTradeFinder(){
  const dThem = (h.deltaThem >= 0 ? '+' : '') + h.deltaThem.toFixed(1);
  const lg = (h.lineupGain >= 0 ? '+' : '') + Math.round(h.lineupGain);
  const needBits = h.recv.map(p => p.position + ':' + (myNeed[p.position]||0)).join(' ');
+ const acc = h.acceptScore != null ? h.acceptScore : null;
+ let accLabel = '';
+ if(acc != null){
+  if(acc >= 70) accLabel = 'Accept lean: high (' + acc + ')';
+  else if(acc >= 45) accLabel = 'Accept lean: medium (' + acc + ')';
+  else accLabel = 'Accept lean: low (' + acc + ')';
+  if(h.acceptNotes && h.acceptNotes.length) accLabel += ' · ' + h.acceptNotes.slice(0, 2).join('; ');
+ }
+ const gapStr = h.valueGapPct != null ? ('Value gap ' + Math.round(h.valueGapPct * 100) + '%') : '';
+ let accHtml = '';
+ if(accLabel){
+  const col = (acc != null && acc >= 70) ? 'var(--accent)' : ((acc != null && acc < 40) ? 'var(--red)' : 'var(--text-secondary)');
+  accHtml = '<div style="font-size:11.5px;margin-top:4px;color:' + col + ';">' + escapeHtml(accLabel) + '</div>';
+ }
  card.innerHTML = `
  <div class="hist-head">
  <div class="hist-teams">${escapeHtml(h.me.name)} ⇄ ${escapeHtml(h.partner.name)} · ${h.kind}</div>
@@ -11939,8 +12188,9 @@ function runTradeFinder(){
  <div><div class="hist-side-label">You get</div><div class="hist-asset">${recvStr}</div></div>
  </div>
  <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">
- Lineup value ${lg} · Need ${escapeHtml(needBits)}
+ Lineup value ${lg} · Need ${escapeHtml(needBits)}${gapStr ? ' · ' + gapStr : ''}
  </div>
+ ${accHtml}
  <div style="margin-top:10px;">
  <button type="button" class="btn btn-ghost btn-sm finder-open-trade" data-idx="${idx}">Open in Trade tool</button>
  </div>`;
@@ -12363,85 +12613,116 @@ function runTradeFinder(){
  }
 
  function assignValueTiers(rows){
-    // Rank by value. Put ~7-10 tier breaks across the list at the strongest
-    // local gaps so overall never piles 100+ into T1. Honor a true elite cliff
-    // at the top when #1 is clearly alone.
+    // Gap-based tiers: stay in a tier while values stay close to that tier's top.
+    // Thresholds start tight (elite) and loosen as tiers go lower so late tiers
+    // are broader buckets. A sharp consecutive drop also forces a new tier.
     if(!rows.length) return [];
     const sorted = rows.slice().sort((a,b) =>
       (b.value||0) - (a.value||0) || String(a.player||'').localeCompare(String(b.player||''))
     );
     const n = sorted.length;
-    if(n <= 2) return sorted.map((r,i) => ({ ...r, tier: i + 1 }));
-    const values = sorted.map(r => Number(r.value) || 0);
-    const top = Math.max(1, values[0]);
-
-    let target = 6;
-    if(n >= 18) target = 7;
-    if(n >= 36) target = 8;
-    if(n >= 70) target = 9;
-    if(n >= 120) target = 10;
-    target = Math.min(target, n);
-
-    function gapScore(i){
-      if(i <= 0 || i >= n) return -1;
-      const gap = values[i - 1] - values[i];
-      const rel = values[i - 1] > 0 ? gap / values[i - 1] : 0;
-      return rel * 1.3 + (gap / top) * 0.6;
+    if(n === 1) return [{ ...sorted[0], tier: 1 }];
+    if(n === 2){
+      const v0 = Number(sorted[0].value)||0, v1 = Number(sorted[1].value)||0;
+      const drop = v0 > 0 ? (v0 - v1) / v0 : 0;
+      return [
+        { ...sorted[0], tier: 1 },
+        { ...sorted[1], tier: drop >= 0.10 ? 2 : 1 }
+      ];
     }
 
-    // Exactly (target-1) breaks. Even slots, each snapped to best gap nearby.
-    // Require minimum separation so we do not get one-player tiers.
-    const breaks = [];
-    const minSep = Math.max(2, Math.floor(n / (target * 2.2)));
-    const window = Math.max(minSep, Math.floor(n / (target * 1.6)));
-
-    for(let t = 1; t < target; t++){
-      const ideal = Math.round((n * t) / target);
-      const lo = Math.max(1, ideal - window);
-      const hi = Math.min(n - 1, ideal + window);
-      let bestI = ideal;
-      let bestS = -1;
-      for(let i = lo; i <= hi; i++){
-        // keep clear of breaks already chosen
-        if(breaks.some(b => Math.abs(b - i) < minSep)) continue;
-        const s = gapScore(i);
-        if(s > bestS){ bestS = s; bestI = i; }
-      }
-      // fallback if everything blocked
-      if(bestS < 0){
-        for(let i = lo; i <= hi; i++){
-          const s = gapScore(i);
-          if(s > bestS){ bestS = s; bestI = i; }
-        }
-      }
-      if(bestI > 0 && bestI < n && !breaks.includes(bestI)) breaks.push(bestI);
-    }
-
-    // Elite cliff: if #1 is far above #2, force break at index 1 (T1 = one player)
-    const topCliff = values[0] > 0 ? (values[0] - values[1]) / values[0] : 0;
-    if(topCliff >= 0.12 || (values[0] - values[1]) >= top * 0.08){
-      if(!breaks.some(b => Math.abs(b - 1) < minSep)) breaks.push(1);
-      else if(!breaks.includes(1)){
-        // replace nearest break with 1
-        let nearest = 0, nd = 1e9;
-        breaks.forEach((b, idx) => {
-          if(Math.abs(b - 1) < nd){ nd = Math.abs(b - 1); nearest = idx; }
-        });
-        breaks[nearest] = 1;
-      }
-    }
-
-    const breakAt = new Set(breaks.filter(i => i > 0 && i < n));
+    const values = sorted.map(r => Math.max(0, Number(r.value) || 0));
+    const tiers = new Array(n);
     let tier = 1;
-    return sorted.map((r, i) => {
-      if(i > 0 && breakAt.has(i)) tier++;
-      return { ...r, tier };
-    });
+    let tierTop = values[0];
+    let tierStart = 0;
+    tiers[0] = 1;
+
+    function maxDropForTier(t){
+      // T1: 12% off the tier top before a forced split; each later tier +4%
+      // Caps so the bottom does not become one giant tier forever
+      return Math.min(0.42, 0.12 + (t - 1) * 0.04);
+    }
+    function minGapBreak(t){
+      // Consecutive gap that always opens a new tier (stricter early)
+      return Math.min(0.28, 0.08 + (t - 1) * 0.025);
+    }
+    function maxSizeForTier(t){
+      // Soft cap so T1 cannot swallow half the position board
+      if(t === 1) return 4;
+      if(t === 2) return 6;
+      if(t <= 4) return 8;
+      return 12;
+    }
+
+    for(let i = 1; i < n; i++){
+      const prev = values[i - 1];
+      const cur = values[i];
+      const gap = prev > 0 ? (prev - cur) / prev : 0;
+      const dropFromTop = tierTop > 0 ? (tierTop - cur) / tierTop : 0;
+      const size = i - tierStart;
+
+      // Zero / near-zero values collapse into the last tier
+      if(cur <= 0 && prev <= 0){
+        tiers[i] = tier;
+        continue;
+      }
+
+      const shouldBreak =
+        gap >= minGapBreak(tier)
+        || dropFromTop >= maxDropForTier(tier)
+        || size >= maxSizeForTier(tier);
+
+      // Soft size break only if there is at least a mild gap (avoid random splits)
+      const sizeOnly = size >= maxSizeForTier(tier) && gap < minGapBreak(tier) * 0.45 && dropFromTop < maxDropForTier(tier) * 0.6;
+      if(shouldBreak && !sizeOnly){
+        tier++;
+        tierTop = cur;
+        tierStart = i;
+      } else if(sizeOnly && gap >= 0.03){
+        // mild gap + max size → still split
+        tier++;
+        tierTop = cur;
+        tierStart = i;
+      }
+
+      tiers[i] = tier;
+    }
+
+    // Merge tiny 1-player middle tiers into neighbors when the gaps on both
+    // sides are small (keeps 6–10 meaningful tiers without dust tiers)
+    for(let pass = 0; pass < 2; pass++){
+      let i = 0;
+      while(i < n){
+        const t = tiers[i];
+        let j = i;
+        while(j < n && tiers[j] === t) j++;
+        const size = j - i;
+        if(size === 1 && t > 1 && j < n){
+          const v = values[i];
+          const vPrev = values[i - 1];
+          const vNext = values[j];
+          const gPrev = vPrev > 0 ? (vPrev - v) / vPrev : 0;
+          const gNext = v > 0 ? (v - vNext) / v : 0;
+          // lonely tier with small gaps → absorb into closer neighbor
+          if(gPrev < 0.06 && gNext < 0.06){
+            const absorb = gPrev <= gNext ? tiers[i - 1] : tiers[j];
+            tiers[i] = absorb;
+          }
+        }
+        i = j;
+      }
+      // renumber tiers to be consecutive 1..K
+      const map = new Map();
+      let next = 1;
+      for(let k = 0; k < n; k++){
+        if(!map.has(tiers[k])) map.set(tiers[k], next++);
+        tiers[k] = map.get(tiers[k]);
+      }
+    }
+
+    return sorted.map((r, i) => ({ ...r, tier: tiers[i] }));
   }
-
-
-
-
 
 
 
@@ -13759,7 +14040,7 @@ function renderByes(){
     // FantasyCalc official 30-day trend (from values/current, no history endpoint needed)
     if(win === '30d'){
       const pool = Array.isArray(state.fcValues) ? state.fcValues : [];
-      const rows = [];
+      const byKey = new Map(); // FantasyCalc sometimes returns the same player twice
       pool.forEach(entry => {
         const p = entry && entry.player;
         if(!p || !p.name) return;
@@ -13768,18 +14049,24 @@ function renderByes(){
         const cur = typeof entry.value === 'number' ? entry.value : 0;
         const t30 = typeof entry.trend30Day === 'number' ? entry.trend30Day : null;
         if(t30 == null || !(cur > 0)) return;
-        // trend30Day is absolute value change over ~30 days
         const prev = cur - t30;
         const pct = prev > 0 ? (t30 / prev) * 100 : null;
-        rows.push({
+        const key = (typeof normalizeName === 'function' ? normalizeName(p.name) : String(p.name).toLowerCase())
+          + '|' + pos;
+        const row = {
           name: p.name,
+          id: p.id || p.sleeperId || p.espnId || null,
           pos,
           cur,
           prev: prev > 0 ? prev : null,
           delta: t30,
           pct
-        });
+        };
+        const existing = byKey.get(key);
+        // Keep higher |delta| if duplicate; otherwise first win
+        if(!existing || Math.abs(row.delta) > Math.abs(existing.delta)) byKey.set(key, row);
       });
+      const rows = Array.from(byKey.values());
       const risers = rows.filter(r => r.delta > 0).sort((a,b) => b.delta - a.delta).slice(0, 10);
       const fallers = rows.filter(r => r.delta < 0).sort((a,b) => a.delta - b.delta).slice(0, 10);
 
@@ -17286,19 +17573,46 @@ function renderTradeSide(side){
 
  
  function gradeFromZ(z){
+  // Fallback only — prefer gradeFromLeagueRank
   if(z >= 1.75) return 'A+';
-  if(z >= 1.35) return 'A';
-  if(z >= 1.00) return 'A-';
-  if(z >= 0.65) return 'B+';
-  if(z >= 0.30) return 'B';
-  if(z >= 0.05) return 'B-';
-  if(z >= -0.20) return 'C+';
-  if(z >= -0.50) return 'C';
-  if(z >= -0.80) return 'C-';
-  if(z >= -1.15) return 'D+';
-  if(z >= -1.50) return 'D';
-  if(z >= -1.90) return 'D-';
+  if(z >= 1.25) return 'A';
+  if(z >= 0.85) return 'A-';
+  if(z >= 0.45) return 'B+';
+  if(z >= 0.15) return 'B';
+  if(z >= -0.15) return 'B-';
+  if(z >= -0.45) return 'C+';
+  if(z >= -0.75) return 'C';
+  if(z >= -1.05) return 'C-';
+  if(z >= -1.35) return 'D+';
+  if(z >= -1.65) return 'D';
+  if(z >= -2.0) return 'D-';
   return 'F';
+ }
+
+ function gradeFromLeagueRank(rank, n, holes){
+  // Letter grades must spread across the league. Rank 1 is not automatic A+
+  // if the whole league is thin — still use rank slots so grades mean something.
+  if(!(n > 0) || !(rank > 0)) return 'C';
+  // percentile: 1 = best, 0 = worst
+  const pct = n === 1 ? 0.5 : 1 - ((rank - 1) / (n - 1));
+  let g;
+  if(pct >= 0.97) g = 'A+';
+  else if(pct >= 0.88) g = 'A';
+  else if(pct >= 0.78) g = 'A-';
+  else if(pct >= 0.68) g = 'B+';
+  else if(pct >= 0.55) g = 'B';
+  else if(pct >= 0.45) g = 'B-';
+  else if(pct >= 0.35) g = 'C+';
+  else if(pct >= 0.25) g = 'C';
+  else if(pct >= 0.15) g = 'C-';
+  else if(pct >= 0.08) g = 'D+';
+  else if(pct >= 0.04) g = 'D';
+  else if(pct >= 0.02) g = 'D-';
+  else g = 'F';
+  // Empty starter slots cannot sit in A range
+  if((holes || 0) >= 2 && g.charAt(0) === 'A') g = 'B';
+  else if((holes || 0) >= 1 && (g === 'A+' || g === 'A')) g = 'A-';
+  return g;
  }
 
  function gradeTone(grade){
@@ -17308,6 +17622,97 @@ function renderTradeSide(side){
   if(grade.charAt(0) === 'C') return 'var(--gold)';
   return 'var(--red)';
  }
+
+ function buildPowerRows(){
+  const teams = state.teams || [];
+  if(!teams.length){ state._powerContext = null; return []; }
+  const counts = getStarterCounts();
+  const flexElig = counts.flexEligible || ['RB','WR','TE'];
+  const sfElig = counts.sfEligible || ['QB','RB','WR','TE'];
+  const starterSlotCount = countStarterSlots(counts);
+  const levels = typeof computeReplacementLevels === 'function' ? computeReplacementLevels() : { starterRV: {}, slotRV: {} };
+  const starterRV = levels.starterRV || {};
+  const slotRV = levels.slotRV || levels.starterRV || {};
+  const weights = getPowerWeights();
+  const { wS, wD, wA, wM, wR } = weights;
+  const weeks = Math.max(0, ...teams.map(t => (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0).length));
+  // progressive weights already inside getPowerWeights via weeks
+  const Aarr = [], Marr = [], Rarr = [];
+  teams.forEach(t => {
+   const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+   const avg = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : (t.avgPts || 0);
+   const sorted = scores.slice().sort((a,b)=>a-b);
+   const med = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2) : avg;
+   const g = (t.wins||0)+(t.losses||0)+(t.ties||0);
+   const winPct = g > 0 ? ((t.wins||0)+0.5*(t.ties||0))/g : 0.5;
+   Aarr.push({ id: t.id, val: avg });
+   Marr.push({ id: t.id, val: med });
+   Rarr.push({ id: t.id, val: winPct });
+  });
+  const Amap = madRelativeScores(Aarr);
+  const Mmap = madRelativeScores(Marr);
+  const Rmap = madRelativeScores(Rarr);
+
+  const base = teams.map(t => {
+   const m = rosterMetrics(t, t.roster, { counts, flexElig, sfElig, slotRV, starterSlotCount }, {});
+   const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+   const avgPts = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : (t.avgPts || 0);
+   const sorted = scores.slice().sort((a,b)=>a-b);
+   const medPts = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2) : avgPts;
+   const maxPts = scores.length ? Math.max.apply(null, scores) : avgPts;
+   const minPts = scores.length ? Math.min.apply(null, scores) : avgPts;
+   const g = (t.wins||0)+(t.losses||0)+(t.ties||0);
+   const winPct = g > 0 ? ((t.wins||0)+0.5*(t.ties||0))/g : 0;
+   const recordStr = t.ties ? (t.wins+'-'+t.losses+'-'+t.ties) : ((t.wins||0)+'-'+(t.losses||0));
+   // positional surplus from assignment details when present
+   const posSurp = { QB: 0, RB: 0, WR: 0, TE: 0 };
+   try{
+    (m.details || []).forEach(d => {
+     if(d && posSurp[d.pos] != null) posSurp[d.pos] += (d.surplus || 0);
+    });
+   }catch(e){}
+   return {
+    team: t,
+    starterSurplus: m.starterSurplus || 0,
+    starterVor: m.starterSurplus || 0,
+    depthVor: m.benchQuality || 0,
+    benchQuality: m.benchQuality || 0,
+    benchRaw: m.benchQuality || 0,
+    lineupValue: m.starterValue || 0,
+    holes: m.holes || 0,
+    thin: m.thin || 0,
+    QB: posSurp.QB, RB: posSurp.RB, WR: posSurp.WR, TE: posSurp.TE,
+    positionalDepth: m.positionalDepth || {},
+    avgPts, medPts, maxPts, minPts, winPct, recordStr,
+    hasAvg: scores.length > 0,
+    hasDist: scores.length > 1,
+    power: 0,
+    _weights: weights,
+    _debug: { starters: m.starterIds, bench: null, K: 0, benchCount: 0 }
+   };
+  });
+
+  const Smap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.starterSurplus })));
+  const Dmap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.depthVor })));
+  base.forEach(r => {
+   const id = r.team.id;
+   const A = r.hasAvg ? (Amap[id] ?? 50) : 50;
+   const M = r.hasDist ? (Mmap[id] ?? 50) : A;
+   const R = Rmap[id] ?? 50;
+   r.power = wS * (Smap[id] ?? 50) + wD * (Dmap[id] ?? 50) + wA * A + wM * M + wR * R;
+   // hole penalty
+   if(r.holes > 0) r.power = Math.max(0, r.power - 4 * r.holes);
+  });
+
+  state._powerContext = {
+   base, weights: { wS, wD, wA, wM, wR },
+   Amap, Mmap, Rmap,
+   starterRV, slotRV, counts, flexElig, sfElig, starterSlotCount
+  };
+  return base;
+ }
+
+
 
  function rateTeam(team){
   if(!team) return null;
@@ -17321,50 +17726,162 @@ function renderTradeSide(side){
   const m = rosterMetrics(team, team.roster, ctx || { counts }, {});
   const rows = ((ctx && ctx.base) || []).slice();
 
-  // League quality scores for letter grade (internal z only)
-  const teamScores = rows.map(r => {
-   const depth = r.depthVor != null ? r.depthVor : (r.benchQuality || 0);
+  // Score every team the same way (never trust empty power base alone)
+  const allTeams = (state.teams || []).length ? state.teams : rows.map(r => r.team).filter(Boolean);
+  const teamScores = allTeams.map(tm => {
+   let surp = 0, depth = 0, holes = 0;
+   try{
+    const rm = rosterMetrics(tm, tm.roster, ctx || { counts }, {});
+    surp = rm.starterSurplus || 0;
+    depth = rm.benchQuality || 0;
+    holes = rm.holes || 0;
+   }catch(e){
+    const pr = rows.find(r => r.team && (r.team.id === tm.id || String(r.team.id) === String(tm.id)));
+    if(pr){
+     surp = pr.starterSurplus || 0;
+     depth = pr.depthVor != null ? pr.depthVor : (pr.benchQuality || 0);
+    }
+   }
    return {
-    team: r.team,
-    score: (r.starterSurplus || 0) + 0.35 * depth,
-    power: r.power,
-    starterSurplus: r.starterSurplus,
-    depthVor: depth
+    team: tm,
+    score: surp + 0.35 * depth - (holes * 800),
+    starterSurplus: surp,
+    depthVor: depth,
+    holes
    };
-  });
-  const myScore = (m.starterSurplus || 0) + 0.35 * (m.benchQuality || 0);
+  }).sort((a,b) => b.score - a.score);
+
+  const myScore = (m.starterSurplus || 0) + 0.35 * (m.benchQuality || 0) - ((m.holes || 0) * 800);
+  const n = teamScores.length;
+  let qualityRank = teamScores.findIndex(r => r.team && (r.team.id === team.id || String(r.team.id) === String(team.id))) + 1;
+  if(qualityRank < 1) qualityRank = n;
+
   let mean = 0, std = 1, z = 0;
-  if(teamScores.length){
-   mean = teamScores.reduce((a,b) => a + b.score, 0) / teamScores.length;
-   const v = teamScores.reduce((a,b) => a + (b.score - mean) * (b.score - mean), 0) / Math.max(1, teamScores.length - 1);
-   std = Math.sqrt(Math.max(1e-6, v));
+  if(n){
+   mean = teamScores.reduce((a,b) => a + b.score, 0) / n;
+   const v = teamScores.reduce((a,b) => a + (b.score - mean) * (b.score - mean), 0) / Math.max(1, n - 1);
+   std = Math.sqrt(Math.max(1, v)); // floor std so tiny spreads do not explode z
    z = (myScore - mean) / std;
   }
-  // Hole penalty on displayed grade: empty starters cannot hide behind stars
   let gradeZ = z;
-  if((m.holes || 0) > 0) gradeZ -= 0.45 * m.holes;
-  if((m.thin || 0) > 400) gradeZ -= 0.15;
-  const grade = gradeFromZ(gradeZ);
+  if((m.holes || 0) > 0) gradeZ -= 0.5 * m.holes;
+  if((m.thin || 0) > 400) gradeZ -= 0.2;
 
-  let band = 'About average in this league';
-  if(gradeZ >= 1.2) band = 'Top tier roster in this league';
-  else if(gradeZ >= 0.5) band = 'Above the pack';
-  else if(gradeZ >= 0) band = 'Slightly above average';
-  else if(gradeZ >= -0.5) band = 'Slightly below average';
-  else if(gradeZ >= -1.2) band = 'Behind most of the league';
-  else band = 'Bottom tier roster right now';
+  // Rank drives the letter so a 10-team league cannot be eight A's
+  const grade = gradeFromLeagueRank(qualityRank, n, m.holes || 0);
+
+  let band = 'Middle of the pack';
+  if(qualityRank === 1) band = 'Best roster construction in the league';
+  else if(qualityRank === 2) band = 'Second-best roster';
+  else if(qualityRank <= Math.ceil(n * 0.3)) band = 'Top third';
+  else if(qualityRank <= Math.ceil(n * 0.5)) band = 'Upper half';
+  else if(qualityRank <= Math.ceil(n * 0.7)) band = 'Lower half';
+  else if(qualityRank >= n) band = 'Weakest roster construction';
+  else band = 'Bottom third';
 
   const powerSorted = rows.slice().sort((a,b) => (b.power||0) - (a.power||0));
   const powerRank = powerSorted.findIndex(r => r.team && (r.team.id === team.id || String(r.team.id) === String(team.id))) + 1;
   const powerRow = powerSorted.find(r => r.team && (r.team.id === team.id || String(r.team.id) === String(team.id)));
 
-  // Per-position breakdown
+  // League position values + ranks (starter tops and depth)
   const posList = ['QB','RB','WR','TE'];
+  function teamPosStarterVal(tm, pos){
+   const need = (counts && counts[pos] != null) ? counts[pos] : (pos === 'QB' ? (state.numQBs || 1) : 1);
+   const vals = (tm.roster || []).filter(p => p && !p.isTaxi && p.position === pos).map(p => p.value || 0).sort((a,b) => b - a);
+   return vals.slice(0, Math.max(1, need)).reduce((s,v) => s + v, 0);
+  }
+  function teamPosDepthVal(tm, pos){
+   const need = (counts && counts[pos] != null) ? counts[pos] : (pos === 'QB' ? (state.numQBs || 1) : 1);
+   const vals = (tm.roster || []).filter(p => p && !p.isTaxi && p.position === pos).map(p => p.value || 0).sort((a,b) => b - a);
+   return vals.slice(Math.max(1, need)).reduce((s,v) => s + v, 0);
+  }
+  function medianOf(arr){
+   if(!arr.length) return 0;
+   const s = arr.slice().sort((a,b) => a - b);
+   const m = Math.floor(s.length / 2);
+   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+  function ranksFromVals(entries){
+   // entries: [{ id, val }] → { rankById, median, pctFromMedian(val) }
+   const sorted = entries.slice().sort((a,b) => b.val - a.val);
+   const rankById = {};
+   sorted.forEach((e, i) => { rankById[String(e.id)] = i + 1; });
+   const med = medianOf(entries.map(e => e.val));
+   return { rankById, median: med, n: entries.length };
+  }
+  function pctFromMed(val, med){
+   if(med == null || !isFinite(med) || med === 0) return val > 0 ? 100 : 0;
+   return Math.round(((val / med) - 1) * 100);
+  }
+
+  const leagueTeams = state.teams || [];
+  const starterEntries = leagueTeams.map(tm => {
+   let surp = 0;
+   try{
+    const rm = rosterMetrics(tm, tm.roster, ctx || { counts }, {});
+    surp = rm.starterSurplus || 0;
+   }catch(e){}
+   return { id: tm.id, val: surp };
+  });
+  const depthEntries = leagueTeams.map(tm => {
+   let d = 0;
+   try{
+    const rm = rosterMetrics(tm, tm.roster, ctx || { counts }, {});
+    d = rm.benchQuality || 0;
+   }catch(e){}
+   return { id: tm.id, val: d };
+  });
+  const starterRanks = ranksFromVals(starterEntries);
+  const depthRanks = ranksFromVals(depthEntries);
+  const myStarterRank = starterRanks.rankById[String(team.id)] || leagueTeams.length;
+  const myDepthRank = depthRanks.rankById[String(team.id)] || leagueTeams.length;
+  const myStarterPctMed = pctFromMed(m.starterSurplus || 0, starterRanks.median);
+  const myDepthPctMed = pctFromMed(m.benchQuality || 0, depthRanks.median);
+
+  const posRankMeta = {};
+  posList.forEach(pos => {
+   const ents = leagueTeams.map(tm => ({ id: tm.id, val: teamPosStarterVal(tm, pos) }));
+   posRankMeta[pos] = ranksFromVals(ents);
+  });
+
+  // Waiver pool: best available by position (if loaded)
+  const waiverBest = { QB: null, RB: null, WR: null, TE: null };
+  try{
+   const pool = state.freeAgents || state.waiverPool || state.availablePlayers || [];
+   (pool || []).forEach(p => {
+    if(!p || !p.position || !waiverBest.hasOwnProperty(p.position)) return;
+    const v = p.value || 0;
+    if(!waiverBest[p.position] || v > (waiverBest[p.position].value || 0)){
+     waiverBest[p.position] = p;
+    }
+   });
+  }catch(e){}
+
   const byPos = { QB:[], RB:[], WR:[], TE:[] };
   (team.roster || []).forEach(p => {
    if(!p || p.isTaxi) return;
    if(byPos[p.position]) byPos[p.position].push(p);
   });
+
+  // Bye clustering on starters
+  const byeBuckets = {};
+  const starterLike = [];
+  posList.forEach(pos => {
+   const need = (counts && counts[pos] != null) ? counts[pos] : (pos === 'QB' ? (state.numQBs || 1) : 1);
+   byPos[pos].slice().sort((a,b) => (b.value||0)-(a.value||0)).slice(0, need).forEach(p => starterLike.push(p));
+  });
+  starterLike.forEach(p => {
+   let bw = null;
+   try{ if(typeof playerByeWeek === 'function') bw = playerByeWeek(p); }catch(e){}
+   if(bw == null && p.bye != null) bw = Number(p.bye);
+   if(bw != null && isFinite(bw) && bw > 0){
+    if(!byeBuckets[bw]) byeBuckets[bw] = [];
+    byeBuckets[bw].push(p);
+   }
+  });
+  const badByeWeeks = Object.keys(byeBuckets).filter(w => byeBuckets[w].length >= 2).map(Number).sort((a,b)=>a-b);
+
+  const issues = []; // { severity 1-5, title, detail, fix, link }
   const posReports = posList.map(pos => {
    const need = (counts && counts[pos] != null) ? counts[pos] : (pos === 'QB' ? (state.numQBs || 1) : 1);
    const list = byPos[pos].slice().sort((a,b) => (b.value||0) - (a.value||0));
@@ -17375,76 +17892,202 @@ function renderTradeSide(side){
    const depthVal = depthCut.reduce((s,p) => s + (p.value||0), 0);
    const surplus = starterVal - need * rv;
    const bodies = list.length;
-   let posGrade = 'C';
-   const ratio = need * rv > 0 ? starterVal / (need * rv) : 1;
-   if(bodies < need || (m.holes > 0 && surplus < 0)) posGrade = 'F';
-   else if(ratio >= 1.55 && depthCut.length >= 1) posGrade = 'A';
-   else if(ratio >= 1.35) posGrade = 'A-';
-   else if(ratio >= 1.2) posGrade = 'B+';
-   else if(ratio >= 1.08) posGrade = 'B';
-   else if(ratio >= 0.95) posGrade = 'C+';
-   else if(ratio >= 0.85) posGrade = 'C';
-   else if(ratio >= 0.7) posGrade = 'D';
-   else posGrade = 'F';
-   if(bodies === need && need > 0 && posGrade.charAt(0) === 'A') posGrade = 'B+'; // no backup caps the grade
+   const meta = posRankMeta[pos] || { rankById: {}, median: 0, n: 0 };
+   const posRank = meta.rankById[String(team.id)] || meta.n || 0;
+   const vsMedPct = pctFromMed(starterVal, meta.median);
+   const leagueAvg = meta.median || 0;
+   const vsLeaguePct = vsMedPct;
+
+   // Position letter = league rank at this position (same idea as overall grade)
+   let posGrade = gradeFromLeagueRank(posRank, meta.n || leagueTeams.length, bodies < need ? 1 : 0);
+   if(bodies < need) posGrade = 'F';
+   else if(bodies === need){
+    // No backup: cap the ceiling
+    if(posGrade === 'A+' || posGrade === 'A') posGrade = 'B+';
+    else if(posGrade === 'A-') posGrade = 'B';
+   }
+   // Median gap can only pull the grade down, never invent an A for a bottom rank
+   if(vsMedPct <= -40){
+    if(posGrade.charAt(0) === 'A' || posGrade.charAt(0) === 'B') posGrade = 'D';
+    else if(posGrade.charAt(0) === 'C') posGrade = 'D-';
+    else posGrade = 'F';
+   } else if(vsMedPct <= -25){
+    if(posGrade.charAt(0) === 'A') posGrade = 'C';
+    else if(posGrade === 'B+' || posGrade === 'B') posGrade = 'C-';
+    else if(posGrade === 'B-') posGrade = 'D+';
+   } else if(vsMedPct <= -15){
+    if(posGrade.charAt(0) === 'A') posGrade = 'B';
+   }
+   // Last place at the position cannot be A/B
+   if(meta.n > 1 && posRank >= meta.n){
+    if(posGrade.charAt(0) === 'A' || posGrade.charAt(0) === 'B') posGrade = 'D';
+    else if(posGrade.charAt(0) === 'C') posGrade = 'D-';
+   } else if(meta.n > 2 && posRank >= meta.n - 1){
+    if(posGrade.charAt(0) === 'A') posGrade = 'C';
+    else if(posGrade.charAt(0) === 'B') posGrade = 'C-';
+   }
+
+   let injuryRisk = null;
+   starterCut.forEach(p => {
+    const st = (typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : null) || p.injury || p.injuryStatus;
+    if(st && /out|ir|pup|doubt|q/i.test(String(st)) && !depthCut.length){
+     injuryRisk = (p.fullName || p.name) + ' (' + String(st) + ') with no backup';
+    }
+   });
+
+   const waiv = waiverBest[pos];
+   const waiverCanHelp = !!(waiv && (bodies < need || (bodies === need && (waiv.value||0) > 200)));
+
+   if(bodies < need){
+    issues.push({
+     severity: 5,
+     title: 'Missing ' + pos + ' starter',
+     detail: 'You have ' + bodies + ' of ' + need + ' required. Empty slots score zero.'
+      + (waiv ? (' Best on wire: ' + (waiv.fullName || waiv.name) + '.') : ''),
+     fix: waiverCanHelp
+      ? ('Add ' + (waiv.fullName || waiv.name) + ' (or any ' + pos + ') from free agency / waivers.')
+      : ('Add any ' + pos + ' from waivers now.'),
+     link: 'panel-waivers'
+    });
+   } else if(bodies === need){
+    issues.push({
+     severity: 4,
+     title: 'No ' + pos + ' backup',
+     detail: (list[0] ? (list[0].fullName || list[0].name) : pos) + ' is your only option. Bye or injury = hole.'
+      + (waiv ? (' Wire has ' + (waiv.fullName || waiv.name) + '.') : ''),
+     fix: waiverCanHelp
+      ? ('Pick up ' + (waiv.fullName || waiv.name) + ' for cover.')
+      : ('Add a cheap ' + pos + ' for coverage.'),
+     link: 'panel-waivers'
+    });
+   } else if(vsMedPct <= -20){
+    issues.push({
+     severity: 4,
+     title: pos + ' starters weak vs median',
+     detail: 'Your top ' + need + ' ' + pos + '(s) sit ' + Math.abs(vsMedPct) + '% below league median (rank #' + posRank + ').',
+     fix: 'Trade depth for a ' + pos + ' upgrade, or check waivers.',
+     link: 'panel-finder'
+    });
+   } else if(surplus < 0){
+    issues.push({
+     severity: 3,
+     title: pos + ' below replacement',
+     detail: 'Starter value is under typical replacement at ' + pos + '.',
+     fix: 'Upgrade the weakest ' + pos + ' starter first.',
+     link: 'panel-finder'
+    });
+   } else if(posGrade === 'D' || posGrade === 'F'){
+    issues.push({
+     severity: 3,
+     title: pos + ' grade is ' + posGrade,
+     detail: 'This position is dragging the roster (#' + posRank + ' at ' + pos + ').',
+     fix: 'Make ' + pos + ' your next trade target.',
+     link: 'panel-finder'
+    });
+   }
+
+   if(injuryRisk){
+    issues.push({
+     severity: 5,
+     title: 'Injury cover gap at ' + pos,
+     detail: injuryRisk + (waiv ? (' Wire option: ' + (waiv.fullName || waiv.name) + '.') : ''),
+     fix: 'Get a healthy ' + pos + ' on the roster before next week.',
+     link: 'panel-cover'
+    });
+   }
+
+   const bar = Math.max(5, Math.min(100, Math.round(50 + vsMedPct * 0.9)));
+
    return {
     pos, need, bodies, list, rv, surplus, starterVal, depthVal, posGrade,
+    vsLeaguePct, vsMedPct, bar, leagueAvg,
+    posRank, leagueN: meta.n,
     top: list[0] || null,
-    backup: list[need] || list[1] || null
+    backup: list[need] || list[1] || null,
+    injuryRisk,
+    waiverBest: waiv
    };
   });
 
-  const strengths = [];
-  const weaknesses = [];
-  const tips = [];
-
-  if((m.holes || 0) > 0){
-   weaknesses.push('You have ' + m.holes + ' empty required starter slot' + (m.holes > 1 ? 's' : '') + '. That alone tanks lineup weeks and this grade.');
-   tips.push('Fill empty starter slots before any other move. Waivers first, then trade if the wire is dead.');
-  }
-
-  posReports.forEach(pr => {
-   const topName = pr.top ? (pr.top.fullName || pr.top.name) : null;
-   if(pr.posGrade === 'A' || pr.posGrade === 'A-'){
-    strengths.push(pr.pos + ' is a real strength' + (topName ? ' (' + topName + ' anchors it)' : '') + '.');
-   } else if(pr.posGrade === 'B+' || pr.posGrade === 'B'){
-    strengths.push(pr.pos + ' is solid' + (topName ? ' with ' + topName : '') + '.');
-   }
-   if(pr.bodies < pr.need){
-    weaknesses.push(pr.pos + ': only ' + pr.bodies + ' body for ' + pr.need + ' starter slot' + (pr.need > 1 ? 's' : '') + '.');
-    tips.push('Roster at least ' + pr.need + ' ' + pr.pos + '(s). One injury turns into a zero.');
-   } else if(pr.bodies === pr.need){
-    weaknesses.push(pr.pos + ': zero backup. Bye or injury leaves a hole.');
-    tips.push('Add a cheap ' + pr.pos + ' for coverage. You do not need a star, just a living body.');
-   } else if(pr.surplus < 0){
-    weaknesses.push(pr.pos + ' starters sit below replacement on value. You are donating weekly points there.');
-    tips.push('Upgrade ' + pr.pos + ' via trade or waiver. Even a median starter helps power more than a 4th bench WR.');
-   } else if(pr.posGrade === 'D' || pr.posGrade === 'F'){
-    weaknesses.push(pr.pos + ' is a clear weak spot.');
-   }
-   // Honest top-team criticism
-   if(pr.top && pr.backup && (pr.top.value||0) > (pr.rv * 1.8) && (pr.backup.value||0) < pr.rv * 0.55){
-    weaknesses.push(pr.pos + ': top-heavy. ' + (pr.top.fullName||pr.top.name) + ' carries it, but the next man is a cliff.');
-   }
+  // Bye week issues
+  badByeWeeks.forEach(w => {
+   const names = byeBuckets[w].map(p => p.fullName || p.name).join(', ');
+   issues.push({
+    severity: 3,
+    title: 'Bye pile-up in week ' + w,
+    detail: byeBuckets[w].length + ' starters share week ' + w + ': ' + names + '.',
+    fix: 'Plan streams or a one-week pickup before that bye. Cover tab lists options.',
+    link: 'panel-cover'
+   });
   });
 
-  // Bench / depth overall
-  if((m.benchQuality || 0) <= 0 && (team.roster||[]).length > 8){
-   weaknesses.push('Bench depth is not adding much. Extra roster spots are dead weight.');
+  // Global issues
+  if((m.holes || 0) > 0){
+   issues.push({
+    severity: 5,
+    title: m.holes + ' empty starter slot' + (m.holes > 1 ? 's' : ''),
+    detail: 'Required lineup spots with nobody legal to start.',
+    fix: 'Fill from waivers before you worry about upgrades.',
+    link: 'panel-waivers'
+   });
   }
-  if((m.starterSurplus || 0) > 0 && strengths.length < 2){
-   strengths.push('Overall starter pool still grades out positive vs replacement.');
+  if((m.thin || 0) > 500){
+   issues.push({
+    severity: 2,
+    title: 'Thin depth overall',
+    detail: 'Bench quality is low after starters. Byes and injuries will hurt.',
+    fix: 'Hold one extra body at your thinnest skill position.',
+    link: 'panel-waivers'
+   });
   }
-  if(!strengths.length){
-   strengths.push('No standout positional edge. The roster is flat.');
+
+  // Balance: one position dominates value
+  const starterVals = posReports.map(p => p.starterVal);
+  const maxSV = Math.max.apply(null, starterVals.concat([1]));
+  const minSV = Math.min.apply(null, starterVals.filter(v => v > 0).concat([maxSV]));
+  if(maxSV > 0 && minSV / maxSV < 0.35){
+   const strong = posReports.slice().sort((a,b) => b.starterVal - a.starterVal)[0];
+   const weak = posReports.slice().sort((a,b) => a.starterVal - b.starterVal)[0];
+   issues.push({
+    severity: 3,
+    title: 'Roster is unbalanced',
+    detail: strong.pos + ' carries most of the value while ' + weak.pos + ' lags.',
+    fix: 'Trade some ' + strong.pos + ' depth for a ' + weak.pos + ' starter.',
+    link: 'panel-finder'
+   });
   }
-  if(!weaknesses.length){
-   weaknesses.push('No structural holes, but that does not mean you are done. Chase upside at your weakest starter.');
-   tips.push('Look at Trade Finder for a position you are only average at. Average does not win leagues.');
-  }
-  if(!tips.length){
-   tips.push('Keep starters healthy-covered, then trade depth for a starter upgrade at your worst position grade.');
-  }
+
+  issues.sort((a,b) => b.severity - a.severity);
+  // Dedupe similar titles
+  const seenT = new Set();
+  const issuesUnique = [];
+  issues.forEach(iss => {
+   if(seenT.has(iss.title)) return;
+   seenT.add(iss.title);
+   issuesUnique.push(iss);
+  });
+
+  const strengths = posReports.filter(p => p.posGrade === 'A' || p.posGrade === 'A-' || p.posGrade === 'B+').map(p => {
+   const nm = p.top ? (p.top.fullName || p.top.name) : p.pos;
+   return p.pos + ' (' + p.posGrade + ')' + (p.vsLeaguePct > 5 ? ' · ' + p.vsLeaguePct + '% above league' : '') + (nm ? ' · ' + nm : '');
+  });
+
+  // Metric snapshot for UI
+  const metrics = {
+   starterSurplus: m.starterSurplus || 0,
+   depth: m.benchQuality || 0,
+   holes: m.holes || 0,
+   power: powerRow ? powerRow.power : null,
+   powerRank: powerRank || null,
+   starterRank: myStarterRank,
+   depthRank: myDepthRank,
+   starterPctMed: myStarterPctMed,
+   depthPctMed: myDepthPctMed,
+   leagueN: leagueTeams.length,
+   byePileups: badByeWeeks,
+   vsLeagueScore: mean ? Math.round((myScore / Math.max(1, mean)) * 100) : 100,
+   z: gradeZ
+  };
 
   return {
    team, grade, gradeZ, z, band, myScore, mean, std,
@@ -17452,12 +18095,16 @@ function renderTradeSide(side){
    benchQuality: m.benchQuality,
    holes: m.holes,
    thin: m.thin,
-   strengths, weaknesses, tips,
+   strengths,
+   weaknesses: issuesUnique.map(i => i.title + ': ' + i.detail),
+   tips: issuesUnique.map(i => i.fix),
+   issues: issuesUnique,
    posReports,
    power: powerRow ? powerRow.power : null,
    rank: powerRank || null,
-   leagueSize: rows.length || state.teams.length,
-   metrics: m
+   qualityRank: qualityRank || null,
+   leagueSize: n || rows.length || state.teams.length,
+   metrics
   };
  }
 
@@ -17467,7 +18114,7 @@ function renderTradeSide(side){
   if(!report) return;
   try{
    bpSetSource('source-rate', 'Grade data',
-    'Letter grade uses starter surplus and depth vs the rest of this league, with extra penalties for empty starter slots. Position grades use value vs replacement. Honest notes, not participation trophies.');
+    'Letter grade is ranked roster quality in this league (not inflated z-scores). #1 gets the top letter band; bottom teams get D/F. Position bars vs league average.');
   }catch(e){}
 
   if(!state.teams || !state.teams.length){
@@ -17506,220 +18153,132 @@ function renderTradeSide(side){
   if(!rate){ report.innerHTML = '<p class="needs-intro">Could not grade this team.</p>'; return; }
 
   const gCol = gradeTone(rate.grade);
-  let html = '';
-  html += '<div class="hist-card" style="padding:18px 16px;">';
-  html += '<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;">';
-  html += '<div style="font-size:56px;font-weight:780;line-height:1;color:' + gCol + ';">' + escapeHtml(rate.grade) + '</div>';
-  html += '<div style="flex:1;min-width:200px;">';
-  html += '<div style="font-size:18px;font-weight:700;margin-bottom:4px;">' + escapeHtml(team.name) + '</div>';
-  html += '<div style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">' + escapeHtml(rate.band) + '</div>';
-  html += '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12.5px;">';
-  if(rate.rank) html += '<span class="hist-meta" style="padding:4px 8px;border-radius:6px;background:var(--surface-2,rgba(127,127,127,.12));">Power #' + rate.rank + (rate.power != null ? ' · ' + rate.power.toFixed(1) : '') + '</span>';
-  html += '<span class="hist-meta" style="padding:4px 8px;border-radius:6px;background:var(--surface-2,rgba(127,127,127,.12));">Starter surplus ' + Math.round(rate.starterSurplus||0).toLocaleString() + '</span>';
-  html += '<span class="hist-meta" style="padding:4px 8px;border-radius:6px;background:var(--surface-2,rgba(127,127,127,.12));">Depth ' + Math.round(rate.benchQuality||0).toLocaleString() + '</span>';
-  if(rate.holes > 0) html += '<span class="hist-meta" style="padding:4px 8px;border-radius:6px;background:rgba(220,60,60,.15);color:var(--red);">Holes ' + rate.holes + '</span>';
-  html += '</div></div></div>';
-
-  // Position grades
-  if(rate.posReports && rate.posReports.length){
-   html += '<div style="margin-top:18px;overflow-x:auto;">';
-   html += '<table style="width:100%;font-size:13px;"><thead><tr>';
-   html += '<th>Pos</th><th>Grade</th><th>Bodies</th><th>Top</th><th>Backup</th><th>Surplus</th>';
-   html += '</tr></thead><tbody>';
-   rate.posReports.forEach(pr => {
-    const top = pr.top ? (pr.top.fullName || pr.top.name) : '-';
-    const bak = pr.backup ? (pr.backup.fullName || pr.backup.name) : '-';
-    const sur = Math.round(pr.surplus||0);
-    html += '<tr>';
-    html += '<td><strong>' + pr.pos + '</strong></td>';
-    html += '<td style="font-weight:700;color:' + gradeTone(pr.posGrade) + ';">' + pr.posGrade + '</td>';
-    html += '<td>' + pr.bodies + ' / ' + pr.need + ' start</td>';
-    html += '<td>' + (pr.top ? playerCardLink(top, pr.top.id) : '-') + '</td>';
-    html += '<td>' + (pr.backup ? playerCardLink(bak, pr.backup.id) : '<span style="color:var(--red);">None</span>') + '</td>';
-    html += '<td style="color:' + (sur >= 0 ? 'var(--accent)' : 'var(--red)') + ';">' + (sur >= 0 ? '+' : '') + sur.toLocaleString() + '</td>';
-    html += '</tr>';
-   });
-   html += '</tbody></table></div>';
+  function sevColor(s){
+   if(s >= 5) return 'var(--red)';
+   if(s >= 4) return '#d97706';
+   if(s >= 3) return 'var(--text-secondary)';
+   return 'var(--text-muted)';
+  }
+  function barColor(pct){
+   if(pct >= 10) return 'var(--accent)';
+   if(pct >= -10) return 'var(--text-secondary)';
+   return 'var(--red)';
   }
 
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px;">';
-  html += '<div><div style="font-weight:700;margin-bottom:8px;color:var(--accent);">Strengths</div><ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.45;">';
-  rate.strengths.forEach(s => { html += '<li style="margin-bottom:6px;">' + escapeHtml(s) + '</li>'; });
-  html += '</ul></div>';
-  html += '<div><div style="font-weight:700;margin-bottom:8px;color:var(--red);">Weaknesses</div><ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.45;">';
-  rate.weaknesses.forEach(s => { html += '<li style="margin-bottom:6px;">' + escapeHtml(s) + '</li>'; });
-  html += '</ul></div>';
-  html += '<div><div style="font-weight:700;margin-bottom:8px;">What to do</div><ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.45;">';
-  rate.tips.forEach(s => { html += '<li style="margin-bottom:6px;">' + escapeHtml(s) + '</li>'; });
-  html += '</ul>';
-  html += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">';
-  html += '<button type="button" class="btn btn-ghost btn-sm" data-go="panel-waivers">Waivers</button>';
-  html += '<button type="button" class="btn btn-ghost btn-sm" data-go="panel-trade">Trades</button>';
-  html += '</div></div>';
+  let html = '';
+
+  // Hero
+  html += '<div class="hist-card" style="padding:20px 16px;margin-bottom:14px;">';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:center;">';
+  html += '<div style="font-size:64px;font-weight:800;line-height:1;color:' + gCol + ';">' + escapeHtml(rate.grade) + '</div>';
+  html += '<div style="flex:1;min-width:200px;">';
+  html += '<div style="font-size:18px;font-weight:700;">' + escapeHtml(team.name) + '</div>';
+  html += '<div style="font-size:14px;color:var(--text-secondary);margin:4px 0 10px;">' + escapeHtml(rate.band) + '</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  if(rate.qualityRank) html += '<span style="padding:5px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.12));font-size:12.5px;font-weight:600;">Roster #' + rate.qualityRank + ' of ' + (rate.leagueSize || '') + '</span>';
+  if(rate.rank) html += '<span style="padding:5px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.12));font-size:12.5px;font-weight:600;">Power #' + rate.rank + (rate.power != null ? ' · ' + rate.power.toFixed(1) : '') + '</span>';
+  if(rate.holes > 0) html += '<span style="padding:5px 10px;border-radius:8px;background:rgba(220,60,60,.15);color:var(--red);font-size:12.5px;font-weight:700;">' + rate.holes + ' hole' + (rate.holes > 1 ? 's' : '') + '</span>';
+  html += '</div></div></div></div>';
+
+  // Metric tiles
+  const mx = rate.metrics || {};
+  const tiles = [
+   {
+    label: 'Starter value',
+    value: Math.round(rate.starterSurplus||0).toLocaleString(),
+    hint: (mx.starterRank ? ('#' + mx.starterRank + ' of ' + (mx.leagueN||'') ) : '')
+      + (mx.starterPctMed != null ? (' · ' + (mx.starterPctMed >= 0 ? '+' : '') + mx.starterPctMed + '% vs med') : '')
+   },
+   {
+    label: 'Depth',
+    value: Math.round(rate.benchQuality||0).toLocaleString(),
+    hint: (mx.depthRank ? ('#' + mx.depthRank + ' of ' + (mx.leagueN||'') ) : '')
+      + (mx.depthPctMed != null ? (' · ' + (mx.depthPctMed >= 0 ? '+' : '') + mx.depthPctMed + '% vs med') : '')
+   },
+   { label: 'Power rank', value: rate.rank ? ('#' + rate.rank) : '-', hint: rate.power != null ? rate.power.toFixed(1) + ' power' : '' },
+   { label: 'Open issues', value: String((rate.issues || []).length), hint: 'Ranked problems below' }
+  ];
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">';
+  tiles.forEach(t => {
+   html += '<div class="hist-card" style="padding:12px 14px;margin:0;">';
+   html += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);">' + t.label + '</div>';
+   html += '<div style="font-size:22px;font-weight:750;margin:4px 0;">' + t.value + '</div>';
+   html += '<div style="font-size:11.5px;color:var(--text-muted);">' + escapeHtml(t.hint) + '</div>';
+   html += '</div>';
+  });
   html += '</div>';
 
-  html += '<p class="hint" style="margin:16px 0 0;">Grade is about roster construction in this league, not weekly luck. Empty slots and no backups matter as much as star power.</p>';
+  // Position breakdown with bars
+  html += '<div class="hist-card" style="padding:16px;margin-bottom:14px;">';
+  html += '<div style="font-weight:700;font-size:15px;margin-bottom:12px;">Position grades</div>';
+  (rate.posReports || []).forEach(pr => {
+   const top = pr.top ? (pr.top.fullName || pr.top.name) : '-';
+   const bak = pr.backup ? (pr.backup.fullName || pr.backup.name) : 'None';
+   const medPct = pr.vsMedPct != null ? pr.vsMedPct : pr.vsLeaguePct;
+   const pctStr = (medPct >= 0 ? '+' : '') + medPct + '% vs median';
+   const rankStr = pr.posRank ? ('#' + pr.posRank + (pr.leagueN ? ' of ' + pr.leagueN : '')) : '';
+   html += '<div style="margin-bottom:14px;">';
+   html += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;">';
+   html += '<div><strong style="font-size:15px;">' + pr.pos + '</strong> <span style="font-weight:750;color:' + gradeTone(pr.posGrade) + ';">' + pr.posGrade + '</span>';
+   html += ' <span style="font-size:12px;color:var(--text-muted);">' + pr.bodies + ' bodies · need ' + pr.need + (rankStr ? ' · ' + rankStr : '') + '</span></div>';
+   html += '<div style="font-size:12px;font-weight:600;color:' + barColor(medPct) + ';">' + pctStr + '</div>';
+   html += '</div>';
+   html += '<div style="height:8px;border-radius:4px;background:rgba(127,127,127,.15);margin:6px 0 8px;overflow:hidden;">';
+   html += '<div style="height:100%;width:' + pr.bar + '%;background:' + barColor(pr.vsLeaguePct) + ';border-radius:4px;"></div>';
+   html += '</div>';
+   html += '<div style="font-size:12.5px;color:var(--text-secondary);">';
+   html += 'Starter: ' + (pr.top ? playerCardLink(top, pr.top.id) : '-');
+   html += ' · Backup: ' + (pr.backup ? playerCardLink(bak, pr.backup.id) : '<span style="color:var(--red);">None</span>');
+   html += '</div>';
+   if(pr.injuryRisk) html += '<div style="font-size:12px;color:var(--red);margin-top:4px;">' + escapeHtml(pr.injuryRisk) + '</div>';
+   html += '</div>';
+  });
   html += '</div>';
-  html += '<div class="bp-source" id="source-rate"></div>';
+
+  // What's wrong
+  html += '<div class="hist-card" style="padding:16px;margin-bottom:14px;">';
+  html += '<div style="font-weight:700;font-size:15px;margin-bottom:10px;">What is wrong</div>';
+  if(!(rate.issues && rate.issues.length)){
+   html += '<p style="font-size:13.5px;color:var(--text-secondary);margin:0;">No structural holes. Push your weakest position grade if you want to climb.</p>';
+  } else {
+   rate.issues.slice(0, 8).forEach((iss, idx) => {
+    html += '<div style="padding:12px 0;border-top:1px solid rgba(127,127,127,.12);' + (idx === 0 ? 'border-top:none;padding-top:0;' : '') + '">';
+    html += '<div style="display:flex;gap:10px;align-items:flex-start;">';
+    html += '<div style="min-width:22px;height:22px;border-radius:50%;background:' + sevColor(iss.severity) + ';color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">' + (idx + 1) + '</div>';
+    html += '<div style="flex:1;">';
+    html += '<div style="font-weight:700;font-size:14px;">' + escapeHtml(iss.title) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-secondary);margin:3px 0 6px;">' + escapeHtml(iss.detail) + '</div>';
+    html += '<div style="font-size:13px;"><strong>Fix:</strong> ' + escapeHtml(iss.fix) + '</div>';
+    if(iss.link){
+     html += '<button type="button" class="btn btn-ghost btn-sm rate-goto" data-panel="' + iss.link + '" style="margin-top:8px;">Open ' + (iss.link === 'panel-waivers' ? 'Waivers' : (iss.link === 'panel-finder' ? 'Trade finder' : (iss.link === 'panel-cover' ? 'Cover' : 'page'))) + '</button>';
+    }
+    html += '</div></div></div>';
+   });
+  }
+  html += '</div>';
+
+  // Strengths
+  if(rate.strengths && rate.strengths.length){
+   html += '<div class="hist-card" style="padding:16px;margin-bottom:14px;">';
+   html += '<div style="font-weight:700;font-size:15px;margin-bottom:8px;">What is working</div>';
+   html += '<ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--text-secondary);">';
+   rate.strengths.forEach(s => { html += '<li style="margin-bottom:4px;">' + escapeHtml(s) + '</li>'; });
+   html += '</ul></div>';
+  }
+
+  html += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Grade is relative to this league. Bars compare your starter value at each position to the league average.</p>';
+
   report.innerHTML = html;
-
-  report.querySelectorAll('[data-go]').forEach(btn => {
+  report.querySelectorAll('.rate-goto').forEach(btn => {
    btn.addEventListener('click', () => {
-    try{ goToPanel(btn.getAttribute('data-go')); }catch(e){}
+    const p = btn.getAttribute('data-panel');
+    if(p && typeof goToPanel === 'function') goToPanel(p, { teamId: team.id });
    });
   });
-  try{ bpSetSource('source-rate', 'Grade data', 'Starter surplus + depth vs league, hole penalties, position value vs replacement.'); }catch(e){}
  }
 
+ 
 
-function buildPowerRows(){
- if(!state.teams || !state.teams.length) return [];
-
- const levels = computeReplacementLevels();
- const { starterRV, slotRV, counts, flexElig, sfElig } = levels;
- const starterSlotCount = countStarterSlots(counts);
-
- const ctxSeed = { counts, flexElig, sfElig, slotRV, starterSlotCount };
- const base = state.teams.map(team => {
- const m = rosterMetrics(team, team.roster, ctxSeed); // full strength
- const { assignments, starterIds, totalValue, starterValue, starterSurplus,
- benchRaw, benchQuality, K, benchCount, starterDetails, benchDetails,
- positionalDepth, nextManUp, residualScore } = m;
- const pos = positionalSurplus(team, starterRV);
- const scoring = teamScoringStats(team);
- const wins = team.wins || 0;
- const losses = team.losses || 0;
- const ties = team.ties || 0;
- const games = wins + losses + ties;
- const adjustedWinPct = (wins + 1) / (games + 2);
- const winPct = games > 0 ? (wins + 0.5 * ties) / games : 0;
-
- return {
- team,
- // Power inputs
- starterVor: starterValue, // column: lineup market value
- depthVor: benchQuality, // column: weighted bench
- starterSurplus, // used for Power S component (scarcity-aware)
- benchRaw,
- lineupValue: totalValue,
- avgPts: scoring.avg,
- medPts: scoring.med,
- maxPts: scoring.high,
- minPts: scoring.low,
- hasAvg: scoring.hasAvg,
- hasDist: scoring.hasDist,
- scoreWeeks: scoring.weeks || 0,
- wins, losses, ties, games,
- adjustedWinPct,
- winPct,
- recordStr: ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`,
- // Diagnostic positional surplus (VOR or raw depending on mode)
- QB: pos.QB,
- RB: pos.RB,
- WR: pos.WR,
- TE: pos.TE,
- positionalDepth,
- nextManUp,
- residualScore,
- _debug: {
- starters: starterDetails,
- bench: benchDetails,
- K,
- benchCount,
- starterSlotCount,
- nextManUp,
- residualScore
- }
- };
- });
-
- // Starter component = SLOT SURPLUS (scarcity), not raw lineup total
- // (raw total rewards stacking near-replacement FLEX fillers)
- const Smap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.starterSurplus })));
- const Dmap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.depthVor })));
- const Amap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.hasAvg ? r.avgPts : null })));
- const Mmap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.hasDist ? r.medPts : null })));
- const Rmap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.adjustedWinPct })));
-
- // Prefer actual distinct weekly scores for "weeks" (not just games from record)
- const weekCounts = base.map(r => {
- const scores = (r.team.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
- const uniq = [...new Set(scores.map(s => Math.round(s * 100) / 100))];
- return Math.max(uniq.length, scores.length > 0 ? 1 : 0);
- });
- const weeks = weekCounts.length ? medianOf(weekCounts) : 0;
-
- // Season-progression roster/results split.
- // Early (weeks ~0-2): little/no result data exists, so roster (starter+bench)
- // carries most of the score. As weeks accumulate, actual record + scoring
- // increasingly outweigh "what your roster looked like on paper" - by the
- // back half of a ~17-week season, results should dominate the score, since
- // what actually happened matters far more than the preseason-style roster
- // read by that point.
- // rosterShare: 0.70 at week 0, decaying ~0.045/week, floor 0.12 (never fully
- // zero - roster still matters a little for context/injuries even in week 17).
- const { rosterShare, resultsShare, wS, wD, wA, wM, wR } = getPowerWeights(weeks);
-
- base.forEach(r => {
- const id = r.team.id;
- const S = Smap[id] ?? 50;
- const D = Dmap[id] ?? 50;
- const A = r.hasAvg ? (Amap[id] ?? 50) : 50;
- const M = r.hasDist ? (Mmap[id] ?? 50) : A;
- const R = Rmap[id] ?? 50;
-
- r.power = wS * S + wD * D + wA * A + wM * M + wR * R;
- r.starterScore = S;
- r.depthScore = D;
- r.recordScore = R;
- r._weights = { wS, wD, wA, wM, wR, weeks, rosterShare, resultsShare, starterMetric: 'surplus' };
- });
-
- // Bench percentiles for debug
- const benchVals = base.map(r => r.depthVor).slice().sort((a,b) => a - b);
- function percentileOf(val){
- if(!benchVals.length) return 50;
- let below = 0;
- benchVals.forEach(v => { if(v < val) below++; });
- return Math.round(100 * below / benchVals.length);
- }
-
- // Shared context for waiver-pickup power simulation (see simulateAddDrop / powerWithOverride)
- state._powerContext = {
- base, weights: { wS, wD, wA, wM, wR },
- Amap, Mmap, Rmap,
- starterRV, slotRV, counts, flexElig, sfElig, starterSlotCount
- };
-
- state._lastPowerDebug = {
- model: 'starter=lineup market value; bench=top-K remaining market value with whole-bench curve; VOR diagnostic only',
- levels,
- starterSlotCount,
- seasonProgression: { weeks, rosterShare, resultsShare, wS, wD, wA, wM, wR },
- rows: base.map(r => ({
- team: r.team.name,
- power: r.power,
- starterStrength: r.starterVor,
- starterSurplus: r.starterSurplus,
- benchStrength: r.depthVor,
- benchRaw: r.benchRaw,
- benchPercentile: percentileOf(r.depthVor),
- lineupValue: r.lineupValue,
- QB_surplus: r.QB, RB_surplus: r.RB, WR_surplus: r.WR, TE_surplus: r.TE,
- positionalDepth: r.positionalDepth,
- avgPts: r.avgPts, medPts: r.medPts,
- record: r.recordStr,
- weights: r._weights,
- optimalLineup: r._debug.starters,
- benchPlayers: r._debug.bench,
- K: r._debug.K,
- benchCount: r._debug.benchCount
- }))
- };
- try{ console.log('[FantasyPulse Power]', state._lastPowerDebug); }catch(e){}
-
- return base;
- }
 
  const SORT_KEY_MAP = {
  rank: 'power', team: 'team', power: 'power', record: 'winPct',
