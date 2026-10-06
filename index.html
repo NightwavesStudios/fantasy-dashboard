@@ -9649,6 +9649,36 @@ function detectLeagueMedian(){
  return false;
  }
 
+ async function enrichMatchupsWithOptimalProjections(list){
+ // Replace host set-lineup team projs with optimal weekly lineup (same as Schedule)
+ if(!list || !list.length) return list || [];
+ if(typeof estimateTeamWeekScore !== 'function') return list;
+ let week = null;
+ try{
+  week = Number((list[0] && list[0].week) || (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0) || null;
+ }catch(e){}
+ if(!week) week = 1;
+ list.forEach(m => {
+  try{
+   if(m.teamA){
+    const e = estimateTeamWeekScore(m.teamA, week);
+    if(e && e.pts != null && isFinite(e.pts)){
+     m.projA = e.pts;
+     m.projSourceA = e.source || 'opt-lineup';
+    }
+   }
+   if(m.teamB){
+    const e = estimateTeamWeekScore(m.teamB, week);
+    if(e && e.pts != null && isFinite(e.pts)){
+     m.projB = e.pts;
+     m.projSourceB = e.source || 'opt-lineup';
+    }
+   }
+  }catch(err){}
+ });
+ return list;
+ }
+
  async function fetchCurrentMatchups(){
  const out = [];
  try{
@@ -9688,11 +9718,11 @@ function detectLeagueMedian(){
  try{
  if(a && typeof estimateTeamWeekScore === 'function'){
  const ea = estimateTeamWeekScore(a, week);
- if(ea && ea.pts != null) projA = Math.max(pointsA || 0, ea.pts);
+ if(ea && ea.pts != null) projA = ea.pts;
  }
  if(b && typeof estimateTeamWeekScore === 'function'){
  const eb = estimateTeamWeekScore(b, week);
- if(eb && eb.pts != null) projB = Math.max(pointsB || 0, eb.pts);
+ if(eb && eb.pts != null) projB = eb.pts;
  }
  }catch(e){}
  out.push({
@@ -9859,7 +9889,17 @@ function detectLeagueMedian(){
  const pointsB = away ? sideLivePoints(away) : null;
  let projA = sideProjPoints(home);
  let projB = away ? sideProjPoints(away) : null;
- // If proj missing, at least show live as floor for display
+ // Prefer optimal weekly lineup over ESPN set-lineup team proj
+ try{
+  if(teamA && typeof estimateTeamWeekScore === 'function'){
+   const ea = estimateTeamWeekScore(teamA, week);
+   if(ea && ea.pts != null && isFinite(ea.pts)) projA = ea.pts;
+  }
+  if(teamB && typeof estimateTeamWeekScore === 'function'){
+   const eb = estimateTeamWeekScore(teamB, week);
+   if(eb && eb.pts != null && isFinite(eb.pts)) projB = eb.pts;
+  }
+ }catch(e){}
  if(projA == null && pointsA != null) projA = pointsA;
  if(projB == null && pointsB != null) projB = pointsB;
  const ppa = sidePlayerPoints(home);
@@ -10309,17 +10349,18 @@ function matchupWinPct(liveA, liveB, projA, projB){
 
 
 function renderMatchups(){
- try{ bpSetSource('source-matchups', 'Matchups data', 'Live points from ESPN mScoreboard / Sleeper matchups API. Projected totals prefer host live-projected fields when present; otherwise lineup estimates.'); }catch(e){}
+ try{ bpSetSource('source-matchups', 'Matchups data', 'Live points from ESPN / Sleeper. Projected totals use each team optimal weekly lineup (same model as Schedule), not the set lineup. Median board uses those projs.'); }catch(e){}
  const list = el('matchups-list');
  const intro = el('matchups-intro');
  if(!list) return;
 
- const data = matchupCache || [];
+ let data = matchupCache || [];
  if(!data.length){
  list.innerHTML = '<div class="hist-empty">No matchup data yet. Tap Refresh scores after loading a league.</div>';
  try{ const b = el('matchups-proj-standings'); if(b) b.innerHTML = ''; }catch(e){}
  return;
  }
+ try{ data = enrichMatchupsWithOptimalProjections(data); matchupCache = data; }catch(e){}
  try{ renderProjectedStandings(data); }catch(e){ console.warn(e); }
 
  // Rank by projected (fallback live) - single combined list
@@ -17919,10 +17960,11 @@ function renderTradeSide(side){
  function getPowerWeights(weeksSample){
  // Dynamic weights by scored weeks. Early = roster heavy; late = results heavy.
  const weeks = Math.max(0, Number(weeksSample) || 0);
- // Week 0: 70% roster. ~Week 4: ~38% roster / 62% results. Week 8+: floor ~12% roster.
- const ROSTER_SHARE_START = 0.70;
- const ROSTER_SHARE_DECAY_PER_WEEK = 0.08;
- const ROSTER_SHARE_FLOOR = 0.12;
+ // Moderate ramp: keep some roster value midseason, but results lead once real scores exist.
+ // Week 0: 68% roster · Week 4: ~46% roster / 54% results · Week 8: ~24% roster · floor 15%
+ const ROSTER_SHARE_START = 0.68;
+ const ROSTER_SHARE_DECAY_PER_WEEK = 0.055;
+ const ROSTER_SHARE_FLOOR = 0.15;
  const rosterShare = Math.max(ROSTER_SHARE_FLOOR, Math.min(ROSTER_SHARE_START, ROSTER_SHARE_START - weeks * ROSTER_SHARE_DECAY_PER_WEEK));
  const resultsShare = 1 - rosterShare;
  return {
