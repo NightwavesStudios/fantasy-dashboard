@@ -17919,8 +17919,9 @@ function renderTradeSide(side){
  function getPowerWeights(weeksSample){
  // Dynamic weights by scored weeks. Early = roster heavy; late = results heavy.
  const weeks = Math.max(0, Number(weeksSample) || 0);
+ // Week 0: 70% roster. ~Week 4: ~38% roster / 62% results. Week 8+: floor ~12% roster.
  const ROSTER_SHARE_START = 0.70;
- const ROSTER_SHARE_DECAY_PER_WEEK = 0.045;
+ const ROSTER_SHARE_DECAY_PER_WEEK = 0.08;
  const ROSTER_SHARE_FLOOR = 0.12;
  const rosterShare = Math.max(ROSTER_SHARE_FLOOR, Math.min(ROSTER_SHARE_START, ROSTER_SHARE_START - weeks * ROSTER_SHARE_DECAY_PER_WEEK));
  const resultsShare = 1 - rosterShare;
@@ -17998,10 +17999,28 @@ function renderTradeSide(side){
   const levels = typeof computeReplacementLevels === 'function' ? computeReplacementLevels() : { starterRV: {}, slotRV: {} };
   const starterRV = levels.starterRV || {};
   const slotRV = levels.slotRV || levels.starterRV || {};
-  const weights = getPowerWeights();
+  // Completed scoring weeks (not H2H+median games counted twice)
+  let weeks = 0;
+  try{
+   if(typeof estimateCompletedWeeks === 'function') weeks = estimateCompletedWeeks(teams);
+   else {
+    const lens = teams.map(t => (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0).length);
+    weeks = lens.length ? Math.max(0, ...lens) : 0;
+   }
+  }catch(e){
+   const lens = teams.map(t => (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0).length);
+   weeks = lens.length ? Math.max(0, ...lens) : 0;
+  }
+  // Also trust schedule current week when weeklyScores are thin/missing
+  try{
+   const cw = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0);
+   if(cw > weeks) weeks = Math.max(weeks, cw - (cw > 0 ? 0 : 0));
+   // If we're in week 4, usually 3 fully final + current — use max(scores, currentWeek-1, scores)
+   if(cw >= 2 && weeks < cw - 1) weeks = cw - 1;
+   if(cw >= 1 && weeks < 1) weeks = Math.min(cw, 1);
+  }catch(e){}
+  const weights = getPowerWeights(weeks);
   const { wS, wD, wA, wM, wR } = weights;
-  const weeks = Math.max(0, ...teams.map(t => (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0).length));
-  // progressive weights already inside getPowerWeights via weeks
   const Aarr = [], Marr = [], Rarr = [];
   teams.forEach(t => {
    const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
@@ -18467,39 +18486,55 @@ function renderTradeSide(side){
    z: gradeZ
   };
 
-  // Overall letter reflects EVERY rank on this page, not just one surplus number
+  // Overall letter: mostly position starter grades, then power rank; less pure surplus/depth
   (function recomputeOverallGrade(){
    const N = Math.max(1, leagueTeams.length || n || 1);
    function rankPct(rank){
     if(!(rank > 0) || N <= 1) return 0.5;
     return 1 - ((rank - 1) / (N - 1));
    }
-   const posRanks = (posReports || []).filter(p => !p.isBench).map(p => p.posRank).filter(r => r > 0);
+   function letterPct(g){
+    const map = { 'A+':1, 'A':0.92, 'A-':0.84, 'B+':0.76, 'B':0.68, 'B-':0.60, 'C+':0.52, 'C':0.44, 'C-':0.36, 'D+':0.28, 'D':0.20, 'D-':0.12, 'F':0.04 };
+    return map[g] != null ? map[g] : 0.44;
+   }
+   const posOnly = (posReports || []).filter(p => !p.isBench);
+   const posRanks = posOnly.map(p => p.posRank).filter(r => r > 0);
    const avgPosRank = posRanks.length
     ? posRanks.reduce((a,b) => a + b, 0) / posRanks.length
     : qualityRank;
-   // Weights sum to 1 — what the page actually shows
-   const pct =
-      0.28 * rankPct(myStarterRank)
-    + 0.14 * rankPct(myDepthRank)
-    + 0.22 * rankPct(qualityRank)
-    + 0.36 * rankPct(avgPosRank);
+   const posLetters = posOnly.map(p => p.posGrade || 'C');
+   const avgLetterPct = posLetters.length
+    ? posLetters.reduce((s,g) => s + letterPct(g), 0) / posLetters.length
+    : 0.5;
+   const pwr = (powerRank > 0) ? powerRank : qualityRank;
 
-   // Map composite percentile back to a 1..N rank for the letter table
+   // ~50% position starters, ~28% power, ~12% starter value rank, ~10% depth
+   const pct =
+      0.30 * rankPct(avgPosRank)
+    + 0.20 * avgLetterPct
+    + 0.28 * rankPct(pwr)
+    + 0.12 * rankPct(myStarterRank)
+    + 0.10 * rankPct(myDepthRank);
+
    compositeRank = Math.max(1, Math.min(N, Math.round(1 + (1 - pct) * (N - 1))));
    grade = gradeFromLeagueRank(compositeRank, N, m.holes || 0);
 
-   // Hard floors from position grades on the page
-   const posLetters = (posReports || []).filter(p => !p.isBench).map(p => p.posGrade || 'C');
    const badPos = posLetters.filter(g => g.charAt(0) === 'D' || g === 'F').length;
    const goodPos = posLetters.filter(g => g.charAt(0) === 'A').length;
-   if(badPos >= 2 && (grade.charAt(0) === 'A' || grade === 'B+')) grade = 'C';
-   else if(badPos >= 1 && grade.charAt(0) === 'A') grade = 'B';
+   // Position grades dominate the letter — pull overall toward the weak spots
+   if(badPos >= 2){
+    if(grade.charAt(0) === 'A' || grade === 'B+' || grade === 'B') grade = 'C';
+    else if(grade === 'B-' || grade === 'C+') grade = 'C-';
+   } else if(badPos >= 1 && grade.charAt(0) === 'A') grade = 'B';
+   if(goodPos >= 3 && badPos === 0 && (grade === 'B' || grade === 'B-' || grade === 'C+')){
+    // Strong across positions can nudge up one step if power is also solid
+    if(pwr > 0 && pwr <= Math.ceil(N * 0.4)) grade = 'B+';
+   }
    if((m.holes || 0) >= 1 && grade.charAt(0) === 'A') grade = 'B+';
 
-   if(compositeRank === 1 && badPos === 0) band = 'Best overall profile on this page';
-   else if(compositeRank === 2) band = 'Second overall — starters, depth, and positions combined';
-   else if(compositeRank <= Math.ceil(N * 0.3)) band = 'Top third overall (positions + starters + depth)';
+   if(compositeRank === 1 && badPos === 0) band = 'Best overall — strong positional starters';
+   else if(compositeRank === 2) band = 'Second overall (positions + power)';
+   else if(compositeRank <= Math.ceil(N * 0.3)) band = 'Top third — positional starters + power';
    else if(compositeRank <= Math.ceil(N * 0.5)) band = 'Upper half overall';
    else if(compositeRank <= Math.ceil(N * 0.7)) band = 'Lower half overall';
    else if(compositeRank >= N) band = 'Weakest overall profile on this page';
@@ -18508,6 +18543,7 @@ function renderTradeSide(side){
    metrics.compositeRank = compositeRank;
    metrics.avgPosRank = Math.round(avgPosRank * 10) / 10;
    metrics.posGradeSummary = posLetters.join(' ');
+   metrics.powerRankUsed = pwr;
   })();
 
   return {
@@ -18703,7 +18739,7 @@ function renderTradeSide(side){
    html += '</ul></div>';
   }
 
-  html += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Overall letter blends position ranks, starter rank, and depth rank on this page. A weak position pulls the overall grade down.</p>';
+  html += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Overall letter is driven mainly by starter grades at each position, then power rank. Raw starter value and depth count less. A weak position pulls the overall grade down.</p>';
 
   report.innerHTML = html;
   report.querySelectorAll('.rate-goto').forEach(btn => {
@@ -18784,7 +18820,9 @@ function renderTradeSide(side){
  const box = el('rankings-snapshot');
  if(!box || !rows || !rows.length) return;
  const sorted = rows.slice().sort((a,b) => b.power - a.power || String(a.team.name).localeCompare(String(b.team.name)));
- const w = (sorted[0] && sorted[0]._weights) || getPowerWeights(0);
+ const w = (sorted[0] && sorted[0]._weights) || getPowerWeights(
+  (typeof estimateCompletedWeeks === 'function' ? estimateCompletedWeeks(state.teams||[]) : 0)
+ );
  const pct = (x) => ((x || 0) * 100).toFixed(0) + '%';
  const bars = [
  { key: 'Starters', w: w.wS, color: '#4a9b6e' },
