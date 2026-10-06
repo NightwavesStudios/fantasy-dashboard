@@ -855,6 +855,44 @@
  .share-toast.show { opacity: 1; }
 
  .hist-list { display: flex; flex-direction: column; gap: 8px; }
+ .changelog-wrap {
+ display: flex;
+ flex-direction: column;
+ gap: 14px;
+ max-width: 720px;
+ }
+ .changelog-day {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: var(--radius);
+ overflow: hidden;
+ }
+ .changelog-day-head {
+ padding: 12px 16px;
+ font-weight: 700;
+ font-size: 14px;
+ color: var(--text);
+ border-bottom: 1px solid var(--border);
+ background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+ }
+ .changelog-day-body {
+ padding: 4px 0;
+ }
+ .changelog-item {
+ margin: 0;
+ padding: 10px 16px 10px 18px;
+ font-size: 13.5px;
+ line-height: 1.5;
+ color: var(--text-secondary);
+ border-left: 3px solid transparent;
+ border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+ }
+ .changelog-item:last-child { border-bottom: none; }
+ .changelog-item:hover {
+ background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+ border-left-color: var(--accent);
+ color: var(--text);
+ }
  .hist-card {
  background: var(--surface);
  border: 1px solid var(--border);
@@ -3404,6 +3442,10 @@ html[data-theme="light"] {
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
  Trends
  </button>
+ <button class="nav-item" data-panel="panel-changelog">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+ Changelog
+ </button>
  </nav>
  <div class="sidebar-footer">
  <button class="nav-item" id="btn-refresh" title="Refresh values">
@@ -4424,6 +4466,15 @@ html[data-theme="light"] {
  </div>
 </div>
 
+
+
+<div class="panel" id="panel-changelog">
+ <div class="section-title-row" style="margin-bottom:8px;">
+ <div class="section-title" style="margin:0;">Changelog</div>
+ </div>
+ <p class="needs-intro" style="margin-bottom:16px;">What changed in this dashboard, by day. Newest first.</p>
+ <div id="changelog-body" class="changelog-wrap"></div>
+</div>
 
 <div class="pc-overlay" id="player-card-overlay" role="dialog" aria-modal="true" aria-labelledby="pc-title">
  <div class="pc-sheet" id="player-card-sheet">
@@ -8528,7 +8579,7 @@ function countPosBodies(roster){
  `https://lm-api-reads.fantasy.espn.com${path}`,
  `https://fantasy.espn.com${path}`
  ];
- const res = await solidFetchAny(urls, { timeoutMs: 18000 });
+ const res = await solidFetchAny(urls, { timeoutMs: 20000 });
  const data = await res.json();
  const period = data.scoringPeriodId || week;
  (data.schedule || []).forEach(game => {
@@ -9651,7 +9702,7 @@ function detectLeagueMedian(){
 
  async function enrichMatchupsWithOptimalProjections(list){
  // Replace host set-lineup team projs with optimal weekly lineup (same as Schedule)
- if(!list || !list.length) return list || [];
+ if(!Array.isArray(list) || !list.length) return Array.isArray(list) ? list : [];
  if(typeof estimateTeamWeekScore !== 'function') return list;
  let week = null;
  try{
@@ -9661,17 +9712,21 @@ function detectLeagueMedian(){
  list.forEach(m => {
   try{
    if(m.teamA){
-    const e = estimateTeamWeekScore(m.teamA, week);
+    const e = estimateTeamWeekScore(m.teamA, week, { skipCache: false });
     if(e && e.pts != null && isFinite(e.pts)){
      m.projA = e.pts;
      m.projSourceA = e.source || 'opt-lineup';
+    } else if(m.projA == null && m.pointsA != null){
+     m.projA = m.pointsA;
     }
    }
    if(m.teamB){
-    const e = estimateTeamWeekScore(m.teamB, week);
+    const e = estimateTeamWeekScore(m.teamB, week, { skipCache: false });
     if(e && e.pts != null && isFinite(e.pts)){
      m.projB = e.pts;
      m.projSourceB = e.source || 'opt-lineup';
+    } else if(m.projB == null && m.pointsB != null){
+     m.projB = m.pointsB;
     }
    }
   }catch(err){}
@@ -9714,17 +9769,8 @@ function detectLeagueMedian(){
  Object.keys(obj || {}).forEach(k => { m[String(k)] = obj[k]; });
  return m;
  };
+ // Host live points as provisional proj; renderMatchups enriches with optimal lineup
  let projA = pointsA, projB = pointsB;
- try{
- if(a && typeof estimateTeamWeekScore === 'function'){
- const ea = estimateTeamWeekScore(a, week);
- if(ea && ea.pts != null) projA = ea.pts;
- }
- if(b && typeof estimateTeamWeekScore === 'function'){
- const eb = estimateTeamWeekScore(b, week);
- if(eb && eb.pts != null) projB = eb.pts;
- }
- }catch(e){}
  out.push({
  week,
  teamA: a, teamB: b,
@@ -9738,13 +9784,16 @@ function detectLeagueMedian(){
  });
  });
  
- } else if(state.platform === 'espn' && state.leagueId && state.year){
- const path = `/apis/v3/games/ffl/seasons/${state.year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore&view=mScoreboard&view=mRoster&view=mMatchup`;
- const urls = [
- `https://lm-api-reads.fantasy.espn.com${path}`,
- `https://fantasy.espn.com${path}`
- ];
- const res = await solidFetchAny(urls, { timeoutMs: 18000 });
+ } else if((state.platform === 'espn' || state.platform === 'ESPN') && state.leagueId){
+ // Same auth path as league load (espnFetch + cookies)
+ let year = state.year;
+ try{
+  if(!year && el('in-year')) year = el('in-year').value;
+ }catch(e){}
+ if(!year) year = new Date().getFullYear();
+ state.year = year;
+ const path = `/apis/v3/games/ffl/seasons/${year}/segments/0/leagues/${state.leagueId}?view=mMatchupScore&view=mScoreboard&view=mRoster&view=mMatchup`;
+ const res = await espnFetch(path);
  const data = await res.json();
  const week = Number(
  (data.status && (data.status.currentMatchupPeriod || data.status.latestScoringPeriod)) ||
@@ -9879,6 +9928,24 @@ function detectLeagueMedian(){
  return Number(mp) === maxP;
  });
  }
+ // Still nothing — take any games that have home+away for this scoring period-ish
+ if(!games.length && schedule.length){
+  games = schedule.filter(g => g && g.home && (g.away || g.home));
+  // Prefer ones whose period is closest to week
+  games.sort((a,b) => {
+   const pa = Number(a.matchupPeriodId != null ? a.matchupPeriodId : a.scoringPeriodId) || 0;
+   const pb = Number(b.matchupPeriodId != null ? b.matchupPeriodId : b.scoringPeriodId) || 0;
+   return Math.abs(pa - week) - Math.abs(pb - week);
+  });
+  // Keep only the closest period's games
+  if(games.length){
+   const bestP = Number(games[0].matchupPeriodId != null ? games[0].matchupPeriodId : games[0].scoringPeriodId);
+   games = games.filter(g => {
+    const mp = Number(g.matchupPeriodId != null ? g.matchupPeriodId : g.scoringPeriodId);
+    return mp === bestP;
+   });
+  }
+ }
 
  games.forEach(game => {
  const home = game.home, away = game.away;
@@ -9889,17 +9956,7 @@ function detectLeagueMedian(){
  const pointsB = away ? sideLivePoints(away) : null;
  let projA = sideProjPoints(home);
  let projB = away ? sideProjPoints(away) : null;
- // Prefer optimal weekly lineup over ESPN set-lineup team proj
- try{
-  if(teamA && typeof estimateTeamWeekScore === 'function'){
-   const ea = estimateTeamWeekScore(teamA, week);
-   if(ea && ea.pts != null && isFinite(ea.pts)) projA = ea.pts;
-  }
-  if(teamB && typeof estimateTeamWeekScore === 'function'){
-   const eb = estimateTeamWeekScore(teamB, week);
-   if(eb && eb.pts != null && isFinite(eb.pts)) projB = eb.pts;
-  }
- }catch(e){}
+ // Provisional host proj; optimal lineup applied in enrichMatchupsWithOptimalProjections on render
  if(projA == null && pointsA != null) projA = pointsA;
  if(projB == null && pointsB != null) projB = pointsB;
  const ppa = sidePlayerPoints(home);
@@ -9973,13 +10030,15 @@ function detectLeagueMedian(){
  mergeSide(m.playersPointsB, m.playersLiveProjB);
  });
  }catch(e){ console.warn('proj cache merge', e); }
+ } else {
+  console.warn('fetchCurrentMatchups: no platform branch', state.platform, state.leagueId, state.year);
  }
  }catch(e){
  console.warn('fetchCurrentMatchups', e);
  }
- matchupCache = out;
+ matchupCache = Array.isArray(out) ? out : [];
  try{ clearWeekScoreCache(); }catch(e){}
- return out;
+ return matchupCache;
  }
 
 function matchupWinPct(liveA, liveB, projA, projB){
@@ -10046,7 +10105,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
 
  function liveWeekOddsFromMatchups(teamId){
   // Live H2H % + median (top-half) % for the current week, same as Matchups tab
-  const data = matchupCache || [];
+  const data = Array.isArray(matchupCache) ? matchupCache : [];
   if(!data.length || teamId == null) return null;
   const tid = String(teamId);
   let match = null, side = null;
@@ -10348,19 +10407,112 @@ function matchupWinPct(liveA, liveB, projA, projB){
 
 
 
+
+function renderChangelog(){
+  const body = el('changelog-body');
+  if(!body) return;
+  const blocks = [
+    {
+      date: 'Tue Oct 6, 2026',
+      text: [
+        'ESPN Matchups stopped loading after scoreboard changes. Live scores now use the same espnFetch and cookie path as league load. matchupCache is always a real array. If the scoreboard fails, the page builds H2H cards from the schedule so it is not blank.',
+        'Matchup projections and the league median board use each team optimal weekly lineup (same model as Schedule), not the set lineup on ESPN or Sleeper. Live points stay as real scored points.',
+        'Schedule projections always use the optimal lineup for that week. The old blend with host set-lineup team totals was removed.',
+        'Schedule colors returned for H2H %, median %, expected wins, and SOS rank (easier green, harder red). Soft row tint for strong or weak weeks.',
+        'Power rankings showed Week ~0 and a 70/30 roster split even in week 4 because getPowerWeights ran with no week count. Completed scoring weeks are passed in. Weights move toward results without dumping roster too early (about 46% roster / 54% results around week 4).',
+        'Overall team grade weights position starter grades and power rank first. Starter surplus and depth count less. Weak position letters still drag the overall grade down.',
+        'Superflex in grade lineups fills QB first. Flex is not forced to TE. Starters sit under their real position from the optimal lineup. Remaining players are a separate Bench grade.',
+        'Near clinch and near bye use remaining games and win floors, not a high playoff percentage.',
+        'Changelog tab added under More.'
+      ]
+    },
+    {
+      date: 'Mon Oct 5, 2026',
+      text: [
+        'Playoff clinch and elimination are mathematical (remaining games, max wins, min wins), not sim odds thresholds. Bye clinch follows the same rules.',
+        'Playoff sims use more trials, real records, current week until finals, and league median games when that setting is on. More variance so early-season favorites are not treated as locks.',
+        'Projected records on Playoffs and Schedule share the same Monte Carlo average after odds run.',
+        'Week counts for confidence no longer treat H2H plus median as two weeks of data for one scoring period.',
+        'Schedule optimizer can flip whole week slates and move games across weeks 1–9 for byes and timing. Hidden behind settings. Shows playoff % change per team. Only future unlocked weeks edit.',
+        'Trade finder fairness improved. ESPN tradeBlock likely / not likely to trade feeds acceptance scoring. Filters for buy and sell targets. More multi-player trade shapes (2-for-3, 3-for-3, and similar).',
+        'Trade board needs-after-trade shows positional starter and bench % before and after with color. Toggle in settings. Power impact optional.',
+        'Value risers and fallers no longer list each player twice. Tiers use percent gaps so a position is not one giant Tier 1.',
+        'Team grade shows ranks for starter value, depth, and each position, plus % from league median. Holes and weak spots listed with links to Waivers or Trades.',
+        'IR and injured stars count full value for roster construction, power, and trades. Healthy-only view is only for this-week Lineup and Cover.',
+        'League records tab: multi-season history, normalized when scoring or roster size changed, week-by-week so multi-week playoff games do not break all-time marks. Main record shown large.',
+        'Luck page: lineup accuracy by spots correct and by points left on the bench versus optimal.',
+        'Rooting interests (Path): every remaining regular-season week, foldable, each game and how it moves your playoff odds. League median rooting when median scoring is on.',
+        'Marcus Mariota and similar name mismatches against FantasyCalc cleaned up with normalizePlayerKey.',
+        'Start/Sit optimal % is points from a perfect lineup, not only slots correct. Floor and ceiling use player scoring history and projections, not a flat ±35% band. Locked players stay put once their game starts.',
+        'Waivers: free agent vs on-waivers, rest-of-season vs stream, IR-eligible filter, no endless suggest-drop of the same player, connected to Cover so it does not tell you to drop the only backup you need this week.',
+        'Byes + injuries combined. Injury status colors (active green, questionable yellow, doubtful/out red, IR as a hole if no replacement). Soft bye shows projected downgrade %.',
+        'Blueprint checklist and weekly order: Cover then Lineup, tasks mark done when the lineup is already optimal. Product name stays Fantasy Dashboard.',
+        'Home: denser summary, clickable tiles into the right pages, less clutter. Navbar sections. Mobile nav collapsible. Light/dark mode. Sortable tables across the app.',
+        'Player card popup from most player name clicks: boom/bust, historic value chart, ranks, opponent for the week. Trade links can deep-link into the trade board.',
+        'Settings cleaned up. Schedule optimizer and AI export gated. Power change in trade calc optional.'
+      ]
+    },
+    {
+      date: 'Core product (this build)',
+      text: [
+        'Single-file Fantasy Dashboard for ESPN and Sleeper leagues. League ID load, year, private ESPN SWID and espn_s2, dynasty vs redraft, PPR detection, superflex detection, league median detection.',
+        'Home dashboard: summary of rankings, needs, week checklist, links into the main tools.',
+        'Lineup (Start/Sit): full optimal lineup for the week from projections and live actuals, floor and ceiling, keep/start badges, locked slots after kickoff. ESPN and Sleeper week scoring supported.',
+        'Waivers: ranked adds, suggested drops, positional balance, stream vs rest-of-season, IR stashes when eligible.',
+        'Matchups: live and projected scores, H2H win %, median board with top-half odds when the league uses median, projected standings after this week (H2H and median).',
+        'Byes + injuries: holes by week, streaming ideas, injury board tied to Cover warnings.',
+        'Rankings (Power): starter surplus, depth, scored weeks, dynamic roster vs results weight by week completed.',
+        'Needs / Rate my team: letter grade, position grades, what is wrong, how to improve with links into Waivers and Trades.',
+        'Trades (finder): search fair trades that help both sides, filters by team and position, multi-player deals, open in Trade board.',
+        'Trade board: side-by-side calc, fairness gap, positional net, optional power and needs after trade, FantasyCalc values with optional manual bumps (for example Marvin Harrison Jr.).',
+        'Compare: side-by-side players on metrics the app already has.',
+        'Schedule (SOS): week-by-week opponent, your proj, opp proj, median, H2H %, median %, expected wins, cumulative projected record. League SOS ranking chart.',
+        'Schedule optimizer (settings): rewrite future schedule under league rules to help or hurt selected playoff goals.',
+        'Playoffs: odds for playoffs, bye, title when enough data, projected record, clinched or eliminated badges.',
+        'Path / rooting: which games to root for each week and the swing on your playoff %.',
+        'Luck: expected wins vs actual, strength of schedule, lineup accuracy.',
+        'Records: league records this season and all-time with normalization across seasons.',
+        'Tiers: value tiers by position and overall from market dropoffs, rostered vs all players.',
+        'Trends: FantasyCalc risers and fallers over available windows, power ranking movers.',
+        'Rosters: every team roster view with value movement.',
+        'AI export (settings): full text dump of league state for pasting elsewhere.',
+        'Player values from FantasyCalc. Projections and live scores from ESPN and Sleeper APIs. Injury designations from those feeds. Optional local value history snapshots for trends.',
+        'Shared legality: optimalStarterLineup drives empty-slot checks so you cannot drop your only TE and call it an upgrade. One evaluate path for trades, waivers, and finder.',
+        'Mobile layout pass, collapsible nav, sectioned sidebar, sortable tables, sources and short how-it-works notes on tabs.'
+      ]
+    }
+  ];
+  let html = '';
+  blocks.forEach(b => {
+    html += '<article class="changelog-day">';
+    html += '<div class="changelog-day-head">' + escapeHtml(b.date) + '</div>';
+    html += '<div class="changelog-day-body">';
+    b.text.forEach(p => {
+      html += '<p class="changelog-item">' + escapeHtml(p) + '</p>';
+    });
+    html += '</div></article>';
+  });
+  body.innerHTML = html;
+}
+
+
 function renderMatchups(){
  try{ bpSetSource('source-matchups', 'Matchups data', 'Live points from ESPN / Sleeper. Projected totals use each team optimal weekly lineup (same model as Schedule), not the set lineup. Median board uses those projs.'); }catch(e){}
  const list = el('matchups-list');
  const intro = el('matchups-intro');
  if(!list) return;
 
- let data = matchupCache || [];
+ let data = Array.isArray(matchupCache) ? matchupCache : [];
  if(!data.length){
  list.innerHTML = '<div class="hist-empty">No matchup data yet. Tap Refresh scores after loading a league.</div>';
  try{ const b = el('matchups-proj-standings'); if(b) b.innerHTML = ''; }catch(e){}
  return;
  }
- try{ data = enrichMatchupsWithOptimalProjections(data); matchupCache = data; }catch(e){}
+ try{
+  data = enrichMatchupsWithOptimalProjections(data);
+  if(!Array.isArray(data)) data = Array.isArray(matchupCache) ? matchupCache : [];
+  matchupCache = data;
+ }catch(e){ console.warn('enrich matchups', e); }
  try{ renderProjectedStandings(data); }catch(e){ console.warn(e); }
 
  // Rank by projected (fallback live) - single combined list
@@ -10504,17 +10656,88 @@ function renderMatchups(){
  const list = el('matchups-list');
  if(list) list.innerHTML = '<div class="hist-empty">Loading matchups…</div>';
  try{
- await fetchCurrentMatchups();
- // Pull fresh live projected totals (not frozen pregame numbers)
- try{ await loadWeeklyProjections(); }catch(e2){ console.warn('live proj refresh', e2); }
+  await fetchCurrentMatchups();
  }catch(e){
- console.warn('refreshMatchups', e);
- if(list) list.innerHTML = '<div class="hist-empty">Could not load scores. Check league access / try Refresh.</div>';
+  console.warn('refreshMatchups fetch', e);
  }
- renderMatchups();
+ // Optional live player projs — do not block the board
+ try{ await loadWeeklyProjections(); }catch(e2){ console.warn('live proj refresh', e2); }
+ if(!(matchupCache && matchupCache.length)){
+  try{
+   if(!scheduleCache && typeof loadScheduleGraph === 'function'){
+    try{ await loadScheduleGraph(); }catch(e){}
+   }
+   if(typeof buildMatchupsFallbackFromSchedule === 'function') buildMatchupsFallbackFromSchedule();
+  }catch(e){ console.warn('matchup fallback', e); }
+ }
+ try{
+  renderMatchups();
+ }catch(e3){
+  console.warn('renderMatchups', e3);
+  if(list) list.innerHTML = '<div class="hist-empty">Could not render scores. ' + escapeHtml(String(e3.message || e3)) + '</div>';
+ }
+ if(list && list.innerHTML.indexOf('Loading matchups') >= 0){
+  if(matchupCache && matchupCache.length){
+   try{ renderMatchups(); }catch(e){}
+  } else {
+   list.innerHTML = '<div class="hist-empty">Could not load scores. Check league access / try Refresh. If private ESPN, re-enter SWID + espn_s2.</div>';
+  }
+ }
  try{ if(typeof renderSitAnalyzer === 'function') renderSitAnalyzer(); }catch(e){}
  try{ if(typeof renderHome === 'function') renderHome(); }catch(e){}
  }
+
+ 
+ function buildMatchupsFallbackFromSchedule(){
+  // Pair teams from schedule for current week when live scoreboard fetch fails
+  const teams = state.teams || [];
+  if(teams.length < 2) return;
+  let week = 1;
+  try{
+   week = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1) || 1;
+  }catch(e){}
+  const seen = new Set();
+  const out = [];
+  teams.forEach(t => {
+   const node = scheduleCache && (scheduleCache[t.id] || scheduleCache[String(t.id)]);
+   const w = node && node.weeks && (node.weeks[week] || node.weeks[String(week)]);
+   if(!w || w.oppId == null || w.oppName === 'BYE') return;
+   const a = String(t.id), b = String(w.oppId);
+   const key = a < b ? a + '|' + b : b + '|' + a;
+   if(seen.has(key)) return;
+   seen.add(key);
+   const opp = teams.find(x => String(x.id) === b);
+   let projA = null, projB = null, pointsA = 0, pointsB = 0;
+   try{
+    if(typeof estimateTeamWeekScore === 'function'){
+     const ea = estimateTeamWeekScore(t, week);
+     const eb = opp ? estimateTeamWeekScore(opp, week) : null;
+     if(ea && ea.pts != null) projA = ea.pts;
+     if(eb && eb.pts != null) projB = eb.pts;
+    }
+   }catch(e){}
+   if(typeof w.myScore === 'number') pointsA = w.myScore;
+   if(typeof w.oppScore === 'number') pointsB = w.oppScore;
+   out.push({
+    week,
+    teamA: t,
+    teamB: opp || null,
+    pointsA,
+    pointsB,
+    projA: projA != null ? projA : pointsA,
+    projB: projB != null ? projB : pointsB,
+    playersPointsA: {},
+    playersPointsB: {},
+    startersA: [],
+    startersB: [],
+    fallback: true
+   });
+  });
+  if(out.length){
+   matchupCache = Array.isArray(out) ? out : [];
+  }
+ }
+
 
  /* ---------- league records ---------- */
  
@@ -11149,7 +11372,7 @@ function renderRecords(){
    state._sosMatchLoading = true;
    fetchCurrentMatchups().then(data => {
     state._sosMatchLoading = false;
-    if(data && data.length) matchupCache = data;
+    if(Array.isArray(data) && data.length) matchupCache = data;
     try{ renderSos(); }catch(e){}
    }).catch(() => { state._sosMatchLoading = false; });
   }
@@ -16192,7 +16415,13 @@ function buildStrategyBrief(){
  }
 
  function teamByRosterId(rid){
- return (state.teams || []).find(t => t.id === rid || String(t.id) === String(rid));
+ if(rid == null) return null;
+ const s = String(rid);
+ return (state.teams || []).find(t =>
+  t.id === rid || String(t.id) === s ||
+  t.roster_id === rid || String(t.roster_id) === s ||
+  t.teamId === rid || String(t.teamId) === s
+ );
  }
 
  function tradeSignature(sideAIds, sideBIds){
@@ -19296,6 +19525,7 @@ function goToPanel(panelId, opts){
  if(btn.dataset.panel === 'panel-home') renderHome();
  if(btn.dataset.panel === 'panel-compare') renderCompare();
  if(btn.dataset.panel === 'panel-trends') renderTrends();
+ if(btn.dataset.panel === 'panel-changelog') renderChangelog();
  if(btn.dataset.panel === 'panel-sit'){
  Promise.all([
  fetchCurrentMatchups().catch(() => null),
