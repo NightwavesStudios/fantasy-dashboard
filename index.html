@@ -7831,10 +7831,19 @@ function countPosBodies(roster){
     if(x.maxW > me.minW) canBeAheadOfMin++;
     else if(x.maxW === me.minW && x.pf >= me.pf) canBeAheadOfMin++; // equal wins possible, PF edge
    });
-   // Clinched playoff: even losing out, at most nPlayoff-1 teams can finish ahead
+   function teamsThatCanFinishAheadOf(winFloor, pfFloor){
+    let n = 0;
+    rows.forEach(x => {
+     if(x.id === me.id) return;
+     if(x.maxW > winFloor) n++;
+     else if(x.maxW === winFloor && x.pf >= pfFloor) n++;
+    });
+    return n;
+   }
+
+   // Clinched: even losing out, at most nPlayoff-1 teams can finish ahead
    const clinched = canBeAheadOfMin <= (nPlayoff - 1);
 
-   // Eliminated: even winning out, at least nPlayoff teams are forced strictly ahead
    let forcedAheadOfMax = 0;
    rows.forEach(x => {
     if(x.id === me.id) return;
@@ -7843,8 +7852,17 @@ function countPosBodies(roster){
    });
    const eliminated = forcedAheadOfMax >= nPlayoff;
 
-   // Bye clinch: same with nBye (only if byes exist)
+   // Near clinch = magic-number distance, not playoff %
+   let nearClinch = false;
+   if(!clinched && !eliminated && me.rem > 0){
+    const clinchIfPlus1 = teamsThatCanFinishAheadOf(me.minW + 1, me.pf) <= (nPlayoff - 1);
+    const clinchIfPlus2 = me.rem >= 2 && teamsThatCanFinishAheadOf(me.minW + 2, me.pf) <= (nPlayoff - 1);
+    const bubble = canBeAheadOfMin === nPlayoff && me.rem <= 3;
+    nearClinch = clinchIfPlus1 || (clinchIfPlus2 && me.rem <= 3) || bubble;
+   }
+
    let byeClinched = false;
+   let nearBye = false;
    if(nBye > 0){
     let canBeAheadBye = 0;
     rows.forEach(x => {
@@ -7853,6 +7871,10 @@ function countPosBodies(roster){
      else if(x.maxW === me.minW && x.pf >= me.pf) canBeAheadBye++;
     });
     byeClinched = canBeAheadBye <= (nBye - 1);
+    if(!byeClinched && !eliminated && me.rem > 0){
+     nearBye = teamsThatCanFinishAheadOf(me.minW + 1, me.pf) <= (nBye - 1)
+      || (canBeAheadBye === nBye && me.rem <= 3);
+    }
    }
 
    // Season over edge cases
@@ -7863,6 +7885,8 @@ function countPosBodies(roster){
      clinched: seed > 0 && seed <= nPlayoff,
      eliminated: seed > nPlayoff,
      byeClinched: nBye > 0 && seed > 0 && seed <= nBye,
+     nearClinch: false,
+     nearBye: false,
      seed, minW: me.minW, maxW: me.maxW, rem: me.rem
     };
    }
@@ -7871,6 +7895,8 @@ function countPosBodies(roster){
     clinched: clinched && !eliminated,
     eliminated: eliminated && !clinched,
     byeClinched: byeClinched && !eliminated,
+    nearClinch: !!(nearClinch && !clinched && !eliminated),
+    nearBye: !!(nearBye && !byeClinched && !eliminated),
     minW: me.minW,
     maxW: me.maxW,
     rem: me.rem
@@ -8255,7 +8281,9 @@ function countPosBodies(roster){
  titlePct: sims > 0 ? 100 * (counts.title[t.id] || 0) / denom : null,
  clinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].clinched),
  eliminated: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].eliminated),
- byeClinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].byeClinched)
+ byeClinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].byeClinched),
+ nearClinch: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearClinch),
+ nearBye: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearBye)
  };
  }).sort((a, b) => (a.seed || 99) - (b.seed || 99))
  };
@@ -8398,7 +8426,10 @@ function countPosBodies(roster){
  } else if(row.byeClinched){
   status = 'Bye clinched';
   statusHtml = '<span style="color:var(--accent);font-weight:700;">Bye clinched</span>';
- } else if(showOdds && row.playoffPct != null && row.playoffPct >= 90){
+ } else if(row.nearBye){
+  status = 'Near bye';
+  statusHtml = '<span style="color:var(--accent);font-weight:650;">Near bye</span>';
+ } else if(row.nearClinch){
   status = 'Near clinch';
   statusHtml = '<span style="color:var(--accent);font-weight:650;">Near clinch</span>';
  } else if(showOdds && row.playoffPct != null && row.playoffPct <= 10){
@@ -9242,13 +9273,13 @@ function estimateTeamWeekScore(team, week, opts){
  // Shared memo across SOS / Path / Playoffs for one data generation
  if(!opts.skipCache){
  if(!state._weekScoreCache) state._weekScoreCache = new Map();
- const ck = String(team.id) + '|' + week + '|' + (opts.mode || 'mean');
+ const ck = String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean');
  if(state._weekScoreCache.has(ck)) return state._weekScoreCache.get(ck);
  }
  const _cachePut = (result) => {
  if(!opts.skipCache){
  if(!state._weekScoreCache) state._weekScoreCache = new Map();
- state._weekScoreCache.set(String(team.id) + '|' + week + '|' + (opts.mode || 'mean'), result);
+ state._weekScoreCache.set(String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean'), result);
  }
  return result;
  };
@@ -9324,31 +9355,17 @@ function estimateTeamWeekScore(team, week, opts){
  for(let i = 0; i < needFX; i++) takeFa(flexElig, 'FLEX');
  }
 
+ // Always optimal weekly lineup (by player proj / live actuals) — never the manager's set lineup
  let pts = assignments.reduce((s, a) => s + (a.value || 0), 0);
 
- // Blend with host team projection on current week
- if(week === curWeek && matchupCache && matchupCache.length){
- const m = matchupCache.find(x =>
- (x.teamA && (x.teamA.id === team.id || String(x.teamA.id) === String(team.id))) ||
- (x.teamB && (x.teamB.id === team.id || String(x.teamB.id) === String(team.id)))
- );
- if(m){
- const isA = m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id));
- const live = isA ? m.pointsA : m.pointsB;
- const proj = isA ? m.projA : m.projB;
- if(typeof proj === 'number' && proj > 0 && !waiverFills.length){
- pts = pts * 0.4 + proj * 0.6;
- }
- if(typeof live === 'number' && live > 0) pts = Math.max(pts, live);
- }
- }
  const hasProj = assignments.some(a => {
  if(a.isWaiverFill) return false;
  const row = getPlayerProjection(a.id);
  return row && row.proj > 0;
  });
- let source = hasProj ? 'opt-proj' : 'opt-est';
+ let source = hasProj ? 'opt-lineup' : 'opt-est';
  if(waiverFills.length) source += '+waivers';
+ if(Number(week) === Number(curWeek)) source += '+cur';
  // Floor / ceiling for the same chosen lineup (injury & week-specific already in pts fn)
  let floorPts = 0, ceilPts = 0;
  assignments.forEach(a => {
@@ -9477,22 +9494,24 @@ function estimateTeamWeekScore(team, week, opts){
  let medProb = null;
  let usedLiveMatchups = false;
 
- // Current week: prefer live odds from Matchups tab (same model)
- if(week === curWeek && status !== 'final' && typeof liveWeekOddsFromMatchups === 'function'){
-  const live = liveWeekOddsFromMatchups(team.id);
-  if(live){
-   usedLiveMatchups = true;
-   source = 'live';
-   status = 'live';
-   if(live.myLive != null) myPts = live.myProj != null ? live.myProj : live.myLive;
-   if(live.oppLive != null) oppPts = live.oppProj != null ? live.oppProj : live.oppLive;
-   if(live.h2hProb != null) h2hProb = live.h2hProb;
-   if(live.medProb != null) medProb = live.medProb;
-   if(live.oppId != null && !opp){
-    opp = state.teams.find(x => String(x.id) === String(live.oppId));
-    if(opp) oppName = opp.name;
+ // Current week: still live status, but points = optimal lineup proj (not platform set-lineup proj)
+ if(week === curWeek && status !== 'final'){
+  status = 'live';
+  source = (myEst && myEst.source) || 'opt-lineup';
+  // Opp name/id from matchups if needed; points stay from est() above
+  try{
+   if(typeof liveWeekOddsFromMatchups === 'function'){
+    const live = liveWeekOddsFromMatchups(team.id);
+    if(live && live.oppId != null && !opp){
+     opp = state.teams.find(x => String(x.id) === String(live.oppId));
+     if(opp){
+      oppName = opp.name;
+      const oppEst2 = est(opp, week);
+      if(oppEst2 && oppEst2.pts != null) oppPts = oppEst2.pts;
+     }
+    }
    }
-  }
+  }catch(e){}
  }
 
  if(h2hProb == null && opp && myPts != null && oppPts != null){
@@ -11132,19 +11151,59 @@ function renderRecords(){
     (path.finalRecord ? '<span>Proj <strong>' + escapeHtml(path.finalRecord) + '</strong></span>' : '');
   }
   tbody.innerHTML = '';
+  function sosProbColor(p){
+   // p = 0..1 win probability
+   if(p == null || !isFinite(p)) return 'var(--text-secondary)';
+   if(p >= 0.62) return 'var(--accent)';
+   if(p >= 0.52) return 'color-mix(in srgb, var(--accent) 70%, var(--text-secondary))';
+   if(p <= 0.38) return 'var(--red)';
+   if(p <= 0.48) return 'color-mix(in srgb, var(--red) 70%, var(--text-secondary))';
+   return 'var(--text-secondary)';
+  }
+  function sosResultColor(label){
+   const s = String(label || '');
+   if(s === 'W' || s === '1' || /^W\b/.test(s)) return 'var(--accent)';
+   if(s === 'L' || s === '0' || /^L\b/.test(s)) return 'var(--red)';
+   if(s === 'T') return 'var(--text-secondary)';
+   return null;
+  }
   path.rows.forEach(r => {
    const tr = document.createElement('tr');
    const you = r.myPts != null ? fmtPts(r.myPts) : '-';
    const opp = r.oppPts != null ? fmtPts(r.oppPts) : '-';
    const med = r.median != null ? fmtPts(r.median) : '-';
-   const h2h = r.winProb != null ? (r.winProb * 100).toFixed(0) + '%' : (r.h2hResult || '-');
-   const medp = r.medianProb != null ? (r.medianProb * 100).toFixed(0) + '%' : (r.medResult || '-');
+   const h2hProb = r.winProb != null ? r.winProb : null;
+   const medProb = r.medianProb != null ? r.medianProb : null;
+   const h2hText = h2hProb != null ? (h2hProb * 100).toFixed(0) + '%' : (r.h2hResult || '-');
+   const medText = medProb != null ? (medProb * 100).toFixed(0) + '%' : (r.medResult || '-');
    const wexp = r.weekExp != null ? r.weekExp.toFixed(2) : '-';
-   tr.innerHTML = '<td>' + r.week + '</td><td>' + escapeHtml(r.oppName || 'BYE') + '</td><td class="val-cell">' + you +
-    '</td><td class="val-cell">' + opp + '</td><td class="val-cell">' + med +
-    '</td><td class="val-cell">' + h2h + '</td><td class="val-cell">' + medp +
-    '</td><td class="val-cell">' + wexp + '</td><td class="val-cell">' + escapeHtml(r.recordAfter || '') +
-    '</td><td class="val-cell">' + escapeHtml(r.source || r.status || '') + '</td>';
+   const h2hCol = sosResultColor(r.h2hResult) || sosProbColor(h2hProb);
+   const medCol = sosResultColor(r.medResult) || sosProbColor(medProb);
+   let wexpCol = 'var(--text-secondary)';
+   if(r.weekExp != null){
+    if(r.weekExp >= 1.3) wexpCol = 'var(--accent)';
+    else if(r.weekExp <= 0.7) wexpCol = 'var(--red)';
+   }
+   // Soft row tint from overall week expectation
+   if(r.status === 'final'){
+    if(r.weekExp >= 1.5) tr.style.background = 'color-mix(in srgb, var(--accent) 8%, transparent)';
+    else if(r.weekExp != null && r.weekExp <= 0.5) tr.style.background = 'color-mix(in srgb, var(--red) 8%, transparent)';
+   } else if(r.weekExp != null){
+    if(r.weekExp >= 1.35) tr.style.background = 'color-mix(in srgb, var(--accent) 6%, transparent)';
+    else if(r.weekExp <= 0.65) tr.style.background = 'color-mix(in srgb, var(--red) 6%, transparent)';
+   }
+   if(r.oppName === 'BYE' || !r.opp){
+    tr.style.opacity = '0.75';
+   }
+   tr.innerHTML = '<td>' + r.week + '</td><td>' + escapeHtml(r.oppName || 'BYE') + '</td>'
+    + '<td class="val-cell">' + you + '</td>'
+    + '<td class="val-cell">' + opp + '</td>'
+    + '<td class="val-cell">' + med + '</td>'
+    + '<td class="val-cell" style="font-weight:650;color:' + h2hCol + ';">' + h2hText + '</td>'
+    + '<td class="val-cell" style="font-weight:650;color:' + medCol + ';">' + medText + '</td>'
+    + '<td class="val-cell" style="font-weight:600;color:' + wexpCol + ';">' + wexp + '</td>'
+    + '<td class="val-cell">' + escapeHtml(r.recordAfter || '') + '</td>'
+    + '<td class="val-cell" style="color:var(--text-muted);font-size:12px;">' + escapeHtml(r.source || r.status || '') + '</td>';
    tbody.appendChild(tr);
   });
   if(note) note.textContent = 'H2H + median projected record matches Playoffs proj column. Finals locked; future weeks use projections.';
@@ -11162,8 +11221,11 @@ function renderRecords(){
     ranks.forEach((r,i) => {
      const vs = med ? ((r.sos - med) / med * 100) : 0;
      const isMine = state.myTeamId != null && String(r.team.id) === String(state.myTeamId);
-     html += '<tr' + (isMine ? ' style="background:var(--accent-muted)"' : '') + '><td>' + (i+1) + '</td><td>' +
-      escapeHtml(r.team.name) + '</td><td class="val-cell">' + r.sos.toFixed(1) + '</td><td class="val-cell">' +
+     // Easier schedule (below median opp avg) = green; harder = red
+     const vsCol = vs <= -3 ? 'var(--accent)' : (vs >= 3 ? 'var(--red)' : 'var(--text-secondary)');
+     const rankCol = i === 0 ? 'var(--accent)' : (i >= ranks.length - 1 ? 'var(--red)' : 'var(--text)');
+     html += '<tr' + (isMine ? ' style="background:var(--accent-muted)"' : '') + '><td style="font-weight:650;color:' + rankCol + ';">' + (i+1) + '</td><td>' +
+      escapeHtml(r.team.name) + '</td><td class="val-cell">' + r.sos.toFixed(1) + '</td><td class="val-cell" style="font-weight:650;color:' + vsCol + ';">' +
       (vs >= 0 ? '+' : '') + vs.toFixed(1) + '%</td><td class="val-cell">' + escapeHtml(r.rec || '') + '</td></tr>';
     });
     html += '</tbody></table></div>';
@@ -17650,7 +17712,18 @@ function renderTradeSide(side){
  takeBest(['TE'], counts.TE || 0, 'TE');
  takeBest(['DST'], counts.DST || 0, 'DST');
  takeBest(['K'], counts.K || 0, 'K');
- takeBest(sfElig || ['QB','RB','WR','TE'], counts.SF || 0, 'SF');
+ // Superflex: QB first for construction/grade (SF is a QB slot nearly always)
+ {
+  const sfN = counts.SF || 0;
+  if(sfN > 0){
+   takeBest(['QB'], sfN, 'SF');
+   const sfFilled = assignments.filter(a => a.slotKind === 'SF').length;
+   if(sfFilled < sfN){
+    const rest = (sfElig || ['QB','RB','WR','TE']).filter(p => p !== 'QB');
+    takeBest(rest.length ? rest : ['RB','WR','TE'], sfN - sfFilled, 'SF');
+   }
+  }
+ }
  takeBest(flexElig || ['RB','WR','TE'], counts.FLEX || 0, 'FLEX');
 
  const starterIds = new Set(assignments.map(a => a.id));
