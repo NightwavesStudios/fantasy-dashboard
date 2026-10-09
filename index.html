@@ -4155,6 +4155,21 @@ html[data-theme="light"] {
  <span id="path-force-warn" style="font-size:12px;color:var(--gold);"></span>
  </div>
  <div id="path-context" class="hist-meta" style="margin-bottom:10px;"></div>
+
+ <div class="hist-card" id="path-whatif-card" style="margin-bottom:14px;padding:12px 14px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;">
+   <strong style="font-size:14px;">What-if outcomes</strong>
+   <span style="font-size:12px;color:var(--text-muted);">Pick H2H and median results, then run once.</span>
+  </div>
+  <div id="path-whatif-weeks" style="display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto;"></div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center;">
+   <button type="button" class="btn btn-primary btn-sm" id="btn-path-whatif-run">Run scenario</button>
+   <button type="button" class="btn btn-ghost btn-sm" id="btn-path-whatif-clear">Clear picks</button>
+   <span id="path-whatif-status" style="font-size:12px;color:var(--text-muted);"></span>
+  </div>
+  <div id="path-whatif-results" style="margin-top:10px;"></div>
+ </div>
+
  <div id="path-list" class="hist-list"></div>
  </section>
  <section class="panel" id="panel-matchups">
@@ -7988,8 +8003,9 @@ function countPosBodies(roster){
   medFlag,
   teams.map(t => [t.id, t.wins||0, t.losses||0, t.ties||0, Math.round(t.pointsFor||0)].join(':')).join('|')
  ].join('::');
+ const skipCache = !!(opts && opts.skipCache);
  try{
-  if(state._playoffOddsCache && state._playoffOddsCache.key === cacheKey && state._playoffOddsCache.result){
+  if(!skipCache && state._playoffOddsCache && state._playoffOddsCache.key === cacheKey && state._playoffOddsCache.result){
    return state._playoffOddsCache.result;
   }
  }catch(e){}
@@ -8339,7 +8355,7 @@ function countPosBodies(roster){
  }).sort((a, b) => (a.seed || 99) - (b.seed || 99))
  };
  try{
-  state._playoffOddsCache = { key: cacheKey, result };
+  if(!skipCache) state._playoffOddsCache = { key: cacheKey, result };
  }catch(e){}
  return result;
  }
@@ -9700,17 +9716,61 @@ function detectLeagueMedian(){
  return false;
  }
 
- async function enrichMatchupsWithOptimalProjections(list){
- // Replace host set-lineup team projs with optimal weekly lineup (same as Schedule)
+ async function matchupScoringWeekStarted(list){
+ // True once any team has real points this period (games(s) underway or done)
+ if(!Array.isArray(list) || !list.length) return false;
+ for(let i = 0; i < list.length; i++){
+  const m = list[i];
+  if((Number(m.pointsA) || 0) > 0.05) return true;
+  if((Number(m.pointsB) || 0) > 0.05) return true;
+ }
+ // Locked player actuals in projection cache also mean the week has started
+ try{
+  if(projectionCache && typeof projectionCache === 'object'){
+   const keys = Object.keys(projectionCache);
+   for(let i = 0; i < keys.length; i++){
+    const row = projectionCache[keys[i]];
+    if(row && row.locked && typeof row.actual === 'number' && row.actual > 0) return true;
+    if(row && typeof row.actual === 'number' && row.actual > 0.05) return true;
+   }
+  }
+ }catch(e){}
+ return false;
+ }
+
+function enrichMatchupsWithOptimalProjections(list){
+ // Before the week starts: optimal lineup projs (planning).
+ // After scoring starts: keep host set-lineup live/proj from ESPN/Sleeper (what managers actually started).
  if(!Array.isArray(list) || !list.length) return Array.isArray(list) ? list : [];
- if(typeof estimateTeamWeekScore !== 'function') return list;
  let week = null;
  try{
   week = Number((list[0] && list[0].week) || (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0) || null;
  }catch(e){}
  if(!week) week = 1;
+
+ const weekLive = matchupScoringWeekStarted(list);
+
  list.forEach(m => {
   try{
+   // Always keep host numbers when the week is live
+   if(weekLive){
+    if(m.projA == null && m.pointsA != null) m.projA = m.pointsA;
+    if(m.projB == null && m.pointsB != null) m.projB = m.pointsB;
+    if(m.projA != null) m.projSourceA = m.projSourceA || 'host-lineup';
+    if(m.projB != null) m.projSourceB = m.projSourceB || 'host-lineup';
+    // Floor: projected final should not sit below points already scored
+    if(typeof m.pointsA === 'number' && typeof m.projA === 'number' && m.projA < m.pointsA)
+     m.projA = m.pointsA;
+    if(typeof m.pointsB === 'number' && typeof m.projB === 'number' && m.projB < m.pointsB)
+     m.projB = m.pointsB;
+    return;
+   }
+   // Pre-week / no scoring yet: optimal roster projection
+   if(typeof estimateTeamWeekScore !== 'function'){
+    if(m.projA == null && m.pointsA != null) m.projA = m.pointsA;
+    if(m.projB == null && m.pointsB != null) m.projB = m.pointsB;
+    return;
+   }
    if(m.teamA){
     const e = estimateTeamWeekScore(m.teamA, week, { skipCache: false });
     if(e && e.pts != null && isFinite(e.pts)){
@@ -10497,7 +10557,7 @@ function renderChangelog(){
 
 
 function renderMatchups(){
- try{ bpSetSource('source-matchups', 'Matchups data', 'Live points from ESPN / Sleeper. Projected totals use each team optimal weekly lineup (same model as Schedule), not the set lineup. Median board uses those projs.'); }catch(e){}
+ try{ bpSetSource('source-matchups', 'Matchups data', 'Live points from ESPN / Sleeper. Before the week starts, projs use optimal lineups. Once scoring is underway, projs use each manager set lineup (host live projected totals). Median board uses the same.'); }catch(e){}
  const list = el('matchups-list');
  const intro = el('matchups-intro');
  if(!list) return;
@@ -16071,7 +16131,195 @@ function buildStrategyBrief(){
  }
 
 
- function renderPlayoffPath(){
+ 
+function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced){
+  const wrap = el('path-whatif-weeks');
+  const results = el('path-whatif-results');
+  const status = el('path-whatif-status');
+  if(!wrap) return;
+  if(!state._pathWhatIf) state._pathWhatIf = { h2h: {}, med: {} };
+  // h2h[key] = 'A' | 'B'  (key = week|aId|bId sorted)
+  // med[week|teamId] = 'W' | 'L'
+
+  const hasMedian = typeof detectLeagueMedian === 'function' && detectLeagueMedian();
+  const showWeeks = (weeks || []).filter(w => w >= curWeek && w < playoffStart).slice(0, 8);
+
+  function h2hKey(wk, aId, bId){
+    const ab = [String(aId), String(bId)].sort();
+    return wk + '|' + ab[0] + '|' + ab[1];
+  }
+
+  let html = '';
+  showWeeks.forEach(wk => {
+    const matchups = weekMap[wk] || [];
+    html += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;">';
+    html += '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">Week ' + wk + '</div>';
+    if(!matchups.length){
+      html += '<div style="font-size:12px;color:var(--text-muted);">No matchups listed.</div></div>';
+      return;
+    }
+    matchups.forEach(m => {
+      const A = state.teams.find(t => String(t.id) === String(m.aId));
+      const B = state.teams.find(t => String(t.id) === String(m.bId));
+      if(!A || !B) return;
+      const key = h2hKey(wk, A.id, B.id);
+      const cur = state._pathWhatIf.h2h[key] || '';
+      const aOn = String(cur) === String(A.id) ? ' btn-primary' : ' btn-ghost';
+      const bOn = String(cur) === String(B.id) ? ' btn-primary' : ' btn-ghost';
+      const clrOn = !cur ? ' btn-primary' : ' btn-ghost';
+      html += '<div class="path-whatif-row" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px;font-size:12.5px;">';
+      html += '<span style="min-width:120px;flex:1 1 140px;color:var(--text);">' + escapeHtml(A.name) + ' vs ' + escapeHtml(B.name) + '</span>';
+      html += '<button type="button" class="btn btn-sm' + aOn + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="' + escapeHtml(String(A.id)) + '" data-loser-id="' + escapeHtml(String(B.id)) + '">' + escapeHtml(A.name.length > 14 ? A.name.slice(0,12)+'…' : A.name) + ' wins</button>';
+      html += '<button type="button" class="btn btn-sm' + bOn + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="' + escapeHtml(String(B.id)) + '" data-loser-id="' + escapeHtml(String(A.id)) + '">' + escapeHtml(B.name.length > 14 ? B.name.slice(0,12)+'…' : B.name) + ' wins</button>';
+      html += '<button type="button" class="btn btn-sm' + clrOn + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="">—</button>';
+      html += '</div>';
+    });
+    if(hasMedian){
+      html += '<div style="font-size:11px;color:var(--text-muted);margin:8px 0 4px;">Median (top half = win)</div>';
+      (state.teams || []).forEach(T => {
+        const mk = wk + '|' + String(T.id);
+        const cur = state._pathWhatIf.med[mk] || '';
+        const wOn = cur === 'W' ? ' btn-primary' : ' btn-ghost';
+        const lOn = cur === 'L' ? ' btn-primary' : ' btn-ghost';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px;font-size:12px;">';
+        html += '<span style="min-width:100px;flex:1 1 120px;">' + escapeHtml(T.name) + '</span>';
+        html += '<button type="button" class="btn btn-sm' + wOn + '" data-whatif-med="' + escapeHtml(mk) + '" data-med="W">Over</button>';
+        html += '<button type="button" class="btn btn-sm' + lOn + '" data-whatif-med="' + escapeHtml(mk) + '" data-med="L">Under</button>';
+        html += '<button type="button" class="btn btn-sm btn-ghost" data-whatif-med="' + escapeHtml(mk) + '" data-med="">—</button>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  wrap.innerHTML = html || '<div style="font-size:12px;color:var(--text-muted);">No future weeks to set.</div>';
+
+  wrap.querySelectorAll('[data-whatif-h2h]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-whatif-h2h');
+      const w = btn.getAttribute('data-winner-id') || '';
+      if(!w) delete state._pathWhatIf.h2h[key];
+      else state._pathWhatIf.h2h[key] = w;
+      buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
+    });
+  });
+  wrap.querySelectorAll('[data-whatif-med]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-whatif-med');
+      const v = btn.getAttribute('data-med') || '';
+      if(!v) delete state._pathWhatIf.med[key];
+      else state._pathWhatIf.med[key] = v;
+      buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
+    });
+  });
+
+  const runBtn = el('btn-path-whatif-run');
+  const clrBtn = el('btn-path-whatif-clear');
+  if(runBtn && !runBtn._boundWhatIf){
+    runBtn._boundWhatIf = true;
+    runBtn.addEventListener('click', () => runPathWhatIf(focusTeam, baseline, basePct, forced));
+  }
+  if(clrBtn && !clrBtn._boundWhatIf){
+    clrBtn._boundWhatIf = true;
+    clrBtn.addEventListener('click', () => {
+      state._pathWhatIf = { h2h: {}, med: {} };
+      if(results) results.innerHTML = '';
+      if(status) status.textContent = 'Cleared.';
+      buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
+    });
+  }
+}
+
+function runPathWhatIf(focusTeam, baseline, basePct, forced){
+  const results = el('path-whatif-results');
+  const status = el('path-whatif-status');
+  if(!state._pathWhatIf) state._pathWhatIf = { h2h: {}, med: {} };
+  const h2h = state._pathWhatIf.h2h || {};
+  const med = state._pathWhatIf.med || {};
+  const nH = Object.keys(h2h).length;
+  const nM = Object.keys(med).length;
+  if(!nH && !nM){
+    if(status) status.textContent = 'Pick at least one outcome.';
+    return;
+  }
+  if(status) status.textContent = 'Running…';
+  const saved = (state.teams || []).map(t => ({ id: t.id, wins: t.wins, losses: t.losses, ties: t.ties }));
+  try{
+    Object.keys(h2h).forEach(key => {
+      const parts = key.split('|');
+      // week|idA|idB (sorted ids)
+      if(parts.length < 3) return;
+      const idA = parts[1], idB = parts[2];
+      const winnerId = String(h2h[key] || '');
+      const A = state.teams.find(t => String(t.id) === String(idA));
+      const B = state.teams.find(t => String(t.id) === String(idB));
+      if(!A || !B || !winnerId) return;
+      if(winnerId === String(A.id)){ A.wins = (A.wins||0)+1; B.losses = (B.losses||0)+1; }
+      else if(winnerId === String(B.id)){ B.wins = (B.wins||0)+1; A.losses = (A.losses||0)+1; }
+    });
+    Object.keys(med).forEach(key => {
+      const parts = key.split('|');
+      if(parts.length < 2) return;
+      const tid = parts[1];
+      const T = state.teams.find(t => String(t.id) === String(tid));
+      if(!T) return;
+      if(med[key] === 'W') T.wins = (T.wins||0)+1;
+      else if(med[key] === 'L') T.losses = (T.losses||0)+1;
+    });
+    // One medium sim for the whole package of outcomes
+    const sims = Math.max(2500, Math.min(6000, (baseline && baseline.sims) ? Math.floor(baseline.sims * 0.35) : 3000));
+    const res = simulatePlayoffOdds(sims, { force: true, skipCache: true });
+    if(!res || !res.odds){
+      if(status) status.textContent = 'Scenario failed.';
+      return;
+    }
+    const baseMap = {};
+    (baseline.odds || []).forEach(r => {
+      if(r && r.team) baseMap[String(r.team.id)] = r.playoffPct;
+    });
+    let rows = res.odds.map(r => {
+      const id = String(r.team.id);
+      const bp = baseMap[id];
+      const np = r.playoffPct;
+      const d = (bp != null && np != null) ? (np - bp) : null;
+      return { team: r.team, base: bp, now: np, delta: d, seed: r.seed };
+    }).sort((a,b) => {
+      const da = Math.abs(a.delta || 0), db = Math.abs(b.delta || 0);
+      if(String(a.team.id) === String(focusTeam.id)) return -1;
+      if(String(b.team.id) === String(focusTeam.id)) return 1;
+      return db - da;
+    });
+    if(status) status.textContent = nH + ' H2H, ' + nM + ' median · ' + sims.toLocaleString() + ' sims';
+    if(results){
+      let h = '<div style="overflow-x:auto;"><table class="sortable-table" style="width:100%;font-size:13px;"><thead><tr><th>Team</th><th>Base %</th><th>Scenario %</th><th>Δ</th><th>Seed</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        const mine = String(r.team.id) === String(focusTeam.id);
+        const dCol = r.delta == null ? '—' : ((r.delta >= 0 ? '+' : '') + r.delta.toFixed(1));
+        const dStyle = r.delta == null ? '' : (r.delta > 0.3 ? 'color:var(--accent);font-weight:650;' : (r.delta < -0.3 ? 'color:var(--red);font-weight:650;' : ''));
+        h += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
+        h += '<td>' + escapeHtml(r.team.name) + (mine ? ' (you)' : '') + '</td>';
+        h += '<td class="val-cell">' + (r.base != null ? r.base.toFixed(1) : '—') + '</td>';
+        h += '<td class="val-cell">' + (r.now != null ? r.now.toFixed(1) : '—') + '</td>';
+        h += '<td class="val-cell" style="' + dStyle + '">' + dCol + '</td>';
+        h += '<td class="val-cell">' + (r.seed != null ? r.seed : '—') + '</td>';
+        h += '</tr>';
+      });
+      h += '</tbody></table></div>';
+      h += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Forced results are applied as extra wins/losses on top of the current record, then the rest of the season is re-simulated. Clear picks to reset.</p>';
+      results.innerHTML = h;
+    }
+  } catch(e){
+    console.warn(e);
+    if(status) status.textContent = 'Error running scenario.';
+  } finally {
+    saved.forEach(s => {
+      const t = state.teams.find(x => x.id === s.id || String(x.id) === String(s.id));
+      if(t){ t.wins = s.wins; t.losses = s.losses; t.ties = s.ties; }
+    });
+  }
+}
+
+
+function renderPlayoffPath(){
  const list = el('path-list');
  const sel = el('path-team');
  const intro = el('path-intro');
@@ -16172,15 +16420,16 @@ function buildStrategyBrief(){
    + '<span style="color:var(--text-muted);">' + baseline.sims.toLocaleString() + ' sims</span>';
  }
 
- const scenarioSims = Math.max(6000, Math.min(baseline.sims, 12000));
+ // Light sims for rooting swings only (main Playoffs tab keeps full counts)
+ const scenarioSims = Math.max(900, Math.min(1800, Math.floor((baseline.sims || 8000) * 0.12)));
  const scenarioMemo = new Map();
  function scenarioPct(adjustFn, memoKey){
   if(memoKey && scenarioMemo.has(memoKey)) return scenarioMemo.get(memoKey);
   const saved = state.teams.map(t => ({ id: t.id, wins: t.wins, losses: t.losses, ties: t.ties }));
   try{
    adjustFn();
-   const res = simulatePlayoffOdds(scenarioSims, { force: true });
-   const row = res && res.odds && res.odds.find(r => r.team.id === team.id);
+   const res = simulatePlayoffOdds(scenarioSims, { force: true, skipCache: true });
+   const row = res && res.odds && res.odds.find(r => r.team && (r.team.id === team.id || String(r.team.id) === String(team.id)));
    const pct = row && row.playoffPct != null ? row.playoffPct : null;
    if(memoKey) scenarioMemo.set(memoKey, pct);
    return pct;
@@ -16297,11 +16546,22 @@ function buildStrategyBrief(){
      if(p == null) return true;
      return p >= 4 && p <= 96;
     }
-    const medScored = (state.teams || []).map(T => {
+    // Cap median one-offs: you + bubble teams only (keeps expand fast)
+    const huntTeams = (state.teams || []).filter(T => {
      const mine = String(T.id) === String(team.id);
-     // Skip locked / dead teams unless it is you
-     if(!mine && !inHunt(T.id)) return null;
-     const key = 'med|' + String(T.id);
+     return mine || inHunt(T.id);
+    }).sort((a,b) => {
+     const pa = oddsById[String(a.id)]; const pb = oddsById[String(b.id)];
+     // Prefer teams near 50% playoff odds (most leverage)
+     const da = pa == null ? 99 : Math.abs(pa - 50);
+     const db = pb == null ? 99 : Math.abs(pb - 50);
+     if(String(a.id) === String(team.id)) return -1;
+     if(String(b.id) === String(team.id)) return 1;
+     return da - db;
+    }).slice(0, 6);
+    const medScored = huntTeams.map(T => {
+     const mine = String(T.id) === String(team.id);
+     const key = 'med|' + String(T.id) + '|w' + wk;
      const wPct = scenarioPct(() => { T.wins = (T.wins||0) + 1; }, key + '|W');
      const lPct = scenarioPct(() => { T.losses = (T.losses||0) + 1; }, key + '|L');
      if(wPct == null || lPct == null) return null;
@@ -16393,6 +16653,9 @@ function buildStrategyBrief(){
    if(weekEl.classList.contains('open')) ensure();
   });
  });
+
+  // ---- What-if: force H2H + median outcomes, one sim ----
+  try{ buildPathWhatIf(team, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced); }catch(e){ console.warn('whatif', e); }
 }
 
 
