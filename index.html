@@ -855,6 +855,153 @@
  .share-toast.show { opacity: 1; }
 
  .hist-list { display: flex; flex-direction: column; gap: 8px; }
+ 
+ 
+ 
+ .sim-noise-select {
+   max-width: 220px;
+   font-size: 12px;
+   padding: 4px 8px;
+   border-radius: 8px;
+   border: 1px solid var(--border);
+   background: var(--surface);
+   color: var(--text);
+ }
+ .bracket-board {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 14px;
+   align-items: flex-start;
+   margin-top: 4px;
+ }
+ .bracket-round {
+   flex: 1 1 160px;
+   min-width: 150px;
+   max-width: 280px;
+ }
+ .bracket-round-title {
+   font-size: 11px;
+   font-weight: 700;
+   letter-spacing: 0.04em;
+   text-transform: uppercase;
+   color: var(--text-muted);
+   margin-bottom: 8px;
+   padding-bottom: 4px;
+   border-bottom: 1px solid var(--border);
+ }
+ .bracket-match {
+   border: 1px solid var(--border);
+   border-radius: 10px;
+   overflow: hidden;
+   margin-bottom: 10px;
+   background: color-mix(in srgb, var(--surface) 96%, var(--accent) 4%);
+   box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+ }
+ 
+ .bracket-match.toilet .bm-team.winner {
+   background: color-mix(in srgb, var(--red) 16%, transparent);
+   color: var(--text);
+ }
+ .bracket-match.toilet .bm-team.winner .bm-seed {
+   background: color-mix(in srgb, var(--red) 40%, transparent);
+   color: var(--text);
+ }
+ .bracket-match.toilet .bm-team.loser {
+   opacity: 0.75;
+ }
+ .bracket-match.bye {
+   opacity: 0.85;
+   background: var(--surface);
+ }
+ .bm-team {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   gap: 8px;
+   padding: 8px 10px;
+   font-size: 12.5px;
+   border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+   color: var(--text-secondary);
+ }
+ .bm-team:last-of-type { border-bottom: none; }
+ .bm-team.winner {
+   color: var(--text);
+   font-weight: 700;
+   background: color-mix(in srgb, var(--accent) 14%, transparent);
+ }
+ .bm-team.loser { opacity: 0.72; }
+ .bm-seed {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   min-width: 22px;
+   height: 22px;
+   border-radius: 6px;
+   font-size: 11px;
+   font-weight: 700;
+   background: color-mix(in srgb, var(--border) 80%, transparent);
+   color: var(--text-muted);
+   margin-right: 6px;
+ }
+ .bm-team.winner .bm-seed {
+   background: color-mix(in srgb, var(--accent) 35%, transparent);
+   color: var(--text);
+ }
+ .bm-name { flex: 1; line-height: 1.25; }
+ .bm-pts {
+   font-variant-numeric: tabular-nums;
+   font-weight: 700;
+   font-size: 13px;
+   color: var(--text);
+ }
+ .bm-team.loser .bm-pts { font-weight: 500; color: var(--text-muted); }
+ .bm-meta {
+   font-size: 11px;
+   color: var(--text-muted);
+   padding: 4px 10px 6px;
+   background: color-mix(in srgb, var(--surface) 90%, transparent);
+ }
+ .sim-panel { padding: 14px 16px; margin-bottom: 16px; }
+ .sim-panel-title { font-size: 16px; font-weight: 750; color: var(--text); }
+ .sim-panel-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; max-width: 40rem; }
+ .sim-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 10px; }
+ .sim-noise-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); margin: 0; }
+ .sim-noise-label input[type=range] { width: 88px; accent-color: var(--accent); }
+ .sim-status { font-size: 12px; color: var(--text-muted); }
+ .sim-weeks { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow: auto; padding-right: 2px; }
+ .sim-week { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+ .sim-week-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; cursor: pointer; user-select: none; }
+ .sim-week-head strong { font-size: 13px; }
+ .sim-week-head span { font-size: 11px; color: var(--text-muted); }
+ .sim-week-body { display: none; padding: 0 10px 12px; border-top: 1px solid var(--border); }
+ .sim-week.open .sim-week-body { display: block; }
+ .sim-game { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: stretch; margin-top: 10px; }
+ .sim-side { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; background: color-mix(in srgb, var(--surface) 92%, transparent); transition: border-color .15s, background .15s; }
+ .sim-side:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+ .sim-side.pick { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+ .sim-side.lose { opacity: 0.55; }
+ .sim-side-name { font-size: 12.5px; font-weight: 650; color: var(--text); line-height: 1.25; }
+ .sim-side-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+ .sim-side-proj { font-size: 15px; font-weight: 750; color: var(--text); margin-top: 4px; font-variant-numeric: tabular-nums; }
+ .sim-vs { align-self: center; font-size: 11px; color: var(--text-muted); font-weight: 600; }
+ .sim-med { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+ .sim-med-title { font-size: 11px; font-weight: 650; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .03em; }
+ .sim-med-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; font-size: 12px; }
+ .sim-med-row span { flex: 1 1 100px; min-width: 80px; color: var(--text-secondary); }
+ .sim-chip { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); border-radius: 999px; padding: 3px 9px; font-size: 11px; cursor: pointer; }
+ .sim-chip.on-w { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); color: var(--text); }
+ .sim-chip.on-l { background: color-mix(in srgb, var(--red) 16%, transparent); border-color: var(--red); color: var(--text); }
+ .sim-standings-preview { margin-bottom: 8px; }
+ .sim-results { margin-top: 14px; }
+ .sim-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
+ .sim-hero .hist-card { padding: 10px 12px; }
+ .sim-hero .k { font-size: 11px; color: var(--text-muted); }
+ .sim-hero .v { font-size: 17px; font-weight: 750; margin-top: 2px; }
+ .sim-hero .s { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+ .path-whatif-card .btn-sm { padding: 4px 8px; font-size: 11.5px; }
+ .needs-intro { max-width: 52rem; }
+ .waiver-toolbar { gap: 6px; }
+ .hist-meta { gap: 8px; flex-wrap: wrap; }
  .changelog-wrap {
  display: flex;
  flex-direction: column;
@@ -4156,18 +4303,32 @@ html[data-theme="light"] {
  </div>
  <div id="path-context" class="hist-meta" style="margin-bottom:10px;"></div>
 
- <div class="hist-card" id="path-whatif-card" style="margin-bottom:14px;padding:12px 14px;">
-  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;">
-   <strong style="font-size:14px;">What-if outcomes</strong>
-   <span style="font-size:12px;color:var(--text-muted);">Pick H2H and median results, then run once.</span>
+ <div class="sim-panel hist-card" id="path-whatif-card">
+  <div class="sim-panel-head">
+   <div>
+    <div class="sim-panel-title">Season simulator</div>
+    <div class="sim-panel-sub">Pick winners (or auto-fill), run the rest of the season + playoffs, see standings and odds.</div>
+   </div>
   </div>
-  <div id="path-whatif-weeks" style="display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto;"></div>
-  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center;">
-   <button type="button" class="btn btn-primary btn-sm" id="btn-path-whatif-run">Run scenario</button>
-   <button type="button" class="btn btn-ghost btn-sm" id="btn-path-whatif-clear">Clear picks</button>
-   <span id="path-whatif-status" style="font-size:12px;color:var(--text-muted);"></span>
+  <div class="sim-toolbar">
+   <button type="button" class="btn btn-primary btn-sm" id="btn-path-whatif-run">Run full sim</button>
+   <button type="button" class="btn btn-ghost btn-sm" id="btn-path-whatif-autofill">Auto-fill</button>
+   <button type="button" class="btn btn-ghost btn-sm" id="btn-path-whatif-clear">Clear</button>
+   <label class="sim-noise-label">
+    <span>Variance</span>
+    <select id="path-whatif-noise" class="sim-noise-select">
+      <option value="0">Locked — higher proj always wins</option>
+      <option value="20" selected>Steady — small variance</option>
+      <option value="45">Lively — upsets possible</option>
+      <option value="70">Wild — favorites fall often</option>
+      <option value="100">Coin-flip — projections barely matter</option>
+    </select>
+   </label>
+   <span id="path-whatif-status" class="sim-status"></span>
   </div>
-  <div id="path-whatif-results" style="margin-top:10px;"></div>
+  <div id="path-whatif-standings" class="sim-standings-preview"></div>
+  <div id="path-whatif-weeks" class="sim-weeks"></div>
+  <div id="path-whatif-results" class="sim-results"></div>
  </div>
 
  <div id="path-list" class="hist-list"></div>
@@ -7709,11 +7870,14 @@ function countPosBodies(roster){
  const sch = state.league.settings && state.league.settings.scheduleSettings;
  if(sch){
  if(typeof sch.playoffTeamCount === 'number') playoffTeams = sch.playoffTeamCount;
- // matchup period length / playoff start vary; default week 15-ish
- if(typeof sch.playoffMatchupPeriodLength === 'number'){ /* keep */ }
+ if(typeof sch.playoffMatchupPeriodLength === 'number'){ /* multi-week rounds */ }
+ // ESPN: playoff reseed / bye counts often implied by field size
+ if(typeof sch.playoffSeedingRule === 'number'){ /* 0 standard */ }
  }
- const rs = state.league.settings && state.league.settings.rosterSettings;
- // ESPN divisions
+ // Standard fantasy byes: 6-team field → 2 byes; 4-team → 0; 8-team → 0 (full QF)
+ if(playoffTeams >= 6 && playoffTeams < 8) byes = 2;
+ else if(playoffTeams === 5) byes = 1;
+ else byes = 0;
  if(state.league.settings && state.league.settings.divisionSettings) divisions = true;
  }catch(e){}
  if(playoffTeams >= 6) byes = 2;
@@ -9254,19 +9418,24 @@ function countPosBodies(roster){
  const outlook = injuryWeekOutlook(p, week, curWeek);
  if(!outlook.available) return 0;
 
- // Current week: live actual / live proj
+ // Current week: host live actual / live proj only (no jitter, matches ESPN-style team projs)
  if(Number(week) === Number(curWeek)){
- const live = getLiveWeekPoints(p.id, null);
  const row = getPlayerProjection(p.id, p.fullName || p.name);
  if(row && row.locked && typeof row.actual === 'number'){
  return Math.max(0, row.actual) * (outlook.mult || 1);
  }
+ const live = getLiveWeekPoints(p.id, null);
  if(typeof live === 'number' && live > 0){
  let v = live;
+ // Remaining projected on top of scored (ESPN live proj style)
  if(row && typeof row.proj === 'number' && row.proj > live)
- v = live + Math.max(0, row.proj - live) * 0.55;
+  v = row.proj; // host already encodes scored + remaining when live total is proj
+ else if(row && typeof row.proj === 'number' && row.proj > 0)
+  v = Math.max(live, row.proj);
  return Math.max(0, v) * (outlook.mult || 1);
  }
+ if(row && typeof row.proj === 'number' && row.proj > 0)
+  return Math.max(0, row.proj) * (outlook.mult || 1);
  }
 
  const fc = playerFloorCeil(p, week, curWeek);
@@ -9274,22 +9443,16 @@ function countPosBodies(roster){
  if(mode === 'floor') base = fc.floor;
  else if(mode === 'ceil') base = fc.ceil;
 
- // Week-specific shape: not identical every week
- // 1) Deterministic jitter by player+week
- const jitter = (weekHash01(String(p.id) + '|' + week) - 0.5) * 0.1; // ±5%
- // 2) Slight regression toward position mean as we look further out
+ // Future weeks only: light week-to-week shape (byes/injuries already zeroed above)
  const horizon = Math.max(0, Number(week) - Number(curWeek));
- const reg = Math.min(0.22, horizon * 0.028);
- const pos = p.position || 'WR';
- const posBase = (typeof POS_WEEKLY_BASE !== 'undefined' && POS_WEEKLY_BASE[pos]) || 8;
- base = base * (1 - reg) + posBase * reg;
- base = base * (1 + jitter);
-
- // 3) If we have this player's score in a prior similar slot, tiny pull
- const hist = playerHistWeekScores(p);
- if(hist.length){
- const meanH = hist.reduce((a,b)=>a+b.pts,0) / hist.length;
- base = base * 0.9 + meanH * 0.1;
+ if(horizon > 0){
+  const jitter = (weekHash01(String(p.id) + '|' + week) - 0.5) * 0.06; // ±3%
+  const reg = Math.min(0.18, horizon * 0.022);
+  const pos = p.position || 'WR';
+  const posBase = (typeof POS_WEEKLY_BASE !== 'undefined' && POS_WEEKLY_BASE[pos]) || 8;
+  // Prefer host/season proj; only mild regression far out
+  base = base * (1 - reg) + posBase * reg;
+  base = base * (1 + jitter);
  }
 
  base *= (outlook.mult || 1);
@@ -9340,13 +9503,35 @@ function estimateTeamWeekScore(team, week, opts){
  // Shared memo across SOS / Path / Playoffs for one data generation
  if(!opts.skipCache){
  if(!state._weekScoreCache) state._weekScoreCache = new Map();
- const ck = String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean');
+ const ck = String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean') + (opts.noWaiverFill ? '|nw' : '') + (opts.preferHostLineup ? '|host' : '');
  if(state._weekScoreCache.has(ck)) return state._weekScoreCache.get(ck);
+ }
+ // Current week host team proj from matchups (ESPN totalProjectedPointsLive / Sleeper)
+ try{
+  const curW = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || week);
+  if(Number(week) === curW && Array.isArray(matchupCache) && matchupCache.length){
+   for(let i = 0; i < matchupCache.length; i++){
+    const m = matchupCache[i];
+    if(m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id)) && typeof m.projA === 'number' && m.projA > 0){
+     return _cachePutEarly({ pts: m.projA, source: 'host-matchup', assignments: [], waiverFills: [] });
+    }
+    if(m.teamB && (m.teamB.id === team.id || String(m.teamB.id) === String(team.id)) && typeof m.projB === 'number' && m.projB > 0){
+     return _cachePutEarly({ pts: m.projB, source: 'host-matchup', assignments: [], waiverFills: [] });
+    }
+   }
+  }
+ }catch(e){}
+ function _cachePutEarly(result){
+  if(!opts.skipCache){
+   if(!state._weekScoreCache) state._weekScoreCache = new Map();
+   state._weekScoreCache.set(String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean') + (opts.noWaiverFill ? '|nw' : '') + (opts.preferHostLineup ? '|host' : ''), result);
+  }
+  return result;
  }
  const _cachePut = (result) => {
  if(!opts.skipCache){
  if(!state._weekScoreCache) state._weekScoreCache = new Map();
- state._weekScoreCache.set(String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean'), result);
+ state._weekScoreCache.set(String(team.id) + '|' + week + '|opt|' + (opts.mode || 'mean') + (opts.noWaiverFill ? '|nw' : '') + (opts.preferHostLineup ? '|host' : ''), result);
  }
  return result;
  };
@@ -9381,7 +9566,7 @@ function estimateTeamWeekScore(team, week, opts){
 
  // Fill empty pure slots (and FLEX/SF) from waivers
  const waiverFills = [];
- let holes = unfilledSlots(available, counts, { healthyOnly: true });
+ let holes = opts.noWaiverFill ? 0 : unfilledSlots(available, counts, { healthyOnly: true });
  if(holes > 0){
  const faPool = waiverFillPool(week, curWeek);
  const usedFa = new Set();
@@ -16132,31 +16317,204 @@ function buildStrategyBrief(){
 
 
  
-function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced){
-  const wrap = el('path-whatif-weeks');
-  const results = el('path-whatif-results');
-  const status = el('path-whatif-status');
-  if(!wrap) return;
-  if(!state._pathWhatIf) state._pathWhatIf = { h2h: {}, med: {} };
-  // h2h[key] = 'A' | 'B'  (key = week|aId|bId sorted)
-  // med[week|teamId] = 'W' | 'L'
 
+function autoFillPathWhatIf(weekMap, weeks, playoffStart, curWeek){
+  // Prefer higher proj. Slider (0–100) controls upset chance; 0 ≈ always favorite.
+  if(!state._pathWhatIf) state._pathWhatIf = { h2h: {}, med: {} };
+      state._pathPostseasonPicks = { playoff: {}, toilet: {} };
   const hasMedian = typeof detectLeagueMedian === 'function' && detectLeagueMedian();
-  const showWeeks = (weeks || []).filter(w => w >= curWeek && w < playoffStart).slice(0, 8);
+  const showWeeks = (weeks || []).filter(w => w >= curWeek && w < playoffStart);
+
+  let noise = 8;
+  try{
+    const sl = el('path-whatif-noise');
+    if(sl) noise = Math.max(0, Math.min(100, Number(sl.value) || 0));
+  }catch(e){}
+  state._pathWhatIfNoise = noise;
 
   function h2hKey(wk, aId, bId){
     const ab = [String(aId), String(bId)].sort();
     return wk + '|' + ab[0] + '|' + ab[1];
   }
+  function weekPts(team, wk){
+    if(!team) return null;
+    try{
+      if(typeof pathWeekProj === 'function'){
+        const v = pathWeekProj(team, wk);
+        if(v != null && isFinite(v) && v > 0) return Number(v);
+      }
+    }catch(e){}
+    return (typeof team.avgPts === 'number' && team.avgPts > 0) ? team.avgPts : null;
+  }
+  // P(underdog wins) rises with noise and falls with proj gap
+  function underdogWins(gapAbs){
+    if(noise <= 0) return false;
+    if(!(gapAbs > 0)) return Math.random() < 0.5;
+    // scale: at noise=8, need a tiny gap for any upset; at 100, big gaps can still flip
+    const scale = 2.5 + noise * 0.22; // ~4 at low noise, ~25 at max
+    const pUpset = (noise / 100) * (1 / (1 + gapAbs / scale));
+    // Soft cap so even max noise is not pure chaos on huge gaps
+    const p = Math.min(0.48, Math.max(0, pUpset));
+    return Math.random() < p;
+  }
+  function pickWinner(idFav, idDog, gapAbs){
+    if(underdogWins(gapAbs)) return String(idDog);
+    return String(idFav);
+  }
+
+  showWeeks.forEach(wk => {
+    (weekMap[wk] || []).forEach(m => {
+      const A = state.teams.find(t => String(t.id) === String(m.aId));
+      const B = state.teams.find(t => String(t.id) === String(m.bId));
+      if(!A || !B) return;
+      const key = h2hKey(wk, A.id, B.id);
+      if(state._pathWhatIf.h2h[key]) return; // keep manual picks
+      const pa = weekPts(A, wk);
+      const pb = weekPts(B, wk);
+      let winnerId;
+      if(pa == null && pb == null){
+        winnerId = Math.random() < 0.5 ? A.id : B.id;
+      } else if(pa == null){
+        winnerId = B.id;
+      } else if(pb == null){
+        winnerId = A.id;
+      } else if(pa === pb){
+        winnerId = pickWinner(A.id, B.id, 0);
+      } else if(pa > pb){
+        winnerId = pickWinner(A.id, B.id, pa - pb);
+      } else {
+        winnerId = pickWinner(B.id, A.id, pb - pa);
+      }
+      state._pathWhatIf.h2h[key] = String(winnerId);
+    });
+
+    if(hasMedian){
+      const scored = (state.teams || []).map(T => ({
+        T,
+        pts: (() => { const p = weekPts(T, wk); return p != null ? p : -1; })()
+      })).sort((a,b) => b.pts - a.pts);
+      const n = scored.length;
+      if(!n) return;
+      const topN = Math.ceil(n / 2);
+      // Start from strict proj order
+      scored.forEach((row, i) => {
+        const mk = wk + '|' + String(row.T.id);
+        if(state._pathWhatIf.med[mk]) return;
+        state._pathWhatIf.med[mk] = i < topN ? 'W' : 'L';
+      });
+      // Optional swaps near the cut driven by noise
+      if(topN >= 1 && topN < n && noise > 0){
+        for(let i = 0; i < topN; i++){
+          const over = scored[i];
+          const under = scored[topN + (topN - 1 - i)]; // pair ends toward middle
+          if(!under) break;
+          const gap = Math.abs((over.pts || 0) - (under.pts || 0));
+          if(underdogWins(gap)){
+            // swap one over/under pair
+            state._pathWhatIf.med[wk + '|' + String(over.T.id)] = 'L';
+            state._pathWhatIf.med[wk + '|' + String(under.T.id)] = 'W';
+          }
+        }
+        // Ensure exactly topN overs
+        const order = scored.map(r => r.T.id);
+        const overs = order.filter(id => state._pathWhatIf.med[wk + '|' + String(id)] === 'W');
+        if(overs.length > topN){
+          overs.slice(topN).forEach(id => { state._pathWhatIf.med[wk + '|' + String(id)] = 'L'; });
+        } else if(overs.length < topN){
+          order.filter(id => state._pathWhatIf.med[wk + '|' + String(id)] !== 'W')
+            .slice(0, topN - overs.length)
+            .forEach(id => { state._pathWhatIf.med[wk + '|' + String(id)] = 'W'; });
+        }
+      }
+    }
+  });
+}
+
+
+
+
+function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced){
+  const wrap = el('path-whatif-weeks');
+  const results = el('path-whatif-results');
+  const status = el('path-whatif-status');
+  const preview = el('path-whatif-standings');
+  if(!wrap) return;
+  if(!state._pathWhatIf) state._pathWhatIf = { h2h: {}, med: {} };
+      state._pathPostseasonPicks = { playoff: {}, toilet: {} };
+
+  const hasMedian = typeof detectLeagueMedian === 'function' && detectLeagueMedian();
+  const showWeeks = (weeks || []).filter(w => w >= curWeek && w < playoffStart);
+  state._pathWhatIfCtx = {
+    weekMap, weeks: showWeeks, playoffStart, curWeek, forced,
+    focusId: focusTeam && focusTeam.id,
+    hasMedian
+  };
+  const oddsById = {};
+  (baseline && baseline.odds || []).forEach(r => {
+    if(r && r.team) oddsById[String(r.team.id)] = r;
+  });
+
+  function h2hKey(wk, aId, bId){
+    const ab = [String(aId), String(bId)].sort();
+    return wk + '|' + ab[0] + '|' + ab[1];
+  }
+  function weekPts(team, wk){
+    if(!team) return null;
+    try{
+      if(typeof pathWeekProj === 'function'){
+        const v = pathWeekProj(team, wk);
+        if(v != null && isFinite(v) && v > 0) return Number(v);
+      }
+    }catch(e){}
+    return (typeof team.avgPts === 'number' && team.avgPts > 0) ? team.avgPts : null;
+  }
+  function shortName(n){
+    n = String(n || '');
+    return n.length > 18 ? n.slice(0, 16) + '…' : n;
+  }
+  function recStr(t){
+    if(!t) return '';
+    return (t.wins||0) + '-' + (t.losses||0) + (t.ties ? '-' + t.ties : '');
+  }
+
+  // Live standings snapshot from baseline
+  if(preview){
+    const ranked = (baseline && baseline.odds || []).slice().sort((a,b) => (a.seed||99) - (b.seed||99));
+    if(ranked.length){
+      let ph = '<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;"><thead><tr><th>#</th><th>Team</th><th>Rec</th><th>Playoff</th><th>Bye</th></tr></thead><tbody>';
+      ranked.forEach(r => {
+        const mine = focusTeam && String(r.team.id) === String(focusTeam.id);
+        ph += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
+        ph += '<td>' + (r.seed != null ? r.seed : '—') + '</td>';
+        ph += '<td>' + escapeHtml(shortName(r.team.name)) + '</td>';
+        ph += '<td class="val-cell">' + escapeHtml(r.projRecord || recStr(r.team)) + '</td>';
+        ph += '<td class="val-cell">' + (r.playoffPct != null ? r.playoffPct.toFixed(0) + '%' : '—') + '</td>';
+        ph += '<td class="val-cell">' + (r.byePct != null ? r.byePct.toFixed(0) + '%' : '—') + '</td>';
+        ph += '</tr>';
+      });
+      ph += '</tbody></table></div>';
+      ph += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Current sim baseline (before your picks). Playoffs included in odds.</div>';
+      preview.innerHTML = ph;
+    } else preview.innerHTML = '';
+  }
 
   let html = '';
-  showWeeks.forEach(wk => {
+  if(!showWeeks.length){
+    html = '<div class="hist-empty">Regular season complete — run playoff odds on the Playoffs tab.</div>';
+  }
+  showWeeks.forEach((wk, idx) => {
+    const open = state._pathWhatIfOpenWeek == null ? idx === 0 : state._pathWhatIfOpenWeek === wk;
     const matchups = weekMap[wk] || [];
-    html += '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;">';
-    html += '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">Week ' + wk + '</div>';
+    let picked = 0;
+    matchups.forEach(m => {
+      const key = h2hKey(wk, m.aId, m.bId);
+      if(state._pathWhatIf.h2h[key]) picked++;
+    });
+    html += '<div class="sim-week' + (open ? ' open' : '') + '" data-week="' + wk + '">';
+    html += '<div class="sim-week-head" data-whatif-week-toggle="' + wk + '"><strong>Week ' + wk + '</strong><span>' + picked + '/' + matchups.length + ' set · ' + (open ? 'hide' : 'edit') + '</span></div>';
+    html += '<div class="sim-week-body">';
     if(!matchups.length){
-      html += '<div style="font-size:12px;color:var(--text-muted);">No matchups listed.</div></div>';
-      return;
+      html += '<div style="font-size:12px;color:var(--text-muted);padding-top:8px;">No matchups in schedule for this week.</div>';
     }
     matchups.forEach(m => {
       const A = state.teams.find(t => String(t.id) === String(m.aId));
@@ -16164,40 +16522,86 @@ function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffSt
       if(!A || !B) return;
       const key = h2hKey(wk, A.id, B.id);
       const cur = state._pathWhatIf.h2h[key] || '';
-      const aOn = String(cur) === String(A.id) ? ' btn-primary' : ' btn-ghost';
-      const bOn = String(cur) === String(B.id) ? ' btn-primary' : ' btn-ghost';
-      const clrOn = !cur ? ' btn-primary' : ' btn-ghost';
-      html += '<div class="path-whatif-row" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px;font-size:12.5px;">';
-      html += '<span style="min-width:120px;flex:1 1 140px;color:var(--text);">' + escapeHtml(A.name) + ' vs ' + escapeHtml(B.name) + '</span>';
-      html += '<button type="button" class="btn btn-sm' + aOn + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="' + escapeHtml(String(A.id)) + '" data-loser-id="' + escapeHtml(String(B.id)) + '">' + escapeHtml(A.name.length > 14 ? A.name.slice(0,12)+'…' : A.name) + ' wins</button>';
-      html += '<button type="button" class="btn btn-sm' + bOn + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="' + escapeHtml(String(B.id)) + '" data-loser-id="' + escapeHtml(String(A.id)) + '">' + escapeHtml(B.name.length > 14 ? B.name.slice(0,12)+'…' : B.name) + ' wins</button>';
-      html += '<button type="button" class="btn btn-sm' + clrOn + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="">—</button>';
+      const pa = weekPts(A, wk);
+      const pb = weekPts(B, wk);
+      const oa = oddsById[String(A.id)];
+      const ob = oddsById[String(B.id)];
+      const aPick = String(cur) === String(A.id);
+      const bPick = String(cur) === String(B.id);
+      html += '<div class="sim-game">';
+      html += '<button type="button" class="sim-side' + (aPick ? ' pick' : (bPick ? ' lose' : '')) + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="' + escapeHtml(String(A.id)) + '">';
+      html += '<div class="sim-side-name">' + escapeHtml(shortName(A.name)) + '</div>';
+      html += '<div class="sim-side-meta">' + escapeHtml(recStr(A));
+      if(oa && oa.playoffPct != null) html += ' · ' + oa.playoffPct.toFixed(0) + '% PO';
+      if(oa && oa.seed != null) html += ' · #' + oa.seed;
+      html += '</div>';
+      html += '<div class="sim-side-proj">' + (pa != null ? pa.toFixed(1) : '—') + '</div>';
+      html += '</button>';
+      html += '<div class="sim-vs">VS</div>';
+      html += '<button type="button" class="sim-side' + (bPick ? ' pick' : (aPick ? ' lose' : '')) + '" data-whatif-h2h="' + escapeHtml(key) + '" data-winner-id="' + escapeHtml(String(B.id)) + '">';
+      html += '<div class="sim-side-name">' + escapeHtml(shortName(B.name)) + '</div>';
+      html += '<div class="sim-side-meta">' + escapeHtml(recStr(B));
+      if(ob && ob.playoffPct != null) html += ' · ' + ob.playoffPct.toFixed(0) + '% PO';
+      if(ob && ob.seed != null) html += ' · #' + ob.seed;
+      html += '</div>';
+      html += '<div class="sim-side-proj">' + (pb != null ? pb.toFixed(1) : '—') + '</div>';
+      html += '</button>';
       html += '</div>';
     });
     if(hasMedian){
-      html += '<div style="font-size:11px;color:var(--text-muted);margin:8px 0 4px;">Median (top half = win)</div>';
-      (state.teams || []).forEach(T => {
-        const mk = wk + '|' + String(T.id);
-        const cur = state._pathWhatIf.med[mk] || '';
-        const wOn = cur === 'W' ? ' btn-primary' : ' btn-ghost';
-        const lOn = cur === 'L' ? ' btn-primary' : ' btn-ghost';
-        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px;font-size:12px;">';
-        html += '<span style="min-width:100px;flex:1 1 120px;">' + escapeHtml(T.name) + '</span>';
-        html += '<button type="button" class="btn btn-sm' + wOn + '" data-whatif-med="' + escapeHtml(mk) + '" data-med="W">Over</button>';
-        html += '<button type="button" class="btn btn-sm' + lOn + '" data-whatif-med="' + escapeHtml(mk) + '" data-med="L">Under</button>';
-        html += '<button type="button" class="btn btn-sm btn-ghost" data-whatif-med="' + escapeHtml(mk) + '" data-med="">—</button>';
+      const nTeams = (state.teams || []).length;
+      const topN = Math.floor(nTeams / 2); // 10 → 5 and 5
+      // Rank by this week proj (#1 highest)
+      const ranked = (state.teams || []).map(T => ({
+        T, pts: weekPts(T, wk),
+        mk: wk + '|' + String(T.id)
+      })).sort((a,b) => (b.pts || -1) - (a.pts || -1));
+      // Ensure every team has W/L and exactly topN overs
+      let overCount = ranked.filter(r => state._pathWhatIf.med[r.mk] === 'W').length;
+      ranked.forEach((r, i) => {
+        if(!state._pathWhatIf.med[r.mk]){
+          state._pathWhatIf.med[r.mk] = i < topN ? 'W' : 'L';
+        }
+      });
+      overCount = ranked.filter(r => state._pathWhatIf.med[r.mk] === 'W').length;
+      if(overCount !== topN){
+        // Rebalance by proj rank
+        ranked.forEach((r, i) => {
+          state._pathWhatIf.med[r.mk] = i < topN ? 'W' : 'L';
+        });
+      }
+      html += '<div class="sim-med">';
+      html += '<div class="sim-med-title">League median · ranked by week ' + wk + ' proj · exactly ' + topN + ' over / ' + (nTeams - topN) + ' under</div>';
+      ranked.forEach((r, i) => {
+        const cur = state._pathWhatIf.med[r.mk] || (i < topN ? 'W' : 'L');
+        const rank = i + 1;
+        html += '<div class="sim-med-row" style="display:grid;grid-template-columns:28px 1fr auto auto;gap:8px;align-items:center;">';
+        html += '<span style="font-weight:700;color:var(--text-muted);">#' + rank + '</span>';
+        html += '<span style="color:var(--text);">' + escapeHtml(shortName(r.T.name)) + (r.pts != null ? ' <span style="color:var(--text-muted);">· ' + r.pts.toFixed(1) + '</span>' : '') + '</span>';
+        html += '<button type="button" class="sim-chip' + (cur === 'W' ? ' on-w' : '') + '" data-whatif-med="' + escapeHtml(r.mk) + '" data-med="W" data-med-week="' + wk + '">Over</button>';
+        html += '<button type="button" class="sim-chip' + (cur === 'L' ? ' on-l' : '') + '" data-whatif-med="' + escapeHtml(r.mk) + '" data-med="L" data-med-week="' + wk + '">Under</button>';
         html += '</div>';
       });
+      html += '</div>';
     }
-    html += '</div>';
+    html += '</div></div>';
   });
-  wrap.innerHTML = html || '<div style="font-size:12px;color:var(--text-muted);">No future weeks to set.</div>';
+  wrap.innerHTML = html;
 
+  wrap.querySelectorAll('[data-whatif-week-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const wk = Number(btn.getAttribute('data-whatif-week-toggle'));
+      state._pathWhatIfOpenWeek = (state._pathWhatIfOpenWeek === wk) ? null : wk;
+      // allow collapsing all: if same week toggled off, set undefined
+      if(state._pathWhatIfOpenWeek === null) state._pathWhatIfOpenWeek = -1;
+      buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
+    });
+  });
   wrap.querySelectorAll('[data-whatif-h2h]').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.getAttribute('data-whatif-h2h');
       const w = btn.getAttribute('data-winner-id') || '';
-      if(!w) delete state._pathWhatIf.h2h[key];
+      if(String(state._pathWhatIf.h2h[key] || '') === String(w)) delete state._pathWhatIf.h2h[key];
       else state._pathWhatIf.h2h[key] = w;
       buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
     });
@@ -16206,117 +16610,677 @@ function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffSt
     btn.addEventListener('click', () => {
       const key = btn.getAttribute('data-whatif-med');
       const v = btn.getAttribute('data-med') || '';
-      if(!v) delete state._pathWhatIf.med[key];
-      else state._pathWhatIf.med[key] = v;
+      const wkMed = Number(btn.getAttribute('data-med-week'));
+      const nTeams = (state.teams || []).length;
+      const topN = Math.floor(nTeams / 2);
+      if(!v || !key) return;
+      const tid = key.split('|').slice(1).join('|');
+      // Rank all teams this week by proj for rebalancing
+      const ranked = (state.teams || []).map(T => ({
+        id: String(T.id),
+        mk: wkMed + '|' + String(T.id),
+        pts: (typeof weekPts === 'function' ? weekPts(T, wkMed) : null)
+      })).sort((a,b) => (b.pts || -1) - (a.pts || -1));
+
+      state._pathWhatIf.med[key] = v;
+      // Enforce exactly topN Over
+      let overs = ranked.filter(r => state._pathWhatIf.med[r.mk] === 'W').map(r => r.mk);
+      let unders = ranked.filter(r => state._pathWhatIf.med[r.mk] !== 'W').map(r => r.mk);
+      if(v === 'W' && overs.length > topN){
+        // Demote the lowest-proj Over that is not the one just picked
+        const demote = ranked.slice().reverse().find(r => r.mk !== key && state._pathWhatIf.med[r.mk] === 'W');
+        if(demote) state._pathWhatIf.med[demote.mk] = 'L';
+      }
+      if(v === 'L'){
+        overs = ranked.filter(r => state._pathWhatIf.med[r.mk] === 'W').map(r => r.mk);
+        if(overs.length < topN){
+          // Promote highest-proj Under that is not this one
+          const promo = ranked.find(r => r.mk !== key && state._pathWhatIf.med[r.mk] !== 'W');
+          if(promo) state._pathWhatIf.med[promo.mk] = 'W';
+        }
+      }
+      // Final hard balance by proj if still off
+      overs = ranked.filter(r => state._pathWhatIf.med[r.mk] === 'W');
+      if(overs.length !== topN){
+        ranked.forEach((r, i) => { state._pathWhatIf.med[r.mk] = i < topN ? 'W' : 'L'; });
+        // Re-apply user intent on the clicked team
+        state._pathWhatIf.med[key] = v;
+        if(v === 'W'){
+          const demote = ranked.slice().reverse().find(r => r.mk !== key && state._pathWhatIf.med[r.mk] === 'W');
+          if(demote) state._pathWhatIf.med[demote.mk] = 'L';
+        } else {
+          const promo = ranked.find(r => r.mk !== key && state._pathWhatIf.med[r.mk] !== 'W');
+          if(promo) state._pathWhatIf.med[promo.mk] = 'W';
+        }
+      }
       buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
     });
   });
 
   const runBtn = el('btn-path-whatif-run');
   const clrBtn = el('btn-path-whatif-clear');
+  const autoBtn = el('btn-path-whatif-autofill');
   if(runBtn && !runBtn._boundWhatIf){
     runBtn._boundWhatIf = true;
     runBtn.addEventListener('click', () => runPathWhatIf(focusTeam, baseline, basePct, forced));
+  }
+  if(autoBtn && !autoBtn._boundWhatIf){
+    autoBtn._boundWhatIf = true;
+    autoBtn.addEventListener('click', () => {
+      autoFillPathWhatIf(weekMap, weeks, playoffStart, curWeek);
+      const n = state._pathWhatIfNoise != null ? state._pathWhatIfNoise : 8;
+      if(status) status.textContent = n <= 0 ? 'Filled from projs (no chaos).' : ('Filled from projs · chaos ' + n);
+      buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
+    });
   }
   if(clrBtn && !clrBtn._boundWhatIf){
     clrBtn._boundWhatIf = true;
     clrBtn.addEventListener('click', () => {
       state._pathWhatIf = { h2h: {}, med: {} };
+      state._pathPostseasonPicks = { playoff: {}, toilet: {} };
       if(results) results.innerHTML = '';
       if(status) status.textContent = 'Cleared.';
       buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffStart, curWeek, forced);
     });
   }
+  const noiseSl = el('path-whatif-noise');
+  if(noiseSl && !noiseSl._boundWhatIf){
+    noiseSl._boundWhatIf = true;
+    if(state._pathWhatIfNoise != null) noiseSl.value = String(state._pathWhatIfNoise);
+    noiseSl.addEventListener('change', () => {
+      state._pathWhatIfNoise = Number(noiseSl.value) || 0;
+    });
+  } else if(noiseSl && state._pathWhatIfNoise != null){
+    noiseSl.value = String(state._pathWhatIfNoise);
+  }
 }
+
+
+
+
+function pathWeekProj(team, wk){
+  if(!team) return 0;
+  const curWeek = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || wk) || Number(wk);
+  // Current week: host ESPN/Sleeper team projected total (set lineup), not optimal+waivers
+  if(Number(wk) === curWeek && Array.isArray(matchupCache)){
+    try{
+      for(let i = 0; i < matchupCache.length; i++){
+        const m = matchupCache[i];
+        if(m.teamA && (m.teamA.id === team.id || String(m.teamA.id) === String(team.id))){
+          if(typeof m.projA === 'number' && isFinite(m.projA) && m.projA > 0) return Number(m.projA);
+        }
+        if(m.teamB && (m.teamB.id === team.id || String(m.teamB.id) === String(team.id))){
+          if(typeof m.projB === 'number' && isFinite(m.projB) && m.projB > 0) return Number(m.projB);
+        }
+      }
+    }catch(e){}
+  }
+  try{
+    if(typeof estimateTeamWeekScore === 'function'){
+      const e = estimateTeamWeekScore(team, wk, { noWaiverFill: true });
+      if(e && e.pts != null && isFinite(e.pts)) return Number(e.pts);
+    }
+  }catch(e){}
+  return (typeof team.avgPts === 'number' && team.avgPts > 0) ? team.avgPts : 100;
+}
+function pathChaosLevel(){
+  try{ return Math.max(0, Math.min(100, Number((el('path-whatif-noise') && el('path-whatif-noise').value) || state._pathWhatIfNoise || 20))); }catch(e){ return 20; }
+}
+function pathChaosJitter(){
+  const n = pathChaosLevel();
+  if(n <= 0) return 0;
+  const u = Math.max(1e-9, Math.random());
+  const v = Math.max(1e-9, Math.random());
+  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  return z * (n / 100) * 11;
+}
+
+function resolvePathBracket(teams, opts){
+  opts = opts || {};
+  const nBye = opts.nBye || 0;
+  let weekPtr = opts.weekStart || 15;
+  const pickMap = opts.pickMap || {};
+  const pickPrefix = opts.pickPrefix || 'po';
+  const bracketLog = [];
+  if(!teams || teams.length < 2){
+    return { log: bracketLog, champion: teams && teams[0] ? teams[0].row : null, runnerUp: null };
+  }
+  let field = teams.slice().sort((a,b) => a.seed - b.seed);
+  field.forEach((t, i) => { t.hasBye = i < nBye; });
+
+  let advancing = [];
+  const withBye = field.filter(t => t.hasBye);
+  const noBye = field.filter(t => !t.hasBye).sort((a,b) => a.seed - b.seed);
+  withBye.forEach(t => {
+    bracketLog.push({
+      round: 'Byes', week: null, bye: true,
+      hi: { seed: t.seed, name: t.name, id: t.id, pts: null, win: true },
+      lo: null, text: '#' + t.seed + ' ' + t.name + ' — bye'
+    });
+    advancing.push(t);
+  });
+
+  let roundIdx = 0;
+  let roundLabel = (noBye.length + withBye.length <= 4) ? 'Semifinals' : 'Quarterfinals';
+  if(field.length === 2) roundLabel = 'Championship';
+
+  const pool = noBye.slice();
+  const r1Games = [];
+  while(pool.length >= 2) r1Games.push([pool.shift(), pool.pop()]);
+  if(pool.length === 1){
+    bracketLog.push({
+      round: 'Byes', week: null, bye: true,
+      hi: { seed: pool[0].seed, name: pool[0].name, id: pool[0].id, pts: null, win: true },
+      lo: null, text: '#' + pool[0].seed + ' ' + pool[0].name + ' — bye'
+    });
+    advancing.push(pool[0]);
+  }
+
+  const loserAdvances = !!opts.loserAdvances;
+  function decideGame(hi, lo, rIdx, gIdx, label, week){
+    const key = pickPrefix + '-r' + rIdx + '-' + gIdx;
+    const pa0 = pathWeekProj(hi.team, week);
+    const pb0 = pathWeekProj(lo.team, week);
+    let pa = pa0 + pathChaosJitter();
+    let pb = pb0 + pathChaosJitter();
+    let pickId = pickMap[key];
+    if(pickId != null && String(pickId) !== String(hi.id) && String(pickId) !== String(lo.id)) pickId = null;
+    if(pathChaosLevel() <= 0 && pickId != null){ pa = pa0; pb = pb0; }
+    // Score result
+    const scoreHigh = pa >= pb ? hi : lo;
+    const scoreLow = scoreHigh === hi ? lo : hi;
+    // Who advances: normal = higher score; toilet = lower score (loser progresses)
+    let adv;
+    if(pickId != null){
+      adv = String(pickId) === String(hi.id) ? hi : lo;
+    } else {
+      adv = loserAdvances ? scoreLow : scoreHigh;
+    }
+    const elim = adv === hi ? lo : hi;
+    const advPts = adv === hi ? pa : pb;
+    const elimPts = elim === hi ? pa : pb;
+    const arrow = loserAdvances ? (adv.name + ' loses / advances') : (adv.name + ' wins');
+    bracketLog.push({
+      round: label, week, bye: false, pickKey: key, winnerId: adv.id, loserAdvances: loserAdvances,
+      hi: { seed: hi.seed, name: hi.name, id: hi.id, pts: hi === adv ? advPts : elimPts, win: hi === adv },
+      lo: { seed: lo.seed, name: lo.name, id: lo.id, pts: lo === adv ? advPts : elimPts, win: lo === adv },
+      text: '#' + hi.seed + ' ' + hi.name + ' vs #' + lo.seed + ' ' + lo.name + ' → ' + arrow,
+      scoreText: pa.toFixed(1) + ' – ' + pb.toFixed(1)
+    });
+    if(elim.row){
+      elim.row.playoffOutRound = label;
+      elim.row.playoffScoreLine = advPts.toFixed(1) + '-' + elimPts.toFixed(1);
+      if(loserAdvances) elim.row.toiletEscaped = true;
+    }
+    if(adv.row && loserAdvances){
+      adv.row.toiletStillIn = true;
+    }
+    return adv;
+  }
+
+  r1Games.forEach((pair, gIdx) => {
+    advancing.push(decideGame(pair[0], pair[1], roundIdx, gIdx, roundLabel, weekPtr));
+  });
+
+  let active = advancing.slice();
+  weekPtr++;
+  roundIdx++;
+  let guard = 0;
+  while(active.length > 1 && guard++ < 12){
+    active.sort((a,b) => a.seed - b.seed);
+    const n = active.length;
+    const label = n === 2 ? 'Championship' : (n === 4 ? 'Semifinals' : ('Round of ' + n));
+    const q = active.slice();
+    const games = [];
+    while(q.length >= 2) games.push([q.shift(), q.pop()]);
+    const next = q.length === 1 ? [q[0]] : [];
+    games.forEach((pair, gIdx) => {
+      if(pair[0] && pair[1]) next.push(decideGame(pair[0], pair[1], roundIdx, gIdx, label, weekPtr));
+    });
+    if(next.length >= active.length && games.length === 0) break;
+    active = next;
+    weekPtr++;
+    roundIdx++;
+  }
+  return { log: bracketLog, champion: active[0] ? active[0].row : null, runnerUp: null };
+}
+
+function renderPathBracketBoard(log, title, editable){
+  if(!log || !log.length) return '';
+  let h = '<div style="font-weight:700;font-size:13px;margin:14px 0 6px;">' + escapeHtml(title);
+  if(editable) h += ' <span style="font-weight:500;font-size:11px;color:var(--text-muted);">tap a team to force winner</span>';
+  h += '</div>';
+  const byRound = {};
+  const order = [];
+  log.forEach(g => {
+    if(!byRound[g.round]){ byRound[g.round] = []; order.push(g.round); }
+    byRound[g.round].push(g);
+  });
+  h += '<div class="bracket-board">';
+  order.forEach(rn => {
+    const games = byRound[rn] || [];
+    const wk = games.find(g => g.week != null);
+    h += '<div class="bracket-round">';
+    h += '<div class="bracket-round-title">' + escapeHtml(rn) + (wk && wk.week ? (' · Week ' + wk.week) : '') + '</div>';
+    games.forEach(g => {
+      if(g.bye || !g.lo){
+        const t = g.hi || {};
+        h += '<div class="bracket-match bye"><div class="bm-team winner"><span><span class="bm-seed">' + (t.seed != null ? t.seed : '—') + '</span><span class="bm-name">' + escapeHtml(t.name || '') + '</span></span><span class="bm-pts">BYE</span></div><div class="bm-meta">Advances automatically</div></div>';
+        return;
+      }
+      h += '<div class="bracket-match' + (g.loserAdvances ? ' toilet' : '') + '">';
+      [g.hi, g.lo].forEach(t => {
+        if(!t) return;
+        const cls = 'bm-team ' + (t.win ? 'winner' : 'loser');
+        const canPick = editable && g.pickKey;
+        if(canPick) h += '<button type="button" class="' + cls + ' bm-pick" data-bracket-pick="' + escapeHtml(g.pickKey) + '" data-winner-id="' + escapeHtml(String(t.id)) + '" style="width:100%;text-align:left;border:0;cursor:pointer;background:inherit;font:inherit;">';
+        else h += '<div class="' + cls + '">';
+        h += '<span><span class="bm-seed">' + (t.seed != null ? t.seed : '—') + '</span><span class="bm-name">' + escapeHtml(t.name || '') + '</span></span>';
+        h += '<span class="bm-pts">' + (t.pts != null ? Number(t.pts).toFixed(1) : '—') + '</span>';
+        h += canPick ? '</button>' : '</div>';
+      });
+      const metaExtra = g.loserAdvances ? ' · lower score advances' : '';
+      h += '<div class="bm-meta">' + (g.week ? ('Week ' + g.week + ' proj') : 'Projection') + (g.scoreText ? (' · ' + escapeHtml(g.scoreText)) : '') + metaExtra + '</div></div>';
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+
+function runPathWhatIfReplay(){
+  // Re-run postseason only using last locked regular-season board
+  const board = state._pathLastBoard;
+  const focusId = state._pathLastFocusId;
+  if(!board || !board.length){
+    // Full run
+    const focusTeam = (state.teams || []).find(t => String(t.id) === String(focusId)) || (state.teams || [])[0];
+    const baseline = state._playoffOddsCache && state._playoffOddsCache.result;
+    runPathWhatIf(focusTeam, baseline, null, true);
+    return;
+  }
+  // Reconstruct a minimal focusTeam
+  const focusTeam = (state.teams || []).find(t => String(t.id) === String(focusId)) || board[0].team;
+  // Reset playoff flags on board and re-apply postseason
+  board.forEach(r => {
+    r.champion = false;
+    r.runnerUp = false;
+    r.playoffOutRound = null;
+  });
+  const nPlayoff = state._pathLastNPlayoff || 4;
+  const nBye = state._pathLastNBye || 0;
+  const playoffStart = state._pathLastPlayoffStart || 15;
+  board.forEach(r => {
+    r.inPlayoffs = r.seed <= nPlayoff;
+    r.hasBye = r.seed <= nBye && nBye > 0;
+  });
+
+  if(!state._pathPostseasonPicks) state._pathPostseasonPicks = { playoff: {}, toilet: {} };
+  const toBracketTeam = (r) => ({ id: r.id, name: r.name, seed: r.seed, team: r.team, row: r, hasBye: r.hasBye });
+  const playoffField = board.filter(r => r.inPlayoffs).sort((a,b) => a.seed - b.seed).map(toBracketTeam);
+  const toiletField = board.filter(r => !r.inPlayoffs).sort((a,b) => a.seed - b.seed).map((r, i) => ({
+    id: r.id, name: r.name, seed: i + 1, team: r.team, row: r, hasBye: false
+  }));
+  const poRes = resolvePathBracket(playoffField, {
+    nBye, weekStart: playoffStart,
+    pickMap: state._pathPostseasonPicks.playoff || {},
+    pickPrefix: 'po'
+  });
+  let champion = null, runnerUp = null;
+  poRes.log.forEach(g => {
+    if(g.round === 'Championship' && g.hi && g.lo){
+      champion = board.find(r => String(r.id) === String(g.hi.win ? g.hi.id : g.lo.id));
+      runnerUp = board.find(r => String(r.id) === String(g.hi.win ? g.lo.id : g.hi.id));
+    }
+  });
+  const toiletByes = toiletField.length === 6 ? 2 : (toiletField.length === 5 ? 1 : 0);
+  const toiletRes = resolvePathBracket(toiletField, {
+    nBye: toiletByes, weekStart: playoffStart,
+    pickMap: state._pathPostseasonPicks.toilet || {},
+    pickPrefix: 'tb',
+    loserAdvances: true
+  });
+  let toiletChamp = null;
+  toiletRes.log.forEach(g => {
+    if(g.round === 'Championship' && g.hi && g.lo){
+      toiletChamp = board.find(r => String(r.id) === String(g.hi.win ? g.hi.id : g.lo.id));
+    }
+  });
+  board.forEach(r => {
+    r.champion = champion && String(champion.id) === String(r.id);
+    r.runnerUp = runnerUp && String(runnerUp.id) === String(r.id);
+  });
+
+  // Render results only
+  const results = el('path-whatif-results');
+  const status = el('path-whatif-status');
+  const you = board.find(r => focusTeam && String(r.id) === String(focusTeam.id));
+  if(status) status.textContent = 'Bracket updated' + (champion ? (' · Champ: ' + champion.name) : '') + (toiletChamp ? (' · Toilet: ' + toiletChamp.name) : '');
+  if(!results) return;
+  let h = '';
+  if(you){
+    h += '<div class="sim-hero">';
+    h += '<div class="hist-card"><div class="k">Status</div><div class="v" style="color:' + (you.inPlayoffs ? 'var(--accent)' : 'var(--red)') + ';">' + (you.inPlayoffs ? (you.hasBye ? 'BYE' : 'IN') : 'OUT') + '</div><div class="s">Seed #' + you.seed + '</div></div>';
+    h += '<div class="hist-card"><div class="k">Final record</div><div class="v">' + escapeHtml(you.record) + '</div><div class="s">PF ' + (you.pf != null ? you.pf.toFixed(0) : '—') + '</div></div>';
+    let poLine = you.champion ? 'Champion' : (you.runnerUp ? 'Runner-up' : (you.inPlayoffs ? 'In bracket' : 'Missed'));
+    if(!you.inPlayoffs && toiletChamp && String(toiletChamp.id) === String(you.id)) poLine = 'Toilet (worst)';
+    h += '<div class="hist-card"><div class="k">Postseason</div><div class="v">' + poLine + '</div><div class="s">' + (champion ? ('Champ: ' + escapeHtml(champion.name)) : '') + (toiletChamp ? (' · Toilet: ' + escapeHtml(toiletChamp.name)) : '') + '</div></div>';
+    h += '</div>';
+  }
+  h += '<div style="font-weight:700;font-size:13px;margin:0 0 6px;">Final standings</div>';
+  h += '<div style="overflow-x:auto;"><table class="sortable-table" style="width:100%;font-size:12.5px;"><thead><tr><th>Seed</th><th>Team</th><th>Record</th><th>PF</th><th>Playoffs</th></tr></thead><tbody>';
+  board.forEach(r => {
+    const mine = focusTeam && String(r.id) === String(focusTeam.id);
+    let tag = r.inPlayoffs ? (r.hasBye ? 'BYE' : 'IN') : 'OUT';
+    if(r.champion) tag = 'CHAMP';
+    else if(r.runnerUp) tag = 'FINALIST';
+    else if(toiletChamp && String(toiletChamp.id) === String(r.id)) tag = 'TOILET';
+    else if(r.playoffOutRound) tag = 'OUT · ' + r.playoffOutRound;
+    const tagCol = r.champion || r.runnerUp ? 'var(--accent)' : ((toiletChamp && String(toiletChamp.id) === String(r.id)) ? 'var(--red)' : (r.inPlayoffs ? 'var(--accent)' : 'var(--red)'));
+    h += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
+    h += '<td class="val-cell">#' + r.seed + '</td>';
+    h += '<td>' + escapeHtml(r.name) + (mine ? ' (you)' : '') + '</td>';
+    h += '<td class="val-cell">' + escapeHtml(r.record) + '</td>';
+    h += '<td class="val-cell">' + (r.pf != null ? r.pf.toFixed(0) : '—') + '</td>';
+    h += '<td class="val-cell" style="font-weight:700;color:' + tagCol + ';">' + escapeHtml(tag) + '</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  h += renderPathBracketBoard(poRes.log, 'Playoff bracket', true);
+  if(toiletRes.log.length){
+    h += renderPathBracketBoard(toiletRes.log, 'Toilet bowl (loser advances)', true);
+    if(toiletChamp) h += '<div style="font-size:13px;margin:8px 0 0;color:var(--text-secondary);">Toilet bowl (worst): <strong style="color:var(--red);">' + escapeHtml(toiletChamp.name) + '</strong></div>';
+  }
+  h += '<p style="font-size:11px;color:var(--text-muted);margin:10px 0 0;">Tap a team to force that game. Later rounds clear and re-simulate from projections + Variance.</p>';
+  results.innerHTML = h;
+  results.querySelectorAll('[data-bracket-pick]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-bracket-pick');
+      const wid = btn.getAttribute('data-winner-id');
+      if(!key || wid == null) return;
+      if(!state._pathPostseasonPicks) state._pathPostseasonPicks = { playoff: {}, toilet: {} };
+      const isToilet = key.indexOf('tb-') === 0;
+      const map = isToilet ? state._pathPostseasonPicks.toilet : state._pathPostseasonPicks.playoff;
+      if(String(map[key] || '') === String(wid)) delete map[key];
+      else map[key] = wid;
+      Object.keys(map).forEach(k => {
+        if(k === key) return;
+        const a = key.match(/-r(\d+)-/);
+        const b = k.match(/-r(\d+)-/);
+        if(a && b && Number(b[1]) > Number(a[1])) delete map[k];
+      });
+      runPathWhatIfReplay();
+    });
+  });
+  try{ results.scrollIntoView({ behavior: 'smooth', block: 'start' }); }catch(e){}
+}
+
 
 function runPathWhatIf(focusTeam, baseline, basePct, forced){
   const results = el('path-whatif-results');
   const status = el('path-whatif-status');
   if(!state._pathWhatIf) state._pathWhatIf = { h2h: {}, med: {} };
+  if(!state._pathPostseasonPicks) state._pathPostseasonPicks = { playoff: {}, toilet: {} };
+  const ctx = state._pathWhatIfCtx || {};
+  const weekMap = ctx.weekMap || {};
+  const showWeeks = ctx.weeks || [];
+  const playoffStart = ctx.playoffStart || 15;
+  const hasMedian = !!ctx.hasMedian;
+  if(status) status.textContent = 'Simulating full season…';
+
+  try {
+
+  // Fill any unset games from projs so the season is complete and concrete
+  try{
+    autoFillPathWhatIf(weekMap, showWeeks, playoffStart, ctx.curWeek || 1);
+  }catch(e){ console.warn('autofill', e); }
+
   const h2h = state._pathWhatIf.h2h || {};
   const med = state._pathWhatIf.med || {};
-  const nH = Object.keys(h2h).length;
-  const nM = Object.keys(med).length;
-  if(!nH && !nM){
-    if(status) status.textContent = 'Pick at least one outcome.';
-    return;
+
+  const _ptsCache = new Map();
+  function weekPts(team, wk){
+    if(!team) return 0;
+    const ck = String(team.id) + '|' + wk;
+    if(_ptsCache.has(ck)) return _ptsCache.get(ck);
+    let v = 0;
+    try{
+      if(typeof pathWeekProj === 'function'){
+        const p = pathWeekProj(team, wk);
+        if(p != null && isFinite(p)) v = Number(p);
+      }
+    }catch(e){}
+    if(!(v > 0) && typeof team.avgPts === 'number' && team.avgPts > 0) v = team.avgPts;
+    if(!(v > 0)) v = 100;
+    _ptsCache.set(ck, v);
+    return v;
   }
-  if(status) status.textContent = 'Running…';
-  const saved = (state.teams || []).map(t => ({ id: t.id, wins: t.wins, losses: t.losses, ties: t.ties }));
-  try{
-    Object.keys(h2h).forEach(key => {
-      const parts = key.split('|');
-      // week|idA|idB (sorted ids)
-      if(parts.length < 3) return;
-      const idA = parts[1], idB = parts[2];
-      const winnerId = String(h2h[key] || '');
-      const A = state.teams.find(t => String(t.id) === String(idA));
-      const B = state.teams.find(t => String(t.id) === String(idB));
-      if(!A || !B || !winnerId) return;
-      if(winnerId === String(A.id)){ A.wins = (A.wins||0)+1; B.losses = (B.losses||0)+1; }
-      else if(winnerId === String(B.id)){ B.wins = (B.wins||0)+1; A.losses = (A.losses||0)+1; }
+  function h2hKey(wk, aId, bId){
+    const ab = [String(aId), String(bId)].sort();
+    return wk + '|' + ab[0] + '|' + ab[1];
+  }
+
+  // Start from real current records + PF
+  const board = (state.teams || []).map(t => ({
+    id: t.id,
+    name: t.name,
+    team: t,
+    wins: t.wins || 0,
+    losses: t.losses || 0,
+    ties: t.ties || 0,
+    pf: t.pointsFor || 0
+  }));
+  const byId = {};
+  board.forEach(r => { byId[String(r.id)] = r; });
+
+  // Apply every remaining week deterministically from picks (auto-filled above)
+  showWeeks.forEach(wk => {
+    (weekMap[wk] || []).forEach(m => {
+      const A = byId[String(m.aId)], B = byId[String(m.bId)];
+      if(!A || !B) return;
+      const key = h2hKey(wk, m.aId, m.bId);
+      let winnerId = h2h[key];
+      const pa = weekPts(A.team, wk), pb = weekPts(B.team, wk);
+      if(!winnerId){
+        winnerId = pa >= pb ? String(A.id) : String(B.id);
+      }
+      if(String(winnerId) === String(A.id)){ A.wins++; B.losses++; }
+      else { B.wins++; A.losses++; }
+      A.pf += pa; B.pf += pb;
     });
-    Object.keys(med).forEach(key => {
-      const parts = key.split('|');
-      if(parts.length < 2) return;
-      const tid = parts[1];
-      const T = state.teams.find(t => String(t.id) === String(tid));
-      if(!T) return;
-      if(med[key] === 'W') T.wins = (T.wins||0)+1;
-      else if(med[key] === 'L') T.losses = (T.losses||0)+1;
-    });
-    // One medium sim for the whole package of outcomes
-    const sims = Math.max(2500, Math.min(6000, (baseline && baseline.sims) ? Math.floor(baseline.sims * 0.35) : 3000));
-    const res = simulatePlayoffOdds(sims, { force: true, skipCache: true });
-    if(!res || !res.odds){
-      if(status) status.textContent = 'Scenario failed.';
-      return;
-    }
-    const baseMap = {};
-    (baseline.odds || []).forEach(r => {
-      if(r && r.team) baseMap[String(r.team.id)] = r.playoffPct;
-    });
-    let rows = res.odds.map(r => {
-      const id = String(r.team.id);
-      const bp = baseMap[id];
-      const np = r.playoffPct;
-      const d = (bp != null && np != null) ? (np - bp) : null;
-      return { team: r.team, base: bp, now: np, delta: d, seed: r.seed };
-    }).sort((a,b) => {
-      const da = Math.abs(a.delta || 0), db = Math.abs(b.delta || 0);
-      if(String(a.team.id) === String(focusTeam.id)) return -1;
-      if(String(b.team.id) === String(focusTeam.id)) return 1;
-      return db - da;
-    });
-    if(status) status.textContent = nH + ' H2H, ' + nM + ' median · ' + sims.toLocaleString() + ' sims';
-    if(results){
-      let h = '<div style="overflow-x:auto;"><table class="sortable-table" style="width:100%;font-size:13px;"><thead><tr><th>Team</th><th>Base %</th><th>Scenario %</th><th>Δ</th><th>Seed</th></tr></thead><tbody>';
-      rows.forEach(r => {
-        const mine = String(r.team.id) === String(focusTeam.id);
-        const dCol = r.delta == null ? '—' : ((r.delta >= 0 ? '+' : '') + r.delta.toFixed(1));
-        const dStyle = r.delta == null ? '' : (r.delta > 0.3 ? 'color:var(--accent);font-weight:650;' : (r.delta < -0.3 ? 'color:var(--red);font-weight:650;' : ''));
-        h += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
-        h += '<td>' + escapeHtml(r.team.name) + (mine ? ' (you)' : '') + '</td>';
-        h += '<td class="val-cell">' + (r.base != null ? r.base.toFixed(1) : '—') + '</td>';
-        h += '<td class="val-cell">' + (r.now != null ? r.now.toFixed(1) : '—') + '</td>';
-        h += '<td class="val-cell" style="' + dStyle + '">' + dCol + '</td>';
-        h += '<td class="val-cell">' + (r.seed != null ? r.seed : '—') + '</td>';
-        h += '</tr>';
+    if(hasMedian){
+      const ranked = board.map(r => ({ r, pts: weekPts(r.team, wk) })).sort((a,b) => b.pts - a.pts);
+      const topN = Math.floor(ranked.length / 2);
+      const markedW = new Set();
+      ranked.forEach(row => {
+        const mk = wk + '|' + String(row.r.id);
+        if(med[mk] === 'W') markedW.add(String(row.r.id));
       });
-      h += '</tbody></table></div>';
-      h += '<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">Forced results are applied as extra wins/losses on top of the current record, then the rest of the season is re-simulated. Clear picks to reset.</p>';
-      results.innerHTML = h;
+      if(markedW.size < topN){
+        for(let i = 0; i < ranked.length && markedW.size < topN; i++){
+          const id = String(ranked[i].r.id);
+          if(med[wk + '|' + id] === 'L') continue;
+          markedW.add(id);
+        }
+      }
+      if(markedW.size > topN){
+        for(let i = ranked.length - 1; i >= 0 && markedW.size > topN; i--){
+          const id = String(ranked[i].r.id);
+          if(markedW.has(id)) markedW.delete(id);
+        }
+      }
+      ranked.forEach(row => {
+        if(markedW.has(String(row.r.id))) row.r.wins++;
+        else row.r.losses++;
+      });
     }
-  } catch(e){
-    console.warn(e);
-    if(status) status.textContent = 'Error running scenario.';
-  } finally {
-    saved.forEach(s => {
-      const t = state.teams.find(x => x.id === s.id || String(x.id) === String(s.id));
-      if(t){ t.wins = s.wins; t.losses = s.losses; t.ties = s.ties; }
+  });
+
+  // Concrete seed: wins, then PF
+  board.sort((a,b) => {
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    if(b.pf !== a.pf) return b.pf - a.pf;
+    return String(a.name).localeCompare(String(b.name));
+  });
+  board.forEach((r, i) => { r.seed = i + 1; r.record = r.wins + '-' + r.losses + (r.ties ? '-' + r.ties : ''); });
+
+  const settings = state.playoffSettings || (typeof detectPlayoffSettings === 'function' ? detectPlayoffSettings() : { playoffTeams: 4, byes: 0 });
+  const nPlayoff = settings.playoffTeams || 4;
+  const nBye = settings.byes || 0;
+  board.forEach(r => {
+    r.inPlayoffs = r.seed <= nPlayoff;
+    r.hasBye = r.seed <= nBye && nBye > 0;
+  });
+
+  // Playoffs + toilet bowl (picks in state._pathPostseasonPicks)
+  const toBracketTeam = (r) => ({
+    id: r.id, name: r.name, seed: r.seed, team: r.team, row: r, hasBye: !!r.hasBye
+  });
+  const playoffField = board.filter(r => r.inPlayoffs).sort((a,b) => a.seed - b.seed).map(toBracketTeam);
+  const toiletField = board.filter(r => !r.inPlayoffs).sort((a,b) => a.seed - b.seed).map((r, i) => ({
+    id: r.id, name: r.name, seed: i + 1, team: r.team, row: r, hasBye: false
+  }));
+
+  const poRes = resolvePathBracket(playoffField, {
+    nBye: nBye,
+    weekStart: playoffStart,
+    pickMap: state._pathPostseasonPicks.playoff || {},
+    pickPrefix: 'po'
+  });
+  let champion = null;
+  let runnerUp = null;
+  (poRes.log || []).forEach(g => {
+    if(g.round === 'Championship' && g.hi && g.lo){
+      champion = board.find(r => String(r.id) === String(g.hi.win ? g.hi.id : g.lo.id));
+      runnerUp = board.find(r => String(r.id) === String(g.hi.win ? g.lo.id : g.hi.id));
+    }
+  });
+
+  const toiletByes = toiletField.length === 6 ? 2 : (toiletField.length === 5 ? 1 : 0);
+  const toiletRes = resolvePathBracket(toiletField, {
+    nBye: toiletByes,
+    weekStart: playoffStart,
+    pickMap: state._pathPostseasonPicks.toilet || {},
+    pickPrefix: 'tb',
+    loserAdvances: true
+  });
+  let toiletChamp = null;
+  (toiletRes.log || []).forEach(g => {
+    if(g.round === 'Championship' && g.hi && g.lo){
+      toiletChamp = board.find(r => String(r.id) === String(g.hi.win ? g.hi.id : g.lo.id));
+    }
+  });
+  const bracketLog = poRes.log || [];
+  const toiletLog = toiletRes.log || [];
+
+  state._pathLastBoard = board.map(r => Object.assign({}, r));
+  // keep team refs
+  state._pathLastBoard = board;
+  state._pathLastFocusId = focusTeam && focusTeam.id;
+  state._pathLastPlayoffStart = playoffStart;
+  state._pathLastNBye = nBye;
+  state._pathLastNPlayoff = nPlayoff;
+
+    board.forEach(r => {
+    r.champion = champion && String(champion.id) === String(r.id);
+    r.runnerUp = runnerUp && String(runnerUp.id) === String(r.id);
+  });
+
+  const you = board.find(r => focusTeam && String(r.id) === String(focusTeam.id));
+  if(status){
+    status.textContent = 'Full season locked · ' + nPlayoff + ' make playoffs'
+      + (champion ? (' · Champ: ' + champion.name) : '');
+  }
+
+  if(results){
+    let h = '';
+    if(you){
+      h += '<div class="sim-hero">';
+      h += '<div class="hist-card"><div class="k">Status</div><div class="v" style="color:' + (you.inPlayoffs ? 'var(--accent)' : 'var(--red)') + ';">' + (you.inPlayoffs ? (you.hasBye ? 'BYE' : 'IN') : 'OUT') + '</div><div class="s">Seed #' + you.seed + '</div></div>';
+      h += '<div class="hist-card"><div class="k">Final record</div><div class="v">' + escapeHtml(you.record) + '</div><div class="s">PF ' + you.pf.toFixed(0) + '</div></div>';
+      let poLine = you.champion ? 'Champion' : (you.runnerUp ? 'Runner-up' : (you.inPlayoffs ? 'In bracket' : 'Missed'));
+      if(!you.inPlayoffs && toiletChamp && String(toiletChamp.id) === String(you.id)) poLine = 'Toilet (worst)';
+      h += '<div class="hist-card"><div class="k">Postseason</div><div class="v">' + poLine + '</div><div class="s">' + (champion ? ('Champ: ' + escapeHtml(champion.name)) : '') + (toiletChamp ? (' · Toilet: ' + escapeHtml(toiletChamp.name)) : '') + '</div></div>';
+      h += '</div>';
+    }
+
+    h += '<div style="font-weight:700;font-size:13px;margin:0 0 6px;">Final standings</div>';
+    h += '<div style="overflow-x:auto;"><table class="sortable-table" style="width:100%;font-size:12.5px;"><thead><tr><th>Seed</th><th>Team</th><th>Record</th><th>PF</th><th>Playoffs</th></tr></thead><tbody>';
+    board.forEach(r => {
+      const mine = focusTeam && String(r.id) === String(focusTeam.id);
+      let tag = r.inPlayoffs ? (r.hasBye ? 'BYE' : 'IN') : 'OUT';
+      if(r.champion) tag = 'CHAMP';
+      else if(r.runnerUp) tag = 'FINALIST';
+      else if(toiletChamp && String(toiletChamp.id) === String(r.id)) tag = 'TOILET';
+      else if(r.playoffOutRound) tag = 'OUT · ' + r.playoffOutRound;
+      const isToilet = tag === 'TOILET' || (toiletChamp && String(toiletChamp.id) === String(r.id));
+      let tagCol = 'var(--text-muted)';
+      if(r.champion) tagCol = 'var(--accent)';
+      else if(r.runnerUp) tagCol = 'var(--accent)';
+      else if(isToilet) tagCol = 'var(--red)';
+      else if(r.inPlayoffs) tagCol = 'var(--accent)';
+      else tagCol = 'var(--red)';
+      h += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
+      h += '<td class="val-cell">#' + r.seed + '</td>';
+      h += '<td>' + escapeHtml(r.name) + (mine ? ' (you)' : '') + '</td>';
+      h += '<td class="val-cell">' + escapeHtml(r.record) + '</td>';
+      h += '<td class="val-cell">' + r.pf.toFixed(0) + '</td>';
+      h += '<td class="val-cell" style="font-weight:700;color:' + tagCol + ';">' + escapeHtml(tag) + '</td>';
+      h += '</tr>';
     });
+    h += '</tbody></table></div>';
+
+    h += renderPathBracketBoard(bracketLog, 'Playoff bracket', true);
+    if(toiletLog && toiletLog.length){
+      h += renderPathBracketBoard(toiletLog, 'Toilet bowl (loser advances)', true);
+      if(toiletChamp){
+        h += '<div style="font-size:13px;margin:8px 0 0;color:var(--text-secondary);">Toilet bowl (worst): <strong style="color:var(--red);">' + escapeHtml(toiletChamp.name) + '</strong></div>';
+      }
+    }
+
+    h += '<p style="font-size:11px;color:var(--text-muted);margin:10px 0 0;">Tap a team in either bracket to force that winner and re-run later rounds. Unset regular-season games use projections (Variance). Records are whole numbers. Playoff and toilet scores use that week lineup projection.</p>';
+    results.innerHTML = h;
+    try{
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }catch(e){
+      try{ results.scrollIntoView(true); }catch(e2){}
+    }
+
+    // Manual playoff / toilet picks
+    results.querySelectorAll('[data-bracket-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-bracket-pick');
+        const wid = btn.getAttribute('data-winner-id');
+        if(!key || wid == null) return;
+        if(!state._pathPostseasonPicks) state._pathPostseasonPicks = { playoff: {}, toilet: {} };
+        const isToilet = key.indexOf('tb-') === 0;
+        const map = isToilet ? state._pathPostseasonPicks.toilet : state._pathPostseasonPicks.playoff;
+        // Toggle: same winner again clears force
+        if(String(map[key] || '') === String(wid)) delete map[key];
+        else map[key] = wid;
+        // Clear later-round picks in this bracket so they re-resolve
+        Object.keys(map).forEach(k => {
+          if(k === key) return;
+          const a = key.match(/-r(\d+)-/);
+          const b = k.match(/-r(\d+)-/);
+          if(a && b && Number(b[1]) > Number(a[1])) delete map[k];
+        });
+        // Re-run from saved board context without wiping regular season picks
+        runPathWhatIfReplay();
+      });
+    });
+  }
+
+  // Do not rebuild the whole week UI here (was freezing the tab).
+
+  } catch(err){
+    console.error('runPathWhatIf', err);
+    if(status) status.textContent = 'Sim failed: ' + (err && err.message ? err.message : 'error');
+    if(results) results.innerHTML = '<div class="hist-empty">Season sim failed. Try Refresh scores on Matchups, then run again.</div>';
   }
 }
+
 
 
 function renderPlayoffPath(){
