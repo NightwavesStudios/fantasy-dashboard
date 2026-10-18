@@ -4294,6 +4294,13 @@ html[data-theme="light"] {
  <tbody id="playoffs-body"></tbody>
  </table>
  </div>
+ <div id="playoffs-clinch-detail" class="card" style="display:none;margin-top:14px;padding:14px 16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
+   <div class="section-title" style="margin:0;" id="playoffs-clinch-title">Clinch scenarios</div>
+   <button type="button" class="btn btn-ghost btn-sm" id="btn-clinch-close">Close</button>
+  </div>
+  <div id="playoffs-clinch-body" style="font-size:13px;line-height:1.45;color:var(--text-secondary);"></div>
+ </div>
  <p class="tpi-note" id="playoffs-note" style="margin-top:12px;"></p>
  </section>
 
@@ -7382,9 +7389,9 @@ function qbTradeBoostEnabled(){
 /** TEMP: mild QB preference — bump incoming QB market value ~10% for power only (capped). */
 function qbBoostValueMultiplier(){
  if(!qbTradeBoostEnabled()) return 1;
- // Superflex / 2QB leagues care more about QB; still capped
+ // TEMP: stronger QB preference (still value-based, not a free +12 power)
  const sf = Number(state.numQBs) >= 2;
- return sf ? 1.28 : 1.18;
+ return sf ? 1.55 : 1.40; // +55% SF / +40% 1QB on received QB value for power only
 }
 function assetIsQb(a, otherTeam){
  if(!a || a.isPick) return false;
@@ -7596,6 +7603,31 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  let resB = side(teamB, mB0, mB1);
  resA = applyQbReceivePowerBoost(resA, sendA, sendB, teamB);
  resB = applyQbReceivePowerBoost(resB, sendB, sendA, teamA);
+ // Extra nudge so receiving a QB clearly moves power (TEMP setting)
+ function nudge(side){
+  if(!qbTradeBoostEnabled() || !side || !(side.qbBoost > 0)) return side;
+  const extra = Math.min(5.5, Math.max(0.8, side.qbBoost * 1.15));
+  side.newPower = (side.newPower || 0) + extra;
+  side.delta = (side.delta || 0) + extra;
+  side.qbBoost = (side.qbBoost || 0) + extra;
+  return side;
+ }
+ resA = nudge(resA);
+ resB = nudge(resB);
+ try{
+  const powers = {};
+  (state.teams || []).forEach(t => {
+   const id = t.id;
+   if(String(id) === String(teamA.id)) powers[id] = resA.newPower;
+   else if(String(id) === String(teamB.id)) powers[id] = resB.newPower;
+   else powers[id] = (oldPowers[id] != null ? oldPowers[id] : 0);
+  });
+  const ranks = ranksFromPowers(powers);
+  resA.newRank = ranks[teamA.id] ?? resA.newRank;
+  resB.newRank = ranks[teamB.id] ?? resB.newRank;
+  resA.rankDelta = (resA.oldRank != null && resA.newRank != null) ? resA.oldRank - resA.newRank : resA.rankDelta;
+  resB.rankDelta = (resB.oldRank != null && resB.newRank != null) ? resB.oldRank - resB.newRank : resB.rankDelta;
+ }catch(e){}
  return { a: resA, b: resB };
  }
 
@@ -7834,45 +7866,58 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  }
 
  function remainingGamesByTeam(playoffStart, currentWeek){
+  // Counts remaining RESULTS (H2H + median when on), not just calendar weeks
   const teams = state.teams || [];
   const rem = {};
   teams.forEach(t => { rem[t.id] = 0; });
   const start = Number(currentWeek) || 0;
   const end = Number(playoffStart) || 15;
-  const weeksLeft = Math.max(0, end - start - 0);
-  if(weeksLeft <= 0) return rem;
+  if(end <= start) return rem;
 
   const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
+  const perWeek = medianOn ? 2 : 1; // H2H + league median = 2 results / scoring week
   const graph = scheduleCache || {};
   let usedSchedule = false;
 
-  for(let wk = start + 1; wk < end; wk++){
+  // Include current week when it still has non-final matchups
+  for(let wk = start; wk < end; wk++){
     teams.forEach(t => {
-      const node = graph[t.id];
+      const node = graph[t.id] || graph[String(t.id)];
       if(!node) return;
-      const opp = node[wk] != null ? node[wk] : node[String(wk)];
-      if(opp == null) return;
+      const weeks = node.weeks || {};
+      const cell = weeks[wk] != null ? weeks[wk] : weeks[String(wk)];
+      if(cell == null) return;
       usedSchedule = true;
-      const bye = (opp === 'BYE' || opp === 'bye' || opp === 0 || opp === '0');
+      if(cell.status === 'final') return;
+      const opp = cell.oppId;
+      const bye = (opp === 'BYE' || opp === 'bye' || opp === 0 || opp === '0' || opp == null);
       if(bye) return;
-      rem[t.id]++;
-      if(medianOn) rem[t.id]++;
+      rem[t.id] += perWeek;
     });
   }
 
   if(!usedSchedule){
+    // No schedule graph: every remaining scoring week × games per week
+    const weeksLeft = Math.max(0, end - start);
+    teams.forEach(t => { rem[t.id] = weeksLeft * perWeek; });
+  } else {
+    // Teams missing week rows still get the standard remaining results
+    const weeksLeft = Math.max(0, end - start);
+    const fallback = weeksLeft * perWeek;
     teams.forEach(t => {
-      rem[t.id] = weeksLeft * (medianOn ? 2 : 1);
+      if(!(rem[t.id] > 0) && fallback > 0) rem[t.id] = fallback;
     });
   }
   return rem;
  }
 
  function computeMathematicalClinch(settings){
-  // True clinch / elimination: impossible to change outcome, not sim odds
+  // True clinch / elimination using full record (H2H + median when league uses it)
   const teams = state.teams || [];
   const nPlayoff = (settings && settings.playoffTeams) || 4;
   const nBye = (settings && settings.byes) || 0;
+  const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
+  const perWeek = medianOn ? 2 : 1;
   let currentWeek = 0;
   try{
    if(scheduleCache && scheduleCache._currentWeek) currentWeek = Number(scheduleCache._currentWeek) || 0;
@@ -7883,11 +7928,13 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   }catch(e){}
   const playoffStart = (settings && settings.playoffWeekStart) || 15;
   const rem = remainingGamesByTeam(playoffStart, currentWeek);
-  const weeksLeft = Math.max(0, playoffStart - currentWeek - 0);
+  const weeksLeft = Math.max(0, playoffStart - currentWeek);
+  const defaultRem = weeksLeft * perWeek;
 
   const rows = teams.map(t => {
-   const w = t.wins || 0;
-   const r = rem[t.id] != null ? rem[t.id] : weeksLeft;
+   // Host W-L already includes median results when the league is H2H+median
+   const w = (t.wins || 0) + 0.5 * (t.ties || 0);
+   const r = rem[t.id] != null ? rem[t.id] : defaultRem;
    return {
     id: t.id,
     name: t.name,
@@ -7895,7 +7942,9 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
     pf: t.pointsFor || 0,
     rem: r,
     minW: w,
-    maxW: w + r
+    maxW: w + r,
+    medianOn,
+    perWeek
    };
   });
 
@@ -8044,6 +8093,166 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const map = {};
   teams.forEach(t => { map[t.id] = statusFor(t); });
   return map;
+ }
+
+
+ function buildClinchScenarios(teamId){
+  // Human-readable clinch / elimination paths using full W-L (H2H + median when on)
+  const settings = state.playoffSettings || (typeof detectPlayoffSettings === 'function' ? detectPlayoffSettings() : null) || {
+   playoffTeams: 6, byes: 2, playoffWeekStart: 15
+  };
+  const map = (typeof computeMathematicalClinch === 'function')
+   ? computeMathematicalClinch(settings) : {};
+  const teams = state.teams || [];
+  const me = teams.find(t => String(t.id) === String(teamId));
+  if(!me) return { title: 'Team', html: 'Team not found.' };
+  const st = map[me.id] || map[String(me.id)] || {};
+  const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
+  const nPlayoff = st.nPlayoff || settings.playoffTeams || 6;
+  const nBye = st.nBye != null ? st.nBye : (settings.byes || 0);
+  const rem = st.rem != null ? st.rem : 0;
+  const weeksLeft = medianOn ? Math.ceil(rem / 2) : rem;
+  const wins = (me.wins || 0) + 0.5 * (me.ties || 0);
+  const pf = me.pointsFor || 0;
+
+  // Snapshot of everyone
+  const remMap = remainingGamesByTeam(settings.playoffWeekStart || 15,
+   (scheduleCache && scheduleCache._currentWeek) || 0);
+  const rows = teams.map(t => {
+   const w = (t.wins || 0) + 0.5 * (t.ties || 0);
+   const r = remMap[t.id] != null ? remMap[t.id] : rem;
+   return {
+    id: t.id, name: t.name, wins: w, pf: t.pointsFor || 0,
+    rem: r, minW: w, maxW: w + r
+   };
+  }).sort((a,b) => b.wins - a.wins || b.pf - a.pf);
+
+  const myRow = rows.find(r => String(r.id) === String(me.id)) || {
+   wins, pf, rem, minW: wins, maxW: wins + rem, name: me.name
+  };
+
+  const lines = [];
+  lines.push('<p style="margin:0 0 10px;color:var(--text);"><strong>' + escapeHtml(me.name) + '</strong> · '
+   + (me.wins||0) + '-' + (me.losses||0)
+   + (medianOn ? ' <span style="color:var(--text-muted);">(H2H + median wins)</span>' : '')
+   + ' · ' + weeksLeft + ' scoring week' + (weeksLeft === 1 ? '' : 's') + ' left'
+   + (medianOn ? ' · up to ' + rem + ' total wins available (2/week)' : '')
+   + '</p>');
+
+  if(st.eliminated){
+   lines.push('<p style="color:var(--red);font-weight:700;margin:0 0 8px;">Mathematically eliminated from the playoffs.</p>');
+   lines.push('<p style="margin:0 0 8px;">Even winning out to <strong>' + myRow.maxW + '</strong> wins, at least '
+    + nPlayoff + ' teams are guaranteed to finish ahead.</p>');
+  } else if(st.clinched){
+   lines.push('<p style="color:var(--accent);font-weight:700;margin:0 0 8px;">Playoff berth clinched'
+    + (st.byeClinched ? ' · bye clinched' : '') + '.</p>');
+   lines.push('<p style="margin:0 0 8px;">Even if you take zero of the remaining games, at most '
+    + (nPlayoff - 1) + ' teams can still finish ahead of you.</p>');
+  } else {
+   const magic = st.winsToClinch;
+   if(magic != null && magic <= rem){
+    lines.push('<p style="margin:0 0 8px;"><strong>Magic number: ' + magic + ' more win'
+     + (magic === 1 ? '' : 's') + '</strong> clinches a playoff spot (any combination of your H2H/median wins counts).</p>');
+    lines.push('<ul style="margin:0 0 10px;padding-left:18px;">');
+    lines.push('<li>Win <strong>' + magic + '</strong> more game' + (magic === 1 ? '' : 's')
+     + ' and you are in, no matter what everyone else does (on current PF tiebreakers).</li>');
+    if(magic > 1){
+     lines.push('<li>Paths: any mix of H2H and median results that add up to ' + magic + ' wins.</li>');
+    }
+    lines.push('<li>Winning out → finish with up to <strong>' + myRow.maxW + '</strong> wins.</li>');
+    lines.push('<li>Losing out → finish with <strong>' + myRow.minW + '</strong> wins (not yet eliminated).</li>');
+    lines.push('</ul>');
+   } else {
+    lines.push('<p style="margin:0 0 8px;color:var(--gold);"><strong>Cannot clinch on your own</strong> — even winning every remaining game (max <strong>'
+     + myRow.maxW + '</strong> wins), too many teams can still pass you.</p>');
+    // Who can still finish ahead if you win out
+    const blockers = rows.filter(x => String(x.id) !== String(me.id) && x.maxW >= myRow.maxW)
+     .slice(0, 8);
+    if(blockers.length){
+     lines.push('<p style="margin:0 0 6px;">Teams that can still finish ahead of your best case (or tie and pass on PF):</p><ul style="margin:0 0 10px;padding-left:18px;">');
+     blockers.forEach(b => {
+      const needLoss = Math.max(0, Math.ceil(b.maxW - myRow.maxW));
+      lines.push('<li><strong>' + escapeHtml(b.name) + '</strong> — now '
+       + b.wins + 'W, max ' + b.maxW + 'W'
+       + (b.maxW > myRow.maxW
+         ? (' · they must drop enough that they cannot reach ' + (myRow.maxW + 0.5) + '+')
+         : ' · PF race if both end at ' + myRow.maxW)
+       + '</li>');
+     });
+     lines.push('</ul>');
+     lines.push('<p style="margin:0 0 8px;">You need help: some of those teams have to lose games (H2H or median) so fewer than '
+      + nPlayoff + ' teams finish ahead of you.</p>');
+    }
+   }
+  }
+
+  if(nBye > 0 && !st.eliminated){
+   if(st.byeClinched){
+    lines.push('<p style="margin:8px 0 0;color:var(--accent);"><strong>Bye locked.</strong></p>');
+   } else if(st.winsToBye != null && st.winsToBye <= rem){
+    lines.push('<p style="margin:8px 0 0;"><strong>Bye magic number:</strong> ' + st.winsToBye
+     + ' more win' + (st.winsToBye === 1 ? '' : 's') + '.</p>');
+   } else if(!st.byeClinched){
+    lines.push('<p style="margin:8px 0 0;color:var(--text-muted);">Bye not reachable without help (or already out of bye race).</p>');
+   }
+  }
+
+  // Simple scenario table: if I get k more wins
+  if(!st.eliminated && rem > 0){
+   lines.push('<p style="margin:12px 0 6px;font-weight:650;color:var(--text);">If you add this many more wins…</p>');
+   lines.push('<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;"><thead><tr>'
+    + '<th>Extra wins</th><th>Final wins</th><th>Teams that can still finish ahead</th><th>Result</th></tr></thead><tbody>');
+   const steps = [];
+   for(let k = 0; k <= rem; k++){
+    // sample a few rows if many remaining
+    if(rem > 8 && k !== 0 && k !== rem && k % Math.ceil(rem / 6) !== 0) continue;
+    steps.push(k);
+   }
+   if(steps[0] !== 0) steps.unshift(0);
+   if(steps[steps.length - 1] !== rem) steps.push(rem);
+   steps.forEach(k => {
+    let ahead = 0;
+    const floor = myRow.wins + k;
+    rows.forEach(x => {
+     if(String(x.id) === String(me.id)) return;
+     if(x.maxW > floor) ahead++;
+     else if(x.maxW === floor && x.pf >= pf) ahead++;
+    });
+    let label = 'Still fighting';
+    let color = 'var(--text-secondary)';
+    if(ahead <= nPlayoff - 1){
+     label = 'Clinched';
+     color = 'var(--accent)';
+    } else if(ahead >= nPlayoff && k === 0){
+     // check elim only at k=0 with others min
+     let forced = 0;
+     rows.forEach(x => {
+      if(String(x.id) === String(me.id)) return;
+      if(x.minW > myRow.maxW) forced++;
+     });
+     if(forced >= nPlayoff){ label = 'Eliminated'; color = 'var(--red)'; }
+    }
+    lines.push('<tr><td>' + k + '</td><td>' + (Math.round(floor * 10) / 10)
+     + '</td><td>' + ahead + '</td><td style="color:' + color + ';font-weight:650;">'
+     + label + '</td></tr>');
+   });
+   lines.push('</tbody></table></div>');
+   lines.push('<p style="margin:8px 0 0;font-size:11px;color:var(--text-muted);">“Teams that can still finish ahead” assumes those teams win out and you stop at that win total. Median leagues: each H2H and each median result is one win on the host record.</p>');
+  }
+
+  return { title: me.name + ' · clinch scenarios', html: lines.join('') };
+ }
+
+ function showClinchScenarios(teamId){
+  const box = el('playoffs-clinch-detail');
+  const body = el('playoffs-clinch-body');
+  const title = el('playoffs-clinch-title');
+  if(!box || !body) return;
+  const sc = buildClinchScenarios(teamId);
+  if(title) title.textContent = sc.title || 'Clinch scenarios';
+  body.innerHTML = sc.html || '';
+  box.style.display = '';
+  try{ box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }catch(e){}
  }
 
  function simulatePlayoffOdds(sims, opts){
@@ -8561,20 +8770,26 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  let statusHtml = '';
  function distLine(){
   const bits = [];
-  if(row.winsToClinch != null && row.winsToClinch > 0){
-   if(row.winsToClinch > (row.remGames != null ? row.remGames : 99))
-    bits.push('cannot clinch (win-out short)');
+  const med = (typeof detectLeagueMedian === 'function' && detectLeagueMedian());
+  // Express magic numbers as WINS (host record already counts H2H + median as wins)
+  if(row.winsToClinch != null){
+   if(row.winsToClinch === 0) bits.push('playoff spot locked');
+   else if(row.winsToClinch > (row.remGames != null ? row.remGames : 99))
+    bits.push('cannot clinch alone — need help');
    else
-    bits.push(row.winsToClinch + ' more win' + (row.winsToClinch === 1 ? '' : 's') + ' to clinch');
+    bits.push('magic number: ' + row.winsToClinch + ' more win' + (row.winsToClinch === 1 ? '' : 's'));
   }
   if(row.winsToBye != null && row.winsToBye > 0 && row.winsToBye <= (row.remGames != null ? row.remGames : 99))
-   bits.push(row.winsToBye + ' to bye');
+   bits.push(row.winsToBye + ' win' + (row.winsToBye === 1 ? '' : 's') + ' to bye');
   if(row.gamesVsCut != null){
-   if(row.gamesVsCut > 0) bits.push(row.gamesVsCut + ' up on cut');
-   else if(row.gamesVsCut < 0) bits.push(Math.abs(row.gamesVsCut) + ' back of cut');
-   else bits.push('tied at cut');
+   if(row.gamesVsCut > 0) bits.push(row.gamesVsCut + ' win' + (row.gamesVsCut === 1 ? '' : 's') + ' up on cut');
+   else if(row.gamesVsCut < 0) bits.push(Math.abs(row.gamesVsCut) + ' win' + (Math.abs(row.gamesVsCut) === 1 ? '' : 's') + ' back of cut');
+   else bits.push('tied with cut line');
   }
-  if(row.minW != null && row.maxW != null) bits.push('range ' + row.minW + '–' + row.maxW + 'W');
+  if(row.remGames != null){
+   const wks = med ? Math.ceil(row.remGames / 2) : row.remGames;
+   bits.push(wks + ' week' + (wks === 1 ? '' : 's') + ' left' + (med ? ' (H2H+med)' : ''));
+  }
   return bits.length ? ('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + bits.join(' · ') + '</div>') : '';
  }
  if(row.eliminated){
@@ -8625,8 +8840,21 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  <td class="val-cell">${pct(row.byePct)}</td>
  <td class="val-cell">${pct(row.titlePct)}</td>
  <td class="val-cell">${statusHtml}</td>`;
+ tr.style.cursor = 'pointer';
+ tr.title = 'Click for clinch scenarios';
+ tr.addEventListener('click', () => {
+  try{ showClinchScenarios(row.team.id); }catch(e){ console.warn(e); }
+ });
  tbody.appendChild(tr);
  });
+ const closeBtn = el('btn-clinch-close');
+ if(closeBtn && !closeBtn._bound){
+  closeBtn._bound = true;
+  closeBtn.addEventListener('click', () => {
+   const box = el('playoffs-clinch-detail');
+   if(box) box.style.display = 'none';
+  });
+ }
  }
 
  /* ---------- matchups (live / projected) ---------- */
