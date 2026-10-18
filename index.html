@@ -7410,7 +7410,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  if(!state._powerContext){
  try{ buildPowerRows(); }catch(e){ return null; }
  }
- const ctx = state._powerContext;
+ let ctx = state._powerContext;
  if(!ctx) return null;
 
  const playerAssets = list => (list || []).filter(a => !a.isPick);
@@ -18522,12 +18522,12 @@ function renderTradeSide(side){
   }
   box.style.display = '';
 
-  const hasPlayers =
-   (state.tradeA && state.tradeA.some(a => !a.isPick)) ||
-   (state.tradeB && state.tradeB.some(a => !a.isPick));
+  const hasA = state.tradeA && state.tradeA.some(a => !a.isPick);
+  const hasB = state.tradeB && state.tradeB.some(a => !a.isPick);
+  const hasPlayers = hasA || hasB;
   if(!teamA || !teamB || teamA.id === teamB.id || !hasPlayers){
-   grid.innerHTML = '<div class="hist-empty" style="padding:8px 0;">Add players on both sides of the trade to see needs change.</div>';
-   if(note) note.textContent = 'Needs after trade is on. Build a package to compare before/after strength.';
+   grid.innerHTML = '<div class="hist-empty" style="padding:8px 0;">Add players on at least one side of the trade to see needs change.</div>';
+   if(note) note.textContent = 'Needs after trade is on. Add players to compare before/after strength by position.';
    return;
   }
 
