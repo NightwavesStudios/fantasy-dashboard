@@ -7379,7 +7379,13 @@ function qbTradeBoostEnabled(){
 }
 
 /** TEMP: when enabled, receiving net QB value bumps trade power delta for that side. */
+/** TEMP: mild QB preference — bump incoming QB market value ~10% for power only (capped). */
+function qbBoostValueMultiplier(){
+ if(!qbTradeBoostEnabled()) return 1;
+ return 1.10; // 10% — noticeable but not cartoonish
+}
 function applyQbReceivePowerBoost(sideResult, outgoing, incoming){
+ // Kept for note display; real boost is applied in roster value before rebuild
  if(!qbTradeBoostEnabled() || !sideResult) return sideResult;
  const isQb = (a) => {
   const pos = String((a && (a.position || a.pos)) || '').toUpperCase();
@@ -7392,11 +7398,8 @@ function applyQbReceivePowerBoost(sideResult, outgoing, incoming){
  const netVal = inVal - outVal;
  const netCnt = inQ.length - outQ.length;
  if(netVal <= 0 && netCnt <= 0) return sideResult;
- // Boost scales with net QB value received (cap so it doesn't dominate everything)
- const boost = Math.min(12, Math.max(0, netVal / 450) + (netCnt > 0 ? 1.5 * netCnt : 0));
- if(boost <= 0) return sideResult;
- sideResult.newPower = (sideResult.newPower || 0) + boost;
- sideResult.delta = (sideResult.delta || 0) + boost;
+ // Approximate display of boost size (same 10% of net QB value, scaled into power points ~ /600)
+ const boost = Math.min(3.5, Math.max(0.2, (netVal * 0.10) / 600 + (netCnt > 0 ? 0.35 * netCnt : 0)));
  sideResult.qbBoost = boost;
  sideResult.qbNetValue = netVal;
  return sideResult;
@@ -7492,82 +7495,91 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  const rosterA = waiverFillRoster(rosterA0, teamA, Math.max(0, netLostA));
  const rosterB = waiverFillRoster(rosterB0, teamB, Math.max(0, netLostB));
 
- function metricsFor(team, roster){
- const before = rosterMetrics(team, team.roster, ctx);
- const after = rosterMetrics(team, roster, ctx);
- return {
- starterSurplus: after.starterSurplus,
- benchQuality: after.benchQuality,
- beforeSurplus: before.starterSurplus,
- beforeBench: before.benchQuality,
- surplusDelta: after.starterSurplus - before.starterSurplus,
- benchDelta: after.benchQuality - before.benchQuality,
- miss: after.holes,
- beforeMiss: before.holes,
- thin: after.thin,
- legal: after.holes <= before.holes
- };
- }
-
- const mA = metricsFor(teamA, rosterA);
- const mB = metricsFor(teamB, rosterB);
- // Illegal lineups (more unfilled slots than before) still get scored with empty-slot penalty
- // so Power cannot rise; callers (finder) also filter !legal
- const newPowers = powerWithDualOverride(
- teamA.id, mA.starterSurplus, mA.benchQuality,
- teamB.id, mB.starterSurplus, mB.benchQuality,
- ctx
- );
+ // Snapshot CURRENT power ranks from the same model as the Power tab
+ try{ buildPowerRows(); }catch(e){}
+ ctx = state._powerContext;
+ if(!ctx || !ctx.base) return null;
 
  const oldPowers = {};
- ctx.base.forEach(r => { oldPowers[r.team.id] = r.power; });
-
- const oldRanks = ranksFromPowers(oldPowers);
- const newRanks = ranksFromPowers(newPowers);
-
- function side(team, metrics){
- const id = team.id;
- const oldP = oldPowers[id] ?? 0;
- const newP = newPowers[id] ?? 0;
- return {
- teamId: id,
- name: team.name,
- oldPower: oldP,
- newPower: newP,
- delta: newP - oldP,
- oldRank: oldRanks[id] ?? null,
- newRank: newRanks[id] ?? null,
- rankDelta: (oldRanks[id] != null && newRanks[id] != null) ? oldRanks[id] - newRanks[id] : 0,
- miss: metrics ? metrics.miss : 0,
- beforeMiss: metrics ? metrics.beforeMiss : 0,
- thin: metrics ? metrics.thin : 0,
- legal: metrics ? metrics.legal : true,
- surplusDelta: metrics ? metrics.surplusDelta : 0,
- benchDelta: metrics ? metrics.benchDelta : 0,
- beforeSurplus: metrics ? metrics.beforeSurplus : 0,
- starterSurplus: metrics ? metrics.starterSurplus : 0
- };
+ const oldRanks = {};
+ ctx.base.forEach(r => {
+  oldPowers[r.team.id] = r.power;
+  oldRanks[r.team.id] = null;
+ });
+ {
+  const sorted = ctx.base.slice().sort((a,b) => b.power - a.power || String(a.team.id).localeCompare(String(b.team.id)));
+  sorted.forEach((r, i) => { oldRanks[r.team.id] = i + 1; });
  }
 
- let resA = side(teamA, mA);
- let resB = side(teamB, mB);
- // TEMP setting: receiving a QB boosts that side's power change
+ const mA0 = rosterMetrics(teamA, teamA.roster, ctx);
+ const mB0 = rosterMetrics(teamB, teamB.roster, ctx);
+ const mA1 = rosterMetrics(teamA, rosterA, ctx);
+ const mB1 = rosterMetrics(teamB, rosterB, ctx);
+
+ // TEMP QB boost: slightly mark up incoming QB values on the AFTER roster only (10%), then full rebuild
+ function withQbBoost(roster, incomingAssets){
+  if(!qbTradeBoostEnabled()) return roster;
+  const mult = qbBoostValueMultiplier();
+  const inIds = new Set((incomingAssets || []).filter(a => {
+   const pos = String((a && (a.position || a.pos)) || '').toUpperCase();
+   return pos === 'QB' || pos === 'OP';
+  }).map(a => String(a.id)));
+  if(!inIds.size) return roster;
+  return (roster || []).map(p => {
+   if(!inIds.has(String(p.id))) return p;
+   const v = Number(p.value) || 0;
+   return { ...p, value: v * mult, _qbBoosted: true };
+  });
+ }
+ const rosterABoost = withQbBoost(rosterA, sendB);
+ const rosterBBoost = withQbBoost(rosterB, sendA);
+
+ // Apply trade to real team objects, rebuild power EXACTLY like rankings, then restore
+ const savedA = teamA.roster;
+ const savedB = teamB.roster;
+ let newPowers = {};
+ let newRanks = {};
+ try{
+  teamA.roster = rosterABoost;
+  teamB.roster = rosterBBoost;
+  const afterRows = buildPowerRows();
+  (afterRows || []).forEach(r => { newPowers[r.team.id] = r.power; });
+  const sorted = (afterRows || []).slice().sort((a,b) => b.power - a.power || String(a.team.id).localeCompare(String(b.team.id)));
+  sorted.forEach((r, i) => { newRanks[r.team.id] = i + 1; });
+ } finally {
+  teamA.roster = savedA;
+  teamB.roster = savedB;
+  try{ buildPowerRows(); }catch(e){} // restore live rankings context
+ }
+
+ function side(team, beforeM, afterM){
+  const id = team.id;
+  const oldP = oldPowers[id] ?? 0;
+  const newP = newPowers[id] ?? oldP;
+  return {
+   teamId: id,
+   name: team.name,
+   oldPower: oldP,
+   newPower: newP,
+   delta: newP - oldP,
+   oldRank: oldRanks[id] ?? null,
+   newRank: newRanks[id] ?? null,
+   rankDelta: (oldRanks[id] != null && newRanks[id] != null) ? oldRanks[id] - newRanks[id] : 0,
+   miss: afterM ? afterM.holes : 0,
+   beforeMiss: beforeM ? beforeM.holes : 0,
+   thin: afterM ? afterM.thin : 0,
+   legal: afterM && beforeM ? afterM.holes <= beforeM.holes : true,
+   surplusDelta: (afterM && beforeM) ? afterM.starterSurplus - beforeM.starterSurplus : 0,
+   benchDelta: (afterM && beforeM) ? afterM.benchQuality - beforeM.benchQuality : 0,
+   beforeSurplus: beforeM ? beforeM.starterSurplus : 0,
+   starterSurplus: afterM ? afterM.starterSurplus : 0
+  };
+ }
+
+ let resA = side(teamA, mA0, mA1);
+ let resB = side(teamB, mB0, mB1);
  resA = applyQbReceivePowerBoost(resA, sendA, sendB);
  resB = applyQbReceivePowerBoost(resB, sendB, sendA);
- // Re-rank after optional boosts
- try{
-  if(qbTradeBoostEnabled() && (resA.qbBoost || resB.qbBoost)){
-   const powers = {};
-   (ctx.base || []).forEach(r => { powers[r.team.id] = r.power; });
-   powers[teamA.id] = resA.newPower;
-   powers[teamB.id] = resB.newPower;
-   const ranks = ranksFromPowers(powers);
-   resA.newRank = ranks[teamA.id] ?? resA.newRank;
-   resB.newRank = ranks[teamB.id] ?? resB.newRank;
-   resA.rankDelta = (resA.oldRank != null && resA.newRank != null) ? resA.oldRank - resA.newRank : resA.rankDelta;
-   resB.rankDelta = (resB.oldRank != null && resB.newRank != null) ? resB.oldRank - resB.newRank : resB.rankDelta;
-  }
- }catch(e){}
  return { a: resA, b: resB };
  }
 
@@ -18875,10 +18887,11 @@ function renderTradeSide(side){
  }
  if(result.a.qbBoost || result.b.qbBoost){
   const bits = [];
-  if(result.a.qbBoost) bits.push(result.a.name + ' +' + result.a.qbBoost.toFixed(1) + ' QB boost');
-  if(result.b.qbBoost) bits.push(result.b.name + ' +' + result.b.qbBoost.toFixed(1) + ' QB boost');
-  msg += ' TEMP QB receive boost on: ' + bits.join('; ') + '.';
+  if(result.a.qbBoost) bits.push(result.a.name + ' (~+' + result.a.qbBoost.toFixed(1) + ' from +10% QB value)');
+  if(result.b.qbBoost) bits.push(result.b.name + ' (~+' + result.b.qbBoost.toFixed(1) + ' from +10% QB value)');
+  msg += ' TEMP QB receive: ' + bits.join('; ') + '.';
  }
+ msg += ' Before/after power uses the same model as the Power rankings table.';
  note.textContent = msg;
  }
  box.classList.add('show');
