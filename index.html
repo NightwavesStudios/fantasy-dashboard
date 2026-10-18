@@ -8120,6 +8120,8 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
 
 
  
+ 
+ 
  function buildClinchScenarios(teamId){
   const settings = state.playoffSettings || (typeof detectPlayoffSettings === 'function' ? detectPlayoffSettings() : null) || {
    playoffTeams: 6, byes: 2, playoffWeekStart: 15
@@ -8133,6 +8135,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
   const nPlayoff = st.nPlayoff || settings.playoffTeams || 6;
   const nBye = st.nBye != null ? st.nBye : (settings.byes || 0);
+  const nTeams = teams.length || 10;
   const rem = st.rem != null ? st.rem : 0;
   const weeksLeft = medianOn ? Math.ceil(rem / 2) : rem;
   const wins = (me.wins || 0) + 0.5 * (me.ties || 0);
@@ -8152,149 +8155,180 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const myRow = rows.find(r => String(r.id) === String(me.id)) || {
    wins, pf, rem, minW: wins, maxW: wins + rem, name: me.name, losses: me.losses || 0
   };
+  // Must finish ahead of this many teams (or tied with PF edge) to be in top nPlayoff
+  const mustBeat = Math.max(0, nTeams - nPlayoff);
+  const maxAllowedAhead = nPlayoff - 1;
 
-  function teamsAheadIfMyWins(extraWins){
-   const floor = myRow.wins + extraWins;
-   return rows.filter(x => {
-    if(String(x.id) === String(me.id)) return false;
-    if(x.maxW > floor) return true;
-    if(x.maxW === floor && x.pf >= pf) return true;
-    return false;
-   });
+  function rivals(){
+   return rows.filter(x => String(x.id) !== String(me.id));
   }
 
-  // For each rival: how many losses they need (from remaining) so they cannot finish ahead of my target wins
-  function helpNeededForTarget(targetWins){
-   const help = [];
-   rows.forEach(x => {
-    if(String(x.id) === String(me.id)) return;
-    // If they win out they have maxW. To not finish ahead of targetWins they need maxFinish <= targetWins
-    // (and if equal, worse PF). So they can take at most (targetWins - x.wins) more wins if we ignore PF,
-    // meaning they need at least x.rem - max(0, targetWins - x.wins) losses among remaining.
-    if(x.maxW < targetWins) return; // cannot catch even winning out
-    if(x.maxW === targetWins && x.pf < pf) return; // can only tie/lose PF race
-    const maxWinsAllowed = (x.pf >= pf) ? (targetWins - 1) : targetWins;
-    // if pf >= ours, they need to finish strictly below targetWins
-    const winsTheyCanStillTake = Math.max(0, maxWinsAllowed - x.wins);
-    const lossesTheyNeed = Math.max(0, x.rem - winsTheyCanStillTake);
-    if(lossesTheyNeed <= 0 && x.maxW >= targetWins){
-     // still a threat if they can hit target - need at least 1 loss if maxW > target or PF edge
-     if(x.maxW > targetWins || (x.maxW === targetWins && x.pf >= pf)){
-      help.push({
-       name: x.name, id: x.id, wins: x.wins, rem: x.rem, maxW: x.maxW,
-       lossesNeed: Math.max(1, lossesTheyNeed),
-       note: x.maxW > targetWins
-        ? ('can reach ' + x.maxW + ' if they win out')
-        : 'ties your win total with better/equal PF'
-      });
-     }
-     return;
-    }
-    if(lossesTheyNeed > 0){
-     help.push({
-      name: x.name, id: x.id, wins: x.wins, rem: x.rem, maxW: x.maxW,
-      lossesNeed: lossesTheyNeed,
-      note: 'can take at most ' + winsTheyCanStillTake + ' of ' + x.rem + ' remaining'
-     });
-    }
-   });
-   return help.sort((a,b) => b.lossesNeed - a.lossesNeed || b.wins - a.wins);
+  // How many wins above a rival you need at the end to beat them
+  // If you have better PF: same wins is enough (need 0 above)
+  // If they have better/equal PF: need at least 1 more win than them
+  function winsAboveNeeded(rival){
+   if(pf > rival.pf) return 0; // tie in wins, you win PF
+   return 1; // need strictly more wins
+  }
+
+  function threatsAt(finalWins){
+   return rivals().filter(x => {
+    if(x.maxW > finalWins) return true;
+    if(x.maxW === finalWins && x.pf >= pf) return true;
+    return false;
+   }).map(x => {
+    const above = winsAboveNeeded(x);
+    // Your target to beat this rival if they win out: their maxW + above... actually
+    // To beat them you need finalWins >= x.final + above, worst case x.final = x.maxW
+    // So you need to finish at least (x.maxW + above) if they win out — or they take losses
+    const gapIfTheyWinOut = (x.maxW + above) - finalWins; // positive = you're short if they win out
+    const lossesTheyNeed = gapIfTheyWinOut > 0
+     ? Math.min(x.rem, Math.ceil(gapIfTheyWinOut))
+     : 0;
+    return {
+     name: x.name,
+     id: x.id,
+     wins: x.wins,
+     rem: x.rem,
+     maxW: x.maxW,
+     pf: x.pf,
+     above,
+     gapNow: x.wins - myRow.wins, // how many wins they are ahead of you now
+     lossesTheyNeed,
+     gapIfTheyWinOut
+    };
+   }).sort((a,b) => b.maxW - a.maxW || b.wins - a.wins);
   }
 
   const lines = [];
   lines.push('<div style="margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--border);">');
   lines.push('<div style="font-size:15px;font-weight:700;color:var(--text);">' + escapeHtml(me.name) + '</div>');
   lines.push('<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'
-   + (me.wins||0) + '-' + (me.losses||0)
-   + (medianOn ? ' · H2H + median both count as wins' : '')
+   + (me.wins||0) + '-' + (me.losses||0) + ' now'
+   + (medianOn ? ' · H2H + median each count as a win' : '')
    + ' · ' + weeksLeft + ' week' + (weeksLeft === 1 ? '' : 's') + ' left (' + rem + ' games)'
-   + '</div></div>');
+   + '</div>');
+  lines.push('<div style="font-size:13px;margin-top:8px;color:var(--text);">Playoffs: top <strong>'
+   + nPlayoff + '</strong> of ' + nTeams
+   + ' · you need to finish ahead of at least <strong>' + mustBeat
+   + '</strong> team' + (mustBeat === 1 ? '' : 's')
+   + ' (at most ' + maxAllowedAhead + ' can finish ahead of you).</div>');
+  lines.push('</div>');
 
   if(st.eliminated){
    lines.push('<p style="color:var(--red);font-weight:700;margin:0 0 10px;">Eliminated — playoffs are impossible.</p>');
-   lines.push('<p style="margin:0;">Even if you win all ' + rem + ' remaining games (finish at '
-    + myRow.maxW + ' wins), at least ' + nPlayoff + ' teams are still guaranteed ahead of you.</p>');
+   lines.push('<p style="margin:0;font-size:13px;">Best case ' + myRow.maxW + ' wins ('
+    + (me.wins||0) + ' + all ' + rem + ' remaining) still leaves too many teams able to finish ahead of you.</p>');
   } else if(st.clinched){
    lines.push('<p style="color:var(--accent);font-weight:700;margin:0 0 10px;">You\'re in'
     + (st.byeClinched ? ' · bye locked too' : '') + '.</p>');
-   lines.push('<p style="margin:0;">You can lose every remaining game and still make the playoffs.</p>');
+   lines.push('<p style="margin:0;font-size:13px;">Even with 0 more wins, at most '
+    + maxAllowedAhead + ' teams can finish ahead of you.</p>');
   } else {
    const magic = st.winsToClinch;
    const canSelfClinch = magic != null && magic <= rem;
+   const bestWins = myRow.maxW;
 
-   // PATH 1 — wins you need
    lines.push('<div style="margin:0 0 14px;padding:12px;border-radius:10px;background:var(--surface-2);">');
-   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Path 1 · wins you need</div>');
+   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">What you need to win</div>');
    if(canSelfClinch){
     lines.push('<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">Win '
-     + magic + ' of your next ' + rem + ' games</div>');
-    lines.push('<p style="margin:0;font-size:13px;">That\'s the magic number. Get <strong>'
-     + magic + '/' + rem + '</strong> and you clinch no matter what anyone else does.</p>');
-    lines.push('<p style="margin:8px 0 0;font-size:12px;color:var(--text-muted);">Win out → up to '
-     + myRow.maxW + ' wins. Lose out → stay at ' + myRow.minW + ' wins.</p>');
+     + magic + ' of ' + rem + ' remaining games</div>');
+    lines.push('<p style="margin:0;font-size:13px;">That gets you to <strong>'
+     + (myRow.wins + magic) + ' wins</strong> (' + (me.wins||0) + ' + ' + magic
+     + ') and locks a top-' + nPlayoff + ' finish no matter what.</p>');
    } else {
-    lines.push('<div style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:6px;">You cannot clinch on wins alone</div>');
-    lines.push('<p style="margin:0;font-size:13px;">Even winning all <strong>' + rem
-     + '</strong> remaining games (max <strong>' + myRow.maxW
-     + '</strong> wins), too many teams can still finish ahead. You need help — see Path 2.</p>');
+    lines.push('<div style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:6px;">Winning out is not enough alone</div>');
+    lines.push('<p style="margin:0;font-size:13px;">Max is <strong>' + bestWins
+     + ' wins</strong> (' + (me.wins||0) + ' now + ' + rem + ' remaining'
+     + (medianOn ? ', H2H + median' : '')
+     + '). You still need enough other teams to finish behind you — see below.</p>');
    }
    lines.push('</div>');
 
-   // PATH 2 — who must lose
+   const targetWins = canSelfClinch ? (myRow.wins + magic) : bestWins;
+   const threats = threatsAt(targetWins);
+   // How many of these threats must finish behind you
+   const mustFinishBehind = Math.max(0, threats.length - maxAllowedAhead);
+
    lines.push('<div style="margin:0 0 14px;padding:12px;border-radius:10px;background:var(--surface-2);">');
-   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Path 2 · who needs to lose</div>');
+   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Teams you need to finish ahead of</div>');
+   lines.push('<p style="margin:0 0 10px;font-size:13px;">To be in the top ' + nPlayoff
+    + ', you need <strong>' + mustBeat + '</strong> teams behind you. '
+    + 'Against each rival: end with more wins than them'
+    + ' (or the same wins and more PF).</p>');
 
-   // Use target = win-out total if cannot self-clinch, else magic target
-   const targetWins = canSelfClinch ? (myRow.wins + magic) : myRow.maxW;
-   const threats = teamsAheadIfMyWins(canSelfClinch ? magic : rem);
-   const help = helpNeededForTarget(targetWins);
-
-   if(!threats.length && canSelfClinch){
-    lines.push('<p style="margin:0;font-size:13px;">Nobody else can pass you once you hit '
-     + magic + ' more wins. You don\'t need help.</p>');
-   } else if(!help.length){
-    lines.push('<p style="margin:0;font-size:13px;">No clear forced losses right now — mostly a PF/tiebreaker race at the cut line.</p>');
+   if(!threats.length){
+    lines.push('<p style="margin:0;font-size:13px;color:var(--accent);">At '
+     + targetWins + ' wins, no team can finish ahead of you on wins/PF. You\'re in.</p>');
    } else {
-    lines.push('<p style="margin:0 0 8px;font-size:13px;">For you to be safe at <strong>'
-     + targetWins + ' wins</strong>, these teams need losses among their remaining games:</p>');
-    lines.push('<ul style="margin:0;padding-left:0;list-style:none;">');
-    help.slice(0, 8).forEach(h => {
-     lines.push('<li style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">'
-      + '<div style="font-weight:700;color:var(--text);">' + escapeHtml(h.name) + '</div>'
-      + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Needs at least <strong style="color:var(--red);">'
-      + h.lossesNeed + ' loss' + (h.lossesNeed === 1 ? '' : 'es')
-      + '</strong> in their next ' + h.rem + ' games'
-      + ' <span style="color:var(--text-muted);">(' + h.wins + 'W now, max ' + h.maxW + 'W · '
-      + escapeHtml(h.note) + ')</span></div></li>');
+    lines.push('<p style="margin:0 0 8px;font-size:13px;">If you end at <strong>'
+     + targetWins + ' wins</strong>, these teams can still finish ahead of you unless they drop games:</p>');
+    lines.push('<ul style="margin:0 0 10px;padding-left:0;list-style:none;">');
+    threats.forEach(h => {
+      const aboveTxt = h.above === 0
+       ? 'Beat them with <strong>same wins + more PF</strong> (you lead PF now)'
+       : 'Beat them by finishing <strong>at least 1 win above</strong> them';
+      const gapTxt = h.gapNow > 0
+       ? ('They are <strong>' + h.gapNow + ' win' + (h.gapNow === 1 ? '' : 's') + ' ahead</strong> of you now')
+       : h.gapNow < 0
+        ? ('You are <strong>' + Math.abs(h.gapNow) + ' win' + (Math.abs(h.gapNow) === 1 ? '' : 's') + ' ahead</strong> now')
+        : 'Tied with you on wins now';
+      let helpTxt = '';
+      if(h.gapIfTheyWinOut > 0){
+       helpTxt = 'If they win out (' + h.maxW + 'W), you are short — they need at least <strong style="color:var(--red);">'
+        + h.lossesTheyNeed + ' loss' + (h.lossesTheyNeed === 1 ? '' : 'es')
+        + '</strong> in their next ' + h.rem + ' for you to stay ahead at ' + targetWins + 'W';
+      } else {
+       helpTxt = 'Even if they win out (max ' + h.maxW + 'W), your ' + targetWins + 'W is enough to be ahead/tied on the right side of PF';
+      }
+      lines.push('<li style="padding:10px 0;border-bottom:1px solid var(--border-subtle);">'
+       + '<div style="font-weight:700;color:var(--text);">' + escapeHtml(h.name)
+       + ' <span style="font-weight:500;color:var(--text-muted);">· ' + h.wins + 'W · max ' + h.maxW + 'W</span></div>'
+       + '<div style="font-size:12px;color:var(--text-secondary);margin-top:3px;">' + aboveTxt + '</div>'
+       + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + gapTxt + '</div>'
+       + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + helpTxt + '</div>'
+       + '</li>');
     });
     lines.push('</ul>');
-    lines.push('<p style="margin:8px 0 0;font-size:11px;color:var(--text-muted);">Not every team above has to tank — only enough so fewer than '
-     + nPlayoff + ' teams finish ahead of you. Root for losses from the names above.</p>');
+    if(mustFinishBehind > 0){
+     lines.push('<p style="margin:0;font-size:13px;padding:10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);">'
+      + '<strong>Bottom line:</strong> you need at least <strong>'
+      + mustFinishBehind + '</strong> of these ' + threats.length
+      + ' teams to finish <em>behind</em> you (not all of them). That leaves at most '
+      + maxAllowedAhead + ' ahead of you → top ' + nPlayoff + '.</p>');
+    } else {
+     lines.push('<p style="margin:0;font-size:13px;color:var(--accent);"><strong>Bottom line:</strong> only '
+      + threats.length + ' can pass you, which still leaves you inside the top '
+      + nPlayoff + ' at this win total.</p>');
+    }
    }
    lines.push('</div>');
 
-   // Quick "if I win K more" strip
    if(rem > 0){
-    lines.push('<div style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">If you win this many more…</div>');
+    lines.push('<div style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">If you take this many more wins</div>');
     lines.push('<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;"><thead><tr>'
-     + '<th>You win</th><th>Your total</th><th>Still can pass you</th><th></th></tr></thead><tbody>');
+     + '<th>You win</th><th>Your total</th><th>Teams that can finish ahead</th><th></th></tr></thead><tbody>');
     const steps = [];
     for(let k = 0; k <= rem; k++){
-     if(rem > 10 && k !== 0 && k !== rem && k !== magic && (k % Math.ceil(rem / 5) !== 0)) continue;
+     if(rem > 10 && k !== 0 && k !== rem && k !== magic && (k % Math.max(1, Math.ceil(rem / 5)) !== 0)) continue;
      steps.push(k);
     }
     if(magic != null && magic >= 0 && magic <= rem && steps.indexOf(magic) < 0) steps.push(magic);
     steps.sort((a,b) => a - b);
     steps.forEach(k => {
-     const ahead = teamsAheadIfMyWins(k);
+     const ahead = threatsAt(myRow.wins + k);
      const floor = myRow.wins + k;
-     let label = ahead.length >= nPlayoff ? 'Still outside' : 'Clinched';
-     let color = ahead.length >= nPlayoff ? 'var(--text-muted)' : 'var(--accent)';
-     if(k === magic && canSelfClinch) label = 'Magic #';
-     lines.push('<tr><td><strong>' + k + '/' + rem + '</strong></td><td>'
-      + (Math.round(floor * 10) / 10) + '</td><td>' + ahead.length
-      + ' team' + (ahead.length === 1 ? '' : 's') + '</td><td style="color:' + color
-      + ';font-weight:700;">' + label + '</td></tr>');
+     const inIf = ahead.length <= maxAllowedAhead;
+     let label = inIf ? 'In' : 'Need help';
+     let color = inIf ? 'var(--accent)' : 'var(--text-muted)';
+     if(k === magic && canSelfClinch){ label = 'Magic # · In'; color = 'var(--accent)'; }
+     lines.push('<tr><td><strong>' + k + ' of ' + rem + '</strong></td><td>'
+      + (Math.round(floor * 10) / 10)
+      + ' <span style="color:var(--text-muted);font-size:11px;">('
+      + (me.wins||0) + '+' + k + ')</span></td><td>'
+      + ahead.length + '</td><td style="color:' + color + ';font-weight:700;">'
+      + label + '</td></tr>');
     });
     lines.push('</tbody></table></div>');
    }
@@ -8304,7 +8338,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
    const byeMagic = st.winsToBye;
    lines.push('<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;">');
    if(byeMagic != null && byeMagic <= rem){
-    lines.push('<strong>Bye:</strong> win <strong>' + byeMagic + '/' + rem + '</strong> remaining games.');
+    lines.push('<strong>Bye:</strong> win <strong>' + byeMagic + ' of ' + rem + '</strong> remaining.');
    } else {
     lines.push('<strong>Bye:</strong> not reachable on your own from here.');
    }
