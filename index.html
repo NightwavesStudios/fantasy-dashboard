@@ -4357,6 +4357,59 @@ html[data-theme="light"] {
  </div>
 </div>
 
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Settings">
+ <div class="drawer-head">
+  <strong>Settings</strong>
+  <button type="button" class="btn btn-ghost btn-sm" id="btn-drawer-close">Close</button>
+ </div>
+ <div class="drawer-body">
+  <p id="drawer-league-info" class="tpi-note" style="margin-bottom:12px;">No league loaded.</p>
+  <div class="field" style="margin-bottom:10px;">
+   <label class="field-label">Your team</label>
+   <select id="sel-my-team"></select>
+  </div>
+  <div class="field" style="margin-bottom:10px;">
+   <label class="field-label">PPR</label>
+   <select id="sel-ppr">
+    <option value="1">Full PPR</option>
+    <option value="0.5">Half PPR</option>
+    <option value="0">Standard</option>
+   </select>
+  </div>
+  <div class="field" style="margin-bottom:10px;">
+   <label class="field-label">Value mode</label>
+   <select id="sel-value-mode">
+    <option value="redraft">Redraft</option>
+    <option value="dynasty">Dynasty</option>
+   </select>
+  </div>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="sw-dynasty"/> Dynasty values</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="sw-superflex"/> Superflex</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="sw-league-median"/> League median scoring</label>
+  <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;"/>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-pct"/> Show % changes / trend tags</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-trade-power"/> Trade calc: power impact</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-qb-trade-boost"/> TEMP: QB receive power boost</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-trade-needs"/> Trade calc: needs after trade</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-trade-vorp"/> Trade calc: VORP</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-schedopt"/> Show schedule optimizer</label>
+  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-ai-export"/> Show AI export tab</label>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+   <button type="button" class="btn btn-primary btn-sm" id="btn-apply-settings">Apply</button>
+   <button type="button" class="btn btn-ghost btn-sm" id="btn-change-league">Change league</button>
+  </div>
+ </div>
+</aside>
+<div id="share-toast" class="share-toast" style="display:none;"></div>
+<div class="info-modal" id="info-modal" style="display:none;" role="dialog">
+ <div class="info-modal-inner">
+  <button type="button" class="btn btn-ghost btn-sm" id="btn-info-close">Close</button>
+  <div id="info-modal-body"></div>
+ </div>
+</div>
+
+
 <script>
 (function(){
  "use strict";
@@ -7316,7 +7369,13 @@ function countPosBodies(roster){
  // Picks are ignored for power (they do not sit in a lineup). Only rostered players move.
  
 function qbTradeBoostEnabled(){
- try{ return localStorage.getItem('fd_qb_trade_boost') === '1'; }catch(e){ return false; }
+ try{
+  const v = localStorage.getItem('fd_qb_trade_boost');
+  if(v === '0') return false;
+  // default on (temp)
+  if(v == null || v === '') return true;
+  return v === '1';
+ }catch(e){ return true; }
 }
 
 /** TEMP: when enabled, receiving net QB value bumps trade power delta for that side. */
@@ -14665,7 +14724,11 @@ function renderByes(){
  }
  const qbBoost = el('set-qb-trade-boost');
  if(qbBoost){
-  try{ qbBoost.checked = localStorage.getItem('fd_qb_trade_boost') === '1'; }catch(e){}
+  try{
+   const v = localStorage.getItem('fd_qb_trade_boost');
+   if(v == null || v === ''){ localStorage.setItem('fd_qb_trade_boost', '1'); qbBoost.checked = true; }
+   else qbBoost.checked = v !== '0';
+  }catch(e){ qbBoost.checked = true; }
   if(!qbBoost._bound){
    qbBoost._bound = true;
    qbBoost.addEventListener('change', () => {
@@ -20813,6 +20876,8 @@ function goToPanel(panelId, opts){
 const _btnSettings = el('btn-settings');
  if(_btnSettings){
  _btnSettings.addEventListener('click', () => {
+ try{ if(typeof bindApplySettings === 'function') bindApplySettings(); }catch(e){}
+ try{ if(typeof initSettingsDrawerState === 'function') initSettingsDrawerState(); }catch(e){}
  const d = el('drawer'), o = el('overlay');
  if(d) d.classList.add('show');
  if(o) o.classList.add('show');
@@ -20914,20 +20979,62 @@ const _btnSettings = el('btn-settings');
  const swMed = el('sw-league-median');
  if(swMed && !swMed._bound){ swMed._bound = true; swMed.addEventListener('click', function(){ this.classList.toggle('on'); }); }
 
- (function bindApplySettings(){
+function initSettingsDrawerState(){
+ try{
+  const d = el('sw-dynasty');
+  if(d) d.checked = !!state.isDynasty;
+  const s = el('sw-superflex');
+  if(s) s.checked = (Number(state.numQBs) === 2);
+  const m = el('sw-league-median');
+  if(m){
+   let on = !!(state.settings && state.settings.leagueMedian);
+   try{ if(localStorage.getItem('fd_league_median') === '1') on = true; }catch(e){}
+   m.checked = on;
+  }
+  const tp = el('set-show-trade-power');
+  if(tp){ try{ tp.checked = localStorage.getItem('fd_show_trade_power') === '1'; }catch(e){} }
+  const qb = el('set-qb-trade-boost');
+  if(qb){
+   // Default ON (temp setting). Only off if user explicitly saved '0'.
+   let on = true;
+   try{
+    const v = localStorage.getItem('fd_qb_trade_boost');
+    if(v === '0') on = false;
+    else if(v === '1') on = true;
+    else { localStorage.setItem('fd_qb_trade_boost', '1'); on = true; }
+   }catch(e){}
+   qb.checked = on;
+  }
+  const sn = el('set-show-trade-needs');
+  if(sn){ try{ sn.checked = localStorage.getItem('fd_show_trade_needs') === '1'; }catch(e){} }
+  const tv = el('set-trade-vorp');
+  if(tv){ try{ tv.checked = localStorage.getItem('fd_trade_vorp') === '1'; }catch(e){} }
+  const ae = el('set-show-ai-export');
+  if(ae){ try{ ae.checked = localStorage.getItem('fd_show_ai_export') === '1'; }catch(e){} }
+  const so = el('set-show-schedopt');
+  if(so){ try{ so.checked = localStorage.getItem('fd_show_schedopt') === '1'; }catch(e){} }
+  const pct = el('set-show-pct');
+  if(pct){ try{ pct.checked = localStorage.getItem('fd_show_pct') === '1'; }catch(e){} }
+  const ppr = el('sel-ppr');
+  if(ppr && state.ppr != null) ppr.value = String(state.ppr);
+ }catch(e){ console.warn('initSettingsDrawerState', e); }
+}
+
+function bindApplySettings(){
   const btn = el('btn-apply-settings');
   if(!btn){ console.warn('Apply settings button missing'); return; }
   if(btn._boundApply) return;
   btn._boundApply = true;
   btn.addEventListener('click', async () => {
    try{
-    const isDynasty = el('sw-dynasty') ? el('sw-dynasty').classList.contains('on') : state.isDynasty;
-    const numQBs = el('sw-superflex') && el('sw-superflex').classList.contains('on') ? 2 : 1;
+    // Checkboxes (not toggle class)
+    const isDynasty = el('sw-dynasty') ? !!el('sw-dynasty').checked : !!state.isDynasty;
+    const numQBs = el('sw-superflex') && el('sw-superflex').checked ? 2 : 1;
     try{
      if(!state.settings) state.settings = {};
      const swm = el('sw-league-median');
      if(swm){
-      state.settings.leagueMedian = swm.classList.contains('on');
+      state.settings.leagueMedian = !!swm.checked;
       try{ localStorage.setItem('fd_league_median', state.settings.leagueMedian ? '1' : '0'); }catch(e){}
      }
     }catch(e){}
@@ -20984,7 +21091,9 @@ const _btnSettings = el('btn-settings');
     alert((err && err.message) || 'Apply failed.');
    }
   });
- })();
+}
+try{ bindApplySettings(); }catch(e){}
+try{ initSettingsDrawerState(); }catch(e){}
 
  el('btn-refresh').addEventListener('click', async () => {
  if(!state.leagueId){
@@ -21648,58 +21757,6 @@ try{
 
 })();
 </script>
-
-<div class="overlay" id="overlay"></div>
-<aside class="drawer" id="drawer" aria-label="Settings">
- <div class="drawer-head">
-  <strong>Settings</strong>
-  <button type="button" class="btn btn-ghost btn-sm" id="btn-drawer-close">Close</button>
- </div>
- <div class="drawer-body">
-  <p id="drawer-league-info" class="tpi-note" style="margin-bottom:12px;">No league loaded.</p>
-  <div class="field" style="margin-bottom:10px;">
-   <label class="field-label">Your team</label>
-   <select id="sel-my-team"></select>
-  </div>
-  <div class="field" style="margin-bottom:10px;">
-   <label class="field-label">PPR</label>
-   <select id="sel-ppr">
-    <option value="1">Full PPR</option>
-    <option value="0.5">Half PPR</option>
-    <option value="0">Standard</option>
-   </select>
-  </div>
-  <div class="field" style="margin-bottom:10px;">
-   <label class="field-label">Value mode</label>
-   <select id="sel-value-mode">
-    <option value="redraft">Redraft</option>
-    <option value="dynasty">Dynasty</option>
-   </select>
-  </div>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="sw-dynasty"/> Dynasty values</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="sw-superflex"/> Superflex</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="sw-league-median"/> League median scoring</label>
-  <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;"/>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-pct"/> Show % changes / trend tags</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-trade-power"/> Trade calc: power impact</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-qb-trade-boost"/> TEMP: QB receive power boost</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-trade-needs"/> Trade calc: needs after trade</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-trade-vorp"/> Trade calc: VORP</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-schedopt"/> Show schedule optimizer</label>
-  <label class="field-label" style="display:flex;align-items:center;gap:8px;margin:8px 0;"><input type="checkbox" id="set-show-ai-export"/> Show AI export tab</label>
-  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-   <button type="button" class="btn btn-primary btn-sm" id="btn-apply-settings">Apply</button>
-   <button type="button" class="btn btn-ghost btn-sm" id="btn-change-league">Change league</button>
-  </div>
- </div>
-</aside>
-<div id="share-toast" class="share-toast" style="display:none;"></div>
-<div class="info-modal" id="info-modal" style="display:none;" role="dialog">
- <div class="info-modal-inner">
-  <button type="button" class="btn btn-ghost btn-sm" id="btn-info-close">Close</button>
-  <div id="info-modal-body"></div>
- </div>
-</div>
 
 </body>
 </html>
