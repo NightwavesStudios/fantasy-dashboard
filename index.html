@@ -7382,26 +7382,38 @@ function qbTradeBoostEnabled(){
 /** TEMP: mild QB preference — bump incoming QB market value ~10% for power only (capped). */
 function qbBoostValueMultiplier(){
  if(!qbTradeBoostEnabled()) return 1;
- return 1.10; // 10% — noticeable but not cartoonish
+ // Superflex / 2QB leagues care more about QB; still capped
+ const sf = Number(state.numQBs) >= 2;
+ return sf ? 1.28 : 1.18;
 }
-function applyQbReceivePowerBoost(sideResult, outgoing, incoming){
- // Kept for note display; real boost is applied in roster value before rebuild
+function assetIsQb(a, otherTeam){
+ if(!a || a.isPick) return false;
+ let pos = String(a.position || a.pos || '').toUpperCase();
+ if(pos === 'QB' || pos === 'OP') return true;
+ // Resolve from roster if trade chip lost position
+ try{
+  const src = (otherTeam && otherTeam.roster || []).find(p => String(p.id) === String(a.id));
+  pos = String((src && src.position) || '').toUpperCase();
+  if(pos === 'QB' || pos === 'OP') return true;
+ }catch(e){}
+ return false;
+}
+function applyQbReceivePowerBoost(sideResult, outgoing, incoming, otherTeam){
  if(!qbTradeBoostEnabled() || !sideResult) return sideResult;
- const isQb = (a) => {
-  const pos = String((a && (a.position || a.pos)) || '').toUpperCase();
-  return pos === 'QB' || pos === 'OP';
- };
- const outQ = (outgoing || []).filter(isQb);
- const inQ = (incoming || []).filter(isQb);
+ const outQ = (outgoing || []).filter(a => assetIsQb(a, null));
+ const inQ = (incoming || []).filter(a => assetIsQb(a, otherTeam));
  const outVal = outQ.reduce((s,a) => s + (Number(a.value) || 0), 0);
  const inVal = inQ.reduce((s,a) => s + (Number(a.value) || 0), 0);
  const netVal = inVal - outVal;
  const netCnt = inQ.length - outQ.length;
  if(netVal <= 0 && netCnt <= 0) return sideResult;
- // Approximate display of boost size (same 10% of net QB value, scaled into power points ~ /600)
- const boost = Math.min(3.5, Math.max(0.2, (netVal * 0.10) / 600 + (netCnt > 0 ? 0.35 * netCnt : 0)));
+ const mult = qbBoostValueMultiplier();
+ const extra = (mult - 1) * Math.max(0, netVal);
+ // Display-only estimate of power impact from the value markup
+ const boost = Math.min(6, Math.max(0.3, extra / 550 + netCnt * 0.5));
  sideResult.qbBoost = boost;
  sideResult.qbNetValue = netVal;
+ sideResult.qbMult = mult;
  return sideResult;
 }
 
@@ -7517,22 +7529,26 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  const mB1 = rosterMetrics(teamB, rosterB, ctx);
 
  // TEMP QB boost: slightly mark up incoming QB values on the AFTER roster only (10%), then full rebuild
- function withQbBoost(roster, incomingAssets){
+ function withQbBoost(roster, incomingAssets, fromTeam){
   if(!qbTradeBoostEnabled()) return roster;
   const mult = qbBoostValueMultiplier();
-  const inIds = new Set((incomingAssets || []).filter(a => {
-   const pos = String((a && (a.position || a.pos)) || '').toUpperCase();
-   return pos === 'QB' || pos === 'OP';
-  }).map(a => String(a.id)));
+  const inIds = new Set();
+  (incomingAssets || []).forEach(a => {
+   if(assetIsQb(a, fromTeam)) inIds.add(String(a.id));
+  });
   if(!inIds.size) return roster;
   return (roster || []).map(p => {
    if(!inIds.has(String(p.id))) return p;
-   const v = Number(p.value) || 0;
+   let v = Number(p.value) || 0;
+   if(!(v > 0) && fromTeam){
+    const src = (fromTeam.roster || []).find(x => String(x.id) === String(p.id));
+    if(src) v = Number(src.value) || 0;
+   }
    return { ...p, value: v * mult, _qbBoosted: true };
   });
  }
- const rosterABoost = withQbBoost(rosterA, sendB);
- const rosterBBoost = withQbBoost(rosterB, sendA);
+ const rosterABoost = withQbBoost(rosterA, sendB, teamB);
+ const rosterBBoost = withQbBoost(rosterB, sendA, teamA);
 
  // Apply trade to real team objects, rebuild power EXACTLY like rankings, then restore
  const savedA = teamA.roster;
@@ -7578,8 +7594,8 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
 
  let resA = side(teamA, mA0, mA1);
  let resB = side(teamB, mB0, mB1);
- resA = applyQbReceivePowerBoost(resA, sendA, sendB);
- resB = applyQbReceivePowerBoost(resB, sendB, sendA);
+ resA = applyQbReceivePowerBoost(resA, sendA, sendB, teamB);
+ resB = applyQbReceivePowerBoost(resB, sendB, sendA, teamA);
  return { a: resA, b: resB };
  }
 
@@ -7958,15 +7974,70 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
     };
    }
 
+   // Distance metrics (wins needed / cushion)
+   let winsToClinch = null;
+   if(!clinched && !eliminated){
+    for(let extra = 0; extra <= me.rem; extra++){
+     if(teamsThatCanFinishAheadOf(me.minW + extra, me.pf) <= (nPlayoff - 1)){
+      winsToClinch = extra;
+      break;
+     }
+    }
+    if(winsToClinch == null) winsToClinch = me.rem + 1; // cannot clinch even winning out
+   } else if(clinched){
+    winsToClinch = 0;
+   }
+
+   let winsToBye = null;
+   if(nBye > 0 && !byeClinched && !eliminated){
+    for(let extra = 0; extra <= me.rem; extra++){
+     if(teamsThatCanFinishAheadOf(me.minW + extra, me.pf) <= (nBye - 1)){
+      winsToBye = extra;
+      break;
+     }
+    }
+    if(winsToBye == null) winsToBye = me.rem + 1;
+   } else if(byeClinched){
+    winsToBye = 0;
+   }
+
+   // Games back of last playoff seat (on current wins) — negative means games ahead of cut line
+   const sortedByWins = rows.slice().sort((a,b) => b.wins - a.wins || b.pf - a.pf);
+   const cut = sortedByWins[Math.min(nPlayoff, sortedByWins.length) - 1];
+   const firstOut = sortedByWins[Math.min(nPlayoff, sortedByWins.length - 1)];
+   let gamesVsCut = null;
+   if(cut){
+    gamesVsCut = me.wins - cut.wins; // positive = ahead of cut on wins
+   }
+
+   // Losses until mathematical elimination (if I win 0 more)
+   let lossesToElim = null;
+   if(!eliminated && !clinched){
+    // If I take 0 of remaining, am I eliminated?
+    let ahead = 0;
+    rows.forEach(x => {
+     if(x.id === me.id) return;
+     if(x.minW > me.minW) ahead++;
+     else if(x.minW === me.minW && x.pf > me.pf) ahead++;
+    });
+    // Not a clean "losses" count in combined median leagues; report remaining games I must win at least once related to cut
+    lossesToElim = me.rem;
+   }
+
    return {
     clinched: clinched && !eliminated,
     eliminated: eliminated && !clinched,
     byeClinched: byeClinched && !eliminated,
     nearClinch: !!(nearClinch && !clinched && !eliminated),
     nearBye: !!(nearBye && !byeClinched && !eliminated),
+    winsToClinch,
+    winsToBye,
+    gamesVsCut,
     minW: me.minW,
     maxW: me.maxW,
-    rem: me.rem
+    rem: me.rem,
+    nPlayoff,
+    nBye
    };
   }
 
@@ -8351,7 +8422,13 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  eliminated: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].eliminated),
  byeClinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].byeClinched),
  nearClinch: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearClinch),
- nearBye: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearBye)
+ nearBye: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearBye),
+ winsToClinch: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].winsToClinch : null,
+ winsToBye: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].winsToBye : null,
+ gamesVsCut: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].gamesVsCut : null,
+ maxW: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].maxW : null,
+ minW: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].minW : null,
+ remGames: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].rem : null
  };
  }).sort((a, b) => (a.seed || 99) - (b.seed || 99))
  };
@@ -8482,33 +8559,54 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  if(isMine) tr.style.background = 'var(--accent-muted)';
  let status = '-';
  let statusHtml = '';
+ function distLine(){
+  const bits = [];
+  if(row.winsToClinch != null && row.winsToClinch > 0){
+   if(row.winsToClinch > (row.remGames != null ? row.remGames : 99))
+    bits.push('cannot clinch (win-out short)');
+   else
+    bits.push(row.winsToClinch + ' more win' + (row.winsToClinch === 1 ? '' : 's') + ' to clinch');
+  }
+  if(row.winsToBye != null && row.winsToBye > 0 && row.winsToBye <= (row.remGames != null ? row.remGames : 99))
+   bits.push(row.winsToBye + ' to bye');
+  if(row.gamesVsCut != null){
+   if(row.gamesVsCut > 0) bits.push(row.gamesVsCut + ' up on cut');
+   else if(row.gamesVsCut < 0) bits.push(Math.abs(row.gamesVsCut) + ' back of cut');
+   else bits.push('tied at cut');
+  }
+  if(row.minW != null && row.maxW != null) bits.push('range ' + row.minW + '–' + row.maxW + 'W');
+  return bits.length ? ('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + bits.join(' · ') + '</div>') : '';
+ }
  if(row.eliminated){
   status = 'Eliminated';
-  statusHtml = '<span style="color:var(--red);font-weight:700;">Eliminated</span>';
+  statusHtml = '<span style="color:var(--red);font-weight:700;">Eliminated</span>' + distLine();
  } else if(row.clinched && row.byeClinched){
   status = 'Bye clinched';
-  statusHtml = '<span style="color:var(--accent);font-weight:700;">Bye clinched</span>';
+  statusHtml = '<span style="color:var(--accent);font-weight:700;">Bye clinched</span>' + distLine();
  } else if(row.clinched){
   status = 'Clinched';
-  statusHtml = '<span style="color:var(--accent);font-weight:700;">Clinched</span>';
+  statusHtml = '<span style="color:var(--accent);font-weight:700;">Clinched</span>' + distLine();
  } else if(row.byeClinched){
   status = 'Bye clinched';
-  statusHtml = '<span style="color:var(--accent);font-weight:700;">Bye clinched</span>';
+  statusHtml = '<span style="color:var(--accent);font-weight:700;">Bye clinched</span>' + distLine();
  } else if(row.nearBye){
   status = 'Near bye';
-  statusHtml = '<span style="color:var(--accent);font-weight:650;">Near bye</span>';
+  statusHtml = '<span style="color:var(--accent);font-weight:650;">Near bye</span>' + distLine();
  } else if(row.nearClinch){
   status = 'Near clinch';
-  statusHtml = '<span style="color:var(--accent);font-weight:650;">Near clinch</span>';
+  statusHtml = '<span style="color:var(--accent);font-weight:650;">Near clinch</span>' + distLine();
+ } else if(!row.clinched && !row.eliminated){
+  status = 'Hunting';
+  statusHtml = '<span style="color:var(--text-secondary);font-weight:600;">In hunt</span>' + distLine();
  } else if(showOdds && row.playoffPct != null && row.playoffPct <= 10){
   status = 'Long shot';
-  statusHtml = '<span style="color:var(--red);font-weight:650;">Long shot</span>';
+  statusHtml = '<span style="color:var(--red);font-weight:650;">Long shot</span>' + distLine();
  } else if(row.seed != null && row.seed <= s.playoffTeams){
   status = 'In position';
-  statusHtml = 'In position';
+  statusHtml = 'In position' + distLine();
  } else {
   status = 'Outside';
-  statusHtml = 'Outside';
+  statusHtml = 'Outside' + distLine();
  }
  const pct = (v) => (v == null || !showOdds) ? '-' : v.toFixed(0) + '%';
  const projRec = row.projRecord ? escapeHtml(row.projRecord) : '-';
@@ -18887,8 +18985,8 @@ function renderTradeSide(side){
  }
  if(result.a.qbBoost || result.b.qbBoost){
   const bits = [];
-  if(result.a.qbBoost) bits.push(result.a.name + ' (~+' + result.a.qbBoost.toFixed(1) + ' from +10% QB value)');
-  if(result.b.qbBoost) bits.push(result.b.name + ' (~+' + result.b.qbBoost.toFixed(1) + ' from +10% QB value)');
+  if(result.a.qbBoost) bits.push(result.a.name + ' (~+' + result.a.qbBoost.toFixed(1) + ' from +' + Math.round(((result.a.qbMult||1.2)-1)*100) + '% QB value)');
+  if(result.b.qbBoost) bits.push(result.b.name + ' (~+' + result.b.qbBoost.toFixed(1) + ' from +' + Math.round(((result.b.qbMult||1.2)-1)*100) + '% QB value)');
   msg += ' TEMP QB receive: ' + bits.join('; ') + '.';
  }
  msg += ' Before/after power uses the same model as the Power rankings table.';
