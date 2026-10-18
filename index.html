@@ -8174,11 +8174,11 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   } else {
    const magic = st.winsToClinch;
    if(magic != null && magic <= rem){
-    lines.push('<p style="margin:0 0 8px;"><strong>Magic number: ' + magic + ' more win'
-     + (magic === 1 ? '' : 's') + '</strong> clinches a playoff spot (any combination of your H2H/median wins counts).</p>');
+    lines.push('<p style="margin:0 0 8px;"><strong>Clinch: ' + magic + '/' + rem
+     + ' games left</strong> (need ' + magic + ' of your remaining ' + rem
+     + ' games' + (medianOn ? ' — H2H and median both count' : '') + ').</p>');
     lines.push('<ul style="margin:0 0 10px;padding-left:18px;">');
-    lines.push('<li>Win <strong>' + magic + '</strong> more game' + (magic === 1 ? '' : 's')
-     + ' and you are in, no matter what everyone else does (on current PF tiebreakers).</li>');
+    lines.push('<li>Win <strong>' + magic + '/' + rem + '</strong> remaining games and you are in, no matter what everyone else does (on current PF tiebreakers).</li>');
     if(magic > 1){
      lines.push('<li>Paths: any mix of H2H and median results that add up to ' + magic + ' wins.</li>');
     }
@@ -8213,8 +8213,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
    if(st.byeClinched){
     lines.push('<p style="margin:8px 0 0;color:var(--accent);"><strong>Bye locked.</strong></p>');
    } else if(st.winsToBye != null && st.winsToBye <= rem){
-    lines.push('<p style="margin:8px 0 0;"><strong>Bye magic number:</strong> ' + st.winsToBye
-     + ' more win' + (st.winsToBye === 1 ? '' : 's') + '.</p>');
+    lines.push('<p style="margin:8px 0 0;"><strong>Bye:</strong> ' + st.winsToBye + '/' + rem + ' games left.</p>');
    } else if(!st.byeClinched){
     lines.push('<p style="margin:8px 0 0;color:var(--text-muted);">Bye not reachable without help (or already out of bye race).</p>');
    }
@@ -8795,15 +8794,22 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const bits = [];
   const med = (typeof detectLeagueMedian === 'function' && detectLeagueMedian());
   // Express magic numbers as WINS (host record already counts H2H + median as wins)
+  const left = row.remGames != null ? row.remGames : null;
   if(row.winsToClinch != null){
    if(row.winsToClinch === 0) bits.push('playoff spot locked');
-   else if(row.winsToClinch > (row.remGames != null ? row.remGames : 99))
-    bits.push('cannot clinch alone — need help');
+   else if(left != null && row.winsToClinch > left)
+    bits.push('cannot clinch alone — need help (' + row.winsToClinch + '/' + left + ' games left)');
+   else if(left != null)
+    bits.push('clinch ' + row.winsToClinch + '/' + left + ' games left');
    else
-    bits.push('magic number: ' + row.winsToClinch + ' more win' + (row.winsToClinch === 1 ? '' : 's'));
+    bits.push('clinch needs ' + row.winsToClinch + ' more win' + (row.winsToClinch === 1 ? '' : 's'));
   }
-  if(row.winsToBye != null && row.winsToBye > 0 && row.winsToBye <= (row.remGames != null ? row.remGames : 99))
-   bits.push(row.winsToBye + ' win' + (row.winsToBye === 1 ? '' : 's') + ' to bye');
+  if(row.winsToBye != null && row.winsToBye > 0){
+   if(left != null && row.winsToBye <= left)
+    bits.push('bye ' + row.winsToBye + '/' + left + ' games left');
+   else if(left == null)
+    bits.push(row.winsToBye + ' win' + (row.winsToBye === 1 ? '' : 's') + ' to bye');
+  }
   if(row.gamesVsCut != null){
    if(row.gamesVsCut > 0) bits.push(row.gamesVsCut + ' win' + (row.gamesVsCut === 1 ? '' : 's') + ' up on cut');
    else if(row.gamesVsCut < 0) bits.push(Math.abs(row.gamesVsCut) + ' win' + (Math.abs(row.gamesVsCut) === 1 ? '' : 's') + ' back of cut');
