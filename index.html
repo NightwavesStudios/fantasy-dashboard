@@ -6130,6 +6130,18 @@ function escapeHtml(s){
  leagueName = league.settings.name || 'League';
  state.year = year;
  state.league = league;
+ try{
+  // Re-detect median from payload (ignore stale localStorage false unless user forced it)
+  if(localStorage.getItem('fd_league_median_manual') !== '1'){
+   localStorage.removeItem('fd_league_median');
+   if(state.settings) delete state.settings.leagueMedian;
+  }
+  const med = detectLeagueMedian();
+  if(!state.settings) state.settings = {};
+  state.settings.leagueMedian = !!med;
+  const sw = el('sw-league-median');
+  if(sw) sw.checked = !!med;
+ }catch(eMed){}
  }else{
  setStatus('Fetching league from Sleeper…');
  const league = await fetchSleeperLeague(leagueId);
@@ -6163,6 +6175,17 @@ function escapeHtml(s){
  state.pendingOffers = [];
  state.historyLoaded = false;
  state.playoffSettings = detectPlayoffSettings();
+ try{
+  if(localStorage.getItem('fd_league_median_manual') !== '1'){
+   try{ localStorage.removeItem('fd_league_median'); }catch(e){}
+   if(state.settings) delete state.settings.leagueMedian;
+  }
+  const med = detectLeagueMedian();
+  if(!state.settings) state.settings = {};
+  state.settings.leagueMedian = !!med;
+  const sw = el('sw-league-median');
+  if(sw){ sw.checked = !!med; try{ sw.classList.toggle('on', !!med); }catch(e){} }
+ }catch(eMed2){}
 
  applyMyTeamDefaults();
  if(state.selectedTeamA == null) state.selectedTeamA = teams[0] ? teams[0].id : null;
@@ -10195,44 +10218,99 @@ const hasProj = assignments.some(a => {
 
 function detectLeagueMedian(){
  try{
- // Manual override from settings / localStorage
- if(state.settings && state.settings.leagueMedian === true) return true;
- if(state.settings && state.settings.leagueMedian === false) return false;
- try{
-  const ls = localStorage.getItem('fd_league_median');
-  if(ls === '1'){ if(!state.settings) state.settings = {}; state.settings.leagueMedian = true; return true; }
-  if(ls === '0'){ if(!state.settings) state.settings = {}; state.settings.leagueMedian = false; return false; }
- }catch(e0){}
+  if(!state.settings) state.settings = {};
 
+  // Manual override only when user explicitly toggled the setting
+  try{
+   const manual = localStorage.getItem('fd_league_median_manual') === '1';
+   if(manual){
+    const ls = localStorage.getItem('fd_league_median');
+    if(ls === '1'){ state.settings.leagueMedian = true; return true; }
+    if(ls === '0'){ state.settings.leagueMedian = false; return false; }
+   }
+  }catch(e0){}
 
- if(state.platform === 'sleeper' && state.league && state.league.settings){
- const s = state.league.settings;
- if(s.league_average_match === 1 || s.league_average_match === true) return true;
- if(s.league_median_match === 1 || s.league_median_match === true) return true;
- if(s.league_average_match === '1') return true;
- }
- if(state.platform === 'espn' && state.league && state.league.settings){
- const settings = state.league.settings;
- const sch = settings.scheduleSettings || {};
- const sc = settings.scoringSettings || {};
- // ESPN "bonus wins / top half" is scoringEnhancementType WIN_BONUS_TOP_HALF
- if(sc.scoringEnhancementType === 'WIN_BONUS_TOP_HALF') return true;
- if(sc.scoringEnhancementType === 'WIN_BONUS_MEDIAN') return true;
- if(sc.medianScoring || sc.leagueMedian || sc.playAgainstLeagueMedian) return true;
- if(sch.leagueMedian || sch.playAgainstLeagueMedian || sch.medianScoring) return true;
- if(sch.leagueMedianEnabled || sch.bonusWins) return true;
- }
- // Heuristic: after N completed weeks, if total games ≈ 2 per team per week, median is on
- try{
-  const teams = state.teams || [];
-  if(teams.length >= 4){
-   const games = teams.map(t => (t.wins||0) + (t.losses||0) + (t.ties||0));
-   const avgG = games.reduce((a,b)=>a+b,0) / teams.length;
-   const week = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0);
-   // Week 3 active: ~2 finished weeks → pure H2H ≈ 2 games, with median ≈ 4
-   if(week >= 2 && avgG >= (week - 0.5) * 1.6) return true;
+  // Deep scan host payload (ESPN field names move around by season)
+  try{
+   const blob = JSON.stringify(state.league || {}).toUpperCase();
+   if(
+    blob.includes('WIN_BONUS_TOP_HALF') ||
+    blob.includes('WIN_BONUS_MEDIAN') ||
+    blob.includes('LEAGUE_MEDIAN') ||
+    blob.includes('PLAYAGAINSTLEAGUEMEDIAN') ||
+    blob.includes('SCORINGENHANCEMENTTYPE":"WIN_BONUS') ||
+    blob.includes('"LEAGUE_AVERAGE_MATCH":1') ||
+    blob.includes('"LEAGUE_MEDIAN_MATCH":1')
+   ){
+    state.settings.leagueMedian = true;
+    return true;
+   }
+  }catch(eBlob){}
+
+  if(state.platform === 'sleeper' && state.league && state.league.settings){
+   const s = state.league.settings;
+   if(s.league_average_match === 1 || s.league_average_match === true || s.league_average_match === '1') {
+    state.settings.leagueMedian = true; return true;
+   }
+   if(s.league_median_match === 1 || s.league_median_match === true || s.league_median_match === '1') {
+    state.settings.leagueMedian = true; return true;
+   }
   }
- }catch(e2){}
+  if(state.platform === 'espn' && state.league){
+   const settings = state.league.settings || state.league;
+   const sch = settings.scheduleSettings || {};
+   const sc = settings.scoringSettings || {};
+   const enh = sc.scoringEnhancementType || settings.scoringEnhancementType || sch.scoringEnhancementType;
+   if(enh === 'WIN_BONUS_TOP_HALF' || enh === 'WIN_BONUS_MEDIAN' || enh === 'WIN_BONUS') {
+    state.settings.leagueMedian = true; return true;
+   }
+   if(sc.medianScoring || sc.leagueMedian || sc.playAgainstLeagueMedian) {
+    state.settings.leagueMedian = true; return true;
+   }
+   if(sch.leagueMedian || sch.playAgainstLeagueMedian || sch.medianScoring || sch.leagueMedianEnabled || sch.bonusWins) {
+    state.settings.leagueMedian = true; return true;
+   }
+   // Nested walk for enhancement enums
+   try{
+    const stack = [settings];
+    while(stack.length){
+     const o = stack.pop();
+     if(!o || typeof o !== 'object') continue;
+     for(const k of Object.keys(o)){
+      const v = o[k];
+      if(typeof v === 'string'){
+       const u = v.toUpperCase();
+       if(u === 'WIN_BONUS_TOP_HALF' || u === 'WIN_BONUS_MEDIAN' || u.indexOf('LEAGUE_MEDIAN') >= 0)
+        { state.settings.leagueMedian = true; return true; }
+      }
+      if(v && typeof v === 'object' && !Array.isArray(v)) stack.push(v);
+     }
+    }
+   }catch(eWalk){}
+  }
+
+  // Heuristic from records: median leagues log ~2 results per scoring week
+  try{
+   const teams = state.teams || [];
+   if(teams.length >= 4){
+    const games = teams.map(t => (t.wins||0) + (t.losses||0) + (t.ties||0));
+    const avgG = games.reduce((a,b)=>a+b,0) / teams.length;
+    let week = Number((scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 0);
+    if(!week){
+     const wc = teams.map(t => (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0).length);
+     week = wc.length ? Math.max.apply(null, wc) : 0;
+    }
+    // Finished scoring weeks ≈ max(avgG / 2, week-1) under median
+    if(week >= 2 && avgG >= week * 1.5) { state.settings.leagueMedian = true; return true; }
+    if(avgG >= 4 && week >= 2 && avgG / Math.max(1, week - 0.25) >= 1.7) {
+     state.settings.leagueMedian = true; return true;
+    }
+    // e.g. week 4, 6–8 games on record → almost certainly H2H+median
+    if(avgG >= 5 && avgG >= (week > 0 ? week : 3) * 1.5) {
+     state.settings.leagueMedian = true; return true;
+    }
+   }
+  }catch(e2){}
  }catch(e){}
  return false;
  }
@@ -21374,7 +21452,10 @@ function bindApplySettings(){
      const swm = el('sw-league-median');
      if(swm){
       state.settings.leagueMedian = !!swm.checked;
-      try{ localStorage.setItem('fd_league_median', state.settings.leagueMedian ? '1' : '0'); }catch(e){}
+      try{
+       localStorage.setItem('fd_league_median', state.settings.leagueMedian ? '1' : '0');
+       localStorage.setItem('fd_league_median_manual', '1'); // user chose; stop auto-override
+      }catch(e){}
      }
     }catch(e){}
     const pprEl = el('sel-ppr');
