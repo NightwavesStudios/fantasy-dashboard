@@ -4296,7 +4296,7 @@ html[data-theme="light"] {
  </div>
  <div id="playoffs-clinch-detail" class="card" style="display:none;margin-top:14px;padding:14px 16px;">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
-   <div class="section-title" style="margin:0;" id="playoffs-clinch-title">Clinch scenarios</div>
+   <div class="section-title" style="margin:0;" id="playoffs-clinch-title">How you get in</div>
    <button type="button" class="btn btn-ghost btn-sm" id="btn-clinch-close">Close</button>
   </div>
   <div id="playoffs-clinch-body" style="font-size:13px;line-height:1.45;color:var(--text-secondary);"></div>
@@ -8119,8 +8119,8 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  }
 
 
+ 
  function buildClinchScenarios(teamId){
-  // Human-readable clinch / elimination paths using full W-L (H2H + median when on)
   const settings = state.playoffSettings || (typeof detectPlayoffSettings === 'function' ? detectPlayoffSettings() : null) || {
    playoffTeams: 6, byes: 2, playoffWeekStart: 15
   };
@@ -8137,132 +8137,183 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const weeksLeft = medianOn ? Math.ceil(rem / 2) : rem;
   const wins = (me.wins || 0) + 0.5 * (me.ties || 0);
   const pf = me.pointsFor || 0;
-
-  // Snapshot of everyone
-  const remMap = remainingGamesByTeam(settings.playoffWeekStart || 15,
-   (scheduleCache && scheduleCache._currentWeek) || 0);
+  let currentWeek = 0;
+  try{ currentWeek = Number((scheduleCache && scheduleCache._currentWeek) || 0); }catch(e){}
+  const remMap = remainingGamesByTeam(settings.playoffWeekStart || 15, currentWeek);
   const rows = teams.map(t => {
    const w = (t.wins || 0) + 0.5 * (t.ties || 0);
    const r = remMap[t.id] != null ? remMap[t.id] : rem;
    return {
-    id: t.id, name: t.name, wins: w, pf: t.pointsFor || 0,
+    id: t.id, name: t.name, wins: w, losses: t.losses || 0, pf: t.pointsFor || 0,
     rem: r, minW: w, maxW: w + r
    };
   }).sort((a,b) => b.wins - a.wins || b.pf - a.pf);
 
   const myRow = rows.find(r => String(r.id) === String(me.id)) || {
-   wins, pf, rem, minW: wins, maxW: wins + rem, name: me.name
+   wins, pf, rem, minW: wins, maxW: wins + rem, name: me.name, losses: me.losses || 0
   };
 
+  function teamsAheadIfMyWins(extraWins){
+   const floor = myRow.wins + extraWins;
+   return rows.filter(x => {
+    if(String(x.id) === String(me.id)) return false;
+    if(x.maxW > floor) return true;
+    if(x.maxW === floor && x.pf >= pf) return true;
+    return false;
+   });
+  }
+
+  // For each rival: how many losses they need (from remaining) so they cannot finish ahead of my target wins
+  function helpNeededForTarget(targetWins){
+   const help = [];
+   rows.forEach(x => {
+    if(String(x.id) === String(me.id)) return;
+    // If they win out they have maxW. To not finish ahead of targetWins they need maxFinish <= targetWins
+    // (and if equal, worse PF). So they can take at most (targetWins - x.wins) more wins if we ignore PF,
+    // meaning they need at least x.rem - max(0, targetWins - x.wins) losses among remaining.
+    if(x.maxW < targetWins) return; // cannot catch even winning out
+    if(x.maxW === targetWins && x.pf < pf) return; // can only tie/lose PF race
+    const maxWinsAllowed = (x.pf >= pf) ? (targetWins - 1) : targetWins;
+    // if pf >= ours, they need to finish strictly below targetWins
+    const winsTheyCanStillTake = Math.max(0, maxWinsAllowed - x.wins);
+    const lossesTheyNeed = Math.max(0, x.rem - winsTheyCanStillTake);
+    if(lossesTheyNeed <= 0 && x.maxW >= targetWins){
+     // still a threat if they can hit target - need at least 1 loss if maxW > target or PF edge
+     if(x.maxW > targetWins || (x.maxW === targetWins && x.pf >= pf)){
+      help.push({
+       name: x.name, id: x.id, wins: x.wins, rem: x.rem, maxW: x.maxW,
+       lossesNeed: Math.max(1, lossesTheyNeed),
+       note: x.maxW > targetWins
+        ? ('can reach ' + x.maxW + ' if they win out')
+        : 'ties your win total with better/equal PF'
+      });
+     }
+     return;
+    }
+    if(lossesTheyNeed > 0){
+     help.push({
+      name: x.name, id: x.id, wins: x.wins, rem: x.rem, maxW: x.maxW,
+      lossesNeed: lossesTheyNeed,
+      note: 'can take at most ' + winsTheyCanStillTake + ' of ' + x.rem + ' remaining'
+     });
+    }
+   });
+   return help.sort((a,b) => b.lossesNeed - a.lossesNeed || b.wins - a.wins);
+  }
+
   const lines = [];
-  lines.push('<p style="margin:0 0 10px;color:var(--text);"><strong>' + escapeHtml(me.name) + '</strong> · '
+  lines.push('<div style="margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--border);">');
+  lines.push('<div style="font-size:15px;font-weight:700;color:var(--text);">' + escapeHtml(me.name) + '</div>');
+  lines.push('<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'
    + (me.wins||0) + '-' + (me.losses||0)
-   + (medianOn ? ' <span style="color:var(--text-muted);">(H2H + median wins)</span>' : '')
-   + ' · ' + weeksLeft + ' scoring week' + (weeksLeft === 1 ? '' : 's') + ' left'
-   + (medianOn ? ' · up to ' + rem + ' total wins available (2/week)' : '')
-   + '</p>');
+   + (medianOn ? ' · H2H + median both count as wins' : '')
+   + ' · ' + weeksLeft + ' week' + (weeksLeft === 1 ? '' : 's') + ' left (' + rem + ' games)'
+   + '</div></div>');
 
   if(st.eliminated){
-   lines.push('<p style="color:var(--red);font-weight:700;margin:0 0 8px;">Mathematically eliminated from the playoffs.</p>');
-   lines.push('<p style="margin:0 0 8px;">Even winning out to <strong>' + myRow.maxW + '</strong> wins, at least '
-    + nPlayoff + ' teams are guaranteed to finish ahead.</p>');
+   lines.push('<p style="color:var(--red);font-weight:700;margin:0 0 10px;">Eliminated — playoffs are impossible.</p>');
+   lines.push('<p style="margin:0;">Even if you win all ' + rem + ' remaining games (finish at '
+    + myRow.maxW + ' wins), at least ' + nPlayoff + ' teams are still guaranteed ahead of you.</p>');
   } else if(st.clinched){
-   lines.push('<p style="color:var(--accent);font-weight:700;margin:0 0 8px;">Playoff berth clinched'
-    + (st.byeClinched ? ' · bye clinched' : '') + '.</p>');
-   lines.push('<p style="margin:0 0 8px;">Even if you take zero of the remaining games, at most '
-    + (nPlayoff - 1) + ' teams can still finish ahead of you.</p>');
+   lines.push('<p style="color:var(--accent);font-weight:700;margin:0 0 10px;">You\'re in'
+    + (st.byeClinched ? ' · bye locked too' : '') + '.</p>');
+   lines.push('<p style="margin:0;">You can lose every remaining game and still make the playoffs.</p>');
   } else {
    const magic = st.winsToClinch;
-   if(magic != null && magic <= rem){
-    lines.push('<p style="margin:0 0 8px;"><strong>Clinch: ' + magic + '/' + rem
-     + ' games left</strong> (need ' + magic + ' of your remaining ' + rem
-     + ' games' + (medianOn ? ' — H2H and median both count' : '') + ').</p>');
-    lines.push('<ul style="margin:0 0 10px;padding-left:18px;">');
-    lines.push('<li>Win <strong>' + magic + '/' + rem + '</strong> remaining games and you are in, no matter what everyone else does (on current PF tiebreakers).</li>');
-    if(magic > 1){
-     lines.push('<li>Paths: any mix of H2H and median results that add up to ' + magic + ' wins.</li>');
-    }
-    lines.push('<li>Winning out → finish with up to <strong>' + myRow.maxW + '</strong> wins.</li>');
-    lines.push('<li>Losing out → finish with <strong>' + myRow.minW + '</strong> wins (not yet eliminated).</li>');
-    lines.push('</ul>');
+   const canSelfClinch = magic != null && magic <= rem;
+
+   // PATH 1 — wins you need
+   lines.push('<div style="margin:0 0 14px;padding:12px;border-radius:10px;background:var(--surface-2);">');
+   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Path 1 · wins you need</div>');
+   if(canSelfClinch){
+    lines.push('<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">Win '
+     + magic + ' of your next ' + rem + ' games</div>');
+    lines.push('<p style="margin:0;font-size:13px;">That\'s the magic number. Get <strong>'
+     + magic + '/' + rem + '</strong> and you clinch no matter what anyone else does.</p>');
+    lines.push('<p style="margin:8px 0 0;font-size:12px;color:var(--text-muted);">Win out → up to '
+     + myRow.maxW + ' wins. Lose out → stay at ' + myRow.minW + ' wins.</p>');
    } else {
-    lines.push('<p style="margin:0 0 8px;color:var(--gold);"><strong>Cannot clinch on your own</strong> — even winning every remaining game (max <strong>'
-     + myRow.maxW + '</strong> wins), too many teams can still pass you.</p>');
-    // Who can still finish ahead if you win out
-    const blockers = rows.filter(x => String(x.id) !== String(me.id) && x.maxW >= myRow.maxW)
-     .slice(0, 8);
-    if(blockers.length){
-     lines.push('<p style="margin:0 0 6px;">Teams that can still finish ahead of your best case (or tie and pass on PF):</p><ul style="margin:0 0 10px;padding-left:18px;">');
-     blockers.forEach(b => {
-      const needLoss = Math.max(0, Math.ceil(b.maxW - myRow.maxW));
-      lines.push('<li><strong>' + escapeHtml(b.name) + '</strong> — now '
-       + b.wins + 'W, max ' + b.maxW + 'W'
-       + (b.maxW > myRow.maxW
-         ? (' · they must drop enough that they cannot reach ' + (myRow.maxW + 0.5) + '+')
-         : ' · PF race if both end at ' + myRow.maxW)
-       + '</li>');
-     });
-     lines.push('</ul>');
-     lines.push('<p style="margin:0 0 8px;">You need help: some of those teams have to lose games (H2H or median) so fewer than '
-      + nPlayoff + ' teams finish ahead of you.</p>');
-    }
+    lines.push('<div style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:6px;">You cannot clinch on wins alone</div>');
+    lines.push('<p style="margin:0;font-size:13px;">Even winning all <strong>' + rem
+     + '</strong> remaining games (max <strong>' + myRow.maxW
+     + '</strong> wins), too many teams can still finish ahead. You need help — see Path 2.</p>');
    }
-  }
+   lines.push('</div>');
 
-  if(nBye > 0 && !st.eliminated){
-   if(st.byeClinched){
-    lines.push('<p style="margin:8px 0 0;color:var(--accent);"><strong>Bye locked.</strong></p>');
-   } else if(st.winsToBye != null && st.winsToBye <= rem){
-    lines.push('<p style="margin:8px 0 0;"><strong>Bye:</strong> ' + st.winsToBye + '/' + rem + ' games left.</p>');
-   } else if(!st.byeClinched){
-    lines.push('<p style="margin:8px 0 0;color:var(--text-muted);">Bye not reachable without help (or already out of bye race).</p>');
-   }
-  }
+   // PATH 2 — who must lose
+   lines.push('<div style="margin:0 0 14px;padding:12px;border-radius:10px;background:var(--surface-2);">');
+   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Path 2 · who needs to lose</div>');
 
-  // Simple scenario table: if I get k more wins
-  if(!st.eliminated && rem > 0){
-   lines.push('<p style="margin:12px 0 6px;font-weight:650;color:var(--text);">If you add this many more wins…</p>');
-   lines.push('<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;"><thead><tr>'
-    + '<th>Extra wins</th><th>Final wins</th><th>Teams that can still finish ahead</th><th>Result</th></tr></thead><tbody>');
-   const steps = [];
-   for(let k = 0; k <= rem; k++){
-    // sample a few rows if many remaining
-    if(rem > 8 && k !== 0 && k !== rem && k % Math.ceil(rem / 6) !== 0) continue;
-    steps.push(k);
-   }
-   if(steps[0] !== 0) steps.unshift(0);
-   if(steps[steps.length - 1] !== rem) steps.push(rem);
-   steps.forEach(k => {
-    let ahead = 0;
-    const floor = myRow.wins + k;
-    rows.forEach(x => {
-     if(String(x.id) === String(me.id)) return;
-     if(x.maxW > floor) ahead++;
-     else if(x.maxW === floor && x.pf >= pf) ahead++;
+   // Use target = win-out total if cannot self-clinch, else magic target
+   const targetWins = canSelfClinch ? (myRow.wins + magic) : myRow.maxW;
+   const threats = teamsAheadIfMyWins(canSelfClinch ? magic : rem);
+   const help = helpNeededForTarget(targetWins);
+
+   if(!threats.length && canSelfClinch){
+    lines.push('<p style="margin:0;font-size:13px;">Nobody else can pass you once you hit '
+     + magic + ' more wins. You don\'t need help.</p>');
+   } else if(!help.length){
+    lines.push('<p style="margin:0;font-size:13px;">No clear forced losses right now — mostly a PF/tiebreaker race at the cut line.</p>');
+   } else {
+    lines.push('<p style="margin:0 0 8px;font-size:13px;">For you to be safe at <strong>'
+     + targetWins + ' wins</strong>, these teams need losses among their remaining games:</p>');
+    lines.push('<ul style="margin:0;padding-left:0;list-style:none;">');
+    help.slice(0, 8).forEach(h => {
+     lines.push('<li style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">'
+      + '<div style="font-weight:700;color:var(--text);">' + escapeHtml(h.name) + '</div>'
+      + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Needs at least <strong style="color:var(--red);">'
+      + h.lossesNeed + ' loss' + (h.lossesNeed === 1 ? '' : 'es')
+      + '</strong> in their next ' + h.rem + ' games'
+      + ' <span style="color:var(--text-muted);">(' + h.wins + 'W now, max ' + h.maxW + 'W · '
+      + escapeHtml(h.note) + ')</span></div></li>');
     });
-    let label = 'Still fighting';
-    let color = 'var(--text-secondary)';
-    if(ahead <= nPlayoff - 1){
-     label = 'Clinched';
-     color = 'var(--accent)';
-    } else if(ahead >= nPlayoff && k === 0){
-     // check elim only at k=0 with others min
-     let forced = 0;
-     rows.forEach(x => {
-      if(String(x.id) === String(me.id)) return;
-      if(x.minW > myRow.maxW) forced++;
-     });
-     if(forced >= nPlayoff){ label = 'Eliminated'; color = 'var(--red)'; }
+    lines.push('</ul>');
+    lines.push('<p style="margin:8px 0 0;font-size:11px;color:var(--text-muted);">Not every team above has to tank — only enough so fewer than '
+     + nPlayoff + ' teams finish ahead of you. Root for losses from the names above.</p>');
+   }
+   lines.push('</div>');
+
+   // Quick "if I win K more" strip
+   if(rem > 0){
+    lines.push('<div style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">If you win this many more…</div>');
+    lines.push('<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;"><thead><tr>'
+     + '<th>You win</th><th>Your total</th><th>Still can pass you</th><th></th></tr></thead><tbody>');
+    const steps = [];
+    for(let k = 0; k <= rem; k++){
+     if(rem > 10 && k !== 0 && k !== rem && k !== magic && (k % Math.ceil(rem / 5) !== 0)) continue;
+     steps.push(k);
     }
-    lines.push('<tr><td>' + k + '</td><td>' + (Math.round(floor * 10) / 10)
-     + '</td><td>' + ahead + '</td><td style="color:' + color + ';font-weight:650;">'
-     + label + '</td></tr>');
-   });
-   lines.push('</tbody></table></div>');
-   lines.push('<p style="margin:8px 0 0;font-size:11px;color:var(--text-muted);">“Teams that can still finish ahead” assumes those teams win out and you stop at that win total. Median leagues: each H2H and each median result is one win on the host record.</p>');
+    if(magic != null && magic >= 0 && magic <= rem && steps.indexOf(magic) < 0) steps.push(magic);
+    steps.sort((a,b) => a - b);
+    steps.forEach(k => {
+     const ahead = teamsAheadIfMyWins(k);
+     const floor = myRow.wins + k;
+     let label = ahead.length >= nPlayoff ? 'Still outside' : 'Clinched';
+     let color = ahead.length >= nPlayoff ? 'var(--text-muted)' : 'var(--accent)';
+     if(k === magic && canSelfClinch) label = 'Magic #';
+     lines.push('<tr><td><strong>' + k + '/' + rem + '</strong></td><td>'
+      + (Math.round(floor * 10) / 10) + '</td><td>' + ahead.length
+      + ' team' + (ahead.length === 1 ? '' : 's') + '</td><td style="color:' + color
+      + ';font-weight:700;">' + label + '</td></tr>');
+    });
+    lines.push('</tbody></table></div>');
+   }
   }
 
-  return { title: me.name + ' · clinch scenarios', html: lines.join('') };
+  if(nBye > 0 && !st.eliminated && !st.byeClinched){
+   const byeMagic = st.winsToBye;
+   lines.push('<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;">');
+   if(byeMagic != null && byeMagic <= rem){
+    lines.push('<strong>Bye:</strong> win <strong>' + byeMagic + '/' + rem + '</strong> remaining games.');
+   } else {
+    lines.push('<strong>Bye:</strong> not reachable on your own from here.');
+   }
+   lines.push('</div>');
+  } else if(st.byeClinched){
+   lines.push('<div style="margin-top:12px;color:var(--accent);font-weight:700;">Bye already locked.</div>');
+  }
+
+  return { title: me.name + ' · how you get in', html: lines.join('') };
  }
 
  function showClinchScenarios(teamId){
@@ -8271,12 +8322,13 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const title = el('playoffs-clinch-title');
   if(!box || !body) return;
   const sc = buildClinchScenarios(teamId);
-  if(title) title.textContent = sc.title || 'Clinch scenarios';
+  if(title) title.textContent = sc.title || 'How you get in';
   body.innerHTML = sc.html || '';
   box.style.display = '';
   try{ box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }catch(e){}
  }
 
+ 
  function simulatePlayoffOdds(sims, opts){
  const quality = playoffDataQuality();
  const force = !!(opts && opts.force);
@@ -8796,20 +8848,16 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   // Express magic numbers as WINS (host record already counts H2H + median as wins)
   const left = row.remGames != null ? row.remGames : null;
   if(row.winsToClinch != null){
-   if(row.winsToClinch === 0) bits.push('playoff spot locked');
+   if(row.winsToClinch === 0) bits.push('in (can lose out)');
    else if(left != null && row.winsToClinch > left)
-    bits.push('cannot clinch alone — need help (' + row.winsToClinch + '/' + left + ' games left)');
+    bits.push('need help — click for who must lose');
    else if(left != null)
-    bits.push('clinch ' + row.winsToClinch + '/' + left + ' games left');
+    bits.push('need ' + row.winsToClinch + ' of ' + left + ' wins');
    else
-    bits.push('clinch needs ' + row.winsToClinch + ' more win' + (row.winsToClinch === 1 ? '' : 's'));
+    bits.push('need ' + row.winsToClinch + ' more wins');
   }
-  if(row.winsToBye != null && row.winsToBye > 0){
-   if(left != null && row.winsToBye <= left)
-    bits.push('bye ' + row.winsToBye + '/' + left + ' games left');
-   else if(left == null)
-    bits.push(row.winsToBye + ' win' + (row.winsToBye === 1 ? '' : 's') + ' to bye');
-  }
+  if(row.winsToBye != null && row.winsToBye > 0 && left != null && row.winsToBye <= left)
+   bits.push('bye: ' + row.winsToBye + ' of ' + left);
   if(row.gamesVsCut != null){
    if(row.gamesVsCut > 0) bits.push(row.gamesVsCut + ' win' + (row.gamesVsCut === 1 ? '' : 's') + ' up on cut');
    else if(row.gamesVsCut < 0) bits.push(Math.abs(row.gamesVsCut) + ' win' + (Math.abs(row.gamesVsCut) === 1 ? '' : 's') + ' back of cut');
