@@ -8163,12 +8163,22 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
    return rows.filter(x => String(x.id) !== String(me.id));
   }
 
-  // How many wins above a rival you need at the end to beat them
-  // If you have better PF: same wins is enough (need 0 above)
-  // If they have better/equal PF: need at least 1 more win than them
-  function winsAboveNeeded(rival){
-   if(pf > rival.pf) return 0; // tie in wins, you win PF
-   return 1; // need strictly more wins
+  // Final-win margin needed to beat a rival (0 = same wins OK via PF, 1 = need more wins)
+  function finalMarginNeeded(rival){
+   if(pf > rival.pf) return 0;
+   return 1;
+  }
+
+  /**
+   * Relative remaining: to beat rival, you need
+   *   (your remaining wins) - (their remaining wins) >= gapNow + finalMargin
+   * i.e. win `needDiff` more remaining games than they do.
+   * gapNow = their current wins - yours (positive if they're ahead).
+   */
+  function relativeWinsNeeded(rival){
+   const gapNow = rival.wins - myRow.wins;
+   const margin = finalMarginNeeded(rival);
+   return gapNow + margin; // can be negative if you're already safely ahead
   }
 
   function threatsAt(finalWins){
@@ -8177,11 +8187,11 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
     if(x.maxW === finalWins && x.pf >= pf) return true;
     return false;
    }).map(x => {
-    const above = winsAboveNeeded(x);
-    // Your target to beat this rival if they win out: their maxW + above... actually
-    // To beat them you need finalWins >= x.final + above, worst case x.final = x.maxW
-    // So you need to finish at least (x.maxW + above) if they win out — or they take losses
-    const gapIfTheyWinOut = (x.maxW + above) - finalWins; // positive = you're short if they win out
+    const margin = finalMarginNeeded(x);
+    const gapNow = x.wins - myRow.wins;
+    const needDiff = relativeWinsNeeded(x); // win this many MORE remaining games than they do
+    // If they win out (x.rem more wins), you need finalWins >= x.wins + x.rem + margin
+    const gapIfTheyWinOut = (x.wins + x.rem + margin) - finalWins;
     const lossesTheyNeed = gapIfTheyWinOut > 0
      ? Math.min(x.rem, Math.ceil(gapIfTheyWinOut))
      : 0;
@@ -8192,12 +8202,13 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
      rem: x.rem,
      maxW: x.maxW,
      pf: x.pf,
-     above,
-     gapNow: x.wins - myRow.wins, // how many wins they are ahead of you now
+     margin,
+     gapNow,
+     needDiff,
      lossesTheyNeed,
      gapIfTheyWinOut
     };
-   }).sort((a,b) => b.maxW - a.maxW || b.wins - a.wins);
+   }).sort((a,b) => b.needDiff - a.needDiff || b.maxW - a.maxW);
   }
 
   const lines = [];
@@ -8255,8 +8266,10 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
    lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Teams you need to finish ahead of</div>');
    lines.push('<p style="margin:0 0 10px;font-size:13px;">To be in the top ' + nPlayoff
     + ', you need <strong>' + mustBeat + '</strong> teams behind you. '
-    + 'Against each rival: end with more wins than them'
-    + ' (or the same wins and more PF).</p>');
+    + 'Against each rival below: how many <em>more remaining games</em> you must win than they do '
+    + '(accounts for the current win gap'
+    + (medianOn ? '; H2H and median both count' : '')
+    + ').</p>');
 
    if(!threats.length){
     lines.push('<p style="margin:0;font-size:13px;color:var(--accent);">At '
@@ -8266,26 +8279,33 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
      + targetWins + ' wins</strong>, these teams can still finish ahead of you unless they drop games:</p>');
     lines.push('<ul style="margin:0 0 10px;padding-left:0;list-style:none;">');
     threats.forEach(h => {
-      const aboveTxt = h.above === 0
-       ? 'Beat them with <strong>same wins + more PF</strong> (you lead PF now)'
-       : 'Beat them by finishing <strong>at least 1 win above</strong> them';
+      let diffTxt;
+      if(h.needDiff > 0){
+       diffTxt = 'To finish ahead of them, you need to win <strong style="color:var(--accent);">'
+        + h.needDiff + ' more remaining game' + (h.needDiff === 1 ? '' : 's')
+        + ' than they do</strong>';
+      } else if(h.needDiff === 0){
+       diffTxt = 'To finish ahead, match their remaining win pace (same number of remaining wins) — you lead PF';
+      } else {
+       diffTxt = 'You can win <strong>' + Math.abs(h.needDiff) + ' fewer</strong> remaining games than them and still finish ahead';
+      }
       const gapTxt = h.gapNow > 0
-       ? ('They are <strong>' + h.gapNow + ' win' + (h.gapNow === 1 ? '' : 's') + ' ahead</strong> of you now')
+       ? ('They are <strong>' + h.gapNow + ' win' + (h.gapNow === 1 ? '' : 's') + ' ahead</strong> right now')
        : h.gapNow < 0
-        ? ('You are <strong>' + Math.abs(h.gapNow) + ' win' + (Math.abs(h.gapNow) === 1 ? '' : 's') + ' ahead</strong> now')
-        : 'Tied with you on wins now';
+        ? ('You are <strong>' + Math.abs(h.gapNow) + ' win' + (Math.abs(h.gapNow) === 1 ? '' : 's') + ' ahead</strong> right now')
+        : 'Tied on wins right now';
       let helpTxt = '';
       if(h.gapIfTheyWinOut > 0){
-       helpTxt = 'If they win out (' + h.maxW + 'W), you are short — they need at least <strong style="color:var(--red);">'
-        + h.lossesTheyNeed + ' loss' + (h.lossesTheyNeed === 1 ? '' : 'es')
-        + '</strong> in their next ' + h.rem + ' for you to stay ahead at ' + targetWins + 'W';
+       helpTxt = 'If they win all ' + h.rem + ' remaining, you need them to drop at least <strong style="color:var(--red);">'
+        + h.lossesTheyNeed + '</strong> of those so your win-out still clears them';
       } else {
-       helpTxt = 'Even if they win out (max ' + h.maxW + 'W), your ' + targetWins + 'W is enough to be ahead/tied on the right side of PF';
+       helpTxt = 'Even if they win out, your best case still finishes ahead of them';
       }
       lines.push('<li style="padding:10px 0;border-bottom:1px solid var(--border-subtle);">'
        + '<div style="font-weight:700;color:var(--text);">' + escapeHtml(h.name)
-       + ' <span style="font-weight:500;color:var(--text-muted);">· ' + h.wins + 'W · max ' + h.maxW + 'W</span></div>'
-       + '<div style="font-size:12px;color:var(--text-secondary);margin-top:3px;">' + aboveTxt + '</div>'
+       + ' <span style="font-weight:500;color:var(--text-muted);">· ' + h.wins + 'W now · '
+       + h.rem + ' games left</span></div>'
+       + '<div style="font-size:13px;color:var(--text);margin-top:4px;">' + diffTxt + '</div>'
        + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + gapTxt + '</div>'
        + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + helpTxt + '</div>'
        + '</li>');
