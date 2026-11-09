@@ -3418,6 +3418,38 @@ html[data-theme="light"] {
  }
  .proj-standings table { width: 100%; }
 
+
+ #clinch-modal-overlay.player-card-overlay,
+ #clinch-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: auto;
+ }
+ #clinch-modal-overlay.open,
+ #clinch-modal-overlay[style*="display: flex"],
+ #clinch-modal-overlay[style*="display:flex"] {
+  display: flex !important;
+ }
+ #clinch-modal-sheet {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+ }
+ #btn-clinch-close {
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+  font-size: 22px;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+ }
 </style>
 </head>
 <body>
@@ -3756,6 +3788,7 @@ html[data-theme="light"] {
  <span class="side-b-lbl" id="meter-lbl-b">Team B</span>
  </div>
  <div class="fairness-summary" id="fairness-summary"></div>
+ <div id="trade-advice" class="trade-advice" style="display:none;margin-top:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);"></div>
  <div class="trade-needs-impact" id="trade-needs-impact" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">
  <div class="tpi-title">Needs after trade</div>
  <div id="trade-needs-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;"></div>
@@ -3790,10 +3823,10 @@ html[data-theme="light"] {
  <tr>
  <th data-sort="rank">#</th>
  <th data-sort="team">Team</th>
- <th data-sort="power">Power</th>
+ <th data-sort="power" title="Overall score in this league. About 50 is middle.">Power</th>
  <th data-sort="record">Record</th>
- <th data-sort="starterVor" id="th-starter">Starter VORP</th>
- <th data-sort="depthVor" id="th-depth">Depth VORP</th>
+ <th data-sort="starterVor" id="th-starter" title="Starting lineup strength vs the league (50 = middle)">Starters</th>
+ <th data-sort="depthVor" id="th-depth" title="Bench strength vs the league (50 = middle)">Bench</th>
  <th data-sort="avgPts">Avg scored</th>
  <th data-sort="medPts">Med scored</th>
  <th data-sort="maxPts">Most scored</th>
@@ -4088,7 +4121,7 @@ html[data-theme="light"] {
  <div class="section-title" style="margin:0;">Expected wins &amp; luck</div>
  <button type="button" class="info-btn" id="btn-luck-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
- <p class="needs-intro" id="luck-intro">How lucky your record is versus how you’ve actually scored each week against the field.</p>
+ <p class="needs-intro" id="luck-intro">All-play expected wins from your weekly scores vs the rest of the league. Luck is actual wins minus that expectation.</p>
  <div style="overflow-x:auto;">
  <table>
  <thead>
@@ -4096,14 +4129,14 @@ html[data-theme="light"] {
  <th>#</th>
  <th>Team</th>
  <th>Record</th>
- <th>Exp W</th>
- <th>Luck</th>
- <th>SOS</th>
+ <th title="All-play expected wins">Exp W</th>
+ <th title="Actual wins minus expected">Luck</th>
+ <th title="Average points scored by opponents on your schedule">SOS</th>
  <th>PF</th>
  <th>Avg</th>
- <th>Start %</th>
- <th>Perfect %</th>
- <th>Pts left</th>
+ <th title="Share of starter slots that matched optimal">Start %</th>
+ <th title="Starter points / optimal starter points">Perfect %</th>
+ <th title="Avg points left on bench vs optimal">Pts left</th>
  </tr>
  </thead>
  <tbody id="luck-body"></tbody>
@@ -4288,19 +4321,16 @@ html[data-theme="light"] {
  <th title="Chance to make the playoffs">Playoffs %</th>
  <th title="Chance at a first-round bye (when the format has byes)">Bye %</th>
  <th title="Chance to win the league">Title %</th>
+ <th title="Chance to win the toilet bowl (loser-advances bracket among non-playoff teams)">Toilet %</th>
+ <th title="Chance to finish last in the league after the regular season (worst record, then PF)">Last %</th>
  <th>Status</th>
  </tr>
  </thead>
  <tbody id="playoffs-body"></tbody>
  </table>
  </div>
- <div id="playoffs-clinch-detail" class="card" style="display:none;margin-top:14px;padding:14px 16px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
-   <div class="section-title" style="margin:0;" id="playoffs-clinch-title">How you get in</div>
-   <button type="button" class="btn btn-ghost btn-sm" id="btn-clinch-close">Close</button>
-  </div>
-  <div id="playoffs-clinch-body" style="font-size:13px;line-height:1.45;color:var(--text-secondary);"></div>
- </div>
+ <p class="tpi-note" style="margin-top:10px;">Tap a team row for clinch / this-week scenarios.</p>
+ <div id="playoffs-clinch-detail" hidden aria-hidden="true"></div>
  <p class="tpi-note" id="playoffs-note" style="margin-top:12px;"></p>
  </section>
 
@@ -4363,6 +4393,20 @@ html[data-theme="light"] {
  <div class="pc-body" id="pc-body"></div>
  </div>
 </div>
+
+<div id="clinch-modal-overlay" class="player-card-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="playoffs-clinch-title">
+ <div class="pc-sheet" id="clinch-modal-sheet" style="width:min(520px,100%);">
+  <div class="pc-head">
+   <div>
+    <h2 id="playoffs-clinch-title">Clinch scenarios</h2>
+    <div class="pc-meta" id="clinch-modal-meta">Playoffs</div>
+   </div>
+   <button type="button" class="pc-close" id="btn-clinch-close" aria-label="Close">×</button>
+  </div>
+  <div class="pc-body" id="playoffs-clinch-body" style="padding:14px 16px;font-size:13px;line-height:1.45;color:var(--text-secondary);"></div>
+ </div>
+</div>
+
 
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="drawer" aria-label="Settings">
@@ -5827,6 +5871,7 @@ function escapeHtml(s){
  if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
  saveFcCache(params, data);
  state.usingCachedValues = false;
+ state.ratingsFrozen = false;
  return data;
  }catch(e){
  const cached = loadFcCache(params);
@@ -5834,7 +5879,6 @@ function escapeHtml(s){
  state.usingCachedValues = true;
  return cached.data;
  }
- // try any cached config as last resort
  try{
  const all = JSON.parse(localStorage.getItem(FC_CACHE_KEY) || '{}');
  const entries = Object.values(all).filter(x => x && Array.isArray(x.data) && x.data.length);
@@ -6429,7 +6473,12 @@ function escapeHtml(s){
  el('picks-wrap-b').classList.toggle('show', showPicks);
 
  const banner = el('cache-banner');
- if(banner) banner.classList.toggle('show', !!state.usingCachedValues);
+ if(banner){
+  banner.classList.toggle('show', !!state.usingCachedValues);
+  if(state.usingCachedValues){
+   banner.textContent = 'Using cached FantasyCalc values (live fetch failed). Numbers may be outdated.';
+  }
+ }
 
  populateTeamSelectors();
  populatePickSelectors();
@@ -6437,8 +6486,8 @@ function escapeHtml(s){
  renderPosFilters('a'); renderPosFilters('b');
  renderTradeSide('a'); renderTradeSide('b');
  try{ renderWeeklyTradeRecs(); }catch(e){}
- renderFairness();
- renderRankings();
+ try{ renderFairness(); }catch(e){ console.warn(e); }
+ try{ renderRankings(); }catch(e){ console.error(e); }
  renderNeeds();
  renderWaivers();
  renderPlayoffs();
@@ -7934,9 +7983,69 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   return rem;
  }
 
- function computeMathematicalClinch(settings){
-  // True clinch / elimination using full record (H2H + median when league uses it)
+ // League tiebreaker: head-to-head first, then points for
+ function buildH2HMap(){
+  const h2h = {};
   const teams = state.teams || [];
+  teams.forEach(t => { h2h[t.id] = {}; h2h[String(t.id)] = h2h[t.id]; });
+  try{
+   if(!scheduleCache) return h2h;
+   teams.forEach(t => {
+    const node = scheduleCache[t.id] || scheduleCache[String(t.id)];
+    if(!node || !node.weeks) return;
+    Object.keys(node.weeks).forEach(k => {
+     if(!/^\d+$/.test(String(k))) return;
+     const row = node.weeks[k];
+     if(!row || row.oppId == null) return;
+     const st = String(row.status || '').toLowerCase();
+     if(st && st !== 'final' && st !== 'complete' && st !== 'post') return;
+     const mine = Number(row.myScore);
+     const opp = Number(row.oppScore);
+     if(!isFinite(mine) || !isFinite(opp)) return;
+     if(mine === opp) return;
+     const oid = row.oppId;
+     if(!h2h[t.id]) h2h[t.id] = {};
+     if(!h2h[String(t.id)]) h2h[String(t.id)] = h2h[t.id];
+     if(mine > opp){
+      h2h[t.id][oid] = (h2h[t.id][oid] || 0) + 1;
+      h2h[t.id][String(oid)] = h2h[t.id][oid];
+     }
+    });
+   });
+  }catch(e){}
+  return h2h;
+ }
+ function h2hCompare(aId, bId, h2h){
+  if(!h2h) return 0;
+  const aMap = h2h[aId] || h2h[String(aId)] || {};
+  const bMap = h2h[bId] || h2h[String(bId)] || {};
+  const aWins = Number(aMap[bId] || aMap[String(bId)] || 0);
+  const bWins = Number(bMap[aId] || bMap[String(aId)] || 0);
+  if(aWins !== bWins) return bWins - aWins;
+  return 0;
+ }
+ function standingsCompare(a, b, h2h){
+  const aw = a.wins != null ? a.wins : (a.w != null ? a.w : (a.winPct != null ? a.winPct : 0));
+  const bw = b.wins != null ? b.wins : (b.w != null ? b.w : (b.winPct != null ? b.winPct : 0));
+  if(bw !== aw) return bw - aw;
+  if(a.winPct != null && b.winPct != null && b.winPct !== a.winPct) return b.winPct - a.winPct;
+  const h = h2hCompare(a.id, b.id, h2h);
+  if(h !== 0) return h;
+  const ap = Number(a.pf) || 0, bp = Number(b.pf) || 0;
+  if(bp !== ap) return bp - ap;
+  return String(a.id).localeCompare(String(b.id));
+ }
+ function rivalWinsTiebreak(rivalId, meId, rivalPf, mePf, h2h){
+  const h = h2hCompare(rivalId, meId, h2h);
+  if(h < 0) return true;
+  if(h > 0) return false;
+  return (Number(rivalPf) || 0) >= (Number(mePf) || 0);
+ }
+
+function computeMathematicalClinch(settings){
+  // True clinch / elimination. Tiebreak: wins → head-to-head → points for
+  const teams = state.teams || [];
+  const h2h = (typeof buildH2HMap === 'function') ? buildH2HMap() : {};
   const nPlayoff = (settings && settings.playoffTeams) || 4;
   const nBye = (settings && settings.byes) || 0;
   const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
@@ -7984,14 +8093,14 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
    rows.forEach(x => {
     if(x.id === me.id) return;
     if(x.maxW > me.minW) canBeAheadOfMin++;
-    else if(x.maxW === me.minW && x.pf >= me.pf) canBeAheadOfMin++; // equal wins possible, PF edge
+    else if(x.maxW === me.minW && rivalWinsTiebreak(x.id, me.id, x.pf, me.pf, h2h)) canBeAheadOfMin++; // equal wins: H2H then PFns possible, PF edge
    });
    function teamsThatCanFinishAheadOf(winFloor, pfFloor){
     let n = 0;
     rows.forEach(x => {
      if(x.id === me.id) return;
      if(x.maxW > winFloor) n++;
-     else if(x.maxW === winFloor && x.pf >= pfFloor) n++;
+     else if(x.maxW === winFloor && rivalWinsTiebreak(x.id, me.id, x.pf, pfFloor, h2h)) n++;
     });
     return n;
    }
@@ -8023,7 +8132,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
     rows.forEach(x => {
      if(x.id === me.id) return;
      if(x.maxW > me.minW) canBeAheadBye++;
-     else if(x.maxW === me.minW && x.pf >= me.pf) canBeAheadBye++;
+     else if(x.maxW === me.minW && rivalWinsTiebreak(x.id, me.id, x.pf, me.pf, h2h)) canBeAheadBye++;
     });
     byeClinched = canBeAheadBye <= (nBye - 1);
     if(!byeClinched && !eliminated && me.rem > 0){
@@ -8034,7 +8143,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
 
    // Season over edge cases
    if(weeksLeft <= 0 || me.rem === 0 && rows.every(x => x.rem === 0)){
-    const standings = rows.slice().sort((a,b) => b.wins - a.wins || b.pf - a.pf);
+    const standings = rows.slice().sort((a,b) => standingsCompare(a, b, h2h));
     const seed = standings.findIndex(x => x.id === me.id) + 1;
     return {
      clinched: seed > 0 && seed <= nPlayoff,
@@ -8074,7 +8183,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
    }
 
    // Games back of last playoff seat (on current wins) — negative means games ahead of cut line
-   const sortedByWins = rows.slice().sort((a,b) => b.wins - a.wins || b.pf - a.pf);
+   const sortedByWins = rows.slice().sort((a,b) => standingsCompare(a, b, h2h));
    const cut = sortedByWins[Math.min(nPlayoff, sortedByWins.length) - 1];
    const firstOut = sortedByWins[Math.min(nPlayoff, sortedByWins.length - 1)];
    let gamesVsCut = null;
@@ -8126,260 +8235,490 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   const settings = state.playoffSettings || (typeof detectPlayoffSettings === 'function' ? detectPlayoffSettings() : null) || {
    playoffTeams: 6, byes: 2, playoffWeekStart: 15
   };
-  const map = (typeof computeMathematicalClinch === 'function')
-   ? computeMathematicalClinch(settings) : {};
+  let map = {};
+  try{
+   map = (typeof computeMathematicalClinch === 'function') ? (computeMathematicalClinch(settings) || {}) : {};
+  }catch(e){ map = {}; }
+
   const teams = state.teams || [];
   const me = teams.find(t => String(t.id) === String(teamId));
-  if(!me) return { title: 'Team', html: 'Team not found.' };
+  if(!me) return { title: 'Team', html: '<p>Team not found.</p>' };
+
   const st = map[me.id] || map[String(me.id)] || {};
   const medianOn = (typeof detectLeagueMedian === 'function') ? !!detectLeagueMedian() : false;
-  const nPlayoff = st.nPlayoff || settings.playoffTeams || 6;
-  const nBye = st.nBye != null ? st.nBye : (settings.byes || 0);
+  const nPlayoff = Number(st.nPlayoff || settings.playoffTeams || 6) || 6;
+  const nBye = st.nBye != null ? Number(st.nBye) : Number(settings.byes || 0);
   const nTeams = teams.length || 10;
-  const rem = st.rem != null ? st.rem : 0;
+  const rem = st.rem != null ? Number(st.rem) : 0;
+  const perWeek = medianOn ? 2 : 1;
   const weeksLeft = medianOn ? Math.ceil(rem / 2) : rem;
   const wins = (me.wins || 0) + 0.5 * (me.ties || 0);
   const pf = me.pointsFor || 0;
   let currentWeek = 0;
   try{ currentWeek = Number((scheduleCache && scheduleCache._currentWeek) || 0); }catch(e){}
-  const remMap = remainingGamesByTeam(settings.playoffWeekStart || 15, currentWeek);
+
+  let remMap = {};
+  try{
+   if(typeof remainingGamesByTeam === 'function'){
+    remMap = remainingGamesByTeam(settings.playoffWeekStart || 15, currentWeek) || {};
+   }
+  }catch(e){ remMap = {}; }
+
   const rows = teams.map(t => {
    const w = (t.wins || 0) + 0.5 * (t.ties || 0);
-   const r = remMap[t.id] != null ? remMap[t.id] : rem;
+   let r = rem;
+   if(remMap[t.id] != null) r = remMap[t.id];
+   else if(remMap[String(t.id)] != null) r = remMap[String(t.id)];
    return {
-    id: t.id, name: t.name, wins: w, losses: t.losses || 0, pf: t.pointsFor || 0,
-    rem: r, minW: w, maxW: w + r
+    id: t.id,
+    name: t.name || 'Team',
+    wins: w,
+    losses: t.losses || 0,
+    pf: t.pointsFor || 0,
+    rem: r,
+    minW: w,
+    maxW: w + r
    };
-  }).sort((a,b) => b.wins - a.wins || b.pf - a.pf);
+  }).sort((a,b) => standingsCompare(a, b, (typeof buildH2HMap === 'function' ? buildH2HMap() : {})));
 
   const myRow = rows.find(r => String(r.id) === String(me.id)) || {
-   wins, pf, rem, minW: wins, maxW: wins + rem, name: me.name, losses: me.losses || 0
+   id: me.id, name: me.name, wins, losses: me.losses || 0, pf, rem, minW: wins, maxW: wins + rem
   };
-  // Must finish ahead of this many teams (or tied with PF edge) to be in top nPlayoff
-  const mustBeat = Math.max(0, nTeams - nPlayoff);
-  const maxAllowedAhead = nPlayoff - 1;
 
-  function rivals(){
-   return rows.filter(x => String(x.id) !== String(me.id));
+  const thisWeekGames = Math.min(perWeek, Math.max(0, rem));
+
+  const h2hLocal = (typeof buildH2HMap === 'function') ? buildH2HMap() : {};
+  function forcedAheadCount(myMaxWins, myPf){
+   let n = 0;
+   rows.forEach(x => {
+    if(String(x.id) === String(me.id)) return;
+    if(x.minW > myMaxWins) n++;
+    else if(x.minW === myMaxWins && x.rem === 0 && rivalWinsTiebreak(x.id, me.id, x.pf, myPf, h2hLocal)) n++;
+   });
+   return n;
+  }
+  function canStillPassCount(myMinWins, myPf){
+   let n = 0;
+   rows.forEach(x => {
+    if(String(x.id) === String(me.id)) return;
+    if(x.maxW > myMinWins) n++;
+    else if(x.maxW === myMinWins && rivalWinsTiebreak(x.id, me.id, x.pf, myPf, h2hLocal)) n++;
+   });
+   return n;
+  }
+  function isInAt(myFinalW){
+   return canStillPassCount(myFinalW, pf) <= (nPlayoff - 1);
+  }
+  function isElimAt(myFinalW){
+   return forcedAheadCount(myFinalW, pf) >= nPlayoff;
   }
 
-  // Final-win margin needed to beat a rival (0 = same wins OK via PF, 1 = need more wins)
-  function finalMarginNeeded(rival){
-   if(pf > rival.pf) return 0;
-   return 1;
+  let magicIn = null;
+  for(let k = 0; k <= rem; k++){
+   if(isInAt(myRow.wins + k)){ magicIn = k; break; }
+  }
+  let magicBye = null;
+  if(nBye > 0){
+   for(let k = 0; k <= rem; k++){
+    if(canStillPassCount(myRow.wins + k, pf) <= (nBye - 1)){ magicBye = k; break; }
+   }
+  }
+  const winOutW = myRow.wins + rem;
+  const loseOutW = myRow.wins;
+  const elimIfLoseOut = isElimAt(loseOutW);
+  const stillAliveWinOut = !isElimAt(winOutW);
+
+  // Cached table odds for this team
+  let odds = null;
+  try{
+   const cached = state._playoffOddsCache && state._playoffOddsCache.result;
+   if(cached && Array.isArray(cached.odds)){
+    odds = cached.odds.find(o => o.team && String(o.team.id) === String(me.id)) || null;
+   }
+  }catch(e){ odds = null; }
+
+  function gameWinP(r){
+   const w = Number(r.wins) || 0;
+   const l = Number(r.losses) || 0;
+   const p = (w + 2) / Math.max(4, w + l + 4);
+   return Math.max(0.12, Math.min(0.88, p));
+  }
+  function binomialWins(n, p){
+   let won = 0;
+   const nn = Math.max(0, Number(n) || 0);
+   for(let i = 0; i < nn; i++) if(Math.random() < p) won++;
+   return won;
+  }
+  // Rivals near the cut — their outcomes drive the range
+  const threatIds = new Set();
+  rows.forEach((r, idx) => {
+   if(String(r.id) === String(me.id)) return;
+   if(idx < nPlayoff + 3 || Math.abs(r.wins - myRow.wins) <= 3) threatIds.add(String(r.id));
+  });
+
+  function clampP(p){
+   const n = Number(p);
+   if(!isFinite(n)) return 0.5;
+   return Math.max(0.12, Math.min(0.88, n));
+  }
+  function safePct(x){
+   const n = Number(x);
+   if(!isFinite(n)) return 0;
+   if(n < 0) return 0;
+   if(n > 100) return 100;
+   return n;
   }
 
   /**
-   * Relative remaining: to beat rival, you need
-   *   (your remaining wins) - (their remaining wins) >= gapNow + finalMargin
-   * i.e. win `needDiff` more remaining games than they do.
-   * gapNow = their current wins - yours (positive if they're ahead).
+   * Other teams: this week only is rolled from win% (optionally tilted for threats).
+   * Rest of season always uses true strength for everyone — no impossible 0–100 extremes.
    */
-  function relativeWinsNeeded(rival){
-   const gapNow = rival.wins - myRow.wins;
-   const margin = finalMarginNeeded(rival);
-   return gapNow + margin; // can be negative if you're already safely ahead
+  function simPlayoffRate(lockMyWeek, threatTilt){
+   threatTilt = Number(threatTilt) || 0;
+   const N = 2000;
+   let hits = 0;
+   const pMap = {};
+   rows.forEach(r => { pMap[String(r.id)] = gameWinP(r); });
+   const myId = String(me.id);
+   const restGames = Math.max(0, rem - thisWeekGames);
+
+   for(let s = 0; s < N; s++){
+    const finals = rows.map(r => {
+     const id = String(r.id);
+     const p = pMap[id];
+     let w = r.wins;
+     const pfJitter = r.pf + (Math.random() - 0.5) * 16;
+     const isMe = id === myId;
+     const isThreat = threatIds.has(id);
+
+     // This week
+     let thisW;
+     if(isMe && lockMyWeek != null){
+      thisW = lockMyWeek;
+     } else {
+      let pTw = p;
+      if(isThreat && !isMe) pTw = clampP(p + threatTilt);
+      thisW = binomialWins(Math.min(thisWeekGames, r.rem), pTw);
+     }
+     // Rest of season — always true strength (no tilt)
+     const afterN = isMe ? restGames : Math.max(0, r.rem - thisWeekGames);
+     const after = binomialWins(afterN, p);
+     w += thisW + after;
+     return { id: r.id, w: w, pf: pfJitter };
+    });
+    finals.sort((a,b) => standingsCompare({ id: a.id, w: a.w, wins: a.w, pf: a.pf }, { id: b.id, w: b.w, wins: b.w, pf: b.pf }, (typeof buildH2HMap === 'function' ? buildH2HMap() : {})));
+    const seed = finals.findIndex(x => String(x.id) === myId);
+    if(seed >= 0 && seed < nPlayoff) hits++;
+   }
+   return safePct(N > 0 ? (100 * hits / N) : 0);
   }
 
-  function threatsAt(finalWins){
-   return rivals().filter(x => {
-    if(x.maxW > finalWins) return true;
-    if(x.maxW === finalWins && x.pf >= pf) return true;
-    return false;
-   }).map(x => {
-    const margin = finalMarginNeeded(x);
-    const gapNow = x.wins - myRow.wins;
-    const needDiff = relativeWinsNeeded(x); // win this many MORE remaining games than they do
-    // If they win out (x.rem more wins), you need finalWins >= x.wins + x.rem + margin
-    const gapIfTheyWinOut = (x.wins + x.rem + margin) - finalWins;
-    const lossesTheyNeed = gapIfTheyWinOut > 0
-     ? Math.min(x.rem, Math.ceil(gapIfTheyWinOut))
-     : 0;
-    return {
-     name: x.name,
-     id: x.id,
-     wins: x.wins,
-     rem: x.rem,
-     maxW: x.maxW,
-     pf: x.pf,
-     margin,
-     gapNow,
-     needDiff,
-     lossesTheyNeed,
-     gapIfTheyWinOut
-    };
-   }).sort((a,b) => b.needDiff - a.needDiff || b.maxW - a.maxW);
+  function rangeForLock(lockMyWeek){
+   // Mild this-week-only tilt for contenders (±0.15 on win p) — possible outcomes, not season extremes
+   const mid = simPlayoffRate(lockMyWeek, 0);
+   let low = simPlayoffRate(lockMyWeek, 0.15);  // threats hotter this week → worse for you
+   let high = simPlayoffRate(lockMyWeek, -0.15); // threats colder this week → better for you
+   if(low > mid) low = mid;
+   if(high < mid) high = mid;
+   if(low > high){ const t = low; low = high; high = t; }
+   // Cap absurd spreads (should be rare with mild tilt)
+   if(high - low > 25){
+    low = Math.max(low, mid - 12);
+    high = Math.min(high, mid + 12);
+   }
+   return { low: safePct(low), mid: safePct(mid), high: safePct(high) };
   }
 
+  function statusAfterThisWeek(winsThisWeek){
+   const w = Math.max(0, Math.min(thisWeekGames, winsThisWeek));
+   const newWins = myRow.wins + w;
+   const remAfter = Math.max(0, rem - thisWeekGames);
+   const myMaxAfter = newWins + remAfter;
+   const myMinAfter = newWins;
+   const eliminated = forcedAheadCount(myMaxAfter, pf) >= nPlayoff;
+   const loseOutStillIn = canStillPassCount(myMinAfter, pf) <= (nPlayoff - 1)
+    && forcedAheadCount(myMinAfter, pf) < nPlayoff;
+   const clinched = !eliminated && loseOutStillIn;
+   let range = { low: 0, mid: 0, high: 0 };
+   if(eliminated) range = { low: 0, mid: 0, high: 0 };
+   else if(clinched) range = { low: 100, mid: 100, high: 100 };
+   else range = rangeForLock(w);
+   return {
+    winsThisWeek: w, newWins, remAfter, eliminated, clinched,
+    playoffPct: range.mid, low: range.low, mid: range.mid, high: range.high
+   };
+  }
+
+  // ---- HTML ----
   const lines = [];
-  lines.push('<div style="margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--border);">');
-  lines.push('<div style="font-size:15px;font-weight:700;color:var(--text);">' + escapeHtml(me.name) + '</div>');
-  lines.push('<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'
-   + (me.wins||0) + '-' + (me.losses||0) + ' now'
-   + (medianOn ? ' · H2H + median each count as a win' : '')
-   + ' · ' + weeksLeft + ' week' + (weeksLeft === 1 ? '' : 's') + ' left (' + rem + ' games)'
-   + '</div>');
-  lines.push('<div style="font-size:13px;margin-top:8px;color:var(--text);">Playoffs: top <strong>'
-   + nPlayoff + '</strong> of ' + nTeams
-   + ' · you need to finish ahead of at least <strong>' + mustBeat
-   + '</strong> team' + (mustBeat === 1 ? '' : 's')
-   + ' (at most ' + maxAllowedAhead + ' can finish ahead of you).</div>');
+
+  function pill(label, tone){
+   const bg = tone === 'good' ? 'rgba(74,155,110,0.15)'
+    : tone === 'bad' ? 'rgba(196,92,82,0.15)'
+    : tone === 'warn' ? 'rgba(201,162,39,0.15)'
+    : 'var(--surface-2)';
+   const color = tone === 'good' ? 'var(--accent)'
+    : tone === 'bad' ? 'var(--red)'
+    : tone === 'warn' ? 'var(--gold)'
+    : 'var(--text-secondary)';
+   return '<span style="display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:'
+    + bg + ';color:' + color + ';">' + label + '</span>';
+  }
+
+  let statusTone = 'warn';
+  let statusText = 'In the hunt';
+  if(st.eliminated){ statusTone = 'bad'; statusText = 'Eliminated from playoffs'; }
+  else if(st.byeClinched){ statusTone = 'good'; statusText = 'Bye clinched'; }
+  else if(st.clinched){ statusTone = 'good'; statusText = 'Playoffs clinched'; }
+  else if(!stillAliveWinOut){ statusTone = 'bad'; statusText = 'Eliminated (even winning out)'; }
+  else if(magicIn === 0){ statusTone = 'good'; statusText = 'Clinched (can lose out)'; }
+
+  lines.push('<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">');
+  lines.push(pill(statusText, statusTone));
+  lines.push('<span style="font-size:13px;color:var(--text-muted);">'
+   + escapeHtml(String(me.wins||0) + '-' + String(me.losses||0) + (me.ties ? '-' + me.ties : ''))
+   + ' · ' + (medianOn ? 'H2H + median' : 'H2H')
+   + ' · ' + weeksLeft + ' week' + (weeksLeft === 1 ? '' : 's') + ' left ('
+   + rem + ' game' + (rem === 1 ? '' : 's') + ')</span>');
   lines.push('</div>');
 
-  if(st.eliminated){
-   lines.push('<p style="color:var(--red);font-weight:700;margin:0 0 10px;">Eliminated — playoffs are impossible.</p>');
-   lines.push('<p style="margin:0;font-size:13px;">Best case ' + myRow.maxW + ' wins ('
-    + (me.wins||0) + ' + all ' + rem + ' remaining) still leaves too many teams able to finish ahead of you.</p>');
-  } else if(st.clinched){
-   lines.push('<p style="color:var(--accent);font-weight:700;margin:0 0 10px;">You\'re in'
-    + (st.byeClinched ? ' · bye locked too' : '') + '.</p>');
-   lines.push('<p style="margin:0;font-size:13px;">Even with 0 more wins, at most '
-    + maxAllowedAhead + ' teams can finish ahead of you.</p>');
+  if(odds){
+   lines.push('<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:14px;">');
+   function mini(label, val, isOut){
+    const v = isOut ? '<span style="color:var(--red);font-weight:800;">E</span>'
+     : (val != null && isFinite(val) ? (Math.round(val) + '%') : '—');
+    return '<div style="padding:8px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);">'
+     + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);">' + label + '</div>'
+     + '<div style="font-size:16px;font-weight:800;margin-top:2px;">' + v + '</div></div>';
+   }
+   lines.push(mini('Playoffs', odds.playoffPct, !!st.eliminated));
+   if(nBye > 0) lines.push(mini('Bye', odds.byePct, !!(st.byeEliminated || st.eliminated)));
+   lines.push(mini('Title', odds.titlePct, !!st.eliminated));
+   lines.push(mini('Toilet', odds.toiletPct, !!st.toiletImpossible));
+   lines.push(mini('Last', odds.lastPct, !!st.lastImpossible));
+   lines.push('</div>');
+  }
+
+  if(thisWeekGames > 0){
+   const simNowRange = rangeForLock(null);
+   const tableNow = (odds && odds.playoffPct != null && isFinite(odds.playoffPct))
+    ? safePct(odds.playoffPct) : safePct(simNowRange.mid);
+   const nowPct = tableNow;
+   const scale = (simNowRange.mid > 1) ? (tableNow / simNowRange.mid) : 1;
+
+   function scaleRange(r){
+    if(!r) return { low: 0, mid: 0, high: 0, playoffPct: 0, eliminated: false, clinched: false };
+    if(r.eliminated || r.clinched) return r;
+    const s = (isFinite(scale) && scale > 0) ? scale : 1;
+    let lo = safePct(r.low * s);
+    let mid = safePct((r.mid != null ? r.mid : r.playoffPct) * s);
+    let hi = safePct(r.high * s);
+    if(lo > mid) lo = mid;
+    if(hi < mid) hi = mid;
+    if(hi - lo > 25){ lo = Math.max(0, mid - 12); hi = Math.min(100, mid + 12); }
+    r.low = lo; r.mid = mid; r.high = hi; r.playoffPct = mid;
+    return r;
+   }
+
+   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin:0 0 6px;">This week</div>');
+   lines.push('<p style="margin:0 0 10px;font-size:12px;color:var(--text-muted);line-height:1.45;">'
+    + 'Your result is fixed. Other teams’ <strong style="color:var(--text);">this week only</strong> is rolled from their win rates (favorites win more often). '
+    + 'The rest of the season always uses normal strength. The small range is “contenders a bit hot / cold this week,” not impossible season extremes.'
+    + '</p>');
+
+   lines.push('<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:6px;">');
+   lines.push('<div><strong style="color:var(--text);">Now</strong>');
+   lines.push('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Before this week resolves</div></div>');
+   lines.push('<div style="text-align:right;font-size:18px;font-weight:800;color:var(--text);">' + Math.round(nowPct) + '%</div>');
+   lines.push('</div>');
+
+   const scenarios = thisWeekGames >= 2
+    ? [
+       { label: 'If you win both', w: 2, sub: 'H2H + median both wins' },
+       { label: 'If you split', w: 1, sub: '1 win, 1 loss this week' },
+       { label: 'If you lose both', w: 0, sub: '0–2 this week' }
+      ]
+    : [
+       { label: 'If you win', w: 1, sub: 'Win H2H' },
+       { label: 'If you lose', w: 0, sub: 'Lose H2H' }
+      ];
+
+   lines.push('<div style="display:grid;gap:6px;margin-bottom:14px;">');
+   scenarios.forEach(sc => {
+    let r;
+    try{ r = scaleRange(statusAfterThisWeek(sc.w)); }
+    catch(e){
+     r = { eliminated: false, clinched: false, playoffPct: nowPct, low: nowPct, mid: nowPct, high: nowPct, remAfter: rem };
+    }
+    const lo = safePct(r.low);
+    const mid = safePct(r.mid != null ? r.mid : r.playoffPct);
+    const hi = safePct(r.high);
+    let statusLabel = 'Alive';
+    let tone = '';
+    if(r.eliminated){ statusLabel = 'Eliminated'; tone = 'bad'; }
+    else if(r.clinched){ statusLabel = 'Clinched'; tone = 'good'; }
+
+    let pctStr;
+    if(r.eliminated) pctStr = 'E';
+    else if(r.clinched) pctStr = '100%';
+    else if(hi - lo < 2.5) pctStr = Math.round(mid) + '%';
+    else pctStr = Math.round(lo) + '–' + Math.round(hi) + '%'
+     + ' <span style="font-size:12px;font-weight:650;color:var(--text-muted);">(~' + Math.round(mid) + '%)</span>';
+
+    const delta = (r.eliminated || r.clinched) ? null : (mid - nowPct);
+    const deltaStr = delta == null || !isFinite(delta) ? ''
+     : (' <span style="font-size:11px;font-weight:650;color:' + (delta > 0.5 ? 'var(--accent)' : delta < -0.5 ? 'var(--red)' : 'var(--text-muted)') + ';">'
+        + (delta >= 0 ? '+' : '') + Math.round(delta) + '</span>');
+    const pctColor = r.eliminated ? 'var(--red)' : r.clinched ? 'var(--accent)'
+     : (mid >= 70 ? 'var(--accent)' : mid < 20 ? 'var(--red)' : 'var(--text)');
+
+    lines.push('<div style="padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);">');
+    lines.push('<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">');
+    lines.push('<div><strong style="color:var(--text);">' + sc.label + '</strong>');
+    lines.push('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + sc.sub
+     + ' · ' + (r.remAfter != null ? r.remAfter : rem) + ' games left after</div></div>');
+    lines.push('<div style="text-align:right;"><div style="font-size:16px;font-weight:800;color:' + pctColor + ';">' + pctStr + deltaStr + '</div>');
+    lines.push('<div style="font-size:11px;font-weight:700;color:'
+     + (tone === 'bad' ? 'var(--red)' : tone === 'good' ? 'var(--accent)' : 'var(--text-muted)')
+     + ';">' + statusLabel + '</div></div>');
+    lines.push('</div>');
+    if(!r.eliminated && !r.clinched && hi - lo >= 2.5){
+     lines.push('<div style="margin-top:8px;font-size:11px;color:var(--text-muted);">');
+     lines.push('If contenders are hot this week: <strong style="color:var(--text);">' + Math.round(lo) + '%</strong>');
+     lines.push(' · If they are cold: <strong style="color:var(--text);">' + Math.round(hi) + '%</strong>');
+     lines.push('</div>');
+    }
+    lines.push('</div>');
+   });
+   lines.push('</div>');
+  } else if(st.eliminated){
+   lines.push('<div style="margin-bottom:12px;padding:10px 12px;border-radius:8px;background:rgba(196,92,82,0.12);color:var(--red);font-weight:650;">Eliminated — even winning out cannot catch a playoff spot on record.</div>');
+  }
+
+  lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin:0 0 6px;">Playoffs</div>');
+  lines.push('<div style="padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:12px;font-size:13px;color:var(--text-secondary);">');
+  if(st.clinched || magicIn === 0){
+   lines.push('<strong style="color:var(--accent);">Locked in.</strong> You can lose out and still make it.');
+  } else if(st.eliminated || !stillAliveWinOut){
+   lines.push('<strong style="color:var(--red);">Out.</strong> Winning every remaining game is not enough on record alone.');
   } else {
-   const magic = st.winsToClinch;
-   const canSelfClinch = magic != null && magic <= rem;
-   const bestWins = myRow.maxW;
-
-   lines.push('<div style="margin:0 0 14px;padding:12px;border-radius:10px;background:var(--surface-2);">');
-   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">What you need to win</div>');
-   if(canSelfClinch){
-    lines.push('<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">Win '
-     + magic + ' of ' + rem + ' remaining games</div>');
-    lines.push('<p style="margin:0;font-size:13px;">That gets you to <strong>'
-     + (myRow.wins + magic) + ' wins</strong> (' + (me.wins||0) + ' + ' + magic
-     + ') and locks a top-' + nPlayoff + ' finish no matter what.</p>');
+   if(magicIn != null){
+    lines.push('Win <strong style="color:var(--text);">' + magicIn + ' of ' + rem + '</strong> remaining games to clinch on your own.');
    } else {
-    lines.push('<div style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:6px;">Winning out is not enough alone</div>');
-    lines.push('<p style="margin:0;font-size:13px;">Max is <strong>' + bestWins
-     + ' wins</strong> (' + (me.wins||0) + ' now + ' + rem + ' remaining'
-     + (medianOn ? ', H2H + median' : '')
-     + '). You still need enough other teams to finish behind you — see below.</p>');
+    lines.push('You cannot clinch on wins alone — you need teams ahead of you to drop games.');
    }
-   lines.push('</div>');
-
-   const targetWins = canSelfClinch ? (myRow.wins + magic) : bestWins;
-   const threats = threatsAt(targetWins);
-   // How many of these threats must finish behind you
-   const mustFinishBehind = Math.max(0, threats.length - maxAllowedAhead);
-
-   lines.push('<div style="margin:0 0 14px;padding:12px;border-radius:10px;background:var(--surface-2);">');
-   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Teams you need to finish ahead of</div>');
-   lines.push('<p style="margin:0 0 10px;font-size:13px;">To be in the top ' + nPlayoff
-    + ', you need <strong>' + mustBeat + '</strong> teams behind you. '
-    + 'Against each rival below: how many <em>more remaining games</em> you must win than they do '
-    + '(accounts for the current win gap'
-    + (medianOn ? '; H2H and median both count' : '')
-    + ').</p>');
-
-   if(!threats.length){
-    lines.push('<p style="margin:0;font-size:13px;color:var(--accent);">At '
-     + targetWins + ' wins, no team can finish ahead of you on wins/PF. You\'re in.</p>');
-   } else {
-    lines.push('<p style="margin:0 0 8px;font-size:13px;">If you end at <strong>'
-     + targetWins + ' wins</strong>, these teams can still finish ahead of you unless they drop games:</p>');
-    lines.push('<ul style="margin:0 0 10px;padding-left:0;list-style:none;">');
-    threats.forEach(h => {
-      let diffTxt;
-      if(h.needDiff > 0){
-       diffTxt = 'To finish ahead of them, you need to win <strong style="color:var(--accent);">'
-        + h.needDiff + ' more remaining game' + (h.needDiff === 1 ? '' : 's')
-        + ' than they do</strong>';
-      } else if(h.needDiff === 0){
-       diffTxt = 'To finish ahead, match their remaining win pace (same number of remaining wins) — you lead PF';
-      } else {
-       diffTxt = 'You can win <strong>' + Math.abs(h.needDiff) + ' fewer</strong> remaining games than them and still finish ahead';
-      }
-      const gapTxt = h.gapNow > 0
-       ? ('They are <strong>' + h.gapNow + ' win' + (h.gapNow === 1 ? '' : 's') + ' ahead</strong> right now')
-       : h.gapNow < 0
-        ? ('You are <strong>' + Math.abs(h.gapNow) + ' win' + (Math.abs(h.gapNow) === 1 ? '' : 's') + ' ahead</strong> right now')
-        : 'Tied on wins right now';
-      let helpTxt = '';
-      if(h.gapIfTheyWinOut > 0){
-       helpTxt = 'If they win all ' + h.rem + ' remaining, you need them to drop at least <strong style="color:var(--red);">'
-        + h.lossesTheyNeed + '</strong> of those so your win-out still clears them';
-      } else {
-       helpTxt = 'Even if they win out, your best case still finishes ahead of them';
-      }
-      lines.push('<li style="padding:10px 0;border-bottom:1px solid var(--border-subtle);">'
-       + '<div style="font-weight:700;color:var(--text);">' + escapeHtml(h.name)
-       + ' <span style="font-weight:500;color:var(--text-muted);">· ' + h.wins + 'W now · '
-       + h.rem + ' games left</span></div>'
-       + '<div style="font-size:13px;color:var(--text);margin-top:4px;">' + diffTxt + '</div>'
-       + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + gapTxt + '</div>'
-       + '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + helpTxt + '</div>'
-       + '</li>');
-    });
-    lines.push('</ul>');
-    if(mustFinishBehind > 0){
-     lines.push('<p style="margin:0;font-size:13px;padding:10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);">'
-      + '<strong>Bottom line:</strong> you need at least <strong>'
-      + mustFinishBehind + '</strong> of these ' + threats.length
-      + ' teams to finish <em>behind</em> you (not all of them). That leaves at most '
-      + maxAllowedAhead + ' ahead of you → top ' + nPlayoff + '.</p>');
-    } else {
-     lines.push('<p style="margin:0;font-size:13px;color:var(--accent);"><strong>Bottom line:</strong> only '
-      + threats.length + ' can pass you, which still leaves you inside the top '
-      + nPlayoff + ' at this win total.</p>');
-    }
-   }
-   lines.push('</div>');
-
-   if(rem > 0){
-    lines.push('<div style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">If you take this many more wins</div>');
-    lines.push('<div style="overflow-x:auto;"><table style="width:100%;font-size:12px;"><thead><tr>'
-     + '<th>You win</th><th>Your total</th><th>Teams that can finish ahead</th><th></th></tr></thead><tbody>');
-    const steps = [];
-    for(let k = 0; k <= rem; k++){
-     if(rem > 10 && k !== 0 && k !== rem && k !== magic && (k % Math.max(1, Math.ceil(rem / 5)) !== 0)) continue;
-     steps.push(k);
-    }
-    if(magic != null && magic >= 0 && magic <= rem && steps.indexOf(magic) < 0) steps.push(magic);
-    steps.sort((a,b) => a - b);
-    steps.forEach(k => {
-     const ahead = threatsAt(myRow.wins + k);
-     const floor = myRow.wins + k;
-     const inIf = ahead.length <= maxAllowedAhead;
-     let label = inIf ? 'In' : 'Need help';
-     let color = inIf ? 'var(--accent)' : 'var(--text-muted)';
-     if(k === magic && canSelfClinch){ label = 'Magic # · In'; color = 'var(--accent)'; }
-     lines.push('<tr><td><strong>' + k + ' of ' + rem + '</strong></td><td>'
-      + (Math.round(floor * 10) / 10)
-      + ' <span style="color:var(--text-muted);font-size:11px;">('
-      + (me.wins||0) + '+' + k + ')</span></td><td>'
-      + ahead.length + '</td><td style="color:' + color + ';font-weight:700;">'
-      + label + '</td></tr>');
-    });
-    lines.push('</tbody></table></div>');
+   if(elimIfLoseOut){
+    lines.push('<div style="margin-top:6px;color:var(--red);">If you lose out (' + rem + ' losses), you are eliminated.</div>');
    }
   }
+  lines.push('</div>');
 
-  if(nBye > 0 && !st.eliminated && !st.byeClinched){
-   const byeMagic = st.winsToBye;
-   lines.push('<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;">');
-   if(byeMagic != null && byeMagic <= rem){
-    lines.push('<strong>Bye:</strong> win <strong>' + byeMagic + ' of ' + rem + '</strong> remaining.');
+  // Bye
+  if(nBye > 0){
+   lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin:0 0 6px;">Bye</div>');
+   lines.push('<div style="padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:12px;font-size:13px;color:var(--text-secondary);">');
+   if(st.byeClinched){
+    lines.push('<strong style="color:var(--accent);">Bye locked.</strong>');
+   } else if(st.eliminated || st.byeEliminated){
+    lines.push('<span style="color:var(--red);font-weight:700;">E</span> — bye is mathematically gone.');
+   } else if(magicBye != null){
+    lines.push('Win <strong style="color:var(--text);">' + magicBye + ' of ' + rem + '</strong> remaining to lock a bye on your own.');
    } else {
-    lines.push('<strong>Bye:</strong> not reachable on your own from here.');
+    lines.push('A bye is not reachable on wins alone from here.');
    }
    lines.push('</div>');
-  } else if(st.byeClinched){
-   lines.push('<div style="margin-top:12px;color:var(--accent);font-weight:700;">Bye already locked.</div>');
   }
 
-  return { title: me.name + ' · how you get in', html: lines.join('') };
+  // Toilet & last
+  lines.push('<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin:0 0 6px;">Toilet &amp; last place</div>');
+  lines.push('<div style="padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:8px;font-size:13px;color:var(--text-secondary);">');
+  if(st.toiletImpossible || st.clinched){
+   lines.push('<strong style="color:var(--accent);">Out of the toilet race</strong> (playoffs locked).');
+  } else if(st.eliminated){
+   lines.push('Eliminated from playoffs — in the toilet pool.');
+  } else {
+   lines.push('Still fighting for a playoff spot. Toilet / last only matter if you miss the cut.');
+  }
+  if(st.lastImpossible){
+   lines.push('<div style="margin-top:6px;">Last place is mathematically impossible (someone is forced below you).</div>');
+  }
+  if(odds && odds.toiletPct != null && !st.toiletImpossible){
+   lines.push('<div style="margin-top:6px;color:var(--text-muted);font-size:12px;">Sim toilet '
+    + Math.round(odds.toiletPct) + '% · last place ' + Math.round(odds.lastPct || 0) + '%</div>');
+  }
+  lines.push('</div>');
+
+  lines.push('<p style="margin:10px 0 0;font-size:11px;color:var(--text-muted);">Record math uses '
+   + (medianOn ? 'H2H + median wins' : 'H2H wins')
+   + '. Tiebreakers: head-to-head first, then points for. Red E means mathematically impossible. This-week % averages everyone else’s games.</p>');
+
+  return { title: me.name || 'Team', html: lines.join('') };
+}
+
+function closeClinchModal(){
+  try{
+   const overlay = el('clinch-modal-overlay');
+   if(overlay){
+    overlay.style.display = 'none';
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+   }
+  }catch(e){}
+  try{
+   const legacy = el('playoffs-clinch-detail');
+   if(legacy){ legacy.style.display = 'none'; legacy.hidden = true; }
+  }catch(e){}
  }
-
  function showClinchScenarios(teamId){
-  const box = el('playoffs-clinch-detail');
+  const overlay = el('clinch-modal-overlay');
   const body = el('playoffs-clinch-body');
   const title = el('playoffs-clinch-title');
-  if(!box || !body) return;
-  const sc = buildClinchScenarios(teamId);
-  if(title) title.textContent = sc.title || 'How you get in';
-  body.innerHTML = sc.html || '';
-  box.style.display = '';
-  try{ box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }catch(e){}
+  const sheet = el('clinch-modal-sheet');
+  if(!body){
+   console.warn('clinch body missing');
+   return;
+  }
+  if(overlay){
+   overlay.style.display = 'flex';
+   overlay.classList.add('open');
+   overlay.setAttribute('aria-hidden', 'false');
+  }
+  if(title) title.textContent = 'Clinch scenarios';
+  body.innerHTML = '<p style="margin:0;color:var(--text-muted);">Loading scenarios…</p>';
+  setTimeout(() => {
+   try{
+    const sc = buildClinchScenarios(teamId);
+    if(title) title.textContent = sc.title || 'Clinch scenarios';
+    body.innerHTML = sc.html || '<p>No data.</p>';
+   }catch(e){
+    console.warn('clinch build failed', e);
+    body.innerHTML = '<p style="color:var(--red);">Could not build scenarios: '
+     + escapeHtml(String(e && e.message || e)) + '</p>';
+   }
+  }, 30);
+
+  const closeBtn = el('btn-clinch-close');
+  if(closeBtn){
+   closeBtn.onclick = function(ev){
+    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+    closeClinchModal();
+   };
+  }
+  if(overlay){
+   overlay.onclick = function(ev){
+    if(ev.target === overlay) closeClinchModal();
+   };
+  }
+  if(sheet){
+   sheet.onclick = function(ev){ ev.stopPropagation(); };
+  }
+  // Escape closes
+  if(!window._clinchEscBound){
+   window._clinchEscBound = true;
+   document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape') closeClinchModal();
+   });
+  }
  }
 
  
@@ -8396,6 +8735,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  const settings = state.playoffSettings || detectPlayoffSettings();
  const teams = state.teams || [];
  if(!teams.length) return null;
+ const h2hMap = (typeof buildH2HMap === 'function') ? buildH2HMap() : {};
  try{ state._mathClinch = computeMathematicalClinch(settings); }catch(e){ state._mathClinch = {}; }
 
  // Stable cache key: same inputs → same odds (no random drift between first load and re-click)
@@ -8410,6 +8750,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
   quality.weeks,
   (scheduleCache ? 1 : 0),
   medFlag,
+  'toilet2-last',
   teams.map(t => [t.id, t.wins||0, t.losses||0, t.ties||0, Math.round(t.pointsFor||0)].join(':')).join('|')
  ].join('::');
  const skipCache = !!(opts && opts.skipCache);
@@ -8548,6 +8889,8 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  playoff: {},
  bye: {},
  title: {},
+ toilet: {},
+ last: {},
  sumW: {},
  sumL: {},
  sumT: {},
@@ -8557,6 +8900,8 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  counts.playoff[t.id] = 0;
  counts.bye[t.id] = 0;
  counts.title[t.id] = 0;
+ counts.toilet[t.id] = 0;
+ counts.last[t.id] = 0;
  counts.sumW[t.id] = 0;
  counts.sumL[t.id] = 0;
  counts.sumT[t.id] = 0;
@@ -8638,7 +8983,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  const g = row.wins + row.losses + row.ties;
  row.winPct = g > 0 ? (row.wins + 0.5 * row.ties) / g : 0;
  });
- sim.sort((a, b) => b.winPct - a.winPct || b.pf - a.pf || String(a.id).localeCompare(String(b.id)));
+ sim.sort((a, b) => standingsCompare({ id: a.id, wins: a.wins, winPct: a.winPct, pf: a.pf }, { id: b.id, wins: b.wins, winPct: b.winPct, pf: b.pf }, typeof h2hMap !== 'undefined' ? h2hMap : (typeof buildH2HMap === 'function' ? buildH2HMap() : {})));
 
  const playoffIds = sim.slice(0, nPlayoff).map(r => r.id);
  playoffIds.forEach(id => { counts.playoff[id]++; });
@@ -8702,6 +9047,40 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  }
  if(active[0]) counts.title[active[0].id]++;
 
+  // Toilet bowl: non-playoff teams, loser advances (lower score wins the match), last standing = toilet champ
+  const toiletField = sim.slice(nPlayoff).map(r => ({ id: r.id }));
+  if(toiletField.length === 1){
+   counts.toilet[toiletField[0].id]++;
+  } else if(toiletField.length > 1){
+   let tActive = toiletField.slice();
+   let guard = 0;
+   while(tActive.length > 1 && guard++ < 24){
+    // Seed by standings order (worst first so late seeds meet earlier)
+    tActive.sort((x, y) => {
+     const ix = sim.findIndex(z => z.id === x.id);
+     const iy = sim.findIndex(z => z.id === y.id);
+     return iy - ix; // worse record first
+    });
+    const nextT = [];
+    for(let i = 0; i + 1 < tActive.length; i += 2){
+     const a = tActive[i], b = tActive[i + 1];
+     const ma = models[a.id] || { mean: leagueMean, std: 22, gameLuck: 8 };
+     const mb = models[b.id] || { mean: leagueMean, std: 22, gameLuck: 8 };
+     const sa = ma.mean + (ma.std || 22) * randn() + (ma.gameLuck || 0) * randn() * 0.7;
+     const sb = mb.mean + (mb.std || 22) * randn() + (mb.gameLuck || 0) * randn() * 0.7;
+     // Lower score advances (toilet)
+     nextT.push(sa <= sb ? a : b);
+    }
+    if(tActive.length % 2 === 1) nextT.push(tActive[tActive.length - 1]);
+    tActive = nextT;
+   }
+   if(tActive[0]) counts.toilet[tActive[0].id]++;
+  }
+
+  // True last place by final record (worst win% then PF)
+  const lastRow = sim[sim.length - 1];
+  if(lastRow) counts.last[lastRow.id]++;
+
   // Accumulate final projected records for this sim
   sim.forEach(row => {
    counts.sumW[row.id] += row.wins || 0;
@@ -8755,11 +9134,16 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  playoffPct: sims > 0 ? 100 * (counts.playoff[t.id] || 0) / denom : null,
  byePct: sims > 0 && nBye > 0 ? 100 * (counts.bye[t.id] || 0) / denom : null,
  titlePct: sims > 0 ? 100 * (counts.title[t.id] || 0) / denom : null,
- clinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].clinched),
+ toiletPct: sims > 0 ? 100 * (counts.toilet[t.id] || 0) / denom : null,
+ lastPct: sims > 0 ? 100 * (counts.last[t.id] || 0) / denom : null,
+  clinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].clinched),
  eliminated: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].eliminated),
  byeClinched: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].byeClinched),
  nearClinch: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearClinch),
  nearBye: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].nearBye),
+ byeEliminated: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].byeEliminated),
+ lastImpossible: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].lastImpossible),
+ toiletImpossible: !!(state._mathClinch && state._mathClinch[t.id] && state._mathClinch[t.id].toiletImpossible),
  winsToClinch: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].winsToClinch : null,
  winsToBye: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].winsToBye : null,
  gamesVsCut: state._mathClinch && state._mathClinch[t.id] ? state._mathClinch[t.id].gamesVsCut : null,
@@ -8885,7 +9269,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  }
  if(note){
  note.textContent = showOdds
- ? ((forced && !quality.ready) ? 'OVERRIDE: low sample. ' : '') + 'Title odds use a simplified bracket. Schedule is approximated. Treat early results as directional only.'
+ ? ((forced && !quality.ready) ? 'OVERRIDE: low sample. ' : '') + 'Title and toilet use simplified brackets (toilet = loser advances among non-playoff teams). Last % is regular-season last place by final record (then PF). Treat early results as directional only.'
  : 'Come back after a few weeks for odds, or press Run odds early. Until then, use seeding and Power.';
  }
 
@@ -8961,15 +9345,32 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  if(row.byeClinched) badges += ' <span style="font-size:10px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;margin-left:4px;">BYE</span>';
  else if(row.clinched) badges += ' <span style="font-size:10px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;margin-left:4px;">IN</span>';
  if(row.eliminated) badges += ' <span style="font-size:10px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:4px;padding:1px 5px;margin-left:4px;">OUT</span>';
+ // Red E only when that outcome is mathematically impossible (record floor/ceiling)
+ const Ecell = '<span style="color:var(--red);font-weight:800;" title="Mathematically impossible">E</span>';
+ const nByeLocal = (state.playoffSettings && state.playoffSettings.byes) || (typeof detectPlayoffSettings === 'function' && (detectPlayoffSettings().byes || 0)) || 0;
+ const outPlayoff = !!row.eliminated;
+ const outBye = !nByeLocal || !!row.byeEliminated || !!row.eliminated;
+ const outTitle = !!row.eliminated; // title requires playoffs
+ const outToilet = !!row.toiletImpossible; // clinched playoffs only
+ const outLast = !!row.lastImpossible; // NOT playoff clinch — only when someone is forced below you
+ function oddsOrE(val, isOut, emphasize){
+  if(isOut) return Ecell;
+  if(!showOdds) return '-';
+  if(val == null || !isFinite(val)) return '-';
+  if(emphasize) return '<strong>' + pct(val) + '</strong>';
+  return pct(val);
+ }
  tr.innerHTML = `
  <td><span class="rank-num">${row.seed || (i + 1)}</span></td>
  <td class="team-name-cell">${escapeHtml(row.team.name)}${badges}</td>
  <td class="val-cell">${escapeHtml(row.record)}</td>
  <td class="val-cell" title="Expected end-of-regular-season record">${projRec}</td>
  <td class="val-cell">${fmtPts(row.pf)}</td>
- <td class="val-cell">${showOdds ? '<strong>' + pct(row.playoffPct) + '</strong>' : '-'}</td>
- <td class="val-cell">${pct(row.byePct)}</td>
- <td class="val-cell">${pct(row.titlePct)}</td>
+ <td class="val-cell">${oddsOrE(row.playoffPct, outPlayoff, true)}</td>
+ <td class="val-cell">${oddsOrE(row.byePct, outBye, false)}</td>
+ <td class="val-cell">${oddsOrE(row.titlePct, outTitle, false)}</td>
+ <td class="val-cell">${outToilet ? Ecell : (showOdds && row.toiletPct != null ? '<span style="color:var(--red);font-weight:650;">' + pct(row.toiletPct) + '</span>' : (showOdds ? pct(row.toiletPct) : '-'))}</td>
+ <td class="val-cell">${outLast ? Ecell : (showOdds && row.lastPct != null ? '<span style="color:var(--red);font-weight:650;">' + pct(row.lastPct) + '</span>' : (showOdds ? pct(row.lastPct) : '-'))}</td>
  <td class="val-cell">${statusHtml}</td>`;
  tr.style.cursor = 'pointer';
  tr.title = 'Click for clinch scenarios';
@@ -8978,14 +9379,7 @@ function simulateTradePower(teamA, teamB, assetsFromA, assetsFromB){
  });
  tbody.appendChild(tr);
  });
- const closeBtn = el('btn-clinch-close');
- if(closeBtn && !closeBtn._bound){
-  closeBtn._bound = true;
-  closeBtn.addEventListener('click', () => {
-   const box = el('playoffs-clinch-detail');
-   if(box) box.style.display = 'none';
-  });
- }
+ // close is bound inside showClinchScenarios / closeClinchModal
  }
 
  /* ---------- matchups (live / projected) ---------- */
@@ -12607,73 +13001,51 @@ function renderLuck(){
  const note = el('luck-note');
  const intro = el('luck-intro');
  if(!tbody) return;
+ // Remove leftover advanced UI if present
+ try{ const s = el('luck-summary'); if(s) s.innerHTML = ''; }catch(e){}
+ try{ const d = el('luck-detail'); if(d){ d.style.display = 'none'; d.innerHTML = ''; } }catch(e){}
+
  if(!state.teams || !state.teams.length){
- tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
- return;
+  tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:20px;">Load a league first.</td></tr>';
+  return;
  }
 
- // All-play expected wins (standard method):
- // Each week, if you scored higher than K other teams, that week is K wins in all-play.
- // Exp W = all-play wins / (n-1) * gamesPlayed (same as all-play% * H2H games)
- const nTeams = state.teams.length;
- const maxWeeks = Math.max(0, ...state.teams.map(t => (t.weeklyScores || []).filter(s => s > 0).length));
+ const teams = state.teams;
+ const maxWeeks = Math.max(0, ...teams.map(t => (t.weeklyScores || []).length));
+
+ // Week -> list of {id, pts} for teams that scored
+ const weekField = [];
+ for(let w = 0; w < maxWeeks; w++){
+  const row = [];
+  teams.forEach(t => {
+   const s = (t.weeklyScores || [])[w];
+   if(typeof s === 'number' && s > 0) row.push({ id: t.id, pts: s });
+  });
+  weekField.push(row);
+ }
+
+ let scoredWeeks = 0;
+ try{
+  if(typeof estimateCompletedWeeks === 'function') scoredWeeks = estimateCompletedWeeks(teams) || 0;
+ }catch(e){}
+ if(!scoredWeeks){
+  scoredWeeks = weekField.filter(ws => ws.length >= Math.max(2, Math.floor(teams.length * 0.5))).length;
+ }
 
  const avgPtsMap = {};
- state.teams.forEach(t => {
- const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
- avgPtsMap[t.id] = t.avgPts || (scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0);
+ teams.forEach(t => {
+  const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+  avgPtsMap[t.id] = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : (t.avgPts || 0);
  });
 
- const graph = scheduleCache || {};
+ // Schedule graph for SOS (opponents' season averages)
+ let graph = {};
+ try{
+  if(typeof buildScheduleGraph === 'function') graph = buildScheduleGraph() || {};
+  else if(typeof scheduleCache === 'object' && scheduleCache) graph = scheduleCache;
+ }catch(e){}
 
- const rows = state.teams.map(t => {
- const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
- let allPlayW = 0, allPlayG = 0;
- scores.forEach((s, w) => {
- state.teams.forEach(o => {
- if(o.id === t.id) return;
- const os = (o.weeklyScores || [])[w];
- if(typeof os !== 'number' || !(os > 0)) return;
- allPlayG++;
- if(s > os + 0.05) allPlayW += 1;
- else if(Math.abs(s - os) <= 0.05) allPlayW += 0.5;
- });
- });
- const games = (t.wins||0)+(t.losses||0)+(t.ties||0);
- const allPlayPct = allPlayG > 0 ? allPlayW / allPlayG : 0;
- // Expected H2H wins if opponents were a random draw from the league each week
- const expectedWins = games > 0 ? allPlayPct * games : allPlayPct * scores.length;
- const actualW = (t.wins||0) + 0.5*(t.ties||0);
- const luck = actualW - expectedWins;
-
- // SOS: mean season avg of opponents played + opponents still to play
- const node = graph[t.id] || { past: [], future: [] };
- const oppIds = [...node.past, ...node.future];
- let sosSum = 0, sosN = 0;
- oppIds.forEach(oid => {
- if(avgPtsMap[oid] != null && avgPtsMap[oid] > 0){
- sosSum += avgPtsMap[oid];
- sosN++;
- }
- });
- const sosVal = sosN ? sosSum / sosN : null;
-
- return {
- team: t,
- record: t.ties ? `${t.wins}-${t.losses}-${t.ties}` : `${t.wins||0}-${t.losses||0}`,
- expW: expectedWins,
- luck,
- sos: sosVal,
- sosN,
- pf: t.pointsFor || scores.reduce((a,b)=>a+b,0),
- avg: avgPtsMap[t.id],
- games,
- allPlayPct,
- allPlayRecord: allPlayG ? (allPlayW.toFixed(0) + '-' + (allPlayG - allPlayW).toFixed(0)) : '-'
- };
- });
-
- // Lineup accuracy from weekly box scores
+ // Lineup accuracy (optional, same engine as before)
  let accById = {};
  try{
   if(!rosterWeekCache && typeof loadRosterWeekData === 'function' && !state._luckAccLoading){
@@ -12685,867 +13057,125 @@ function renderLuck(){
   }
   if(typeof computeLineupAccuracyRows === 'function' && rosterWeekCache){
    computeLineupAccuracyRows().forEach(r => {
-    accById[String(r.teamId != null ? r.teamId : (r.team && r.team.id))] = r;
+    const id = r.teamId != null ? r.teamId : (r.team && r.team.id);
+    if(id != null) accById[String(id)] = r;
    });
   }
- }catch(e){ console.warn('luck accuracy', e); }
- rows.forEach(r => {
-  const a = accById[String(r.team.id)];
-  r.optPct = a ? a.optPct : null;
-  r.perfectPct = a ? a.perfectPct : null;
-  r.avgMiss = a ? a.avgMiss : null;
-  r.accWeeks = a ? a.weeks : 0;
+ }catch(e){}
+
+ const rows = teams.map(t => {
+  const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
+  const games = (t.wins||0)+(t.losses||0)+(t.ties||0);
+  const actualW = (t.wins||0) + 0.5*(t.ties||0);
+  const pf = t.pointsFor || scores.reduce((a,b)=>a+b,0);
+
+  // All-play: each week, count of other teams you outscored
+  let allPlayW = 0, allPlayG = 0;
+  (t.weeklyScores || []).forEach((pts, w) => {
+   if(typeof pts !== 'number' || !(pts > 0)) return;
+   const field = weekField[w] || [];
+   field.forEach(o => {
+    if(String(o.id) === String(t.id)) return;
+    allPlayG++;
+    if(pts > o.pts + 0.05) allPlayW += 1;
+    else if(Math.abs(pts - o.pts) <= 0.05) allPlayW += 0.5;
+   });
+  });
+  const allPlayPct = allPlayG > 0 ? allPlayW / allPlayG : 0.5;
+  const expW = games > 0 ? allPlayPct * games : allPlayPct * Math.max(scores.length, 1);
+  const luck = actualW - expW;
+
+  // SOS: mean of opponents' season avg pts
+  const node = graph[t.id] || graph[String(t.id)] || {};
+  const oppIds = [];
+  (node.past || []).forEach(id => oppIds.push(id));
+  (node.future || []).forEach(id => oppIds.push(id));
+  try{
+   Object.keys(node.weeks || {}).forEach(k => {
+    const m = node.weeks[k];
+    if(m && m.oppId != null) oppIds.push(m.oppId);
+   });
+  }catch(e){}
+  const uniq = [...new Set(oppIds.map(String))];
+  let sosSum = 0, sosN = 0;
+  uniq.forEach(oid => {
+   const avg = avgPtsMap[oid] != null ? avgPtsMap[oid]
+    : (avgPtsMap[Number(oid)] != null ? avgPtsMap[Number(oid)] : null);
+   if(avg != null && avg > 0){ sosSum += avg; sosN++; }
+  });
+  const sos = sosN ? sosSum / sosN : null;
+
+  const acc = accById[String(t.id)] || null;
+
+  return {
+   team: t,
+   record: t.ties ? (t.wins+'-'+t.losses+'-'+t.ties) : ((t.wins||0)+'-'+(t.losses||0)),
+   expW,
+   luck,
+   sos,
+   pf,
+   avg: avgPtsMap[t.id],
+   optPct: acc ? acc.optPct : null,
+   perfectPct: acc ? acc.perfectPct : null,
+   avgMiss: acc ? acc.avgMiss : null,
+   games,
+   allPlayPct
+  };
  });
 
- rows.sort((a,b) => b.expW - a.expW || b.pf - a.pf);
-
- if(intro){
- intro.textContent = maxWeeks >= 1
-  ? 'Exp W from all-play (you vs every other team each week). Luck = actual wins − exp. Positive = lucky schedule/results.'
-  : 'Need scored weeks to measure luck.';
- }
- if(note){
- const hasSched = rows.some(r => r.sosN > 0);
- const hasAcc = rows.some(r => r.accWeeks > 0);
- let msg = hasSched
-  ? 'SOS uses the real matchup schedule from your host when available. Higher SOS means you face (or faced) higher-scoring teams on average.'
-  : 'Schedule not loaded yet - open this tab again after matchups load, or hit Refresh. Until then SOS may be blank.';
- if(hasAcc){
-  msg += ' Start % = starter slots that matched the optimal set. Perfect % = your starter points / optimal points. Pts left = average points left on bench (optimal minus started).';
- } else if(state._luckAccLoading){
-  msg += ' Loading lineup accuracy…';
- } else {
-  msg += ' Lineup accuracy fills in after weekly box scores load (same data as Start/sit accuracy).';
- }
- note.textContent = msg;
- }
+ rows.sort((a,b) => b.luck - a.luck || b.expW - a.expW);
 
  const avgSOS = (() => {
- const v = rows.map(r => r.sos).filter(x => x != null);
- return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+  const v = rows.map(r => r.sos).filter(x => x != null);
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
  })();
- const avgPF = rows.length ? rows.reduce((s,r)=>s+r.pf,0)/rows.length : 0;
- const avgAvg = rows.length ? rows.reduce((s,r)=>s+(r.avg||0),0)/rows.length : 0;
-
- function deltaCell(val, base, higherIsHarder){
- if(val == null || base == null || !(base > 0)) return '-';
- const d = val - base;
- const pct = (d / base) * 100;
- const cls = higherIsHarder
- ? (d > 0.5 ? 'down' : d < -0.5 ? 'up' : '')
- : (d > 0.5 ? 'up' : d < -0.5 ? 'down' : '');
- const sign = d >= 0 ? '+' : '';
- return showPctChanges()
- ? `<span class="pct-cell ${cls}">${fmtPts(val)} <span style="font-size:10px;opacity:.85;">(${sign}${pct.toFixed(0)}%)</span></span>`
- : `<span class="pct-cell ${cls}">${fmtPts(val)}</span>`;
- }
 
  tbody.innerHTML = '';
  rows.forEach((r, i) => {
- const tr = document.createElement('tr');
- const isMine = state.myTeamId != null && (r.team.id === state.myTeamId || String(r.team.id) === String(state.myTeamId));
- if(isMine) tr.style.background = 'var(--accent-muted)';
- const luckCls = r.luck > 0.35 ? 'up' : r.luck < -0.35 ? 'down' : '';
- const luckStr = (r.luck >= 0 ? '+' : '') + r.luck.toFixed(1);
- const startStr = r.optPct != null ? r.optPct.toFixed(0) + '%' : '-';
- const perfStr = r.perfectPct != null ? r.perfectPct.toFixed(0) + '%' : '-';
- const missStr = r.avgMiss != null ? r.avgMiss.toFixed(1) : '-';
- const startCls = r.optPct == null ? '' : (r.optPct >= 85 ? 'up' : r.optPct < 70 ? 'down' : '');
- const perfCls = r.perfectPct == null ? '' : (r.perfectPct >= 95 ? 'up' : r.perfectPct < 90 ? 'down' : '');
- tr.innerHTML = `
- <td><span class="rank-num">${i+1}</span></td>
- <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
- <td class="val-cell">${escapeHtml(r.record)}</td>
- <td class="val-cell">${r.expW.toFixed(1)}</td>
- <td class="val-cell"><span class="pct-cell ${luckCls}">${luckStr}</span></td>
- <td class="val-cell">${deltaCell(r.sos, avgSOS, true)}</td>
- <td class="val-cell">${deltaCell(r.pf, avgPF, false)}</td>
- <td class="val-cell">${deltaCell(r.avg, avgAvg, false)}</td>
- <td class="val-cell"><span class="pct-cell ${startCls}">${startStr}</span></td>
- <td class="val-cell"><span class="pct-cell ${perfCls}">${perfStr}</span></td>
- <td class="val-cell">${missStr}</td>`;
- tbody.appendChild(tr);
- });
- }
-
-
- /* ---------- trade finder ---------- */
-
- function teamPosNeedScores(team){
- // Higher = more need. Pure slots define minimums; FLEX/SF filled by best players in optimal lineup.
- const levels = computeReplacementLevels();
- const counts = levels.counts;
- const starterRV = levels.starterRV || {};
- const pure = getPureStarterNeeds(counts);
- const { assignments } = optimalStarterLineup(team, counts, counts.flexEligible, counts.sfEligible);
- const byPos = { QB: [], RB: [], WR: [], TE: [] };
- assignments.forEach(a => {
- if(byPos[a.position]) byPos[a.position].push(a.value || 0);
- });
- const need = {};
- ['QB','RB','WR','TE'].forEach(pos => {
- const needN = pure[pos] || (counts[pos] || 0);
- const vals = byPos[pos] || [];
- const avg = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
- const minV = vals.length ? Math.min(...vals) : 0;
- const rv = starterRV[pos] || 400;
- const ratio = rv > 0 ? avg / rv : 1;
- const weakRatio = rv > 0 ? minV / rv : 1;
- let n = 50;
- if(vals.length < needN) n = 95;
- else if(weakRatio < 0.9 || ratio < 1.05) n = 88;
- else if(ratio < 1.35) n = 72;
- else if(ratio < 1.8) n = 48;
- else if(ratio < 2.4) n = 28;
- else if(ratio < 3.2) n = 14;
- else n = 6;
- need[pos] = n;
- });
- return need;
- }
-
- function starterUpgradeScore(team, recvList, sendList){
- // Does this trade improve the optimal lineup at needy spots?
- const levels = computeReplacementLevels();
- const counts = levels.counts;
- const before = optimalStarterLineup(team, counts, counts.flexEligible, counts.sfEligible);
- const outIds = new Set(sendList.map(p => String(p.id)));
- const roster = (team.roster || []).filter(p => !outIds.has(String(p.id)));
- recvList.forEach(p => roster.push({ ...p, fullName: p.fullName || p.name, matched: true, isIR: false }));
- const trial = { ...team, roster };
- const after = optimalStarterLineup(trial, counts, counts.flexEligible, counts.sfEligible);
- const beforeVal = before.assignments.reduce((s,a) => s + (a.value||0), 0);
- const afterVal = after.assignments.reduce((s,a) => s + (a.value||0), 0);
- return afterVal - beforeVal;
- }
-
- 
- function playerTrendPct(p){
- // Returns 30-day PERCENT change, not absolute FantasyCalc delta.
- // FC trend30Day is absolute points (e.g. +266). Percent = delta / value_30d_ago * 100.
- if(!p) return null;
- try{
-  if(typeof playerTrend30Accurate === 'function'){
-   const tr = playerTrend30Accurate(p);
-   if(tr && tr.pct30d != null && isFinite(tr.pct30d)) return tr.pct30d;
-   return null;
+  const tr = document.createElement('tr');
+  const isMine = state.myTeamId != null && String(r.team.id) === String(state.myTeamId);
+  if(isMine) tr.style.background = 'var(--accent-muted)';
+  const luckCls = r.luck > 0.35 ? 'up' : r.luck < -0.35 ? 'down' : '';
+  const luckStr = (r.luck >= 0 ? '+' : '') + r.luck.toFixed(1);
+  const sosStr = r.sos != null ? (typeof fmtPts === 'function' ? fmtPts(r.sos) : r.sos.toFixed(1)) : '-';
+  let sosCls = '';
+  if(r.sos != null && avgSOS != null){
+   // Higher opponent avg = harder schedule
+   if(r.sos > avgSOS + 1) sosCls = 'down';
+   else if(r.sos < avgSOS - 1) sosCls = 'up';
   }
- }catch(e){}
- let cur = null, t30 = null;
- if(p.fcRawValue != null && typeof p.fcRawValue === 'number') cur = p.fcRawValue;
- else if(p.fcEntry && typeof p.fcEntry.value === 'number') cur = p.fcEntry.value;
- else if(typeof p.value === 'number') cur = p.value;
- if(typeof p.trend30Day === 'number') t30 = p.trend30Day;
- else if(typeof p.trend30 === 'number') t30 = p.trend30;
- else if(p.fcEntry && typeof p.fcEntry.trend30Day === 'number') t30 = p.fcEntry.trend30Day;
- if(cur == null || t30 == null || !isFinite(cur) || !isFinite(t30)) return null;
- const prev = cur - t30;
- if(prev < 100) return null;
- const pct = (t30 / prev) * 100;
- if(!isFinite(pct) || Math.abs(pct) > 400) return null;
- return pct;
+  const startStr = r.optPct != null ? r.optPct.toFixed(0) + '%' : '-';
+  const perfStr = r.perfectPct != null ? r.perfectPct.toFixed(0) + '%' : '-';
+  const missStr = r.avgMiss != null ? r.avgMiss.toFixed(1) : '-';
+  tr.innerHTML =
+   '<td><span class="rank-num">' + (i+1) + '</span></td>' +
+   '<td class="team-name-cell">' + escapeHtml(r.team.name) + '</td>' +
+   '<td class="val-cell">' + escapeHtml(r.record) + '</td>' +
+   '<td class="val-cell">' + r.expW.toFixed(1) + '</td>' +
+   '<td class="val-cell"><span class="pct-cell ' + luckCls + '">' + luckStr + '</span></td>' +
+   '<td class="val-cell"><span class="pct-cell ' + sosCls + '">' + sosStr + '</span></td>' +
+   '<td class="val-cell">' + (typeof fmtPts === 'function' ? fmtPts(r.pf) : Math.round(r.pf)) + '</td>' +
+   '<td class="val-cell">' + (r.avg != null ? (typeof fmtPts === 'function' ? fmtPts(r.avg) : r.avg.toFixed(1)) : '-') + '</td>' +
+   '<td class="val-cell">' + startStr + '</td>' +
+   '<td class="val-cell">' + perfStr + '</td>' +
+   '<td class="val-cell">' + missStr + '</td>';
+  tbody.appendChild(tr);
+ });
+
+ if(intro){
+  intro.textContent = scoredWeeks >= 1
+   ? ('Based on ' + scoredWeeks + ' week' + (scoredWeeks === 1 ? '' : 's') + ' of scores. Exp W = all-play win rate × games played. Luck = actual wins − Exp W.')
+   : 'Load a league with weekly scores to see expected wins and luck.';
+ }
+ if(note){
+  let msg = 'All-play: each week you “beat” every team you outscored. That rate × your games played is Exp W. Positive luck means more wins than your scoring deserved; negative means the opposite.';
+  if(state._luckAccLoading) msg += ' Loading lineup accuracy…';
+  else if(rows.some(r => r.optPct != null)) msg += ' Start % / Perfect % / Pts left use weekly box scores vs an optimal lineup.';
+  note.textContent = msg;
+ }
 }
 
-
- function sellHighBuyLowSignals(team){
- const sellHigh = [], buyLow = [];
- (team.roster || []).forEach(p => {
- if(!p.matched || !(p.value > 100)) return;
- if(p.isIR) return;
- const pct = playerTrendPct(p);
- if(pct == null) return;
- let st = playerInjuryStatus(p);
- const hurt = st && st !== 'ok' && st !== 'questionable';
- if(pct >= 12 && !hurt){
- sellHigh.push({ p, pct, why: 'Up ' + pct.toFixed(0) + '%  -  market heat; consider selling high' });
- } else if(pct <= -12){
- if(hurt) buyLow.push({ p, pct, why: 'Down ' + pct.toFixed(0) + '% with injury  -  only buy if return timeline is clear' });
- else buyLow.push({ p, pct, why: 'Down ' + pct.toFixed(0) + '%  -  possible buy-low if role is intact' });
- }
- });
- sellHigh.sort((a,b) => b.pct - a.pct);
- buyLow.sort((a,b) => a.pct - b.pct);
- return { sellHigh, buyLow };
- }
-
- function resolvePlayerList(query, opts){
- // opts: { mustBeOnTeamId, excludeTeamId }
- opts = opts || {};
- const parts = String(query || '').split(/[,;|]+/).map(s => s.trim()).filter(Boolean);
- const found = [];
- const missing = [];
- parts.forEach(part => {
- const hit = findPlayerOnRosters(part);
- if(!hit){ missing.push(part); return; }
- if(opts.mustBeOnTeamId != null && String(hit.team.id) !== String(opts.mustBeOnTeamId)){
- missing.push(part + ' (not on your team)');
- return;
- }
- if(opts.excludeTeamId != null && String(hit.team.id) === String(opts.excludeTeamId)){
- missing.push(part + ' (already yours)');
- return;
- }
- found.push(hit);
- });
- return { found, missing, parts };
- }
-
- function findPlayerOnRosters(query){
- const q = normalizeName(query || '');
- if(!q || q.length < 2) return null;
- let best = null;
- (state.teams || []).forEach(t => {
- (t.roster || []).forEach(p => {
- const n = normalizeName(p.fullName || '');
- if(!n) return;
- if(n === q || n.indexOf(q) >= 0 || q.indexOf(n) >= 0){
- if(!best || n.length < normalizeName(best.player.fullName).length){
- best = { team: t, player: p };
- }
- }
- });
- });
- return best;
- }
-
- function renderLeagueRosters(){
- const list = el('rosters-list');
- const summary = el('rosters-summary');
- const sortSel = el('rosters-sort');
- const startersOnly = el('rosters-starters-only');
- if(!list) return;
- if(!state.teams || !state.teams.length){
- list.innerHTML = '<div class="hist-empty">Load a league first.</div>';
- return;
- }
- if(sortSel && !sortSel._bound){
- sortSel._bound = true;
- sortSel.addEventListener('change', () => renderLeagueRosters());
- }
- if(startersOnly && !startersOnly._bound){
- startersOnly._bound = true;
- startersOnly.addEventListener('change', () => renderLeagueRosters());
- }
- const onlyStarters = !!(startersOnly && startersOnly.checked);
- let powerRows = [];
- try{ powerRows = buildPowerRows(); }catch(e){}
- const powerMap = {};
- powerRows.forEach((r,i) => { powerMap[r.team.id] = { power: r.power, rank: i+1 }; });
-
- const teamRows = state.teams.map(t => {
- const counts = getStarterCounts();
- let starterIds = new Set();
- try{
- const opt = optimalStarterLineup(t, counts, counts.flexEligible || ['RB','WR','TE'], counts.sfEligible || ['QB','RB','WR','TE'], { healthyOnly: true });
- starterIds = opt.starterIds || new Set();
- }catch(e){}
- const players = [];
- let totalVal = 0, weightedTrend = 0, trendWeight = 0;
- (t.roster || []).forEach(p => {
- const isStart = starterIds.has(p.id) || starterIds.has(String(p.id));
- if(onlyStarters && !isStart) return;
- const val = p.value || 0;
- const pct = playerTrendPct(p);
- totalVal += val;
- if(pct != null && val > 0){
- weightedTrend += pct * val;
- trendWeight += val;
- }
- players.push({ p, val, pct, isStart });
- });
- players.sort((a,b) => b.val - a.val);
- const teamPct = trendWeight > 0 ? weightedTrend / trendWeight : null;
- const pr = powerMap[t.id] || powerMap[String(t.id)] || {};
- return { team: t, players, totalVal, teamPct, power: pr.power, rank: pr.rank };
- });
-
- const sort = sortSel ? sortSel.value : 'power';
- teamRows.sort((a,b) => {
- if(sort === 'value') return b.totalVal - a.totalVal;
- if(sort === 'rise') return (b.teamPct|| -999) - (a.teamPct|| -999);
- if(sort === 'fall') return (a.teamPct|| 999) - (b.teamPct|| 999);
- return (a.rank||99) - (b.rank||99);
- });
-
- if(summary){
- const risers = teamRows.filter(r => r.teamPct != null).slice().sort((a,b)=>b.teamPct-a.teamPct);
- const topR = risers[0], topF = risers[risers.length-1];
- summary.innerHTML = (topR && topR.teamPct != null ? `<span>Hottest roster <strong>${escapeHtml(topR.team.name)}</strong> (${topR.teamPct>=0?'+':''}${topR.teamPct.toFixed(0)}%)</span>` : '') +
- (topF && topF.teamPct != null ? `<span>Coldest <strong>${escapeHtml(topF.team.name)}</strong> (${topF.teamPct>=0?'+':''}${topF.teamPct.toFixed(0)}%)</span>` : '');
- }
-
- list.innerHTML = teamRows.map(row => {
- const isMine = state.myTeamId != null && (row.team.id === state.myTeamId || String(row.team.id) === String(state.myTeamId));
- const pctStr = row.teamPct == null ? ' - ' : ((row.teamPct>=0?'+':'') + row.teamPct.toFixed(1) + '%');
- const pctCls = row.teamPct == null ? '' : row.teamPct > 2 ? 'up' : row.teamPct < -2 ? 'down' : '';
- const playerHtml = row.players.slice(0, onlyStarters ? 12 : 16).map(x => {
- const pstr = x.pct == null ? '' : ` <span class="pct-cell ${x.pct>2?'up':x.pct<-2?'down':''}" style="font-size:11px;">${x.pct>=0?'+':''}${x.pct.toFixed(0)}%</span>`;
- return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--border-subtle);">
- <span>${x.isStart?'<strong>':''}${playerCardLink(x.p.fullName, x.p.id)}${x.isStart?'</strong>':''} <span style="color:var(--text-muted);">${escapeHtml(x.p.position||'')}</span></span>
- <span class="val-cell">${fmt(x.val)}${pstr}</span>
- </div>`;
- }).join('');
- return `<div class="card" style="padding:12px;margin-bottom:12px;${isMine?'border-color:var(--accent);':''}">
- <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
- <div>
- <strong style="font-size:15px;">${escapeHtml(row.team.name)}</strong>
- ${row.rank ? `<span style="color:var(--text-muted);font-size:12px;"> · Power #${row.rank}</span>` : ''}
- </div>
- <div style="font-size:13px;">
- <span class="val-cell">${fmt(row.totalVal)}</span>
- · <span class="pct-cell ${pctCls}">${pctStr}</span> value move
- </div>
- </div>
- ${playerHtml}
- <div style="margin-top:8px;">
- <button type="button" class="btn btn-ghost btn-sm" data-roster-team="${row.team.id}">Open grade</button>
- </div>
- </div>`;
- }).join('');
-
- list.querySelectorAll('[data-roster-team]').forEach(btn => {
- btn.addEventListener('click', () => goToPanel('panel-rate', { teamId: btn.getAttribute('data-roster-team') }));
- });
- }
-
-function parseTradeWillingness(raw){
- if(raw == null || raw === false || raw === 0) return null;
- if(raw === true || raw === 1) return 'listed';
- if(typeof raw === 'number'){
-  if(raw === 1) return 'likely';
-  if(raw === 2) return 'unlikely';
-  return 'listed';
- }
- if(typeof raw === 'string'){
-  const u = raw.toUpperCase().replace(/_/g, ' ');
-  if(u.includes('UNLIKE') || u.includes('NOT LIKELY') || u.includes('UNLIKELY') || u === 'NO') return 'unlikely';
-  if(u.includes('LIKELY') || u === 'YES' || u === 'WANT') return 'likely';
-  if(u.includes('BLOCK') || u.includes('TRADE')) return 'listed';
-  return 'listed';
- }
- if(typeof raw === 'object'){
-  const type = raw.type || raw.designation || raw.willingness || raw.status || raw.tradeBlockType || raw.level;
-  if(type != null) return parseTradeWillingness(type);
-  if(raw.likely === true || raw.isLikely === true) return 'likely';
-  if(raw.likely === false || raw.isLikely === false) return 'unlikely';
-  if(raw.playerId != null || raw.id != null) return 'listed';
-  return 'listed';
- }
- return null;
- }
- function tradeAcceptScore(sendList, recvList){
-  // What partner is sending us (recvList) — host likely/not-likely signals
-  let score = 50;
-  const notes = [];
-  (recvList || []).forEach(p => {
-   if(p.isTradeable === false || p.tradeLocked || p.allow_trade === false){
-    score -= 80;
-    notes.push((p.fullName || p.name || 'Player') + ' locked/untradeable');
-    return;
-   }
-   const w = p.tradeWillingness || (p.onTradeBlock ? 'listed' : null);
-   if(w === 'likely'){ score += 28; notes.push((p.fullName || p.name) + ' likely to trade'); }
-   else if(w === 'listed' || p.onTradeBlock){ score += 16; notes.push((p.fullName || p.name) + ' on trade block'); }
-   else if(w === 'unlikely'){ score -= 35; notes.push((p.fullName || p.name) + ' not likely to trade'); }
-  });
-  score = Math.max(0, Math.min(100, score));
-  return { score, notes };
- }
- function playerTradeable(p){
- if(!p) return false;
- if(p.tradeLocked) return false;
- if(p.isTradeable === false) return false;
- if(p.allow_trade === false) return false;
- return true;
-}
-function playerOnBlock(p){
- return !!(p && (p.onTradeBlock || p.tradeWillingness === 'likely' || p.tradeWillingness === 'listed'));
-}
-function playerTradeWillingness(p){
- if(!p) return null;
- return p.tradeWillingness || (p.onTradeBlock ? 'listed' : null);
-}
-
-
- function renderFinderWeeklySuggestions(){ /* removed */ }
-
-
-function runTradeFinder(){
- const status = el('finder-status');
- const results = el('finder-results');
- if(!results) return;
- const myId = parseIdVal(el('finder-myteam') && el('finder-myteam').value);
- const kind = el('finder-kind') ? el('finder-kind').value : 'ALL';
- const mode = el('finder-mode') ? el('finder-mode').value : 'best';
- const sellQ = el('finder-sell-players') ? el('finder-sell-players').value.trim() : '';
- const buyQ = el('finder-buy-players') ? el('finder-buy-players').value.trim() : '';
- const selectedPartners = Array.from(document.querySelectorAll('.finder-partner-cb:checked')).map(c => c.value);
- let getPos = Array.from(document.querySelectorAll('.finder-pos-cb:checked')).map(c => c.value);
- let sendPos = Array.from(document.querySelectorAll('.finder-send-cb:checked')).map(c => c.value);
- if(!getPos.length) getPos = ['QB','RB','WR','TE'];
- if(!sendPos.length) sendPos = ['QB','RB','WR','TE'];
- const me = state.teams.find(t => t.id === myId || String(t.id) === String(myId));
- if(!me){
- if(status) status.textContent = 'Pick your team';
- return;
- }
- if(!state._powerContext) buildPowerRows();
-
- const sigBox = el('finder-signal');
- me._finderBiasSendIds = null;
- me._forceSendIds = new Set();
- me._forceRecvIds = new Set();
- me._forcePartnerId = null;
-
- const adviceBits = [];
-
- if(mode === 'sellhigh' || mode === 'buylow'){
- const { sellHigh, buyLow } = sellHighBuyLowSignals(me);
- const rows = mode === 'sellhigh' ? sellHigh : buyLow;
- if(rows.length){
- adviceBits.push((mode==='sellhigh'?'Sell-high':'Buy-low signals') + ': ' +
- rows.slice(0,6).map(r => r.p.fullName + ' (' + (r.pct>=0?'+':'') + r.pct.toFixed(0) + '%)').join(', '));
- }
- if(mode === 'sellhigh' && rows.length){
- me._finderBiasSendIds = new Set(rows.slice(0,6).map(r => String(r.p.id)));
- }
- }
-
- // Explicit multi player filters (can combine: send A,B and get X,Y)
- if(sellQ){
- const res = resolvePlayerList(sellQ, { mustBeOnTeamId: me.id });
- if(res.missing.length){
- if(status) status.textContent = 'Send not found: ' + res.missing.join(', ');
- return;
- }
- res.found.forEach(h => me._forceSendIds.add(String(h.player.id)));
- adviceBits.push('Must send: ' + res.found.map(h => h.player.fullName).join(', '));
- res.found.forEach(h => {
- const pct = playerTrendPct(h.player);
- if(pct != null && pct >= 10) adviceBits.push(h.player.fullName + ' is up ' + pct.toFixed(0) + '% (sell-high window)');
- if(pct != null && pct <= -10) adviceBits.push(h.player.fullName + ' is down ' + pct.toFixed(0) + '% (selling low)');
- });
- }
- if(buyQ){
- const res = resolvePlayerList(buyQ, { excludeTeamId: me.id });
- if(res.missing.length){
- if(status) status.textContent = 'Get not found: ' + res.missing.join(', ');
- return;
- }
- // All targets must live on the same opposing roster for one trade
- const teamIds = [...new Set(res.found.map(h => String(h.team.id)))];
- if(teamIds.length > 1){
- if(status) status.textContent = 'Get targets are on different teams  -  pick players from one roster for a single trade';
- return;
- }
- me._forcePartnerId = teamIds[0];
- res.found.forEach(h => me._forceRecvIds.add(String(h.player.id)));
- adviceBits.push('Must get: ' + res.found.map(h => h.player.fullName).join(', ') + ' from ' + res.found[0].team.name);
- res.found.forEach(h => {
- const pct = playerTrendPct(h.player);
- if(pct != null && pct <= -10) adviceBits.push(h.player.fullName + ' is down ' + pct.toFixed(0) + '% (buy-low angle)');
- if(pct != null && pct >= 12) adviceBits.push(h.player.fullName + ' is up ' + pct.toFixed(0) + '% (buying high)');
- });
- }
-
- // Goal shortcuts still seed filters if boxes empty
- if(mode === 'target' && !buyQ && sellQ){ /* noop */ }
- if(mode === 'sell' && sellQ){ /* already applied */ }
- if(mode === 'target' && buyQ){ /* already applied */ }
-
- if(sigBox){
- if(adviceBits.length){
- sigBox.style.display = 'block';
- sigBox.innerHTML = adviceBits.map(b => escapeHtml(b)).join('<br>');
- } else {
- sigBox.style.display = 'none';
- sigBox.innerHTML = '';
- }
- }
-
- if(status) status.textContent = (me._forceSendIds.size || me._forceRecvIds.size)
- ? ('Filtering ' + (me._forceSendIds.size ? me._forceSendIds.size + ' send' : '') +
- (me._forceSendIds.size && me._forceRecvIds.size ? ' + ' : '') +
- (me._forceRecvIds.size ? me._forceRecvIds.size + ' get' : '') + '…')
- : 'Searching…';
-
- let partners = state.teams.filter(t => t.id !== me.id && String(t.id) !== String(me.id));
- if(me._forcePartnerId){
-  partners = state.teams.filter(t => String(t.id) === String(me._forcePartnerId));
- } else if(selectedPartners.length){
-  partners = partners.filter(t => selectedPartners.includes(String(t.id)));
- }
- const nicheMode = !!(me._forceSendIds && me._forceSendIds.size) || !!(me._forceRecvIds && me._forceRecvIds.size);
-
- const myNeed = teamPosNeedScores(me);
- const hits = [];
- const seen = new Set();
-
- function sig(send, recv){
- return send.map(p => String(p.id)).sort().join(',') + '=>' + recv.map(p => String(p.id)).sort().join(',');
- }
- // Candidates: not just top overall  -  mix of surplus sends and need gets
- function candidatePool(team, n, posAllow, mode){
- // mode: 'send' prefers positions you don't need; 'get' prefers value at any allowed pos
- const need = teamPosNeedScores(team);
- const minV = nicheMode ? 20 : 40;
- return (team.roster || [])
- .filter(p => p.matched && (p.value || 0) > minV && !p.isTaxi)
- .filter(p => !p.isIR || nicheMode) // allow IR only when hunting specific deals
- .filter(p => typeof playerTradeable === 'function' ? playerTradeable(p) : !p.tradeLocked)
- .filter(p => !posAllow || !posAllow.length || posAllow.includes(p.position))
- .slice()
- .sort((a,b) => {
- function blockRank(p){
-  const w = p.tradeWillingness || (p.onTradeBlock ? 'listed' : null);
-  if(w === 'likely') return 3;
-  if(w === 'listed') return 2;
-  if(w === 'unlikely') return 0;
-  return 1;
- }
- if(mode === 'get'){
-  const ba = blockRank(a), bb = blockRank(b);
-  if(ba !== bb) return bb - ba;
- }
- if(mode === 'send'){
- const na = need[a.position] || 40, nb = need[b.position] || 40;
- if(na !== nb) return na - nb;
- return (b.value||0) - (a.value||0);
- }
- return (b.value||0) - (a.value||0);
- })
- .slice(0, n);
- }
- function combos(arr, k){
- if(k === 1) return arr.map(x => [x]);
- if(k <= 0 || arr.length < k) return [];
- const out = [];
- for(let i = 0; i <= arr.length - k; i++){
- combos(arr.slice(i+1), k-1).forEach(rest => out.push([arr[i], ...rest]));
- }
- return out;
- }
- function packageVal(list){ return list.reduce((s,p) => s + (p.value||0), 0); }
- function needFitScore(sendList, recvList, myNeedMap, partnerNeedMap){
- let score = 0;
- recvList.forEach(p => { score += (myNeedMap[p.position] || 30) * 1.4; });
- sendList.forEach(p => { score += Math.max(0, 80 - (myNeedMap[p.position] || 30)); });
- sendList.forEach(p => { score += (partnerNeedMap[p.position] || 20) * 0.5; });
- recvList.forEach(p => { score += Math.max(0, 55 - (partnerNeedMap[p.position] || 30)) * 0.3; });
- return score;
- }
- function tryPackage(partner, sendList, recvList, label){
- if(me._forceSendIds && me._forceSendIds.size){
- for(const id of me._forceSendIds){
- if(!sendList.some(p => String(p.id) === id)) return;
- }
- }
- if(me._forceRecvIds && me._forceRecvIds.size){
- for(const id of me._forceRecvIds){
- if(!recvList.some(p => String(p.id) === id)) return;
- }
- }
- if(!nicheMode && me._finderBiasSendIds && me._finderBiasSendIds.size){
- const has = sendList.some(p => me._finderBiasSendIds.has(String(p.id)));
- if(!has && Math.random() > 0.5) return;
- }
- const key = sig(sendList, recvList);
- if(seen.has(key)) return;
- const sv = packageVal(sendList), rv = packageVal(recvList);
- const maxV = Math.max(sv, rv, 1);
- // Fairness: wider when user named specific players (niche)
- const fairMax = nicheMode ? 0.32 : 0.18;
- const valueGapPct = Math.abs(sv - rv) / maxV;
- if(valueGapPct > fairMax) return;
-
- const accept = typeof tradeAcceptScore === 'function' ? tradeAcceptScore(sendList, recvList) : { score: 50, notes: [] };
- if(!nicheMode && accept.score < 25) return;
- if(!nicheMode && recvList.some(p => p.tradeWillingness === 'unlikely')) return;
-
- const sendNeedAvg = sendList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, sendList.length);
- const recvNeedAvg = recvList.reduce((s,p) => s + (myNeed[p.position]||30), 0) / Math.max(1, recvList.length);
- if(!nicheMode){
-  if(recvNeedAvg + 12 < sendNeedAvg) return;
-  if(recvNeedAvg < 18 && sendNeedAvg > 45) return;
- }
-
- const lineupGain = starterUpgradeScore(me, recvList, sendList);
- // Niche: allow deals that are merely legal + fair; open search still wants lineup lift
- if(!nicheMode && lineupGain < 30 && recvNeedAvg < 50) return;
-
- const tradeA = sendList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
- const tradeB = recvList.map(p => ({ id:p.id, isPick:false, name:p.fullName, position:p.position, value:p.value }));
- const impact = simulateTradePower(me, partner, tradeA, tradeB);
- if(!impact) return;
- if(!impact.a.legal || impact.a.miss > (impact.a.beforeMiss || 0)) return;
- if(!impact.b.legal || impact.b.miss > (impact.b.beforeMiss || 0)) return;
-
- // Boom / bust + floor-ceiling profile (same data as player cards)
- let profileBoost = 0;
- try{
-  const curW = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
-  function profile(p){
-   let ub = null, fc = null;
-   try{ if(typeof playerFloorCeil === 'function') fc = playerFloorCeil(p, curW, curW); }catch(e){}
-   try{ if(typeof playerUpsideBust === 'function') ub = playerUpsideBust(p, fc); }catch(e){}
-   return { fc, ub };
-  }
-  let recvCeil = 0, sendCeil = 0, recvFloor = 0, sendFloor = 0;
-  let recvUpside = 0, sendUpside = 0, recvBust = 0, sendBust = 0, nR = 0, nS = 0;
-  recvList.forEach(p => {
-   const pr = profile(p); nR++;
-   if(pr.fc){ recvCeil += (pr.fc.ceil || 0); recvFloor += (pr.fc.floor || 0); }
-   if(pr.ub){ recvUpside += (pr.ub.weekUpside || pr.ub.seasonUpside || 3); recvBust += (pr.ub.weekBust || pr.ub.seasonBust || 3); }
-  });
-  sendList.forEach(p => {
-   const pr = profile(p); nS++;
-   if(pr.fc){ sendCeil += (pr.fc.ceil || 0); sendFloor += (pr.fc.floor || 0); }
-   if(pr.ub){ sendUpside += (pr.ub.weekUpside || pr.ub.seasonUpside || 3); sendBust += (pr.ub.weekBust || pr.ub.seasonBust || 3); }
-  });
-  if(nR){ recvCeil /= nR; recvFloor /= nR; recvUpside /= nR; recvBust /= nR; }
-  if(nS){ sendCeil /= nS; sendFloor /= nS; sendUpside /= nS; sendBust /= nS; }
-  // Prefer higher floor when receiving (safer), higher upside when needed
-  profileBoost += (recvFloor - sendFloor) * 8;
-  profileBoost += (recvCeil - sendCeil) * 3;
-  profileBoost += (recvUpside - sendUpside) * 12;
-  profileBoost -= (recvBust - sendBust) * 10; // lower bust on receives is good
-  // Soft prefer buy-lows / avoid sell-lows
-  recvList.forEach(p => {
-   const pct = typeof playerTrendPct === 'function' ? playerTrendPct(p) : null;
-   if(pct != null && pct <= -12) profileBoost += 18;
-   if(pct != null && pct >= 18) profileBoost -= 8;
-  });
-  sendList.forEach(p => {
-   const pct = typeof playerTrendPct === 'function' ? playerTrendPct(p) : null;
-   if(pct != null && pct >= 12) profileBoost += 14; // sell-high
-   if(pct != null && pct <= -15) profileBoost -= 12; // don't dump lows
-  });
- }catch(e){ profileBoost = 0; }
-
- const surpMe = impact.a.surplusDelta || 0;
- if(!nicheMode){
-  if(surpMe <= 0 && lineupGain < 80 && profileBoost < 15) return;
-  if(impact.a.delta <= -0.15 && surpMe <= 0 && profileBoost < 20) return;
-  if(impact.b.delta < -1.2) return;
-  if(impact.a.delta > 0 && impact.b.delta < -0.35 && valueGapPct > 0.08) return;
-  if((impact.b.surplusDelta || 0) < -900 && impact.b.delta < -0.5) return;
-  const pNeed0 = teamPosNeedScores(partner);
-  const partnerRecvNeed = sendList.reduce((s,p) => s + (pNeed0[p.position]||30), 0) / Math.max(1, sendList.length);
-  if(partnerRecvNeed < 15 && impact.b.delta < -0.3) return;
- } else {
-  // Niche: only hard-block illegal or catastrophic partner hits
-  if(impact.b.delta < -6) return;
-  // You should not get much worse either
-  if(impact.a.delta < -2.5 && surpMe < -200) return;
- }
- const pNeed = teamPosNeedScores(partner);
- const partnerRecvNeed = sendList.reduce((s,p) => s + (pNeed[p.position]||30), 0) / Math.max(1, sendList.length);
-
- if(kind === 'buy'){
- const ok = recvList.some(p => {
- const c = classifyPlayerTrend(p);
- return c && (c.tag === 'injury' || c.tag === 'drift') && c.pct <= -8;
- });
- if(!ok) return;
- }
-
- const fit = needFitScore(sendList, recvList, myNeed, pNeed);
- seen.add(key);
- // Rank: mutual power gain + fair value + accept likelihood from host trade block
- const acceptBoost = (accept.score - 50) * 0.55;
- const fairnessBoost = (1 - valueGapPct) * 40;
- const mutual = Math.min(impact.a.delta, Math.max(0, impact.b.delta + 0.5)) * 12;
- hits.push({
- kind: label, me, partner, send: sendList, recv: recvList,
- deltaMe: impact.a.delta, deltaThem: impact.b.delta,
- surplusMe: surpMe, lineupGain, fit,
- profileBoost: profileBoost || 0,
- acceptScore: accept.score,
- acceptNotes: accept.notes || [],
- valueGapPct,
- rankScore: (impact.a.delta * 18) + (lineupGain * 0.15) + fit + (profileBoost || 0) + acceptBoost + fairnessBoost + mutual,
- tradeA, tradeB
- });
- }
-
- const want1 = kind === 'ALL' || kind === '1' || kind === 'buy';
- const want21 = kind === 'ALL' || kind === '2' || kind === 'buy';
- const want22 = kind === 'ALL' || kind === '22';
- const want33 = kind === '33';
- const wantMix = kind === 'mix' || kind === 'ALL';
-
- partners.forEach(partner => {
- const poolN = nicheMode ? 20 : 16;
- let mine = candidatePool(me, poolN, sendPos, 'send');
- let theirs = candidatePool(partner, poolN, getPos, 'get');
- if(me._forceSendIds && me._forceSendIds.size){
-  const forced = (me.roster || []).filter(p => me._forceSendIds.has(String(p.id)));
-  // Always include forced sends even if value/IR filtered them out
-  mine = [...forced, ...mine.filter(p => !me._forceSendIds.has(String(p.id)))].slice(0, 22);
- }
- if(me._forceRecvIds && me._forceRecvIds.size){
-  const forced = (partner.roster || []).filter(p => me._forceRecvIds.has(String(p.id)));
-  theirs = [...forced, ...theirs.filter(p => !me._forceRecvIds.has(String(p.id)))].slice(0, 22);
- }
- if(me._finderBiasSendIds && me._finderBiasSendIds.size){
-  const bias = (me.roster || []).filter(p => me._finderBiasSendIds.has(String(p.id)));
-  mine = [...bias, ...mine.filter(p => !me._finderBiasSendIds.has(String(p.id)))].slice(0, poolN);
- }
- if(want1){
-  mine.forEach(a => theirs.forEach(b => {
-   if(!nicheMode && a.position === b.position && (myNeed[a.position]||0) < 22) return;
-   tryPackage(partner, [a], [b], '1-for-1');
-  }));
- }
- if(want21){
-  combos(mine, 2).slice(0, nicheMode ? 50 : 36).forEach(pair => {
-   theirs.slice(0, nicheMode ? 12 : 10).forEach(b => tryPackage(partner, pair, [b], '2-for-1'));
-  });
-  mine.slice(0, nicheMode ? 12 : 10).forEach(a => {
-   combos(theirs, 2).slice(0, nicheMode ? 40 : 28).forEach(pair => tryPackage(partner, [a], pair, '1-for-2'));
-  });
- }
- if(want22){
-  combos(mine, 2).slice(0, nicheMode ? 30 : 24).forEach(sp => {
-   combos(theirs, 2).slice(0, nicheMode ? 30 : 24).forEach(rp => tryPackage(partner, sp, rp, '2-for-2'));
-  });
- }
- if(wantMix){
-  combos(mine, 2).slice(0, 18).forEach(sp => {
-   combos(theirs, 3).slice(0, 18).forEach(rp => tryPackage(partner, sp, rp, '2-for-3'));
-  });
-  combos(mine, 3).slice(0, 18).forEach(sp => {
-   combos(theirs, 2).slice(0, 18).forEach(rp => tryPackage(partner, sp, rp, '3-for-2'));
-  });
- }
- if(want33){
-  combos(mine, 3).slice(0, 16).forEach(sp => {
-   combos(theirs, 3).slice(0, 16).forEach(rp => tryPackage(partner, sp, rp, '3-for-3'));
-  });
- }
- // Niche fallback: if force send/recv and still nothing from this partner, try exact packages
- if(nicheMode && me._forceSendIds && me._forceSendIds.size && me._forceRecvIds && me._forceRecvIds.size){
-  const sendExact = (me.roster || []).filter(p => me._forceSendIds.has(String(p.id)));
-  const recvExact = (partner.roster || []).filter(p => me._forceRecvIds.has(String(p.id)));
-  if(sendExact.length && recvExact.length){
-   tryPackage(partner, sendExact, recvExact, 'exact');
-   // Also pad with 1 extra piece each way for value balance
-   mine.slice(0, 8).forEach(extra => {
-    if(me._forceSendIds.has(String(extra.id))) return;
-    tryPackage(partner, sendExact.concat([extra]), recvExact, 'exact+');
-   });
-   theirs.slice(0, 8).forEach(extra => {
-    if(me._forceRecvIds.has(String(extra.id))) return;
-    tryPackage(partner, sendExact, recvExact.concat([extra]), 'exact+');
-   });
-  }
- }
- });
-
- function scoreHit(h){
- return (h.lineupGain || 0) * 0.002
- + (h.surplusMe || 0) * 0.0015
- + Math.max(0, h.deltaMe) * 2.2
- + Math.min(Math.max(h.deltaThem, -1), 1.5) * 0.9
- + (h.fit || 0) * 0.03
- + (h.profileBoost || 0) * 0.04
- + ((h.acceptScore != null ? h.acceptScore : 50) - 50) * 0.08
- + (1 - Math.min(1, h.valueGapPct || 0)) * 1.2
- + (h.rankScore || 0) * 0.02;
- }
- const bestByCluster = new Map();
- hits.forEach(h => {
- // Cluster by receive side mainly to cut near-duplicates
- const cluster = h.partner.id + '|' + h.recv.map(p => p.id).sort().join(',');
- const prev = bestByCluster.get(cluster);
- if(!prev || scoreHit(h) > scoreHit(prev)) bestByCluster.set(cluster, h);
- });
- const deduped = Array.from(bestByCluster.values());
- deduped.sort((a,b) => scoreHit(b) - scoreHit(a));
- const top = deduped.slice(0, 20);
-
- if(status) status.textContent = top.length
-  ? (top.length + ' packages' + (nicheMode ? ' (targeted)' : ' (need + lineup + surplus)'))
-  : (nicheMode ? 'No legal packages for those players' : 'No trades cleared the bar');
- results.innerHTML = '';
- if(!top.length){
-  results.innerHTML = nicheMode
-   ? '<div class="hist-empty">Nothing legal matched those exact players. Value gap may be too wide, a player may be untradeable, or the swap empties a starter slot. Try adding a second piece on either side, widen positions, or clear partner filters.</div>'
-   : '<div class="hist-empty">No packages that help your lineup at positions of need while staying near fair value. Try more positions, more partners, or name specific players in Send/Get.</div>';
-  return;
- }
- top.forEach((h, idx) => {
- const card = document.createElement('div');
- card.className = 'hist-card';
- const sendStr = h.send.map(p => playerCardLink(p.fullName, p.id) + ' (' + p.position + ')').join(' + ');
- const recvStr = h.recv.map(p => playerCardLink(p.fullName, p.id) + ' (' + p.position + ')').join(' + ');
- const dMe = (h.deltaMe >= 0 ? '+' : '') + h.deltaMe.toFixed(1);
- const dThem = (h.deltaThem >= 0 ? '+' : '') + h.deltaThem.toFixed(1);
- const lg = (h.lineupGain >= 0 ? '+' : '') + Math.round(h.lineupGain);
- const needBits = h.recv.map(p => p.position + ':' + (myNeed[p.position]||0)).join(' ');
- const acc = h.acceptScore != null ? h.acceptScore : null;
- let accLabel = '';
- if(acc != null){
-  if(acc >= 70) accLabel = 'Accept lean: high (' + acc + ')';
-  else if(acc >= 45) accLabel = 'Accept lean: medium (' + acc + ')';
-  else accLabel = 'Accept lean: low (' + acc + ')';
-  if(h.acceptNotes && h.acceptNotes.length) accLabel += ' · ' + h.acceptNotes.slice(0, 2).join('; ');
- }
- const gapStr = h.valueGapPct != null ? ('Value gap ' + Math.round(h.valueGapPct * 100) + '%') : '';
- let accHtml = '';
- if(accLabel){
-  const col = (acc != null && acc >= 70) ? 'var(--accent)' : ((acc != null && acc < 40) ? 'var(--red)' : 'var(--text-secondary)');
-  accHtml = '<div style="font-size:11.5px;margin-top:4px;color:' + col + ';">' + escapeHtml(accLabel) + '</div>';
- }
- card.innerHTML = `
- <div class="hist-head">
- <div class="hist-teams">${escapeHtml(h.me.name)} ⇄ ${escapeHtml(h.partner.name)} · ${h.kind}</div>
- <div class="hist-date">You ${dMe} Power · Them ${dThem}</div>
- </div>
- <div class="hist-sides">
- <div><div class="hist-side-label">You send</div><div class="hist-asset">${sendStr}</div></div>
- <div class="hist-vs">for</div>
- <div><div class="hist-side-label">You get</div><div class="hist-asset">${recvStr}</div></div>
- </div>
- <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">
- Lineup value ${lg} · Need ${escapeHtml(needBits)}${gapStr ? ' · ' + gapStr : ''}
- </div>
- ${accHtml}
- <div style="margin-top:10px;">
- <button type="button" class="btn btn-ghost btn-sm finder-open-trade" data-idx="${idx}">Open in Trade tool</button>
- </div>`;
- results.appendChild(card);
- });
- results.querySelectorAll('.finder-open-trade').forEach(btn => {
- btn.addEventListener('click', () => {
- const h = top[Number(btn.dataset.idx)];
- if(!h) return;
- openTradeInTool(h);
- });
- });
- }
-
- function openTradeInTool(h){
- state.selectedTeamA = h.me.id;
- state.selectedTeamB = h.partner.id;
- state.tradeA = h.tradeA.map(a => ({ ...a }));
- state.tradeB = h.tradeB.map(a => ({ ...a }));
- document.querySelectorAll('.nav-item[data-panel]').forEach(b => b.classList.remove('active'));
- document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
- const nav = document.querySelector('.nav-item[data-panel="panel-trade"]');
- if(nav) nav.classList.add('active');
- const panel = el('panel-trade');
- if(panel) panel.classList.add('active');
- populateTeamSelectors();
- const sa = el('select-team-a'), sb = el('select-team-b');
- if(sa) sa.value = h.me.id;
- if(sb) sb.value = h.partner.id;
- renderTradeSide('a');
- renderTradeSide('b');
- renderFairness();
- }
-
- function setupFinderControls(){
+function setupFinderControls(){
  const mine = el('finder-myteam');
  const pBox = el('finder-partner-boxes');
  const getBox = el('finder-pos-boxes');
@@ -17725,9 +17355,9 @@ function runPathWhatIf(focusTeam, baseline, basePct, forced){
 
   // Concrete seed from REGULAR SEASON only
   board.sort((a,b) => {
-    if(b.wins !== a.wins) return b.wins - a.wins;
-    if(b.pf !== a.pf) return b.pf - a.pf;
-    return String(a.name).localeCompare(String(b.name));
+    const c = standingsCompare(a, b, (typeof buildH2HMap === 'function' ? buildH2HMap() : {}));
+    if(c !== 0) return c;
+    return String(a.name || '').localeCompare(String(b.name || ''));
   });
   board.forEach((r, i) => { r.seed = i + 1; r.record = r.rsWins + '-' + r.rsLosses + (r.rsTies ? '-' + r.rsTies : ''); });
 
@@ -19409,7 +19039,170 @@ function renderTradeSide(side){
  box.classList.add('show');
  }
 
- function renderFairness(){
+ 
+ function isCalebWilliamsAsset(a){
+  if(!a || a.isPick) return false;
+  const n = normalizeName(a.name || a.fullName || '');
+  return n === 'caleb williams' || n.indexOf('caleb williams') === 0;
+ }
+ function evaluateTradeAdvice(teamA, teamB, totalA, totalB){
+  const reasons = [];
+  const hasPlayers = (state.tradeA && state.tradeA.some(x => !x.isPick)) || (state.tradeB && state.tradeB.some(x => !x.isPick));
+  if(!teamA || !teamB || !hasPlayers){
+   return { lean: 'neutral', score: 0, label: 'Add players to evaluate', reasons: [], bothGood: false };
+  }
+  const avg = ((totalA || 0) + (totalB || 0)) / 2 || 1;
+  const gapPct = ((totalA - totalB) / avg) * 100; // + means A sends more (B gets value)
+  // From team A's perspective (left side / you if my team)
+  const myIsA = state.myTeamId != null && (String(teamA.id) === String(state.myTeamId));
+  const myIsB = state.myTeamId != null && (String(teamB.id) === String(state.myTeamId));
+  // Value for "you": if you're A, positive when you receive more (totalB > totalA)
+  let youGainPct = 0;
+  if(myIsA) youGainPct = -gapPct;
+  else if(myIsB) youGainPct = gapPct;
+  else youGainPct = -gapPct; // default analyze side A
+
+  let score = 0; // positive = lean accept for focus side (A, or your team)
+
+  // Fairness band
+  if(Math.abs(gapPct) < 5){
+   score += 8;
+   reasons.push('Value is essentially even (' + Math.abs(gapPct).toFixed(0) + '% gap).');
+  } else if(Math.abs(gapPct) < 12){
+   score += (youGainPct > 0 ? 12 : -6);
+   reasons.push(youGainPct > 0
+    ? 'Slight value edge your way (~' + Math.abs(youGainPct).toFixed(0) + '%).'
+    : 'Slight value edge against you (~' + Math.abs(youGainPct).toFixed(0) + '%).');
+  } else {
+   score += (youGainPct > 0 ? 18 : -14);
+   reasons.push(youGainPct > 0
+    ? 'Clear value win for you (~' + Math.abs(youGainPct).toFixed(0) + '%).'
+    : 'You are giving up meaningful value (~' + Math.abs(youGainPct).toFixed(0) + '%).');
+  }
+
+  // Power impact if available
+  let powerA = null, powerB = null;
+  try{
+   if(typeof simulateTradePower === 'function'){
+    const pr = simulateTradePower(teamA, teamB, state.tradeA, state.tradeB);
+    if(pr && pr.a && pr.b){
+     powerA = pr.a.delta;
+     powerB = pr.b.delta;
+     if(myIsA || !myIsB){
+      if(powerA > 0.4){ score += 10; reasons.push('Power ranking for ' + teamA.name + ' rises after this swap.'); }
+      else if(powerA < -0.4){ score -= 10; reasons.push('Power ranking for ' + teamA.name + ' drops after this swap.'); }
+     }
+     if(myIsB){
+      if(powerB > 0.4){ score += 10; reasons.push('Power ranking for ' + teamB.name + ' rises after this swap.'); }
+      else if(powerB < -0.4){ score -= 10; reasons.push('Power ranking for ' + teamB.name + ' drops after this swap.'); }
+     }
+    }
+   }
+  }catch(e){}
+
+  // Mutual benefit
+  const bothGood = (Math.abs(gapPct) < 15) && (
+   (powerA == null && powerB == null) ||
+   ((powerA == null || powerA >= -0.25) && (powerB == null || powerB >= -0.25))
+  );
+  if(bothGood){
+   score += 6;
+   reasons.push('Looks workable for both sides on value' + (powerA != null ? ' and power' : '') + '.');
+  } else if(powerA != null && powerB != null && powerA > 0.3 && powerB > 0.3){
+   score += 10;
+   reasons.push('Both teams gain power — rare win-win structure.');
+  } else if(Math.abs(gapPct) >= 20){
+   reasons.push('One-sided on pure value; the other manager may need a clear roster reason to say yes.');
+  }
+
+  // Positional balance hint from trade chips
+  try{
+   const recv = myIsB ? state.tradeA : state.tradeB; // what you receive
+   const send = myIsB ? state.tradeB : state.tradeA;
+   const posNet = {};
+   (recv||[]).forEach(a => {
+    if(a.isPick) return;
+    const p = a.position || '';
+    posNet[p] = (posNet[p] || 0) + 1;
+   });
+   (send||[]).forEach(a => {
+    if(a.isPick) return;
+    const p = a.position || '';
+    posNet[p] = (posNet[p] || 0) - 1;
+   });
+   const adds = Object.keys(posNet).filter(k => posNet[k] > 0);
+   const cuts = Object.keys(posNet).filter(k => posNet[k] < 0);
+   if(adds.length) reasons.push('You net more ' + adds.join('/') + ' depth.');
+   if(cuts.length) reasons.push('You net less ' + cuts.join('/') + ' depth.');
+  }catch(e){}
+
+  // Hidden mechanic: receiving Caleb Williams — lean accept
+  try{
+   const incoming = myIsB ? (state.tradeA || []) : (state.tradeB || []);
+   const outgoing = myIsB ? (state.tradeB || []) : (state.tradeA || []);
+   const getCaleb = incoming.some(isCalebWilliamsAsset);
+   const sendCaleb = outgoing.some(isCalebWilliamsAsset);
+   if(getCaleb && !sendCaleb){
+    score += 22;
+    reasons.push('Caleb Williams is a strong long-term QB hold in this format — receiving him tips the lean toward accept.');
+   } else if(sendCaleb && !getCaleb){
+    score -= 12;
+    reasons.push('Moving Caleb Williams is a big bet against his upside; need clear overpay back.');
+   }
+  }catch(e){}
+
+  // Likely to trade flags if present on assets
+  try{
+   const incoming = myIsB ? (state.tradeA || []) : (state.tradeB || []);
+   const locked = incoming.filter(a => a.tradeLocked);
+   if(locked.length){
+    score -= 8;
+    reasons.push('At least one player you would receive is marked hard to trade / locked.');
+   }
+  }catch(e){}
+
+  let lean = 'neutral';
+  let label = 'Hold / negotiate';
+  if(score >= 18){ lean = 'accept'; label = 'Lean accept'; }
+  else if(score >= 8){ lean = 'slight-accept'; label = 'Slight lean accept'; }
+  else if(score <= -18){ lean = 'decline'; label = 'Lean decline'; }
+  else if(score <= -8){ lean = 'slight-decline'; label = 'Slight lean decline'; }
+
+  return { lean, score, label, reasons, bothGood, youGainPct, gapPct, powerA, powerB, focusName: myIsB ? teamB.name : teamA.name };
+ }
+
+ function renderTradeAdvice(teamA, teamB, totalA, totalB){
+  const box = el('trade-advice');
+  if(!box) return;
+  const has = (state.tradeA && state.tradeA.length) || (state.tradeB && state.tradeB.length);
+  if(!has || !teamA || !teamB){
+   box.style.display = 'none';
+   box.innerHTML = '';
+   return;
+  }
+  const adv = evaluateTradeAdvice(teamA, teamB, totalA, totalB);
+  box.style.display = '';
+  let color = 'var(--text-secondary)';
+  let border = 'var(--border)';
+  if(adv.lean === 'accept' || adv.lean === 'slight-accept'){ color = 'var(--accent)'; border = 'rgba(74,155,110,0.45)'; }
+  if(adv.lean === 'decline' || adv.lean === 'slight-decline'){ color = 'var(--red)'; border = 'rgba(196,92,82,0.45)'; }
+  box.style.borderColor = border;
+  let html = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">';
+  html += '<div style="font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">Trade call</div>';
+  html += '<div style="font-size:16px;font-weight:800;color:' + color + ';">' + escapeHtml(adv.label) + '</div>';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin:4px 0 8px;">For <strong style="color:var(--text);">' + escapeHtml(adv.focusName || 'Team A') + '</strong>';
+  if(adv.bothGood) html += ' · structure can work for both sides';
+  html += '</div>';
+  html += '<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-secondary);line-height:1.45;">';
+  (adv.reasons || []).slice(0, 6).forEach(r => {
+   html += '<li style="margin:0 0 4px;">' + escapeHtml(r) + '</li>';
+  });
+  html += '</ul>';
+  box.innerHTML = html;
+ }
+
+function renderFairness(){
  const totalA = state.tradeA.reduce((s,a)=>s+tradeAssetValue(a),0);
  const totalB = state.tradeB.reduce((s,a)=>s+tradeAssetValue(a),0);
  const labelEl = el('fairness-label');
@@ -19428,6 +19221,7 @@ function renderTradeSide(side){
  fill.style.width = '0';
  fill.style.background = 'var(--accent)';
  summary.textContent = '';
+ try{ const ta = el('trade-advice'); if(ta){ ta.style.display='none'; ta.innerHTML=''; } }catch(e){}
  renderTradePowerImpact(null, null);
  return;
  }
@@ -19520,6 +19314,7 @@ function renderTradeSide(side){
  summary.innerHTML += '<div style="margin-top:6px;font-size:12px;color:var(--text-secondary);">Positional value net for side A (positive = A gains that pos).</div>';
  }
 
+ try{ renderTradeAdvice(teamA, teamB, totalA, totalB); }catch(e){ console.warn(e); }
  renderTradePowerImpact(teamA, teamB);
  try{ renderTradeNeedsImpact(teamA, teamB); }catch(e){}
  syncUrl();
@@ -19975,22 +19770,45 @@ function renderTradeSide(side){
  // z = (x − med) / max(1.4826 * MAD, ε)
  // score = 50 + 50 * tanh(z / 1.5)
  function madRelativeScores(values){
+ // Relative 0-100 scores for this league only. Compressed so teams sit closer together.
+ // Leader ~100, middle of the pack ~62-68, last place still around the mid-40s (not teens).
  const present = values.filter(v => v.val != null && !isNaN(v.val));
  const result = {};
- values.forEach(v => { result[v.id] = 50; });
- if(present.length <= 1) return result;
+ values.forEach(v => { result[v.id] = 62; });
+ if(present.length <= 1){
+  present.forEach(v => { result[v.id] = 100; });
+  return result;
+ }
  const nums = present.map(v => v.val);
- const med = medianOf(nums);
- const absDev = nums.map(x => Math.abs(x - med));
- const mad = medianOf(absDev);
- const scale = Math.max(1.4826 * mad, 1e-6);
- present.forEach(v => {
- const z = (v.val - med) / scale;
- let s = 50 + 50 * Math.tanh(z / 1.5);
- if(s < 0) s = 0;
- if(s > 100) s = 100;
- result[v.id] = s;
+ const maxV = Math.max(...nums);
+ const minV = Math.min(...nums);
+ const span = maxV - minV;
+ if(span < 1e-9){
+  present.forEach(v => { result[v.id] = 88; });
+  return result;
+ }
+ // Sort for percentile blend (keeps order stable without huge gaps)
+ const sorted = present.slice().sort((a,b) => b.val - a.val);
+ const n = sorted.length;
+ const byId = {};
+ sorted.forEach((v, i) => {
+  // rankPct: 0 = best, 1 = worst
+  const rankPct = n <= 1 ? 0 : i / (n - 1);
+  // valuePct: 0 = best, 1 = worst
+  const valuePct = (maxV - v.val) / span;
+  // Blend rank + value so one outlier star does not crush everyone else
+  const t = 0.55 * rankPct + 0.45 * valuePct;
+  // Ease toward the middle: power < 1 compresses extremes
+  const curved = Math.pow(t, 0.85);
+  // Map into ~46..100 (last place never looks hopeless)
+  let s = 100 - 54 * curved;
+  if(s > 100) s = 100;
+  if(s < 46) s = 46;
+  byId[v.id] = s;
  });
+ // Exact 100 for leader(s)
+ sorted.filter(v => v.val === maxV).forEach(v => { byId[v.id] = 100; });
+ present.forEach(v => { result[v.id] = byId[v.id] != null ? byId[v.id] : 62; });
  return result;
  }
 
@@ -20151,6 +19969,12 @@ function renderTradeSide(side){
   const Mmap = madRelativeScores(Marr);
   const Rmap = madRelativeScores(Rarr);
 
+  // If nobody has market values, try attach once more (common after partial load)
+  try{
+   const anyVal = teams.some(t => (t.roster||[]).some(p => (Number(p.value)||0) > 0));
+   if(!anyVal && typeof attachValues === 'function') attachValues();
+  }catch(eAtt){}
+
   const base = teams.map(t => {
    const m = rosterMetrics(t, t.roster, { counts, flexElig, sfElig, slotRV, starterSlotCount }, {});
    const scores = (t.weeklyScores || []).filter(s => typeof s === 'number' && s > 0);
@@ -20162,21 +19986,41 @@ function renderTradeSide(side){
    const g = (t.wins||0)+(t.losses||0)+(t.ties||0);
    const winPct = g > 0 ? ((t.wins||0)+0.5*(t.ties||0))/g : 0;
    const recordStr = t.ties ? (t.wins+'-'+t.losses+'-'+t.ties) : ((t.wins||0)+'-'+(t.losses||0));
-   // positional surplus from assignment details when present
+   // Positional strength: prefer assignment surplus; fall back to full-roster positionalSurplus
    const posSurp = { QB: 0, RB: 0, WR: 0, TE: 0 };
    try{
-    (m.details || []).forEach(d => {
-     if(d && posSurp[d.pos] != null) posSurp[d.pos] += (d.surplus || 0);
+    const det = m.starterDetails || m.details || [];
+    det.forEach(d => {
+     if(!d) return;
+     const pos = d.position || d.pos;
+     if(posSurp[pos] == null) return;
+     const sur = d.marginalStarterContribution != null ? d.marginalStarterContribution
+      : (d.surplus != null ? d.surplus : ((Number(d.value)||0) - (Number(d.slotRV)||0)));
+     posSurp[pos] += sur;
     });
    }catch(e){}
+   try{
+    if(typeof positionalSurplus === 'function' && !(posSurp.QB || posSurp.RB || posSurp.WR || posSurp.TE)){
+     const full = positionalSurplus(t, starterRV);
+     ['QB','RB','WR','TE'].forEach(pos => { posSurp[pos] = full[pos] || 0; });
+    }
+   }catch(e2){}
+   const starterSurplus = Number(m.starterSurplus) || 0;
+   const lineupValue = Number(m.starterValue) || 0;
+   const benchQ = Number(m.benchQuality) || 0;
+   const benchR = Number(m.benchRaw) || 0;
+   // Table columns: VORP mode shows surplus; raw mode shows lineup/bench market totals
+   // Always expose both; table shows lineup/bench totals so columns never blank at 0 surplus
    return {
     team: t,
-    starterSurplus: m.starterSurplus || 0,
-    starterVor: m.starterSurplus || 0,
-    depthVor: m.benchQuality || 0,
-    benchQuality: m.benchQuality || 0,
-    benchRaw: m.benchQuality || 0,
-    lineupValue: m.starterValue || 0,
+    starterSurplus,
+    starterVor: lineupValue || starterSurplus,
+    starterSurplusRaw: starterSurplus,
+    depthVor: benchR || benchQ,
+    depthSurplusRaw: benchQ,
+    benchQuality: benchQ,
+    benchRaw: benchR,
+    lineupValue,
     holes: m.holes || 0,
     thin: m.thin || 0,
     QB: posSurp.QB, RB: posSurp.RB, WR: posSurp.WR, TE: posSurp.TE,
@@ -20191,15 +20035,24 @@ function renderTradeSide(side){
   });
 
   const Smap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.starterSurplus })));
-  const Dmap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.depthVor })));
+  const Dmap = madRelativeScores(base.map(r => ({ id: r.team.id, val: r.benchQuality != null ? r.benchQuality : r.depthVor })));
   base.forEach(r => {
    const id = r.team.id;
    const A = r.hasAvg ? (Amap[id] ?? 50) : 50;
    const M = r.hasDist ? (Mmap[id] ?? 50) : A;
    const R = Rmap[id] ?? 50;
-   r.power = wS * (Smap[id] ?? 50) + wD * (Dmap[id] ?? 50) + wA * A + wM * M + wR * R;
-   // hole penalty
-   if(r.holes > 0) r.power = Math.max(0, r.power - 4 * r.holes);
+   const sScore = Smap[id] != null ? Smap[id] : 50;
+   const dScore = Dmap[id] != null ? Dmap[id] : 50;
+   // 0-100 component scores used by snapshot + diagnostics
+   r.starterScore = sScore;
+   r.depthScore = dScore;
+   r.power = wS * sScore + wD * dScore + wA * A + wM * M + wR * R;
+   // Mild hole penalty (capped) so empty slots hurt without nuking the score
+   if(r.holes > 0) r.power = Math.max(42, r.power - Math.min(8, 2.5 * r.holes));
+   // Light pull toward league-comfortable mid range so 12/100 never happens
+   r.power = 50 + (r.power - 50) * 0.88;
+   if(r.power > 100) r.power = 100;
+   if(r.power < 40) r.power = 40;
   });
 
   state._powerContext = {
@@ -20903,10 +20756,10 @@ function renderTradeSide(side){
  n.innerHTML = label + indHtml;
  if(title) n.title = title;
  };
- setTh('th-starter', 'Starter strength',
- 'Display: raw FantasyCalc value of optimal lineup. Power uses slot surplus on the same lineup.');
- setTh('th-depth', 'Bench strength',
- 'Non-starters only: position-weighted market value (QB/TE discounted), then diminishing curve. Same metric Power uses.');
+ setTh('th-starter', 'Starters',
+ 'Best starting lineup in the league = 100. Others curve down from the top.');
+ setTh('th-depth', 'Bench',
+ 'Best bench in the league = 100. Others curve down from the top.');
  setTh('th-qb', vorp ? 'QB surplus' : 'QB value', vorp ? 'Diagnostic VOR vs positional RV (not used as Power bench)' : 'Sum of FantasyCalc value for rostered QBs');
  setTh('th-rb', vorp ? 'RB surplus' : 'RB value', vorp ? 'Diagnostic VOR vs positional RV' : 'Sum of FantasyCalc value for rostered RBs');
  setTh('th-wr', vorp ? 'WR surplus' : 'WR value', vorp ? 'Diagnostic VOR vs positional RV' : 'Sum of FantasyCalc value for rostered WRs');
@@ -20930,7 +20783,57 @@ function renderTradeSide(side){
 
 
  
- function renderPowerSnapshot(rows){
+ 
+ function scoreBand(score){
+  // Compressed scale: most teams ~48-90
+  const s = Number(score);
+  if(!isFinite(s)) return { label: '-', tone: 'muted' };
+  if(s >= 90) return { label: 'Elite', tone: 'up' };
+  if(s >= 78) return { label: 'Strong', tone: 'up' };
+  if(s >= 68) return { label: 'Solid', tone: '' };
+  if(s >= 58) return { label: 'Average', tone: '' };
+  if(s >= 50) return { label: 'Thin', tone: 'down' };
+  return { label: 'Weak', tone: 'down' };
+ }
+ 
+ function formatComponentScore(score, rawFallback){
+  const s = Number(score);
+  if(isFinite(s)){
+   const band = scoreBand(s);
+   return {
+    main: Math.round(s).toString(),
+    sub: band.label,
+    tone: band.tone,
+    title: 'Best in league = 100. Everyone else curves down from the top.'
+   };
+  }
+  const raw = Number(rawFallback);
+  if(isFinite(raw)){
+   return {
+    main: Math.round(raw).toLocaleString(),
+    sub: 'raw value',
+    tone: '',
+    title: 'Market value total (FantasyCalc).'
+   };
+  }
+  return { main: '-', sub: '', tone: '', title: '' };
+ }
+ function formatPowerFriendly(power, med){
+  const p = Number(power);
+  if(!isFinite(p)) return { main: '-', sub: '', tone: '' };
+  const band = scoreBand(p);
+  // Prefer label; optionally note gap from 100
+  let vs = band.label;
+  if(p < 99.5){
+   const gap = Math.round(100 - p);
+   if(gap >= 3) vs = band.label + ' · ' + gap + ' off top';
+  } else {
+   vs = 'Best in league';
+  }
+  return { main: p.toFixed(1), sub: vs, tone: band.tone };
+ }
+
+function renderPowerSnapshot(rows){
  const box = el('rankings-snapshot');
  if(!box || !rows || !rows.length) return;
  const sorted = rows.slice().sort((a,b) => b.power - a.power || String(a.team.name).localeCompare(String(b.team.name)));
@@ -20950,8 +20853,8 @@ function renderTradeSide(side){
  const span = Math.max(1, maxPower - minPower);
 
  let html = '<div class="card" style="padding:14px;">';
- html += '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">This week\'s power mix</div>';
- html += '<p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;">Week ~' + (w.weeks||0).toFixed(0) + ' · roster ' + pct(w.rosterShare) + ' / results ' + pct(w.resultsShare) + '</p>';
+ html += '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:8px;">How power is weighted right now</div>';
+ html += '<p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;">Week ~' + (w.weeks||0).toFixed(0) + ' · <strong>' + pct(w.rosterShare) + '</strong> roster strength (starters + bench) · <strong>' + pct(w.resultsShare) + '</strong> scored results (avg / median / record)</p>';
  html += '<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px;background:var(--surface-2);">';
  bars.forEach(b => {
  if(!(b.w > 0.005)) return;
@@ -20983,34 +20886,41 @@ function renderTradeSide(side){
  });
  html += '</div>';
 
- // Compact table: all teams  -  name, power, starters, bench, avg, median, record
+  // Compact table: friendly power / starter / bench
+ const medPower = medianOf(sorted.map(r => r.power).filter(x => x != null && isFinite(x)));
  html += '<div style="overflow-x:auto;">';
  html += '<table style="width:100%;font-size:12.5px;">';
  html += '<thead><tr>';
- html += '<th>#</th><th>Team</th><th>Power</th><th>Starters</th><th>Bench</th><th>Avg pts</th><th>Median pts</th><th>Record</th>';
+ html += '<th>#</th><th>Team</th>';
+ html += '<th title="Best team = 100. Others curve down from the top.">Power</th>';
+ html += '<th title="Best starters in the league = 100. Curves down from the top.">Starters</th>';
+ html += '<th title="Best bench in the league = 100. Curves down from the top.">Bench</th>';
+ html += '<th>Avg pts</th><th>Median pts</th><th>Record</th>';
  html += '</tr></thead><tbody>';
  sorted.forEach((r, i) => {
  const isMine = state.myTeamId != null && (r.team.id === state.myTeamId || String(r.team.id) === String(state.myTeamId));
- const starter = r.starterScore != null ? r.starterScore.toFixed(0) : (r.starterVor != null ? r.starterVor.toFixed(0) : ' - ');
- const bench = r.depthScore != null ? r.depthScore.toFixed(0) : (r.depthVor != null ? r.depthVor.toFixed(0) : ' - ');
- // Prefer 0-100 relative component scores when present; else show raw
- const sShow = r.starterScore != null ? r.starterScore.toFixed(0) : ' - ';
- const dShow = r.depthScore != null ? r.depthScore.toFixed(0) : ' - ';
- const avgShow = r.hasAvg && r.avgPts != null ? r.avgPts.toFixed(1) : ' - ';
- const medShow = r.hasDist && r.medPts != null ? r.medPts.toFixed(1) : (r.medPts != null && r.medPts > 0 ? r.medPts.toFixed(1) : ' - ');
+ const pf = formatPowerFriendly(r.power, medPower);
+ const st = formatComponentScore(r.starterScore, r.starterVor != null ? r.starterVor : r.lineupValue);
+ const bn = formatComponentScore(r.depthScore, r.depthVor != null ? r.depthVor : r.benchQuality);
+ const avgShow = r.hasAvg && r.avgPts != null ? r.avgPts.toFixed(1) : (r.avgPts != null && r.avgPts > 0 ? r.avgPts.toFixed(1) : '-');
+ const medShow = r.medPts != null && r.medPts > 0 ? r.medPts.toFixed(1) : '-';
+ function cellPair(f){
+  return '<td class="val-cell" title="' + escapeHtml(f.title || '') + '"><strong>' + escapeHtml(f.main)
+   + '</strong><div class="pct-cell ' + (f.tone || '') + '">' + escapeHtml(f.sub || '') + '</div></td>';
+ }
  html += '<tr style="cursor:pointer;' + (isMine ? 'background:var(--accent-muted);' : '') + '" data-team-id="' + r.team.id + '">';
  html += '<td><span class="rank-num">' + (i+1) + '</span></td>';
  html += '<td class="team-name-cell">' + escapeHtml(r.team.name) + '</td>';
- html += '<td class="val-cell"><strong>' + r.power.toFixed(1) + '</strong></td>';
- html += '<td class="val-cell">' + sShow + '</td>';
- html += '<td class="val-cell">' + dShow + '</td>';
+ html += cellPair(pf);
+ html += cellPair(st);
+ html += cellPair(bn);
  html += '<td class="val-cell">' + avgShow + '</td>';
  html += '<td class="val-cell">' + medShow + '</td>';
- html += '<td class="val-cell">' + escapeHtml(r.recordStr || ' - ') + '</td>';
+ html += '<td class="val-cell">' + escapeHtml(r.recordStr || '-') + '</td>';
  html += '</tr>';
  });
  html += '</tbody></table></div>';
- html += '<p style="font-size:11.5px;color:var(--text-muted);margin:8px 0 0;">Starters / Bench are relative 0-100 components (not raw VORP). Tap a row for team grade.</p>';
+ html += '<p style="font-size:11.5px;color:var(--text-muted);margin:8px 0 0;">Power, Starters, and Bench: <strong>best in league = 100</strong>, others curve down from the top. Labels (Top / Elite / Strong / Mid / Thin) are distance from #1. Tap a row for team grade.</p>';
  html += '</div>';
 
  box.innerHTML = html;
@@ -21020,8 +20930,13 @@ function renderTradeSide(side){
  }
 
  function renderRankings(){
+ try{
  updateValueModeLabels();
- const rows = buildPowerRows();
+ let rows = [];
+ try{ rows = buildPowerRows() || []; }catch(eBuild){
+  console.error('buildPowerRows failed', eBuild);
+  rows = [];
+ }
  const tbody = el('rankings-body');
  if(!tbody) return;
 
@@ -21091,41 +21006,74 @@ function renderTradeSide(side){
  rows.forEach((r, i) => {
  const tr = document.createElement('tr');
  const barPct = (r.power / maxPower) * 100;
+ const rankFmtPct = (p) => {
+  if(p == null || isNaN(p)) return '-';
+  return (p >= 0 ? '+' : '') + Number(p).toFixed(0) + '%';
+ };
  const cellVal = (key, formatter) => {
- const raw = r[key];
- if(raw == null || isNaN(raw)){
- return `<td class="val-cell">-<div class="pct-cell">-</div></td>`;
- }
- const p = pctFromMedian(raw, medians[key]);
- const cls = p == null ? '' : p > 2 ? 'up' : p < -2 ? 'down' : '';
- const display = formatter ? formatter(raw) : fmt(raw);
- return `<td class="val-cell">${display}<div class="pct-cell ${cls}">${fmtPct(p)}</div></td>`;
+  let raw = r[key];
+  if(raw == null || (typeof raw === 'number' && isNaN(raw))) raw = 0;
+  const p = pctFromMedian(raw, medians[key]);
+  const cls = p == null ? '' : p > 2 ? 'up' : p < -2 ? 'down' : '';
+  let display = formatter ? formatter(raw) : fmt(raw);
+  if(display == null || display === '') display = String(Math.round(Number(raw) || 0));
+  // For starter/bench show surplus under the total when available
+  let sub = '';
+  if(key === 'starterVor' && r.starterSurplusRaw != null && isFinite(r.starterSurplusRaw)){
+   const s = Number(r.starterSurplusRaw);
+   sub = '<div class="pct-cell">surplus ' + (s >= 0 ? '+' : '') + Math.round(s).toLocaleString() + '</div>';
+  } else if(key === 'depthVor' && r.depthSurplusRaw != null && isFinite(r.depthSurplusRaw)){
+   const s = Number(r.depthSurplusRaw);
+   sub = '<div class="pct-cell">depth score ' + Math.round(s).toLocaleString() + '</div>';
+  } else {
+   const pctHtml = (typeof showPctChanges === 'function' && !showPctChanges())
+    ? ''
+    : ('<div class="pct-cell ' + cls + '">' + rankFmtPct(p) + '</div>');
+   sub = pctHtml;
+  }
+  return '<td class="val-cell">' + display + sub + '</td>';
  };
  const powerP = pctFromMedian(r.power, medians.power);
  const powerCls = powerP > 2 ? 'up' : powerP < -2 ? 'down' : '';
- tr.innerHTML = `
- <td><span class="rank-num">${i+1}</span></td>
- <td class="team-name-cell">${escapeHtml(r.team.name)}</td>
- <td class="val-cell">
- <div class="mini-bar-wrap">
- <span style="min-width:40px;display:inline-block;font-variant-numeric:tabular-nums;font-weight:700;">${r.power.toFixed(1)}</span>
- <div class="mini-bar-track"><div class="mini-bar" style="width:${barPct}%"></div></div>
- </div>
- <div class="pct-cell ${powerCls}">${fmtPct(powerP)} vs med</div>
- </td>
- <td class="val-cell">${escapeHtml(r.recordStr)}</td>
- ${cellVal('starterVor')}
- ${cellVal('depthVor')}
- ${cellVal('avgPts', fmtPts)}
- ${cellVal('medPts', fmtPts)}
- ${cellVal('maxPts', fmtPts)}
- ${cellVal('minPts', fmtPts)}
- ${cellVal('QB')}
- ${cellVal('RB')}
- ${cellVal('WR')}
- ${cellVal('TE')}`;
- tbody.appendChild(tr);
+ const powerNum = (r.power != null && isFinite(r.power)) ? Number(r.power).toFixed(1) : '-';
+ const powerBand = formatPowerFriendly(r.power, medians.power);
+ tr.innerHTML =
+  '<td><span class="rank-num">' + (i+1) + '</span></td>' +
+  '<td class="team-name-cell">' + escapeHtml(r.team.name) + '</td>' +
+  '<td class="val-cell" title="Best overall = 100; curves down from the top">' +
+    '<div class="mini-bar-wrap">' +
+      '<span style="min-width:40px;display:inline-block;font-variant-numeric:tabular-nums;font-weight:700;">' + powerNum + '</span>' +
+      '<div class="mini-bar-track"><div class="mini-bar" style="width:' + barPct + '%"></div></div>' +
+    '</div>' +
+    '<div class="pct-cell ' + (powerBand.tone || powerCls) + '">' + escapeHtml(powerBand.sub || rankFmtPct(powerP)) + '</div>' +
+  '</td>' +
+  '<td class="val-cell">' + escapeHtml(r.recordStr || '') + '</td>' +
+  (function(){
+    const st = formatComponentScore(r.starterScore, r.starterVor != null ? r.starterVor : r.lineupValue);
+    return '<td class="val-cell" title="Best starters = 100; curves down from the top"><strong>' + escapeHtml(st.main)
+      + '</strong><div class="pct-cell ' + st.tone + '">' + escapeHtml(st.sub) + '</div></td>';
+  })() +
+  (function(){
+    const bn = formatComponentScore(r.depthScore, r.depthVor != null ? r.depthVor : r.benchQuality);
+    return '<td class="val-cell" title="Best bench = 100; curves down from the top"><strong>' + escapeHtml(bn.main)
+      + '</strong><div class="pct-cell ' + bn.tone + '">' + escapeHtml(bn.sub) + '</div></td>';
+  })() +
+  cellVal('avgPts', fmtPts) +
+  cellVal('medPts', fmtPts) +
+  cellVal('maxPts', fmtPts) +
+  cellVal('minPts', fmtPts) +
+  cellVal('QB') +
+  cellVal('RB') +
+  cellVal('WR') +
+  cellVal('TE');
+  tbody.appendChild(tr);
  });
+ }catch(err){
+  console.error('renderRankings failed', err);
+  const tbody = el('rankings-body');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--red);padding:20px;">Power rankings failed to load. Try Refresh. '
+   + escapeHtml((err && err.message) || '') + '</td></tr>';
+ }
  }
 
  document.querySelectorAll('#panel-rankings th[data-sort]').forEach(th => {
@@ -21729,7 +21677,7 @@ function buildDebugDump(){
   };
  }
 
- function fmtPct(p){
+ function fmtPctExport(p){
   if(p == null || !isFinite(p)) return 'n/a';
   return (p >= 0 ? '+' : '') + p.toFixed(1) + '%';
  }
