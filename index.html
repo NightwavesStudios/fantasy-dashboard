@@ -3454,6 +3454,18 @@ html[data-theme="light"] {
 
  /* ---------- polish: teams panel, checklist, focus ---------- */
  #rosters-sort { max-width: 240px; }
+ .tf-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 12px 14px; margin-bottom: 10px; }
+ .tf-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; margin-bottom: 10px; }
+ .tf-arrow { color: var(--accent); font-weight: 700; }
+ .tf-tag { margin-left: auto; font-size: 11px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; }
+ .tf-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+ .tf-label { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+ .tf-player { font-size: 13px; padding: 3px 0; }
+ .tf-val { color: var(--text-muted); font-size: 12px; }
+ .tf-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+ .tf-foot .btn { margin-left: auto; }
+ .compare-suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+ @media (max-width: 620px){ .tf-cols { grid-template-columns: 1fr; } }
  .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
  .team-card {
  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -3603,12 +3615,20 @@ html[data-theme="light"] {
  Byes + injuries
  </button>
 
- <div class="nav-section">Roster</div>
+ <div class="nav-section">Team</div>
  <button class="nav-item" data-panel="panel-rankings">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h4V9H4v10zM10 19h4V5h-4v14zM16 19h4v-7h-4v7z"/></svg></span>
  Rankings
  </button>
- <button class="nav-item" data-panel="panel-needs">
+ <button class="nav-item" data-panel="panel-rosters">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+ Rosters
+ </button>
+<button class="nav-item" data-panel="panel-depth">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></svg></span>
+ Tiers
+ </button>
+<button class="nav-item" data-panel="panel-needs">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg></span>
  Needs
  </button>
@@ -3634,11 +3654,7 @@ html[data-theme="light"] {
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 6"/></svg></span>
  Schedule
  </button>
- <button class="nav-item" data-panel="panel-schedopt" id="nav-schedopt" style="display:none;">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/><path d="M16 10l4 4-4 4"/></svg></span>
- Sched opt
- </button>
- <button class="nav-item" data-panel="panel-playoffs">
+  <button class="nav-item" data-panel="panel-playoffs">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M5 4h14M9 4V2h6v2"/></svg></span>
  Playoffs
  </button>
@@ -3646,7 +3662,11 @@ html[data-theme="light"] {
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-8 4 5 4-9"/></svg></span>
  Rooting
  </button>
- <button class="nav-item" data-panel="panel-records">
+ <button class="nav-item" data-panel="panel-trends">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
+ Trends
+ </button>
+<button class="nav-item" data-panel="panel-records">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v4H5zM5 10h14v10H5z"/><path d="M9 14h6"/></svg></span>
  Records
  </button>
@@ -3654,29 +3674,12 @@ html[data-theme="light"] {
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>
  Luck
  </button>
- <button class="nav-item" data-panel="panel-roster">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 11h9M4 16h12"/><circle cx="18" cy="16" r="3"/><path d="M18 14.6v1.6l1.2.8"/></svg></span>
- Accuracy
- </button>
-
- <div class="nav-section">More</div>
+ 
  <button class="nav-item" data-panel="panel-export" id="nav-export" style="display:none;">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg></span>
  AI export
  </button>
- <button class="nav-item" data-panel="panel-rosters">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
- Rosters
- </button>
- <button class="nav-item" data-panel="panel-depth">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></svg></span>
- Tiers
- </button>
- <button class="nav-item" data-panel="panel-trends">
- <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
- Trends
- </button>
- </nav>
+    </nav>
  <div class="sidebar-footer">
  <button class="nav-item" id="btn-refresh" title="Refresh values">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14.9-4M20 12a8 8 0 0 1-14.9 4"/><path d="M19 4v5h-5M5 20v-5h5"/></svg></span>
@@ -4055,32 +4058,6 @@ html[data-theme="light"] {
  <div id="finder-results" class="hist-list"></div>
  </section>
 
- <!-- ---------- START/SIT ---------- -->
- <section class="panel" id="panel-roster">
- <div class="section-title-row" style="margin-bottom:12px;">
- <div class="section-title" style="margin:0;">Start/sit accuracy</div>
- <button type="button" class="info-btn" id="btn-roster-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
- </div>
- <p class="needs-intro" id="roster-intro">Compares who was started to the best lineup that week from actual player points. Works on Sleeper and ESPN (week-by-week box scores).</p>
- <div style="overflow-x:auto;">
- <table>
- <thead>
- <tr>
- <th>#</th>
- <th>Team</th>
- <th>Weeks</th>
- <th>Start %</th>
- <th title="Your starter points / optimal lineup points">Perfect %</th>
- <th>Pts left on bench</th>
- <th>Avg left / wk</th>
- </tr>
- </thead>
- <tbody id="roster-body"></tbody>
- </table>
- </div>
- <p class="tpi-note" id="roster-note" style="margin-top:12px;"></p>
- </section>
-
  <!-- ---------- START/SIT PICK ---------- -->
  <section class="panel" id="panel-sit">
  <div class="section-title-row">
@@ -4187,7 +4164,7 @@ html[data-theme="light"] {
  <th title="All-play expected wins">Exp W</th>
  <th title="Actual wins minus expected">Luck</th>
  <th title="Average points scored by opponents on your schedule">SOS</th>
- <th>PF</th>
+ <th title="Completed weeks only; the in-progress week is not counted">PF</th>
  <th>Avg</th>
  <th title="Share of starter slots that matched optimal">Start %</th>
  <th title="Starter points / optimal starter points">Perfect %</th>
@@ -4372,7 +4349,7 @@ html[data-theme="light"] {
  <th>Team</th>
  <th>Record</th>
  <th title="Same as Schedule: expected H2H + league median record">Proj record</th>
- <th>PF</th>
+ <th title="Completed weeks only; the in-progress week is not counted">PF</th>
  <th title="Chance to make the playoffs">Playoffs %</th>
  <th title="Chance at a first-round bye (when the format has byes)">Bye %</th>
  <th title="Chance to win the league">Title %</th>
@@ -6933,7 +6910,7 @@ function escapeHtml(s){
  const tasks = [
  ['odds', () => { state._oddsReady = true; try{ renderPlayoffs(); }catch(e){} }],
  ['records', renderRecords], ['rate', renderRateTeam], ['luck', renderLuck],
- ['finder', setupFinderControls], ['accuracy', renderRosterMgmt], ['depth', renderDepth],
+ ['finder', setupFinderControls], ['depth', renderDepth],
  ['byes', renderByes], ['teams', renderLeagueRosters], ['trends', renderTrends],
  ['home', renderHome]
  ];
@@ -12035,8 +12012,9 @@ function matchupWinPct(liveA, liveB, projA, projB){
 
   const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || '';
   const med = !!result.useMedian;
+  const leagueHasTies = result.rows.some(r => String(r.curRecord).split('-').length > 2);
   const rowsHtml = result.rows.map((r, i) => {
-   const rec = r.projTies > 0.05
+   const rec = leagueHasTies && r.projTies > 0.05
     ? r.projWins.toFixed(1) + '-' + r.projLosses.toFixed(1) + '-' + r.projTies.toFixed(1)
     : r.projWins.toFixed(1) + '-' + r.projLosses.toFixed(1);
    const weekBit = r.expWeekW.toFixed(2) + ' W';
@@ -12049,7 +12027,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
     '<td style="color:var(--text-muted);font-size:12.5px;">' + escapeHtml(r.curRecord) + '</td>' +
     '<td class="val-cell">' + rec + '</td>' +
     '<td style="font-size:12.5px;color:var(--text-secondary);">' + weekBit + '</td>' +
-    '<td style="font-size:12px;color:var(--text-muted);">' + split + '</td>' +
+    (med ? '<td style="font-size:12px;color:var(--text-muted);">' + split + '</td>' : '') +
     '<td class="val-cell">' + (r.pf != null ? r.pf.toFixed(1) : '—') + '</td>' +
     '</tr>';
   }).join('');
@@ -12065,8 +12043,8 @@ function matchupWinPct(liveA, liveB, projA, projB){
    '</div>' +
    '<p class="needs-intro" style="margin-bottom:10px;">' + how + ' (' + result.sims.toLocaleString() + ' runs). Decimal wins = expected value.</p>' +
    '<div style="overflow-x:auto;"><table class="is-sortable">' +
-   '<thead><tr><th>#</th><th>Team</th><th>Now</th><th>After week</th><th>Week W</th><th>' +
-   (med ? 'H2H / Median' : 'H2H') + '</th><th>PF (proj)</th></tr></thead>' +
+   '<thead><tr><th>#</th><th>Team</th><th>Now</th><th>After week</th><th title="Chance of winning this week">Win %</th>' +
+   (med ? '<th>H2H / Median</th>' : '') + '<th>PF (proj)</th></tr></thead>' +
    '<tbody>' + rowsHtml + '</tbody></table></div>';
   try{ markTablesSortable(box); }catch(e){}
  }
@@ -13682,7 +13660,161 @@ function renderLuck(){
  }
 }
 
-function setupFinderControls(){
+/* ---------- trade finder ---------- */
+ function finderPosValue(team, pos){
+  const need = { QB: (state.numQBs === 2 ? 2 : 1), RB: 2, WR: 3, TE: 1 }[pos] || 1;
+  const vals = (team.roster || [])
+   .filter(p => p && p.position === pos && p.matched && !p.isTaxi && p.value > 0)
+   .map(p => Number(p.value) || 0)
+   .sort((a,b) => b - a);
+  let s = 0;
+  for(let i = 0; i < Math.min(need, vals.length); i++) s += vals[i];
+  return s;
+ }
+
+ function finderNeeds(){
+  const positions = ['QB','RB','WR','TE'];
+  const league = {};
+  positions.forEach(pos => { league[pos] = medianOf(state.teams.map(t => finderPosValue(t, pos))) || 0; });
+  const byTeam = {};
+  state.teams.forEach(t => {
+   byTeam[t.id] = {};
+   positions.forEach(pos => {
+    const v = finderPosValue(t, pos);
+    const m = league[pos];
+    byTeam[t.id][pos] = m > 0 ? Math.round((v / m - 1) * 100) : 0;
+   });
+  });
+  return byTeam;
+ }
+
+ function finderPool(team, pos, limit){
+  return (team.roster || [])
+   .filter(p => p && p.position === pos && p.matched && !p.isTaxi && !p.tradeLocked && !p.isIR)
+   .map(p => ({ p, v: Number(p.value) || 0 }))
+   .filter(x => x.v > 0)
+   .sort((a,b) => b.v - a.v)
+   .slice(0, limit || 6);
+ }
+
+ function finderCombos(pool, n){
+  if(n <= 1) return pool.map(x => [x]);
+  const out = [];
+  for(let i = 0; i < pool.length; i++)
+   for(let j = i + 1; j < pool.length; j++) out.push([pool[i], pool[j]]);
+  return out;
+ }
+
+ function finderShort(n){
+  n = String(n || '');
+  return n.length > 16 ? n.slice(0, 14) + '…' : n;
+ }
+
+ function runTradeFinder(){
+  const box = el('finder-results');
+  const status = el('finder-status');
+  if(!box) return;
+  if(!state.teams || !state.teams.length){ box.innerHTML = '<div class="hist-empty">Load a league first.</div>'; return; }
+  const mineSel = el('finder-myteam');
+  const me = state.teams.find(t => String(t.id) === String((mineSel && mineSel.value) || state.myTeamId)) || state.teams[0];
+  const partnerIds = Array.from(document.querySelectorAll('.finder-partner-cb:checked')).map(c => String(c.value));
+  const getPos = Array.from(document.querySelectorAll('.finder-pos-cb:checked')).map(c => c.value);
+  const sendPos = Array.from(document.querySelectorAll('.finder-send-cb:checked')).map(c => c.value);
+  const kindEl = el('finder-kind');
+  const kind = (kindEl && kindEl.value) || 'ALL';
+  const parseNames = id => {
+   const n = el(id);
+   return String((n && n.value) || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  };
+  const wantSend = parseNames('finder-sell-players');
+  const wantGet = parseNames('finder-buy-players');
+  const sizes = kind === '1' ? [[1,1]]
+   : kind === '2' ? [[2,1],[1,2]]
+   : kind === '22' ? [[2,2]]
+   : kind === '33' ? [[3,3]]
+   : kind === 'mix' ? [[2,3],[3,2]]
+   : [[1,1],[2,2],[2,1],[1,2]];
+  const needs = finderNeeds();
+  const myNeed = needs[me.id] || {};
+  const results = [];
+  partnerIds.forEach(pid => {
+   const them = state.teams.find(t => String(t.id) === pid);
+   if(!them || String(them.id) === String(me.id)) return;
+   const theirNeed = needs[them.id] || {};
+   sendPos.forEach(sp => {
+    getPos.forEach(gp => {
+     if(sp === gp) return;
+     const myGain = (myNeed[sp] || 0) - (myNeed[gp] || 0);
+     const theirGain = (theirNeed[gp] || 0) - (theirNeed[sp] || 0);
+     if(myGain < 5 || theirGain < 5) return;
+     const myPool = finderPool(me, sp, 6).filter(x => !wantSend.length || wantSend.some(q => x.p.fullName.toLowerCase().includes(q)));
+     const theirPool = finderPool(them, gp, 6).filter(x => !wantGet.length || wantGet.some(q => x.p.fullName.toLowerCase().includes(q)));
+     if(!myPool.length || !theirPool.length) return;
+     sizes.forEach(sz => {
+      const sa = sz[0], sb = sz[1];
+      if(myPool.length < sa || theirPool.length < sb) return;
+      finderCombos(myPool, sa).forEach(aPack => {
+       finderCombos(theirPool, sb).forEach(bPack => {
+        const av = aPack.reduce((s,x) => s + x.v, 0);
+        const bv = bPack.reduce((s,x) => s + x.v, 0);
+        if(!(av > 0) || !(bv > 0)) return;
+        const ratio = av / bv;
+        if(ratio < 0.82 || ratio > 1.22) return;
+        const packOk = pack => {
+         const top = Math.max.apply(null, pack.map(x => x.v));
+         return pack.every(x => x.v >= top * 0.25);
+        };
+        if(!packOk(aPack) || !packOk(bPack)) return;
+        results.push({ them, sp, gp, aPack, bPack, av, bv, ratio, myGain, theirGain,
+         score: myGain + theirGain - Math.abs(1 - ratio) * 150 - (aPack.length + bPack.length) * 18 });
+       });
+      });
+     });
+    });
+   });
+  });
+  results.sort((a,b) => b.score - a.score);
+  const perTeam = {};
+  const top = [];
+  results.forEach(r => {
+   const k = String(r.them.id);
+   perTeam[k] = perTeam[k] || 0;
+   if(perTeam[k] >= 2) return;
+   perTeam[k]++;
+   top.push(r);
+  });
+  const shown = top.slice(0, 12);
+  if(status) status.textContent = shown.length
+   ? (results.length.toLocaleString() + ' fair packages · showing top ' + shown.length)
+   : '';
+  if(!shown.length){
+   box.innerHTML = '<div class="hist-empty">No fair swap fits those positions. Try more partners, another trade size, or a different position.</div>';
+   return;
+  }
+  const packHtml = pack => pack.map(x =>
+   '<div class="tf-player"><span class="pos-badge pos-' + x.p.position + '">' + x.p.position + '</span> ' +
+   escapeHtml(x.p.fullName) + ' <span class="tf-val">' + fmt(x.v) + '</span></div>').join('');
+  box.innerHTML = shown.map(r => {
+   const gap = Math.abs(1 - r.ratio) * 100;
+   return '<div class="tf-card">' +
+    '<div class="tf-head"><strong>' + escapeHtml(finderShort(me.name)) + '</strong>' +
+    '<span class="tf-arrow">⇄</span><strong>' + escapeHtml(finderShort(r.them.name)) + '</strong>' +
+    '<span class="tf-tag">' + r.myGain + '% ' + r.sp + ' surplus → ' + r.gp + ' need</span></div>' +
+    '<div class="tf-cols">' +
+    '<div><div class="tf-label">You send</div>' + packHtml(r.aPack) + '</div>' +
+    '<div><div class="tf-label">You get</div>' + packHtml(r.bPack) + '</div>' +
+    '</div>' +
+    '<div class="tf-foot">' + fmt(r.av) + ' for ' + fmt(r.bv) + ' · ' + gap.toFixed(0) + '% ' +
+    (r.ratio > 1 ? 'over' : 'under') + ' market · they gain ' + r.theirGain + '% ' + r.sp + ' depth' +
+    '<button type="button" class="btn btn-ghost btn-sm tf-open">Open trade board</button></div>' +
+    '</div>';
+  }).join('');
+  box.querySelectorAll('.tf-open').forEach(b => {
+   b.addEventListener('click', () => goToPanel('panel-trade'));
+  });
+ }
+
+ function setupFinderControls(){
  const mine = el('finder-myteam');
  const pBox = el('finder-partner-boxes');
  const getBox = el('finder-pos-boxes');
@@ -13698,8 +13830,7 @@ function setupFinderControls(){
  if(prevMine) mine.value = prevMine;
  else if(state.myTeamId != null) mine.value = state.myTeamId;
 
- if(pBox){
- pBox.innerHTML = '';
+ if(pBox && !pBox.childElementCount){
  state.teams.forEach(t => {
  if(String(t.id) === String(mine.value)) return;
  const lab = document.createElement('label');
@@ -13730,6 +13861,11 @@ function setupFinderControls(){
  if(btn && !btn._bound){
  btn._bound = true;
  btn.addEventListener('click', () => runTradeFinder());
+ }
+ const res = el('finder-results');
+ if(res && !res.childElementCount && !state._finderAutoRan){
+ state._finderAutoRan = true;
+ setTimeout(() => { try{ runTradeFinder(); }catch(e){ console.warn('finder', e); } }, 60);
  }
  }
 
@@ -15753,6 +15889,18 @@ function renderTrends(){
  html += '<div class="hist-empty">No players match that search.</div>';
  }
 
+ if(!state._compareList.length && !q){
+ const starts = pool.filter(p => (p.value || 0) > 0).slice(0, 6);
+ if(starts.length){
+ html += '<div class="hist-empty" style="text-align:left;">' +
+  'No players selected yet. Start with:' +
+  '<div class="compare-suggest">' +
+  starts.map(p => '<button type="button" class="btn btn-ghost btn-sm" data-add="' + escapeHtml(p.fullName) + '">' +
+   '<span class="pos-badge pos-' + p.position + '">' + p.position + '</span> ' + escapeHtml(p.fullName) + '</button>').join('') +
+  '</div></div>';
+ }
+ }
+
  if(state._compareList.length >= 2){
  const cols = state._compareList;
  const rows = [
@@ -17092,7 +17240,9 @@ function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffSt
     try{
       if(typeof pathWeekProj === 'function'){
         const v = pathWeekProj(team, wk);
-        if(v != null && isFinite(v) && v > 0) return Number(v);
+        const avg = (typeof team.avgPts === 'number' && team.avgPts > 0) ? team.avgPts : 0;
+        // A live, partially-scored total is not a usable projection for a what-if sim.
+        if(v != null && isFinite(v) && v > 0 && (!avg || v >= avg * 0.5)) return Number(v);
       }
     }catch(e){}
     return (typeof team.avgPts === 'number' && team.avgPts > 0) ? team.avgPts : null;
@@ -17957,7 +18107,7 @@ function runPathWhatIf(focusTeam, baseline, basePct, forced){
     }
 
     h += '<div style="font-weight:700;font-size:13px;margin:0 0 6px;">Final standings</div>';
-    h += '<div style="overflow-x:auto;"><table class="sortable-table" style="width:100%;font-size:12.5px;"><thead><tr><th>Seed</th><th>Team</th><th>Record</th><th>PF</th><th>Playoffs</th></tr></thead><tbody>';
+    h += '<div style="overflow-x:auto;"><table class="sortable-table" style="width:100%;font-size:12.5px;"><thead><tr><th>Seed</th><th>Team</th><th>Record</th><th title="Completed weeks only; the in-progress week is not counted">PF</th><th>Playoffs</th></tr></thead><tbody>';
     board.forEach(r => {
       const mine = focusTeam && String(r.id) === String(focusTeam.id);
       let tag = r.inPlayoffs ? (r.hasBye ? 'BYE' : 'IN') : 'OUT';
@@ -21819,10 +21969,6 @@ function goToPanel(panelId, opts){
  }
  if(btn.dataset.panel === 'panel-records') renderRecords();
  if(btn.dataset.panel === 'panel-finder') setupFinderControls();
- if(btn.dataset.panel === 'panel-roster'){
- if(!rosterWeekCache) loadRosterWeekData().then(() => renderRosterMgmt());
- else renderRosterMgmt();
- }
  if(btn.dataset.panel === 'panel-depth') renderDepth();
  if(btn.dataset.panel === 'panel-byes') renderByes();
  if(btn.dataset.panel === 'panel-rosters') renderLeagueRosters();
