@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0c0b'/%3E%3Cpath d='M9 23V9h4l6 9V9h4v14h-4l-6-9v9z' fill='%233ecf8e'/%3E%3C/svg%3E">
 <style>
  :root {
  --bg: #0a0c0b;
@@ -3450,6 +3451,52 @@ html[data-theme="light"] {
   min-width: 36px;
   min-height: 36px;
  }
+
+ /* ---------- polish: teams panel, checklist, focus ---------- */
+ #rosters-sort { max-width: 240px; }
+ .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+ .team-card {
+ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+ padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+ }
+ .team-card.mine { border-color: rgba(62, 207, 142, 0.45); }
+ .team-card-head { display: flex; align-items: center; gap: 8px; }
+ .team-rank { min-width: 20px; font-size: 11px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+ .team-name { flex: 1; min-width: 0; font-weight: 650; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+ .team-power { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
+ .team-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11.5px; color: var(--text-secondary); }
+ .team-delta.up { color: var(--accent); }
+ .team-delta.down { color: var(--red); }
+ .team-players { display: flex; flex-direction: column; }
+ .team-player { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--border-subtle); font-size: 12.5px; }
+ .team-player:first-child { border-top: 0; }
+ .team-player-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .team-player-name .player-card-link { font-size: 12.5px; }
+ .team-player-val { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+ .team-flag { font-size: 9px; font-weight: 700; letter-spacing: .03em; padding: 1px 5px; border-radius: 3px; background: var(--surface-2); color: var(--text-muted); }
+ .team-flag.bad { color: var(--red); background: var(--red-muted); }
+ .team-more { padding-top: 4px; font-size: 11px; color: var(--text-muted); }
+
+ /* Checklist: keep labels and badges from colliding, and use desktop width */
+ .bp-pipe-label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+ .bp-pipe-badge {
+ font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+ padding: 2px 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-muted);
+ }
+ .bp-pipe-badge.done, .bp-pipe-badge.now { color: var(--accent); background: var(--accent-muted); }
+ .bp-pipe-badge.blocked { color: var(--red); background: var(--red-muted); }
+ @media (min-width: 1180px) {
+ .bp-pipeline { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+ }
+
+ /* Focus + motion */
+ :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+ .card, .hist-card, .bp-pipe-step, .team-card { transition: border-color .15s ease, background .15s ease; }
+ .nav-item { transition: background .12s ease, color .12s ease; }
+ .sidebar-nav { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+ .sidebar-nav::-webkit-scrollbar { width: 8px; }
+ .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+ @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
@@ -3577,6 +3624,10 @@ html[data-theme="light"] {
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L21 9.5l-4.5 4 1.2 6.5L12 17l-5.7 3 1.2-6.5L3 9.5l6.5-1L12 3z"/></svg></span>
  Grade
  </button>
+ <button class="nav-item" data-panel="panel-compare">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h6M4 17h6M14 7h6M14 17h6"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="17" r="2"/></svg></span>
+ Compare
+ </button>
 
  <div class="nav-section">Season</div>
  <button class="nav-item" data-panel="panel-sos">
@@ -3602,6 +3653,10 @@ html[data-theme="light"] {
  <button class="nav-item" data-panel="panel-luck">
  <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>
  Luck
+ </button>
+ <button class="nav-item" data-panel="panel-roster">
+ <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 11h9M4 16h12"/><circle cx="18" cy="16" r="3"/><path d="M18 14.6v1.6l1.2.8"/></svg></span>
+ Accuracy
  </button>
 
  <div class="nav-section">More</div>
@@ -4469,6 +4524,8 @@ html[data-theme="light"] {
  const ESPN_TEAM_ABBR = {1:'ATL',2:'BUF',3:'CHI',4:'CIN',5:'CLE',6:'DAL',7:'DEN',8:'DET',9:'GB',10:'TEN',11:'IND',12:'KC',13:'LV',14:'LAR',15:'MIA',16:'MIN',17:'NE',18:'NO',19:'NYG',20:'NYJ',21:'PHI',22:'ARI',23:'PIT',24:'LAC',25:'SF',26:'SEA',27:'TB',28:'WSH',29:'CAR',30:'JAX',33:'BAL',34:'HOU'};
  const STARTER_SLOTS = {QB:[0,7], RB:[2], WR:[4], TE:[6], FLEX:[23], DST:[16], K:[17]};
  const SLEEPER_PLAYERS_CACHE_KEY = 'fd_sleeper_players_v1';
+ const SLEEPER_PLAYERS_CACHE_KEY_V2 = 'fd_sleeper_players_v2';
+ const SLEEPER_PLAYERS_STORE_MAX = 3000000; // localStorage budget for the trimmed feed
  const SLEEPER_PLAYERS_TTL = 1000*60*60*24*7;
  const RECENT_LEAGUES_KEY = 'fd_recent_leagues_v1';
  const RECENT_MAX = 6;
@@ -4521,43 +4578,265 @@ html[data-theme="light"] {
  return { swid: normalizeEspnSwid(sw), espnS2: normalizeEspnS2(s2) };
  }
 
- async function solidFetch(url, {credentials, timeoutMs=15000, headers, cookieHeader}={}){
+ /* ---------- request cache + in-flight dedupe ----------
+  Every panel reads the same Sleeper endpoints (weekly scores, schedule graph,
+  records, start/sit, matchups). Without this layer a single league load asked
+  for the same matchups/<week> 4-6 times, burning the rate limit and delaying
+  the whole board. Cache successful GETs briefly and share one promise for
+  identical requests that overlap. */
+ const REQ_CACHE = new Map();          // url -> { body, status, exp, headers }
+ const REQ_INFLIGHT = new Map();       // url -> Promise<{ res, entry, text }>
+ const REQ_STATS = { hits: 0, deduped: 0, network: 0 };
+ const REQ_CACHE_MAX_ENTRIES = 160;
+ const REQ_CACHE_MAX_CHARS = 1500000;  // never hold multi-MB payloads (players feed)
+
+ /* ---------- persistent cache (survives reloads) ----------
+  League meta and completed weeks do not change, so keep them on disk and
+  hydrate on boot: a returning visit paints from cache instead of re-fetching
+  the whole season. Both Refresh buttons call clearFetchCache(), which wipes
+  this store too, so an explicit refresh is always a real refresh. */
+ const REQ_STORE_KEY = 'fd_req_cache_v2';
+ const REQ_STORE_MAX_CHARS = 3000000;   // budget for cached JSON in localStorage
+ const REQ_STORE_MAX_ENTRY = 1000000;   // projections and FantasyCalc run ~0.3-0.9 MB
+ let REQ_STORE_OK = true;
+ let REQ_STORE_TIMER = null;
+
+ function reqPersistTtl(url){
+  // Deliberately longer than the in-session TTL: this is what makes a reload fast.
+  let cw = 0;
+  // state is declared later in the file; reading it here is safe once the app is
+  // running, but the try/catch keeps an early call from throwing.
+  try{ cw = Number((state && state._curWeek) || 0); }catch(e){}
+  const mm = url.match(/\/matchups\/(\d+)/);
+  if(mm){
+   const week = Number(mm[1]);
+   if(cw && week < cw) return 12 * 60 * 60 * 1000; // settled week
+   if(cw && week > cw) return 30 * 60 * 1000;      // future slate: nothing to change
+   return 3 * 60 * 1000;                           // live week: stay fresh
+  }
+  if(/\/projections\/nfl\//.test(url)) return 30 * 60 * 1000;
+  if(/\/v1\/league\/[^/?]+(?:\/(?:rosters|users))?$/.test(url)) return 12 * 60 * 60 * 1000;
+  if(/\/transactions\//.test(url)) return 60 * 60 * 1000;
+  if(/fantasy\.espn\.com/.test(url)) return 10 * 60 * 1000;
+  return 60 * 60 * 1000;
+ }
+ function canPersistReq(url){
+  if(!REQ_STORE_OK) return false;
+  if(!/^https?:\/\//.test(url)) return false;
+  if(/\/v1\/state\/nfl/.test(url)) return false;   // tiny and must stay fresh
+  if(/\/v1\/players\/nfl/.test(url)) return false; // 14 MB, cached separately
+  return true;
+ }
+ function readReqStore(){
+  try{
+   const raw = localStorage.getItem(REQ_STORE_KEY);
+   if(!raw) return {};
+   const obj = JSON.parse(raw);
+   return (obj && typeof obj === 'object') ? obj : {};
+  }catch(e){ return {}; }
+ }
+ function hydrateReqCache(){
+  const store = readReqStore();
+  const now = Date.now();
+  let restored = 0;
+  Object.keys(store).forEach(url => {
+   const e = store[url];
+   if(!e || typeof e.body !== 'string' || !(Number(e.exp) > now)) return;
+   if(REQ_CACHE.size >= REQ_CACHE_MAX_ENTRIES) return;
+   REQ_CACHE.set(url, {
+    body: e.body,
+    status: e.status || 200,
+    exp: Number(e.exp),
+    headers: e.headers || { 'content-type': 'application/json' },
+    persist: true
+   });
+   restored++;
+  });
+  REQ_STATS.restored = restored;
+  return restored;
+ }
+ function writeReqStore(){
+  if(!REQ_STORE_OK) return;
+  try{
+   const out = {};
+   const now = Date.now();
+   let total = 0;
+   REQ_CACHE.forEach((e, url) => {
+    if(!e || e.persist !== true) return;
+    if(!(e.exp > now)) return;
+    if(!e.body || e.body.length > REQ_STORE_MAX_ENTRY) return;
+    if(total + e.body.length > REQ_STORE_MAX_CHARS) return;
+    out[url] = { body: e.body, status: e.status, exp: e.exp, headers: e.headers };
+    total += e.body.length;
+   });
+   localStorage.setItem(REQ_STORE_KEY, JSON.stringify(out));
+  }catch(e){
+   REQ_STORE_OK = false; // quota or private mode: stop trying this session
+  }
+ }
+ function scheduleReqStore(){
+  if(!REQ_STORE_OK || REQ_STORE_TIMER) return;
+  REQ_STORE_TIMER = setTimeout(() => { REQ_STORE_TIMER = null; writeReqStore(); }, 800);
+ }
+ function clearReqStore(){
+  try{ localStorage.removeItem(REQ_STORE_KEY); }catch(e){}
+ }
+ try{ hydrateReqCache(); }catch(e){}
+ try{
+  window.addEventListener('pagehide', () => {
+   if(REQ_STORE_TIMER){ clearTimeout(REQ_STORE_TIMER); REQ_STORE_TIMER = null; }
+   writeReqStore();
+  });
+  document.addEventListener('visibilitychange', () => {
+   if(document.visibilityState === 'hidden'){
+    if(REQ_STORE_TIMER){ clearTimeout(REQ_STORE_TIMER); REQ_STORE_TIMER = null; }
+    writeReqStore();
+   }
+  });
+ }catch(e){}
+
+ function reqTtlFor(url){
+  if(/\/v1\/state\/nfl/.test(url)) return 30 * 1000;
+  if(/\/v1\/players\/nfl/.test(url)) return 6 * 60 * 60 * 1000;
+  if(/\/projections\/nfl\//.test(url)) return 10 * 60 * 1000;
+  if(/\/matchups\/\d+/.test(url)) return 90 * 1000;
+  if(/\/transactions\//.test(url)) return 5 * 60 * 1000;
+  if(/api\.sleeper\.app/.test(url)) return 5 * 60 * 1000;
+  if(/fantasy\.espn\.com/.test(url)) return 60 * 1000;
+  return 0;
+ }
+
+ function cachedResponse(entry){
+  return new Response(entry.body, {
+   status: entry.status || 200,
+   statusText: 'OK',
+   headers: entry.headers || { 'content-type': 'application/json' }
+  });
+ }
+
+ function clearFetchCache(prefix){
+  if(!prefix){
+   REQ_CACHE.clear(); REQ_INFLIGHT.clear();
+   if(REQ_STORE_TIMER){ clearTimeout(REQ_STORE_TIMER); REQ_STORE_TIMER = null; }
+   clearReqStore();
+   return;
+  }
+  for(const key of Array.from(REQ_CACHE.keys())){
+   if(key.indexOf(prefix) !== -1) REQ_CACHE.delete(key);
+  }
+  writeReqStore();
+ }
+
+ // Console helpers: __fdCacheStats() / __fdCacheClear()
+ try{
+  window.__fdCacheStats = () => ({ ...REQ_STATS, cached: REQ_CACHE.size, persisted: Object.keys(readReqStore()).length });
+  window.__fdCacheClear = () => { clearFetchCache(); return 'cache cleared'; };
+ }catch(e){}
+
+ async function solidFetch(url, opts){
+ opts = opts || {};
+ const credentials = opts.credentials;
+ const timeoutMs = opts.timeoutMs != null ? opts.timeoutMs : 15000;
+ const headers = opts.headers;
  // Browsers strip the Cookie header from every fetch(). For private ESPN leagues
  // we put SWID + espn_s2 into corsproxy's reqHeaders query so the proxy can
  // attach Cookie upstream.
- const cookie = cookieHeader || null;
- let lastErr;
- const attempts = [];
- if(cookie){
- // Prefer cookie-aware corsproxy first; skip bare ESPN (cannot auth)
- attempts.push({ url: corsProxyUrlWithCookie(url, cookie), credsOk:false, isProxy:true });
- // Fallback: plain proxies (may still 401 without cookie upstream)
- attempts.push({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false, isProxy:true });
- attempts.push({ url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), credsOk:false, isProxy:true });
- } else {
- for(const build of CORS_ATTEMPTS) attempts.push(build(url));
+ const cookie = opts.cookieHeader || null;
+ const ttl = opts.force ? 0 : (opts.cacheTtl != null ? opts.cacheTtl : reqTtlFor(url));
+ const useCache = ttl > 0 && !cookie && /^https?:\/\//.test(url);
+
+ if(useCache){
+  const hit = REQ_CACHE.get(url);
+  if(hit && hit.exp > Date.now()){
+   REQ_STATS.hits++;
+   return cachedResponse(hit);
+  }
+  const pending = REQ_INFLIGHT.get(url);
+  if(pending){
+   REQ_STATS.deduped++;
+   try{
+    const shared = await pending;
+    if(shared && shared.entry) return cachedResponse(shared.entry);
+    if(shared && shared.text) return cachedResponse({ body: shared.text, status: (shared.res && shared.res.status) || 200 });
+   }catch(e){ /* fall through and fetch it ourselves */ }
+  }
  }
- for(const attempt of attempts){
- const finalUrl = attempt.url;
+
+ const run = (async () => {
+  let lastErr;
+  const attempts = [];
+  if(cookie){
+   // Prefer cookie-aware corsproxy first; skip bare ESPN (cannot auth)
+   attempts.push({ url: corsProxyUrlWithCookie(url, cookie), credsOk:false, isProxy:true });
+   // Fallback: plain proxies (may still 401 without cookie upstream)
+   attempts.push({ url: 'https://corsproxy.io/?url=' + encodeURIComponent(url), credsOk:false, isProxy:true });
+   attempts.push({ url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), credsOk:false, isProxy:true });
+  } else {
+   for(const build of CORS_ATTEMPTS) attempts.push(build(url));
+  }
+  for(const attempt of attempts){
+   const finalUrl = attempt.url;
+   try{
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(), timeoutMs);
+    const fetchOpts = {
+     signal: controller.signal,
+     credentials: (!cookie && attempt.credsOk && credentials) ? credentials : 'omit',
+     headers: Object.assign({}, headers || {})
+    };
+    REQ_STATS.network++;
+    const res = await fetch(finalUrl, fetchOpts);
+    clearTimeout(timer);
+    if(res.ok) return res;
+    lastErr = new Error('HTTP ' + res.status);
+    lastErr.status = res.status;
+    if(res.status === 404) break;
+    if((res.status === 401 || res.status === 403) && cookie) continue;
+    if((res.status === 401 || res.status === 403) && !cookie) break;
+   }catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error('Failed to fetch');
+ })();
+
+ if(!useCache) return run;
+
+ const tracked = (async () => {
+  const res = await run;
+  let text = '';
+  try{
+   const declared = Number(res.headers.get('content-length') || 0);
+   if(!declared || declared <= REQ_CACHE_MAX_CHARS){
+    text = await res.clone().text();
+    if(text && text.length > REQ_CACHE_MAX_CHARS) text = '';
+   }
+  }catch(e){ text = ''; }
+  let entry = null;
+  if(text){
+   if(REQ_CACHE.size >= REQ_CACHE_MAX_ENTRIES){
+    const oldest = REQ_CACHE.keys().next().value;
+    if(oldest != null) REQ_CACHE.delete(oldest);
+   }
+   const persist = canPersistReq(url);
+   entry = {
+    body: text,
+    status: res.status,
+    exp: Date.now() + (persist ? reqPersistTtl(url) : ttl),
+    headers: { 'content-type': res.headers.get('content-type') || 'application/json' },
+    persist: persist
+   };
+   REQ_CACHE.set(url, entry);
+   if(persist) scheduleReqStore();
+  }
+  return { res, entry, text };
+ })();
+
+ REQ_INFLIGHT.set(url, tracked);
  try{
- const controller = new AbortController();
- const timer = setTimeout(()=>controller.abort(), timeoutMs);
- const opts = {
- signal: controller.signal,
- credentials: (!cookie && attempt.credsOk && credentials) ? credentials : 'omit',
- headers: Object.assign({}, headers || {})
- };
- const res = await fetch(finalUrl, opts);
- clearTimeout(timer);
- if(res.ok) return res;
- lastErr = new Error('HTTP ' + res.status);
- lastErr.status = res.status;
- if(res.status === 404) break;
- if((res.status === 401 || res.status === 403) && cookie) continue;
- if((res.status === 401 || res.status === 403) && !cookie) break;
- }catch(e){ lastErr = e; }
+  const out = await tracked;
+  return out.res;
+ }finally{
+  REQ_INFLIGHT.delete(url);
  }
- throw lastErr || new Error('Failed to fetch');
  }
 
  async function solidFetchAny(urls, opts={}){
@@ -5606,18 +5885,92 @@ function escapeHtml(s){
  const res = await solidFetch(`https://api.sleeper.app/v1/league/${leagueId}/users`);
  return res.json();
  }
+ const FD_IDB_NAME = 'fd_cache';
+ const FD_IDB_STORE = 'kv';
+ function fdIdbOpen(){
+ return new Promise((resolve, reject) => {
+  try{
+   const req = indexedDB.open(FD_IDB_NAME, 1);
+   req.onupgradeneeded = () => {
+    const db = req.result;
+    if(!db.objectStoreNames.contains(FD_IDB_STORE)) db.createObjectStore(FD_IDB_STORE);
+   };
+   req.onsuccess = () => resolve(req.result);
+   req.onerror = () => reject(req.error);
+  }catch(e){ reject(e); }
+ });
+ }
+ function fdIdbGet(key){
+ return fdIdbOpen().then(db => new Promise((resolve, reject) => {
+  const tx = db.transaction(FD_IDB_STORE, 'readonly');
+  const rq = tx.objectStore(FD_IDB_STORE).get(key);
+  rq.onsuccess = () => resolve(rq.result);
+  rq.onerror = () => reject(rq.error);
+ })).catch(() => null);
+ }
+ function fdIdbSet(key, val){
+ return fdIdbOpen().then(db => new Promise((resolve, reject) => {
+  const tx = db.transaction(FD_IDB_STORE, 'readwrite');
+  tx.objectStore(FD_IDB_STORE).put(val, key);
+  tx.oncomplete = () => resolve(true);
+  tx.onerror = () => reject(tx.error);
+ })).catch(() => false);
+ }
+
+ function slimSleeperPlayers(map){
+ // The raw feed is ~14 MB. Writing it to localStorage exceeded the quota and
+ // failed silently, so every visit re-downloaded it (twice). Keep only the
+ // fields this dashboard actually reads.
+ const keep = ['first_name','last_name','full_name','position','team','status','injury_status','espn_id','bye_week','active'];
+ const out = {};
+ if(!map || typeof map !== 'object') return out;
+ Object.keys(map).forEach(id => {
+ const p = map[id];
+ if(!p) return;
+ const slim = {};
+ for(let i = 0; i < keep.length; i++){
+ const k = keep[i];
+ if(p[k] != null) slim[k] = p[k];
+ }
+ out[id] = slim;
+ });
+ return out;
+ }
  async function fetchSleeperPlayers(){
+ if(state._sleeperPlayers) return state._sleeperPlayers;
+ const fresh = (parsed) => !!(parsed && parsed.data && (Date.now() - parsed.ts < SLEEPER_PLAYERS_TTL));
+ // 1) IndexedDB: the trimmed feed lives here so it does not fight the
+ //    request cache for localStorage quota.
  try{
- const cached = localStorage.getItem(SLEEPER_PLAYERS_CACHE_KEY);
- if(cached){
- const parsed = JSON.parse(cached);
- if(Date.now() - parsed.ts < SLEEPER_PLAYERS_TTL) return parsed.data;
+ const stored = await fdIdbGet('sleeper_players_v2');
+ if(fresh(stored)){
+ state._sleeperPlayers = stored.data;
+ return stored.data;
  }
  }catch(e){}
+ // 2) Legacy localStorage entries from older builds.
+ for(const key of [SLEEPER_PLAYERS_CACHE_KEY_V2, SLEEPER_PLAYERS_CACHE_KEY]){
+ try{
+ const cached = localStorage.getItem(key);
+ if(!cached) continue;
+ const parsed = JSON.parse(cached);
+ if(fresh(parsed)){
+ state._sleeperPlayers = parsed.data;
+ // Move it to IndexedDB and free the localStorage quota for the request cache.
+ fdIdbSet('sleeper_players_v2', parsed);
+ try{ localStorage.removeItem(key); }catch(e2){}
+ return parsed.data;
+ }
+ }catch(e){}
+ }
  const res = await solidFetch('https://api.sleeper.app/v1/players/nfl');
- const data = await res.json();
- try{ localStorage.setItem(SLEEPER_PLAYERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); }catch(e){}
- return data;
+ const raw = await res.json();
+ const slim = slimSleeperPlayers(raw);
+ state._sleeperPlayers = slim;
+ await fdIdbSet('sleeper_players_v2', { ts: Date.now(), data: slim });
+ // Old full-feed entries never fit and only wasted quota.
+ try{ localStorage.removeItem(SLEEPER_PLAYERS_CACHE_KEY); localStorage.removeItem(SLEEPER_PLAYERS_CACHE_KEY_V2); }catch(e){}
+ return slim;
  }
  function sleeperDetectPpr(league){
  try{ return league.scoring_settings.rec || 0; }catch(e){ return 1; }
@@ -5749,6 +6102,7 @@ function escapeHtml(s){
  const stateRes = await solidFetch('https://api.sleeper.app/v1/state/nfl');
  const nflState = await stateRes.json();
  currentWeek = Math.min(Math.max(1, Number(nflState.leg || nflState.week || nflState.display_week) || 1), 18);
+ state._curWeek = currentWeek;
  // leg/week is the in-progress NFL week; scores for that week are not final yet
  lastCompleted = Math.max(0, currentWeek - 1);
  }catch(e){
@@ -6285,15 +6639,23 @@ function escapeHtml(s){
  }
  });
  loadScheduleGraph().then(() => {
- if(el('app').classList.contains('show')) renderLuck();
+ if(!el('app').classList.contains('show')) return;
+ renderLuck();
+ // Week-dependent panels first painted before the schedule resolved (week 1
+ // fallback), so repaint them with the real NFL week.
+ try{ renderHome(); }catch(e){}
+ try{ renderWaivers(); }catch(e){}
+ try{ renderByes(); }catch(e){}
+ try{ renderSitAnalyzer(); }catch(e){}
  });
  loadRosterWeekData().then(() => {
  if(el('app').classList.contains('show')) renderRosterMgmt();
  });
  loadWeeklyProjections().then(() => {
- if(el('app').classList.contains('show')){
+ if(!el('app').classList.contains('show')) return;
  try{ renderSitAnalyzer(); }catch(e){}
- }
+ try{ renderHome(); }catch(e){}
+ try{ renderMatchups(); }catch(e){}
  });
  }catch(err){
  hideStatus();
@@ -6445,7 +6807,155 @@ function escapeHtml(s){
  }
 
  /* ---------- rendering ---------- */
+
+ /* ---------- Teams panel ---------- */
+ function teamRosterValue(team, startersOnly){
+ const total = (team.roster || []).reduce((sum, p) => {
+ if(p.isTaxi) return sum;
+ if(startersOnly && !p.isStarter) return sum;
+ return sum + (Number(p.value) || 0);
+ }, 0);
+ return total;
+ }
+ function teamValueDelta(team){
+ try{
+ if(typeof snapForWindow !== 'function') return 0;
+ const pair = snapForWindow('1m') || snapForWindow('1w') || snapForWindow('1d');
+ if(!pair || !pair.prev || !pair.prev.values) return 0;
+ let delta = 0;
+ (team.roster || []).forEach(p => {
+ const prev = pair.prev.values[String(p.id)];
+ if(!prev || typeof prev.value !== 'number') return;
+ delta += (Number(p.value) || 0) - prev.value;
+ });
+ return delta;
+ }catch(e){ return 0; }
+ }
+ function renderLeagueRosters(){
+ const list = el('rosters-list');
+ if(!list) return;
+ const summary = el('rosters-summary');
+ const sortSel = el('rosters-sort');
+ const startersCb = el('rosters-starters-only');
+ if(!state.teams || !state.teams.length){
+ list.className = 'hist-list';
+ list.innerHTML = '<div class="hist-empty">Load a league to see every roster with market value.</div>';
+ if(summary) summary.textContent = '';
+ return;
+ }
+ if(sortSel && !sortSel._bound){
+ sortSel._bound = true;
+ sortSel.addEventListener('change', () => { try{ renderLeagueRosters(); }catch(e){} });
+ }
+ if(startersCb && !startersCb._bound){
+ startersCb._bound = true;
+ startersCb.addEventListener('change', () => { try{ renderLeagueRosters(); }catch(e){} });
+ }
+ const startersOnly = !!(startersCb && startersCb.checked);
+ let rows = [];
+ try{ rows = buildPowerRows() || []; }catch(e){ rows = []; }
+ const byId = new Map();
+ rows.forEach(r => { if(r && r.team) byId.set(String(r.team.id), r); });
+ const teams = (state.teams || []).map(t => {
+ const row = byId.get(String(t.id)) || null;
+ return {
+ team: t,
+ row,
+ total: teamRosterValue(t, startersOnly),
+ delta: teamValueDelta(t)
+ };
+ });
+ const mode = sortSel ? sortSel.value : 'power';
+ teams.sort((a, b) => {
+ if(mode === 'value') return b.total - a.total;
+ if(mode === 'rise') return b.delta - a.delta;
+ if(mode === 'fall') return a.delta - b.delta;
+ return (b.row ? b.row.power : 0) - (a.row ? a.row.power : 0);
+ });
+ const totalAll = teams.reduce((s, x) => s + x.total, 0);
+ if(summary){
+ summary.textContent = teams.length + ' teams · ' + fmt(totalAll) + ' total value · avg ' +
+ fmt(teams.length ? totalAll / teams.length : 0) +
+ (teams[0] ? ' · leader: ' + teams[0].team.name : '');
+ }
+ list.className = 'team-grid';
+ list.innerHTML = teams.map((entry, idx) => {
+ const t = entry.team;
+ const row = entry.row || {};
+ let record = (t.wins || 0) + '-' + (t.losses || 0);
+ if(t.ties) record += '-' + t.ties;
+ const roster = (t.roster || []).slice()
+ .filter(p => !p.isTaxi)
+ .filter(p => !startersOnly || p.isStarter)
+ .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
+ const shown = roster.slice(0, startersOnly ? 12 : 9);
+ const rest = roster.length - shown.length;
+ const players = shown.map(p => {
+ const pos = p.position || '-';
+ const flags = [];
+ const injured = typeof playerInjuryStatus === 'function' ? playerInjuryStatus(p) : null;
+ if(injured) flags.push('<span class="team-flag bad">' + escapeHtml(String(injured).toUpperCase()) + '</span>');
+ if(p.isIR) flags.push('<span class="team-flag">IR</span>');
+ const bye = typeof playerByeWeek === 'function' ? playerByeWeek(p) : null;
+ const curWeek = Number(state._curWeek || 0);
+ if(bye && (!curWeek || Number(bye) >= curWeek)) flags.push('<span class="team-flag">BYE ' + escapeHtml(String(bye)) + '</span>');
+ return '<div class="team-player">' +
+ '<span class="pos-badge pos-' + escapeHtml(pos) + '">' + escapeHtml(pos) + '</span>' +
+ '<span class="team-player-name">' + playerCardLink(p.fullName, p.id) + '</span>' +
+ flags.join('') +
+ '<span class="team-player-val">' + fmt(p.value) + '</span>' +
+ '</div>';
+ }).join('');
+ const deltaCls = entry.delta > 0 ? ' up' : entry.delta < 0 ? ' down' : '';
+ return '<div class="team-card' + (String(t.id) === String(state.myTeamId) ? ' mine' : '') + '">' +
+ '<div class="team-card-head">' +
+ '<span class="team-rank">' + (idx + 1) + '</span>' +
+ '<span class="team-name">' + escapeHtml(t.name || '') + '</span>' +
+ '<span class="team-power" title="Power ranking">' + (row.power != null ? Math.round(row.power) : '-') + '</span>' +
+ '</div>' +
+ '<div class="team-meta">' +
+ '<span>' + escapeHtml(record) + '</span>' +
+ '<span>' + fmt(entry.total) + ' value</span>' +
+ (entry.delta ? '<span class="team-delta' + deltaCls + '">' + (entry.delta > 0 ? '+' : '') + fmt(entry.delta) + '</span>' : '') +
+ '</div>' +
+ '<div class="team-players">' + players +
+ (rest > 0 ? '<div class="team-more">+' + rest + ' more</div>' : '') +
+ '</div>' +
+ '</div>';
+ }).join('');
+ }
+
+ /* Off-screen panels render after the app is visible, in small slices, so the
+ first paint is not blocked by work nobody is looking at yet. Each panel also
+ re-renders on its own nav click, so nothing goes stale. */
+ let _deferredRenderTimer = null;
+ function renderDeferredPanels(){
+ const tasks = [
+ ['odds', () => { state._oddsReady = true; try{ renderPlayoffs(); }catch(e){} }],
+ ['records', renderRecords], ['rate', renderRateTeam], ['luck', renderLuck],
+ ['finder', setupFinderControls], ['accuracy', renderRosterMgmt], ['depth', renderDepth],
+ ['byes', renderByes], ['teams', renderLeagueRosters], ['trends', renderTrends],
+ ['home', renderHome]
+ ];
+ let i = 0;
+ const step = () => {
+ _deferredRenderTimer = null;
+ const started = performance.now();
+ while(i < tasks.length && performance.now() - started < 14){
+ const fn = tasks[i++][1];
+ try{ if(typeof fn === 'function') fn(); }catch(e){}
+ }
+ if(i < tasks.length) _deferredRenderTimer = setTimeout(step, 32);
+ };
+ step();
+ }
+ function scheduleDeferredRender(){
+ if(_deferredRenderTimer) clearTimeout(_deferredRenderTimer);
+ _deferredRenderTimer = setTimeout(() => { _deferredRenderTimer = null; renderDeferredPanels(); }, 60);
+ }
+
  function renderAll(){
+ state._oddsReady = false;
  try{ bindTableSorting(); }catch(e){}
 
  const fmtParts = [state.numTeams + ' teams', state.numQBs===2 ? 'Superflex' : '1QB', state.isDynasty ? 'Dynasty' : 'Redraft', pprLabel(state.ppr)];
@@ -6490,19 +7000,11 @@ function escapeHtml(s){
  try{ renderRankings(); }catch(e){ console.error(e); }
  renderNeeds();
  renderWaivers();
- renderPlayoffs();
  renderMatchups();
- renderRecords();
- renderRateTeam();
- renderLuck();
- setupFinderControls();
- renderRosterMgmt();
- renderDepth();
- renderByes();
  renderHome();
  try{ renderStrategyStrip(); }catch(e){}
  recordSnapshot();
- renderTrends();
+ scheduleDeferredRender();
  try{
   if(typeof renderTradeNeedsImpact === 'function')
    renderTradeNeedsImpact(getTeam('a'), getTeam('b'));
@@ -9470,7 +9972,7 @@ function closeClinchModal(){
   let sp = state._sleeperPlayers || null;
   if(!sp){
    try{
-    const cached = localStorage.getItem(SLEEPER_PLAYERS_CACHE_KEY);
+    const cached = localStorage.getItem(SLEEPER_PLAYERS_CACHE_KEY_V2) || localStorage.getItem(SLEEPER_PLAYERS_CACHE_KEY);
     if(cached){
      const parsed = JSON.parse(cached);
      if(parsed && parsed.data) { sp = parsed.data; state._sleeperPlayers = sp; }
@@ -9757,6 +10259,7 @@ function closeClinchModal(){
  cur = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){}
  graph._currentWeek = cur;
+ state._curWeek = cur;
  for(let w = 1; w <= 17; w += 4){
  const batch = [];
  for(let i = w; i < w + 4 && i <= 17; i++) batch.push(i);
@@ -9798,6 +10301,7 @@ function closeClinchModal(){
  const data = await res.json();
  const cur = data.scoringPeriodId || (data.status && data.status.currentMatchupPeriod) || 1;
  graph._currentWeek = cur;
+ state._curWeek = cur;
  (data.schedule || []).forEach(game => {
  const mp = game.matchupPeriodId != null ? game.matchupPeriodId : game.scoringPeriodId;
  if(mp == null) return;
@@ -10906,6 +11410,7 @@ function enrichMatchupsWithOptimalProjections(list){
  week = Math.min(18, Math.max(1, Number(nfl.leg || nfl.week || nfl.display_week || 1)));
  }catch(e){}
  if(scheduleCache) scheduleCache._currentWeek = week;
+ state._curWeek = week;
  const res = await solidFetch(`https://api.sleeper.app/v1/league/${state.leagueId}/matchups/${week}`);
  const data = await res.json();
  if(!Array.isArray(data)) { matchupCache = out; return out; }
@@ -11731,6 +12236,8 @@ function renderMatchups(){
  const list = el('matchups-list');
  if(list) list.innerHTML = '<div class="hist-empty">Loading matchups…</div>';
  try{
+  // Explicit user refresh: drop cached scores/projections so live numbers move
+  clearFetchCache();
   await fetchCurrentMatchups();
  }catch(e){
   console.warn('refreshMatchups fetch', e);
@@ -15237,8 +15744,8 @@ function renderTrends(){
  html += '<div class="compare-search-panel"><h3>Search results</h3>';
  pool.slice(0, 12).forEach(p => {
  const on = state._compareList.some(x => normalizeName(x.fullName) === normalizeName(p.fullName));
- html += `<div class="roster-row" style="cursor:pointer;padding:8px 12px;" data-add="${playerCardLink(p.fullName, p.id)}">
- <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span> ${playerCardLink(p.fullName, p.id)} <span style="color:var(--text-muted);font-size:12px;">${escapeHtml(p.ownerTeam||'')}</span></span>
+ html += `<div class="roster-row" style="cursor:pointer;padding:8px 12px;" data-add="${escapeHtml(p.fullName)}">
+ <span class="rname"><span class="pos-badge pos-${p.position}">${p.position}</span> ${escapeHtml(p.fullName)} <span style="color:var(--text-muted);font-size:12px;">${escapeHtml(p.ownerTeam||'')}</span></span>
  <span class="rval">${fmt(p.value)} ${on ? '✓' : '+'}</span></div>`;
  });
  html += '</div>';
@@ -15650,7 +16157,7 @@ function bpDiagnose(team){
    priority: 8,
    status: 'ok',
    title: 'Season path',
-   why: 'Rankings, schedule, playoffs  -  after the week is set.',
+   why: 'Rankings, schedule and playoffs are ready when you want them.',
    panel: 'panel-sos',
    label: 'Schedule'
   });
@@ -15680,7 +16187,9 @@ function buildStrategyBrief(){
 
  const quality = typeof playoffDataQuality === 'function' ? playoffDataQuality() : { ready: false, weeks: 0, label: '' };
  let playoffPct = null, seed = null;
- if(quality.ready || state.forcePlayoffOdds){
+ // Odds are a full Monte Carlo run (~0.4s). They are computed just after the
+ // first paint, then Home repaints; never block the initial render on them.
+ if(state._oddsReady && (quality.ready || state.forcePlayoffOdds)){
  try{
  const res = simulatePlayoffOdds(null, { force: !!state.forcePlayoffOdds });
  const r = res && res.odds && res.odds.find(x => x.team.id === team.id || String(x.team.id) === String(team.id));
@@ -15710,7 +16219,7 @@ function buildStrategyBrief(){
  }catch(e){}
 
  // This-week cover holes
- const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || 1;
+ const curWeek = (scheduleCache && scheduleCache._currentWeek) || projectionCacheWeek || state._curWeek || 1;
  let weekHoles = 0, outNames = [];
  try{
  const unavail = new Set();
@@ -15929,18 +16438,21 @@ function buildStrategyBrief(){
  html += '<div class="bp-pipeline">';
  BP.order.forEach((step, idx) => {
   const it = stageMap[step.id] || {};
-  const done = !!completed[step.id];
+  const optional = step.id === 'season';
+  const done = optional ? false : !!completed[step.id];
   const blocked = it.status === 'block' && !done;
   const isCurrent = step.id === currentId;
-  let st = done ? 'done' : (blocked ? 'block' : (isCurrent ? 'current' : (it.status || 'wait')));
+  let st = optional ? 'wait' : (done ? 'done' : (blocked ? 'block' : (isCurrent ? 'current' : (it.status || 'wait'))));
   const title = done ? (step.label + ' finished') : (it.title || step.label);
   const why = done
    ? (it.why || 'Complete for this week.')
    : (it.why || step.rule);
   const panel = it.panel || step.panel;
-  const badge = done
-   ? '<span class="bp-pipe-badge done">Done</span>'
-   : (isCurrent ? '<span class="bp-pipe-badge now">Now</span>' : (blocked ? '<span class="bp-pipe-badge blocked">Blocked</span>' : ''));
+  const badge = optional
+   ? '<span class="bp-pipe-badge">Optional</span>'
+   : (done
+    ? '<span class="bp-pipe-badge done">Done</span>'
+    : (isCurrent ? '<span class="bp-pipe-badge now">Now</span>' : (blocked ? '<span class="bp-pipe-badge blocked">Blocked</span>' : '')));
   const num = done ? '✓' : String(idx + 1);
   html += `<div class="bp-pipe-step status-${st}" data-panel="${panel}" data-stage="${step.id}">
    <div class="bp-pipe-num">${num}</div>
@@ -15948,7 +16460,7 @@ function buildStrategyBrief(){
     <div class="bp-pipe-label">${escapeHtml(step.label)}${badge}</div>
     <div class="bp-pipe-title">${escapeHtml(title)}</div>
     <div class="bp-pipe-why">${escapeHtml(why)}</div>
-    ${(!done && step.id !== 'lineup' && step.id !== 'cover') ? `<button type="button" class="btn btn-ghost btn-sm bp-mark-done" data-stage="${step.id}" style="margin-top:8px;">Mark done</button>` : ''}
+    ${(!done && !optional && step.id !== 'lineup' && step.id !== 'cover') ? `<button type="button" class="btn btn-ghost btn-sm bp-mark-done" data-stage="${step.id}" style="margin-top:8px;">Mark done</button>` : ''}
    </div>
    <div class="bp-pipe-go">${done ? '' : 'Open'}</div>
   </div>`;
@@ -21224,7 +21736,9 @@ function renderPowerSnapshot(rows){
  'panel-sos': 'Schedule',
  'panel-playoffs': 'Playoffs',
  'panel-path': 'Path',
- 'panel-matchups': 'Matchups'
+ 'panel-matchups': 'Matchups',
+ 'panel-compare': 'Compare',
+ 'panel-roster': 'Accuracy'
  };
  const tid = state.myTeamId;
  return '<div class="related-links">' +
@@ -21582,6 +22096,7 @@ try{ initSettingsDrawerState(); }catch(e){}
  try{
  showToast('Refreshing…');
  waiverImpactCache = null;
+ try{ clearFetchCache(); }catch(e){}
  await loadLeague();
  showToast('Refreshed');
  }catch(e){
