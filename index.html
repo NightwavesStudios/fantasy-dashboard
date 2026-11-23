@@ -1037,7 +1037,7 @@
 
 
  table {
- min-width: 640px;
+ min-width: 0;
  font-size: 12.5px;
 }
  .card, #panel-rankings .card, #panel-playoffs,
@@ -2627,6 +2627,15 @@ body {
 #app .fd-table .val-cell { text-align: right; font-variant-numeric: tabular-nums; }
 #app .fd-table th.val-cell { text-align: right; }
 #app .fd-table td strong, #app .fd-table td b { color: var(--text); font-weight: 600; }
+.fd-scroll-note {
+ display: none;
+ font-size: 9.5px;
+ font-weight: 700;
+ letter-spacing: 0.13em;
+ text-transform: uppercase;
+ color: var(--text-muted);
+ margin: 0 0 6px;
+}
 
 /* ---------- controls ---------- */
 #app .btn, #setup-screen .btn {
@@ -3251,11 +3260,10 @@ body {
   width: 100% !important;
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch;
-  white-space: nowrap !important;
  }
  #app .panel table thead, #app .panel table tbody { display: table; width: 100%; table-layout: auto; }
  #app .panel table thead { position: sticky; top: 0; z-index: 3; }
- #app .panel table thead th, #app .panel table tbody td { white-space: nowrap !important; padding: 9px 10px !important; }
+ #app .panel table thead th, #app .panel table tbody td { white-space: normal !important; padding: 9px 8px !important; }
  #app .panel table tbody td { font-size: 12px; }
  #app .panel td div[style*="font-size:11px"] { white-space: normal; min-width: 190px; }
  #app .panel .bp-stat .val { font-size: 26px; }
@@ -3496,6 +3504,33 @@ body {
  gap: 6px !important; }
  .hist-vs { display: none; }
  .hist-impact { grid-template-columns: 1fr !important; }
+}
+
+/* ---- mobile data tables ----
+   Let a table use the column instead of a fixed 640px canvas. Header labels may
+   wrap so a row still reads end to end; only the widest tables drop columns, and
+   the playoffs board keeps every odds column with a note above it instead. */
+@media (max-width: 600px) {
+ #app .fd-table thead th { white-space: normal; }
+ #app .panel table thead th, #app .panel table tbody td { white-space: normal !important; padding: 8px 6px !important; }
+ .fd-tbl-rankdetail th:nth-child(n+5), .fd-tbl-rankdetail td:nth-child(n+5),
+ .fd-tbl-luck th:nth-child(n+6), .fd-tbl-luck td:nth-child(n+6),
+ .fd-tbl-depth th:nth-child(2), .fd-tbl-depth td:nth-child(2),
+ .fd-tbl-depth th:nth-child(5), .fd-tbl-depth td:nth-child(5),
+ .fd-tbl-sos th:nth-child(5), .fd-tbl-sos td:nth-child(5),
+ .fd-tbl-sos th:nth-child(7), .fd-tbl-sos td:nth-child(7),
+ .fd-tbl-sos th:nth-child(8), .fd-tbl-sos td:nth-child(8),
+ .fd-tbl-sos th:nth-child(10), .fd-tbl-sos td:nth-child(10) { display: none; }
+ .fd-tbl-matchups th:last-child, .fd-tbl-matchups td:last-child,
+ .fd-tbl-sosrank th:last-child, .fd-tbl-sosrank td:last-child { display: none; }
+ .fd-tbl-rankdetail th, .fd-tbl-rankdetail td { padding-left: 5px; padding-right: 5px; }
+ .fd-tbl-playoffs table { min-width: 720px; }
+ .sit-change-grid { grid-template-columns: 1fr !important; }
+ #app .fd-table tbody td:nth-child(2) { overflow-wrap: anywhere; }
+ .fd-tbl-ranksnap th:nth-child(4), .fd-tbl-ranksnap td:nth-child(4),
+ .fd-tbl-ranksnap th:nth-child(5), .fd-tbl-ranksnap td:nth-child(5),
+ .fd-tbl-ranksnap th:nth-child(6), .fd-tbl-ranksnap td:nth-child(6),
+ .fd-tbl-ranksnap th:nth-child(7), .fd-tbl-ranksnap td:nth-child(7) { display: none; }
 }
 
 </style>
@@ -3864,7 +3899,7 @@ body {
  </div>
  <div id="rankings-snapshot" style="margin-bottom:14px;"></div>
  <div id="rankings-related" class="related-links" style="margin-top:0;margin-bottom:12px;border:0;padding:0;"></div>
- <div style="overflow-x:auto;">
+ <div class="fd-tbl-rankdetail" style="overflow-x:auto;">
  <table>
  <thead>
  <tr>
@@ -4094,7 +4129,7 @@ body {
           </label>
         </div>
  <div id="depth-tier-summary" style="font-size:12.5px;color:var(--text-secondary);margin-bottom:10px;line-height:1.45;"></div>
- <div style="overflow-x:auto;">
+ <div class="fd-tbl-depth" style="overflow-x:auto;">
  <table>
  <thead>
  <tr><th>#</th><th>Tier</th><th>Player</th><th>Pos</th><th>Team</th><th>Value</th></tr>
@@ -4143,7 +4178,7 @@ body {
  <button type="button" class="info-btn" id="btn-luck-info" title="Info"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.5h.01"/></svg></span></button>
  </div>
  <p class="needs-intro" id="luck-intro">All-play expected wins from your weekly scores vs the rest of the league. Luck is actual wins minus that expectation.</p>
- <div style="overflow-x:auto;">
+ <div class="fd-tbl-luck" style="overflow-x:auto;">
  <table>
  <thead>
  <tr>
@@ -4180,7 +4215,7 @@ body {
  <span id="sos-summary" style="font-size:12.5px;color:var(--text-muted);"></span>
  </div>
  <div id="sos-meta" class="hist-meta" style="margin-bottom:10px;"></div>
- <div style="overflow-x:auto;">
+ <div class="fd-tbl-sos" style="overflow-x:auto;">
  <table>
  <thead>
  <tr>
@@ -4204,7 +4239,7 @@ body {
  <div class="section-title" style="margin:22px 0 8px;font-size:15px;">League SOS ranking</div>
  <p class="needs-intro" style="margin-bottom:10px;">#1 = easiest schedule (lowest average opponent points). Last = hardest. % is difference vs the median team's SOS.</p>
  <div id="sos-rank-chart" style="margin-bottom:14px;"></div>
- <div style="overflow-x:auto;">
+ <div class="fd-tbl-sosrank" style="overflow-x:auto;">
  <table>
  <thead>
  <tr>
@@ -4330,7 +4365,7 @@ body {
  </div>
  <div id="playoffs-context" class="hist-meta" style="margin-bottom:10px;"></div>
  <div id="playoffs-meta" class="hist-meta"></div>
- <div style="overflow-x:auto;margin-top:12px;">
+ <div class="fd-tbl-playoffs" style="overflow-x:auto;margin-top:12px;">
  <table>
  <thead>
  <tr>
@@ -12078,7 +12113,7 @@ function matchupWinPct(liveA, liveB, projA, projB){
    (med ? ' <span style="font-size:12px;color:var(--accent);font-weight:600;">· H2H + median</span>' : '') +
    '</div>' +
    '<p class="needs-intro" style="margin-bottom:10px;">' + how + ' (' + result.sims.toLocaleString() + ' runs). Decimal wins = expected value.</p>' +
-   '<div style="overflow-x:auto;"><table class="is-sortable">' +
+   '<div class="fd-tbl-matchups" style="overflow-x:auto;"><table class="is-sortable">' +
    '<thead><tr><th>#</th><th>Team</th><th>Now</th><th>After week</th><th title="Chance of winning this week">Win %</th>' +
    (med ? '<th>H2H / Median</th>' : '') + '<th>PF (proj)</th></tr></thead>' +
    '<tbody>' + rowsHtml + '</tbody></table></div>';
@@ -17074,7 +17109,7 @@ function buildStrategyBrief(){
  } else {
  changesHtml = `<div class="hist-card" style="margin-bottom:12px;">
  <div style="font-size:14px;font-weight:600;margin-bottom:8px;">What to change</div>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+ <div class="sit-change-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
  <div>${sitRows || '<div style="color:var(--text-muted);font-size:12.5px;">Nothing to sit</div>'}</div>
  <div>${startRows || '<div style="color:var(--text-muted);font-size:12.5px;">Nothing new to start</div>'}</div>
  </div>
@@ -17303,7 +17338,7 @@ function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffSt
         const mine = focusTeam && String(r.team.id) === String(focusTeam.id);
         ph += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
         ph += '<td>' + (r.seed != null ? r.seed : '—') + '</td>';
-        ph += '<td style="min-width:150px;">' + escapeHtml(r.team.name) + '</td>';
+        ph += '<td class="td-team-name">' + escapeHtml(r.team.name) + '</td>';
         ph += '<td class="val-cell">' + escapeHtml(r.projRecord || recStr(r.team)) + '</td>';
         ph += '<td class="val-cell">' + (r.eliminated ? '<span style="color:var(--red);font-weight:800;">E</span>' : (r.playoffPct != null ? r.playoffPct.toFixed(0) + '%' : '—')) + '</td>';
         ph += '<td class="val-cell">' + (r.byePct != null ? r.byePct.toFixed(0) + '%' : '—') + '</td>';
@@ -21590,7 +21625,7 @@ function renderPowerSnapshot(rows){
 
   // Compact table: friendly power / starter / bench
  const medPower = medianOf(sorted.map(r => r.power).filter(x => x != null && isFinite(x)));
- html += '<div style="overflow-x:auto;">';
+ html += '<div class="fd-tbl-ranksnap" style="overflow-x:auto;">';
  html += '<table style="width:100%;font-size:12.5px;">';
  html += '<thead><tr>';
  html += '<th>#</th><th>Team</th>';
@@ -23001,6 +23036,35 @@ try{
 
  try{ enhancePageShells(); }catch(e){ console.warn('page shells', e); }
  window.__fdEnhancePages = enhancePageShells;
+
+ // A table that still overflows its wrapper gets a typographic scroll note, so a
+ // narrow window never hides columns silently. Notes are per wrapper and follow
+ // the real overflow, so they only appear where and when they are true.
+ function syncTableScrollHints(){
+  document.querySelectorAll('#app .panel table').forEach(t => {
+   if(t.closest('.fd-scroll-skip')) return;
+   let host = t.parentElement;
+   while(host && host.id !== 'app' && !((host.getAttribute && host.getAttribute('style') || '').includes('overflow-x'))) host = host.parentElement;
+   if(!host || host.id === 'app') host = t;
+   let note = host.previousElementSibling;
+   if(!note || !note.classList.contains('fd-scroll-note')){
+    note = document.createElement('div');
+    note.className = 'fd-scroll-note';
+    note.textContent = 'Scroll for every column';
+    note.setAttribute('aria-hidden', 'true');
+    host.parentNode.insertBefore(note, host);
+   }
+   const over = Math.max(t.scrollWidth - t.clientWidth, host.scrollWidth - host.clientWidth);
+   note.style.display = (over > 3) ? 'block' : 'none';
+  });
+ }
+ let _fdHintTimer = null;
+ function scheduleTableScrollHints(){ clearTimeout(_fdHintTimer); _fdHintTimer = setTimeout(syncTableScrollHints, 120); }
+ window.__fdSyncTableHints = syncTableScrollHints;
+ window.addEventListener('resize', scheduleTableScrollHints);
+ document.addEventListener('click', scheduleTableScrollHints, true);
+ try{ new MutationObserver(scheduleTableScrollHints).observe(document.body, { childList: true, subtree: true }); }catch(e){}
+ try{ scheduleTableScrollHints(); }catch(e){}
 
  const share = parseShareParams();
  if(share){
