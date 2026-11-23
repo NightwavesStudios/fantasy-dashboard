@@ -17303,7 +17303,7 @@ function buildPathWhatIf(focusTeam, baseline, basePct, weekMap, weeks, playoffSt
         const mine = focusTeam && String(r.team.id) === String(focusTeam.id);
         ph += '<tr' + (mine ? ' style="background:var(--accent-muted)"' : '') + '>';
         ph += '<td>' + (r.seed != null ? r.seed : '—') + '</td>';
-        ph += '<td>' + escapeHtml(shortName(r.team.name)) + '</td>';
+        ph += '<td style="min-width:150px;">' + escapeHtml(r.team.name) + '</td>';
         ph += '<td class="val-cell">' + escapeHtml(r.projRecord || recStr(r.team)) + '</td>';
         ph += '<td class="val-cell">' + (r.eliminated ? '<span style="color:var(--red);font-weight:800;">E</span>' : (r.playoffPct != null ? r.playoffPct.toFixed(0) + '%' : '—')) + '</td>';
         ph += '<td class="val-cell">' + (r.byePct != null ? r.byePct.toFixed(0) + '%' : '—') + '</td>';
@@ -21541,12 +21541,14 @@ function renderPowerSnapshot(rows){
   (typeof estimateCompletedWeeks === 'function' ? estimateCompletedWeeks(state.teams||[]) : 0)
  );
  const pct = (x) => ((x || 0) * 100).toFixed(0) + '%';
+ // Roster strength reads in the accent; scored results stay neutral. Two colour
+ // families, not five competing hues, so the strip reads as a single measure.
  const bars = [
- { key: 'Starters', w: w.wS, color: 'var(--pos)' },
- { key: 'Bench', w: w.wD, color: 'var(--info)' },
- { key: 'Avg pts', w: w.wA, color: 'var(--warn)' },
- { key: 'Median pts', w: w.wM, color: 'var(--violet)' },
- { key: 'Record', w: w.wR, color: 'var(--neg)' }
+ { key: 'Starters', w: w.wS, color: 'var(--accent)' },
+ { key: 'Bench', w: w.wD, color: 'color-mix(in srgb, var(--accent) 50%, var(--surface-3))' },
+ { key: 'Avg pts', w: w.wA, color: 'color-mix(in srgb, var(--text-secondary) 70%, var(--surface))' },
+ { key: 'Median pts', w: w.wM, color: 'color-mix(in srgb, var(--text-secondary) 45%, var(--surface))' },
+ { key: 'Record', w: w.wR, color: 'var(--text-muted)' }
  ];
  const maxPower = Math.max(...sorted.map(r => r.power), 1);
  const minPower = Math.min(...sorted.map(r => r.power));
@@ -21573,7 +21575,7 @@ function renderPowerSnapshot(rows){
  sorted.forEach((r, i) => {
  const isMine = state.myTeamId != null && (r.team.id === state.myTeamId || String(r.team.id) === String(state.myTeamId));
  const barPct = 8 + ((r.power - minPower) / span) * 92;
- const color = isMine ? 'var(--accent)' : 'var(--pos)';
+ const color = isMine ? 'var(--accent)' : 'var(--text-muted)';
  html += '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px;' + (isMine ? 'font-weight:600;' : '') + '">';
  html += '<div style="width:22px;text-align:right;color:var(--text-muted);flex-shrink:0;">#' + (i+1) + '</div>';
  html += '<div style="flex:1;min-width:0;">';
@@ -22966,7 +22968,7 @@ try{
    head.className = 'page-head';
    const text = document.createElement('div');
    text.className = 'page-head-text';
-   const group = pageGroupFor(panel.id) || (panel.id === 'panel-home' ? 'Fantasy dashboard' : '');
+   const group = pageGroupFor(panel.id) || (panel.id === 'panel-home' ? 'Overview' : '');
    if(group){
     const eye = document.createElement('div');
     eye.className = 'page-eyebrow';
